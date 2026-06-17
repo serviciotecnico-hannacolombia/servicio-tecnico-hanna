@@ -215,7 +215,9 @@ export function LlamadasPage() {
 
   const diarioColumns: Column<LlamadaDiario>[] = [
     { key: 'otst',    header: 'OTST',     width: '120px', render: r => <OtstLink otst={r.otst} /> },
-    { key: 'cliente', header: 'Cliente',  render: r => <span style={{ fontWeight: 500 }}>{r.cliente || <span style={{ color: 'var(--muted)' }}>—</span>}</span> },
+    { key: 'cliente', header: 'Cliente',  render: r => r.cliente
+        ? <span onClick={() => navigator.clipboard.writeText(r.cliente!).then(() => toast.success(`"${r.cliente}" copiado`))} title="Clic para copiar" style={{ fontWeight: 500, cursor: 'copy' }}>{r.cliente}</span>
+        : <span style={{ color: 'var(--muted)' }}>—</span> },
     { key: 'ing',     header: 'Ingeniero', render: r => <span style={{ fontSize: '0.82rem', color: 'var(--muted)' }}>{r.ingeniero || '—'}</span> },
     { key: 'gar',     header: 'Garantía', width: '85px',  align: 'center', render: r => <GarantiaBadge garantia={r.garantia} /> },
     {
@@ -223,7 +225,7 @@ export function LlamadasPage() {
       render: row => <EstadoBadge estado={row.estado} onClick={e => openPopover(e, row.id)} />,
     },
     { key: 'hora',    header: 'Hora',    width: '65px', align: 'center', render: r => <span style={{ fontFamily: 'var(--mono)', fontSize: '0.78rem', color: 'var(--muted)' }}>{r.hora || '—'}</span> },
-    { key: 'usuario', header: 'Registró', width: '100px', render: r => <span style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>{r.usuario || '—'}</span> },
+    { key: 'usuario', header: 'Registró', width: '80px', render: r => <span style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>{r.usuario ? r.usuario.split(' ')[0] : '—'}</span> },
     {
       key: 'del', header: '', width: '40px', align: 'center',
       render: r => (
@@ -348,8 +350,15 @@ export function LlamadasPage() {
                           background: 'linear-gradient(135deg,var(--accent),var(--accent2))', color: '#fff',
                         }}>{total}</span>
 
-                        {/* Nombre */}
-                        <span style={{ flex: 1, fontSize: '0.82rem', fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {/* Nombre — clic copia al portapapeles */}
+                        <span
+                          onClick={e => {
+                            e.stopPropagation()
+                            navigator.clipboard.writeText(cliente).then(() => toast.success(`"${cliente}" copiado`))
+                          }}
+                          title="Clic para copiar nombre"
+                          style={{ flex: 1, fontSize: '0.82rem', fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'copy' }}
+                        >
                           {cliente}
                         </span>
 
