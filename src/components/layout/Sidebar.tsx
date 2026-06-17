@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
   Phone, Package, DollarSign, Wrench, FlaskConical, FileText,
-  LogOut, ChevronLeft, Menu, Pencil,
+  LogOut, ChevronLeft, Menu, Pencil, ShieldCheck,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useSidebar } from './SidebarContext'
@@ -22,7 +22,7 @@ const NAV_ITEMS = [
 
 export function Sidebar() {
   const { collapsed, toggle } = useSidebar()
-  const { displayName, signOut, updateDisplayName } = useUser()
+  const { displayName, isAdmin, signOut, updateDisplayName } = useUser()
   const navigate = useNavigate()
   const [profileOpen, setProfileOpen] = useState(false)
   const [nombre, setNombre] = useState('')
@@ -152,6 +152,45 @@ export function Sidebar() {
             {!collapsed && <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>}
           </NavLink>
         ))}
+
+        {isAdmin && (
+          <>
+            {!collapsed && (
+              <div style={{
+                margin: '8px 16px 4px',
+                fontSize: '0.62rem', fontFamily: 'var(--mono)', fontWeight: 600,
+                color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.1em',
+                opacity: 0.6,
+              }}>
+                Admin
+              </div>
+            )}
+            {collapsed && <div style={{ height: 1, background: 'var(--border)', margin: '6px 10px' }} />}
+            <NavLink
+              to="/admin"
+              title={collapsed ? 'Administración' : undefined}
+              style={({ isActive }) => ({
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                padding: collapsed ? '11px 0' : '10px 16px',
+                justifyContent: collapsed ? 'center' : 'flex-start',
+                textDecoration: 'none',
+                fontSize: '0.875rem',
+                fontWeight: 500,
+                color: isActive ? 'var(--purple)' : 'var(--muted)',
+                background: isActive ? 'var(--purple-bg)' : 'transparent',
+                borderLeft: isActive ? '3px solid var(--purple)' : '3px solid transparent',
+                transition: 'all 0.14s',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+              })}
+            >
+              <ShieldCheck size={18} style={{ flexShrink: 0 }} />
+              {!collapsed && <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>Administración</span>}
+            </NavLink>
+          </>
+        )}
       </nav>
 
       {/* Footer */}

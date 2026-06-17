@@ -4,6 +4,7 @@ import { Toaster } from 'sonner'
 import { queryClient } from './lib/queryClient'
 import { UserProvider } from './hooks/useUser'
 import { AuthGuard } from './components/auth/AuthGuard'
+import { AdminGuard } from './components/auth/AdminGuard'
 import { LoginPage } from './components/auth/LoginPage'
 import { AppLayout } from './components/layout/AppLayout'
 import { LlamadasPage } from './modules/llamadas/LlamadasPage'
@@ -12,6 +13,7 @@ import { TarifasPage } from './modules/tarifas/TarifasPage'
 import { CodigosPage } from './modules/codigos/CodigosPage'
 import { PhPage } from './modules/ph/PhPage'
 import { EditorPage } from './modules/editor/EditorPage'
+import { AdminPage } from './modules/admin/AdminPage'
 
 export default function App() {
   return (
@@ -34,6 +36,14 @@ export default function App() {
               <Route path="/codigos"     element={<CodigosPage />} />
               <Route path="/ph"          element={<PhPage />} />
               <Route path="/editor"      element={<EditorPage />} />
+              <Route
+                path="/admin"
+                element={
+                  <AdminGuard>
+                    <AdminPage />
+                  </AdminGuard>
+                }
+              />
             </Route>
           </Routes>
         </BrowserRouter>

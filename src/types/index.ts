@@ -1,5 +1,16 @@
 export type EstadoLlamada = 'CIERRE' | 'CONTACTADO' | 'SIN CONTACTO' | 'NO LLAMADO' | ''
 
+export type UserRole = 'admin' | 'user'
+
+export interface Profile {
+  id: string
+  email: string
+  full_name: string | null
+  role: UserRole
+  activo: boolean
+  created_at: string
+}
+
 export interface LlamadaDiario {
   id: string
   otst: string
