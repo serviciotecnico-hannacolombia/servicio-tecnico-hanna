@@ -12,6 +12,7 @@ interface UserContextValue {
   loading: boolean
   signOut: () => Promise<void>
   updateDisplayName: (name: string) => Promise<void>
+  updateAvatar: (emoji: string | null, color: string | null) => Promise<void>
   refreshProfile: () => Promise<void>
 }
 
@@ -24,6 +25,7 @@ const UserContext = createContext<UserContextValue>({
   loading: true,
   signOut: async () => {},
   updateDisplayName: async () => {},
+  updateAvatar: async () => {},
   refreshProfile: async () => {},
 })
 
@@ -93,13 +95,23 @@ export function UserProvider({ children }: { children: ReactNode }) {
     if (data.user) setProfile(await fetchProfileById(data.user.id))
   }
 
+  const updateAvatar = async (emoji: string | null, color: string | null) => {
+    if (!user) return
+    const { error } = await supabase
+      .from('profiles')
+      .update({ avatar_emoji: emoji, avatar_color: color })
+      .eq('id', user.id)
+    if (error) throw error
+    setProfile(prev => prev ? { ...prev, avatar_emoji: emoji, avatar_color: color } : null)
+  }
+
   const refreshProfile = async () => {
     if (user) setProfile(await fetchProfileById(user.id))
   }
 
   return createElement(
     UserContext.Provider,
-    { value: { user, profile, displayName, role, isAdmin, loading, signOut, updateDisplayName, refreshProfile } },
+    { value: { user, profile, displayName, role, isAdmin, loading, signOut, updateDisplayName, updateAvatar, refreshProfile } },
     children
   )
 }

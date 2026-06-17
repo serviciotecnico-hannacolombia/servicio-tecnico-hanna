@@ -8,11 +8,13 @@ import { StatCard } from '../../components/ui/StatCard'
 import { Table, type Column } from '../../components/ui/Table'
 import { Modal } from '../../components/ui/Modal'
 import { Spinner } from '../../components/ui/Spinner'
+import { Avatar } from '../../components/ui/Avatar'
 import { AddLlamadaModal } from './components/AddLlamadaModal'
 import { ImportCSVModal } from './components/ImportCSVModal'
 import { HistorialSection } from './components/HistorialSection'
 import { useLlamadasDiario } from './hooks/useLlamadasDiario'
 import { useUser } from '../../hooks/useUser'
+import { useProfiles } from '../../hooks/useProfiles'
 import { INTRANET_URL } from '../../lib/constants'
 import type { LlamadaDiario, EstadoLlamada } from '../../types'
 
@@ -97,6 +99,7 @@ export function LlamadasPage() {
   const [filtroGarantia, setFiltroGarantia] = useState(false)
   const [filtroIngeniero, setFiltroIngeniero] = useState<string | null>(null)
   const { displayName } = useUser()
+  const { data: profiles = [] } = useProfiles()
   const { data: llamadas = [], isLoading, importCSV, addLlamada, updateEstado, marcarVaciosNoLlamado, deleteLlamada, archivarDia } = useLlamadasDiario()
 
   // Stats
@@ -394,17 +397,16 @@ export function LlamadasPage() {
                   {scores.map((u, i) => {
                     const maxPts = Math.max(1, scores[0].pts)
                     const esLider = i === 0 && u.pts > 0
+                    const perfil = profiles.find(p => p.full_name === u.nombre)
                     return (
                       <div key={u.nombre} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: i < scores.length - 1 ? 12 : 0 }}>
-                        <div style={{
-                          width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: '0.7rem', fontWeight: 800, color: '#fff', letterSpacing: '-0.5px',
-                          background: esLider ? 'linear-gradient(135deg,#d97706,#f59e0b)' : 'linear-gradient(135deg,var(--accent),var(--accent2))',
-                          boxShadow: esLider ? '0 0 0 2px #fde68a' : 'none',
-                        }}>
-                          {u.nombre.slice(0, 2).toUpperCase()}
-                        </div>
+                        <Avatar
+                          name={u.nombre}
+                          emoji={perfil?.avatar_emoji}
+                          color={perfil?.avatar_color ?? (esLider ? '#d97706' : undefined)}
+                          size={30}
+                          ring={esLider}
+                        />
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontSize: '0.82rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
                             {u.nombre}{esLider && ' 👑'}

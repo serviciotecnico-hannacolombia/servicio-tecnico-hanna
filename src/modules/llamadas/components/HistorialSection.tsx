@@ -73,9 +73,10 @@ function Chip({ label, active, onClick }: { label: string; active?: boolean; onC
   return (
     <button onClick={onClick} style={{
       padding: '5px 12px', borderRadius: 20, fontSize: '0.75rem', cursor: 'pointer',
-      fontFamily: 'DM Mono, monospace', fontWeight: active ? 600 : 500, border: '1px solid',
-      borderColor: active ? '#005eb8' : '#dde3ed',
-      background: active ? '#005eb8' : '#fff', color: active ? '#fff' : '#6b7a99',
+      fontFamily: 'var(--mono)', fontWeight: active ? 600 : 500, border: '1px solid',
+      borderColor: active ? 'var(--accent)' : 'var(--border)',
+      background: active ? 'var(--accent)' : 'var(--surface)',
+      color: active ? '#fff' : 'var(--muted)',
       transition: 'all .12s',
     }}>{label}</button>
   )
@@ -83,14 +84,17 @@ function Chip({ label, active, onClick }: { label: string; active?: boolean; onC
 
 // ─── Componente principal ──────────────────────────────────────────────────────
 export function HistorialSection() {
-  const [subTab, setSubTab]       = useState<SubTab>('resumen')
-  const [desde, setDesde]         = useState(daysAgo(30))
-  const [hasta, setHasta]         = useState(HOY)
-  const [filtroIng, setFiltroIng] = useState('')
-  const [filtroEst, setFiltroEst] = useState('')
-  const [filtroUsr, setFiltroUsr] = useState('')
-  const [busqueda, setBusqueda]   = useState('')
-  const [page, setPage]           = useState(1)
+  type QuickRange = 7 | 30 | 90 | 'mes' | 'todo' | null
+
+  const [subTab, setSubTab]           = useState<SubTab>('resumen')
+  const [desde, setDesde]             = useState(daysAgo(30))
+  const [hasta, setHasta]             = useState(HOY)
+  const [activeRange, setActiveRange] = useState<QuickRange>(30)
+  const [filtroIng, setFiltroIng]     = useState('')
+  const [filtroEst, setFiltroEst]     = useState('')
+  const [filtroUsr, setFiltroUsr]     = useState('')
+  const [busqueda, setBusqueda]       = useState('')
+  const [page, setPage]               = useState(1)
   const PAGE = 50
 
   const { data: todos = [], isLoading } = useHistorial(desde, hasta)
@@ -184,7 +188,10 @@ export function HistorialSection() {
   const paginated  = filtrados.slice((page - 1) * PAGE, page * PAGE)
 
   const quickRange = (q: number | 'mes' | 'todo') => {
-    setPage(1); const hoy = new Date(); setHasta(HOY)
+    setPage(1)
+    setActiveRange(q as QuickRange)
+    const hoy = new Date()
+    setHasta(HOY)
     if (q === 'todo') { setDesde('2020-01-01'); return }
     if (q === 'mes')  { setDesde(new Date(hoy.getFullYear(), hoy.getMonth(), 1).toISOString().split('T')[0]); return }
     setDesde(daysAgo(q as number))
@@ -197,16 +204,20 @@ export function HistorialSection() {
     const csv  = [headers, ...rows].map(r => r.map(esc).join(',')).join('\r\n')
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
     const url  = URL.createObjectURL(blob)
-    const a = document.createElement('a'); a.href = url; a.download = `historico_${desde}_${hasta}.csv`
+    const parts = [`historico`, desde, hasta]
+    if (filtroIng) parts.push(filtroIng.split(' ')[0])
+    if (filtroEst) parts.push(filtroEst.replace(' ', '-'))
+    if (filtroUsr) parts.push(filtroUsr.split(' ')[0])
+    const a = document.createElement('a'); a.href = url; a.download = `${parts.join('_')}.csv`
     document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url)
   }
 
   const inputStyle = {
-    padding: '6px 10px', border: '1.5px solid #dde3ed', borderRadius: 8,
-    background: '#fff', color: '#0a0f1a', fontSize: '0.82rem',
-    fontFamily: 'Plus Jakarta Sans, sans-serif', cursor: 'pointer',
+    padding: '6px 10px', border: '1.5px solid var(--border)', borderRadius: 8,
+    background: 'var(--surface)', color: 'var(--text)', fontSize: '0.82rem',
+    fontFamily: 'var(--sans)', cursor: 'pointer',
   }
-  const labelStyle = { fontSize: '0.68rem', color: '#6b7a99', textTransform: 'uppercase' as const, fontFamily: 'DM Mono, monospace', letterSpacing: '0.08em', fontWeight: 600, display: 'block', marginBottom: 3 }
+  const labelStyle = { fontSize: '0.68rem', color: 'var(--muted)', textTransform: 'uppercase' as const, fontFamily: 'var(--mono)', letterSpacing: '0.08em', fontWeight: 600, display: 'block', marginBottom: 3 }
 
   // ── Columnas tabla histórico ──────────────────────────────────────────────
   const tablaColumns: Column<LlamadaHistorico>[] = [
@@ -267,18 +278,39 @@ export function HistorialSection() {
       {/* Filtro de fecha */}
       <Card bodyStyle={{ padding: '14px 18px' }}>
         <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-          <div><label style={labelStyle}>Desde</label><input type="date" value={desde} style={inputStyle} onChange={e => { setDesde(e.target.value); setPage(1) }} /></div>
-          <div><label style={labelStyle}>Hasta</label><input type="date" value={hasta} style={inputStyle} onChange={e => { setHasta(e.target.value); setPage(1) }} /></div>
+          <div>
+            <label style={labelStyle}>Desde</label>
+            <input type="date" value={desde} style={inputStyle} onChange={e => { setDesde(e.target.value); setPage(1); setActiveRange(null) }} />
+          </div>
+          <div>
+            <label style={labelStyle}>Hasta</label>
+            <input type="date" value={hasta} style={inputStyle} onChange={e => { setHasta(e.target.value); setPage(1); setActiveRange(null) }} />
+          </div>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-            {([7, 30, 90] as const).map(n => <Chip key={n} label={`Últimos ${n} días`} onClick={() => quickRange(n)} />)}
-            <Chip label="Este mes" onClick={() => quickRange('mes')} />
-            <Chip label="Todo el histórico" onClick={() => quickRange('todo')} />
+            {([7, 30, 90] as const).map(n => (
+              <Chip key={n} label={`Últimos ${n} días`} active={activeRange === n} onClick={() => quickRange(n)} />
+            ))}
+            <Chip label="Este mes"        active={activeRange === 'mes'}  onClick={() => quickRange('mes')} />
+            <Chip label="Todo el historial" active={activeRange === 'todo'} onClick={() => quickRange('todo')} />
           </div>
           {todos.length > 0 && (
-            <span style={{ marginLeft: 'auto', fontSize: '0.75rem', color: '#6b7a99', fontFamily: 'DM Mono, monospace', alignSelf: 'center' }}>
-              {todos.length} registros · {kpis.dias} días
+            <span style={{ fontSize: '0.75rem', color: 'var(--muted)', fontFamily: 'var(--mono)', alignSelf: 'center' }}>
+              {todos.length} registro{todos.length !== 1 ? 's' : ''} · {kpis.dias} día{kpis.dias !== 1 ? 's' : ''}
             </span>
           )}
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={exportCSV}
+            disabled={filtrados.length === 0}
+            style={{ marginLeft: 'auto', flexShrink: 0 }}
+            title={filtrados.length !== todos.length ? `Exportando ${filtrados.length} de ${todos.length} (con filtros activos)` : `Exportar ${filtrados.length} registros`}
+          >
+            <Download size={14} />
+            CSV{filtrados.length !== todos.length
+              ? ` · ${filtrados.length} filtrados`
+              : filtrados.length > 0 ? ` · ${filtrados.length}` : ''}
+          </Button>
         </div>
       </Card>
 
@@ -443,9 +475,6 @@ export function HistorialSection() {
                       {usuarios.map(u => <option key={u} value={u}>{u}</option>)}
                     </select>
                   </div>
-                  <Button size="sm" onClick={exportCSV} disabled={filtrados.length === 0}>
-                    <Download size={14} /> Exportar CSV
-                  </Button>
                 </div>
                 <div style={{ marginTop: 8, fontSize: '0.75rem', color: '#6b7a99', fontFamily: 'DM Mono, monospace' }}>
                   {filtrados.length} registro{filtrados.length !== 1 ? 's' : ''}{filtrados.length !== todos.length && ` de ${todos.length}`}

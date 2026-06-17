@@ -4,26 +4,12 @@ import { UserPlus, Shield, Users, UserX, Trash2 } from 'lucide-react'
 import { Header } from '../../components/layout/Header'
 import { Card } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
+import { Avatar } from '../../components/ui/Avatar'
 import { Spinner } from '../../components/ui/Spinner'
 import { CreateUserModal } from './components/CreateUserModal'
 import { useUsers } from './hooks/useUsers'
 import { useUser } from '../../hooks/useUser'
 import type { Profile, UserRole } from '../../types'
-
-function Avatar({ name, role }: { name: string; role: UserRole }) {
-  return (
-    <div style={{
-      width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontSize: '0.75rem', fontWeight: 800, color: '#fff',
-      background: role === 'admin'
-        ? 'linear-gradient(135deg,#7c3aed,#a855f7)'
-        : 'linear-gradient(135deg,var(--accent),var(--accent2))',
-    }}>
-      {(name || '?').slice(0, 2).toUpperCase()}
-    </div>
-  )
-}
 
 function RoleBadge({ role }: { role: UserRole }) {
   const isAdmin = role === 'admin'
@@ -188,7 +174,12 @@ export function AdminPage() {
                       {/* Usuario */}
                       <td style={{ padding: '12px 16px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <Avatar name={name} role={u.role} />
+                          <Avatar
+                            name={name}
+                            emoji={u.avatar_emoji}
+                            color={u.avatar_color ?? (u.role === 'admin' ? '#7c3aed' : undefined)}
+                            size={36}
+                          />
                           <div>
                             <div style={{ fontWeight: 600, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 6 }}>
                               {name}

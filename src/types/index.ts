@@ -8,6 +8,8 @@ export interface Profile {
   full_name: string | null
   role: UserRole
   activo: boolean
+  avatar_emoji: string | null
+  avatar_color: string | null
   created_at: string
 }
 

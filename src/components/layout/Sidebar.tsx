@@ -10,6 +10,7 @@ import { useUser } from '../../hooks/useUser'
 import { Modal } from '../ui/Modal'
 import { Input } from '../ui/Input'
 import { Button } from '../ui/Button'
+import { Avatar } from '../ui/Avatar'
 
 const NAV_ITEMS = [
   { to: '/llamadas',    label: 'Control Llamadas',   icon: Phone        },
@@ -20,26 +21,53 @@ const NAV_ITEMS = [
   { to: '/editor',      label: 'Editor de Informes', icon: FileText     },
 ]
 
+const ANIMALS = [
+  '🐶','🐱','🐰','🦊','🐻','🐼','🐨','🐯',
+  '🦁','🐮','🐸','🐙','🦋','🦄','🐬','🦅',
+  '🦉','🐧','🦜','🐢','🦈','🐳','🦭','🐘',
+]
+
+const AVATAR_COLORS = [
+  { value: '#005eb8', label: 'Azul'     },
+  { value: '#7c3aed', label: 'Morado'   },
+  { value: '#16a34a', label: 'Verde'    },
+  { value: '#ea580c', label: 'Naranja'  },
+  { value: '#db2777', label: 'Rosa'     },
+  { value: '#0891b2', label: 'Teal'     },
+  { value: '#dc2626', label: 'Rojo'     },
+  { value: '#334155', label: 'Oscuro'   },
+]
+
 export function Sidebar() {
   const { collapsed, toggle } = useSidebar()
-  const { displayName, isAdmin, signOut, updateDisplayName } = useUser()
+  const { displayName, profile, isAdmin, signOut, updateDisplayName, updateAvatar } = useUser()
   const navigate = useNavigate()
   const [profileOpen, setProfileOpen] = useState(false)
   const [nombre, setNombre] = useState('')
+  const [selectedEmoji, setSelectedEmoji] = useState<string | null>(null)
+  const [selectedColor, setSelectedColor] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
-  const openProfile = () => { setNombre(displayName); setProfileOpen(true) }
+  const openProfile = () => {
+    setNombre(displayName)
+    setSelectedEmoji(profile?.avatar_emoji ?? null)
+    setSelectedColor(profile?.avatar_color ?? null)
+    setProfileOpen(true)
+  }
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!nombre.trim()) return
     setSaving(true)
     try {
-      await updateDisplayName(nombre.trim())
-      toast.success('Nombre actualizado')
+      await Promise.all([
+        updateDisplayName(nombre.trim()),
+        updateAvatar(selectedEmoji, selectedColor),
+      ])
+      toast.success('Perfil actualizado')
       setProfileOpen(false)
     } catch {
-      toast.error('Error al actualizar el nombre')
+      toast.error('Error al guardar el perfil')
     } finally {
       setSaving(false)
     }
@@ -198,9 +226,9 @@ export function Sidebar() {
         {!collapsed && displayName && (
           <button
             onClick={openProfile}
-            title="Editar nombre"
+            title="Editar perfil"
             style={{
-              display: 'flex', alignItems: 'center', gap: 6, width: '100%',
+              display: 'flex', alignItems: 'center', gap: 8, width: '100%',
               padding: '6px 4px', border: 'none', borderRadius: 'var(--radius-sm)',
               background: 'transparent', cursor: 'pointer', marginBottom: 8,
               textAlign: 'left',
@@ -208,17 +236,34 @@ export function Sidebar() {
             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--surface2)' }}
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
           >
-            <div style={{
-              width: 26, height: 26, borderRadius: '50%', background: 'linear-gradient(135deg,var(--accent),var(--accent2))',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '0.65rem', fontWeight: 800, color: '#fff', flexShrink: 0,
-            }}>
-              {displayName.slice(0, 2).toUpperCase()}
-            </div>
+            <Avatar
+              name={displayName}
+              emoji={profile?.avatar_emoji}
+              color={profile?.avatar_color}
+              size={26}
+            />
             <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {displayName}
             </span>
             <Pencil size={12} style={{ color: 'var(--muted)', flexShrink: 0 }} />
+          </button>
+        )}
+        {collapsed && displayName && (
+          <button
+            onClick={openProfile}
+            title="Editar perfil"
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              width: '100%', padding: '4px 0', border: 'none',
+              background: 'transparent', cursor: 'pointer', marginBottom: 8,
+            }}
+          >
+            <Avatar
+              name={displayName}
+              emoji={profile?.avatar_emoji}
+              color={profile?.avatar_color}
+              size={28}
+            />
           </button>
         )}
         <button
@@ -237,25 +282,124 @@ export function Sidebar() {
       </div>
 
       {/* Modal de perfil */}
-      <Modal open={profileOpen} onClose={() => setProfileOpen(false)} title="Editar perfil">
-        <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <Modal open={profileOpen} onClose={() => setProfileOpen(false)} title="Editar perfil" width={500}>
+        <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+
+          {/* Preview */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+            <Avatar
+              name={nombre || displayName}
+              emoji={selectedEmoji}
+              color={selectedColor}
+              size={64}
+            />
+            <span style={{ fontSize: '0.72rem', color: 'var(--muted)', fontFamily: 'var(--mono)' }}>
+              Vista previa
+            </span>
+          </div>
+
+          {/* Nombre */}
           <Input
             label="Nombre completo"
             value={nombre}
             onChange={e => setNombre(e.target.value)}
             placeholder="Ej: Brayan Galeano"
             required
-            autoFocus
           />
-          <p style={{ fontSize: '0.78rem', color: 'var(--muted)', lineHeight: 1.5 }}>
-            Este nombre aparecerá en las llamadas que registres y en la carrera del día.
+
+          {/* Animal picker */}
+          <div>
+            <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--muted)', marginBottom: 10 }}>
+              Elige un animal
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: 6 }}>
+              {/* Opción "sin animal" */}
+              <button
+                type="button"
+                onClick={() => setSelectedEmoji(null)}
+                title="Sin animal (usar iniciales)"
+                style={{
+                  width: '100%', aspectRatio: '1', borderRadius: 10,
+                  border: `2px solid ${selectedEmoji === null ? 'var(--accent)' : 'var(--border)'}`,
+                  background: selectedEmoji === null ? 'var(--accent-bg)' : 'var(--surface2)',
+                  cursor: 'pointer', fontSize: '0.65rem', color: 'var(--muted)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'all .1s',
+                }}
+              >
+                {nombre ? nombre.slice(0, 2).toUpperCase() : '—'}
+              </button>
+              {ANIMALS.map(animal => (
+                <button
+                  key={animal}
+                  type="button"
+                  onClick={() => setSelectedEmoji(animal)}
+                  style={{
+                    width: '100%', aspectRatio: '1', borderRadius: 10, fontSize: '1.3rem',
+                    border: `2px solid ${selectedEmoji === animal ? 'var(--accent)' : 'var(--border)'}`,
+                    background: selectedEmoji === animal ? 'var(--accent-bg)' : 'var(--surface2)',
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'all .1s',
+                  }}
+                  onMouseEnter={e => { if (selectedEmoji !== animal) (e.currentTarget as HTMLElement).style.borderColor = 'var(--accent)' }}
+                  onMouseLeave={e => { if (selectedEmoji !== animal) (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)' }}
+                >
+                  {animal}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Color picker */}
+          <div>
+            <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--muted)', marginBottom: 10 }}>
+              Color de fondo
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {/* Opción "sin color" (gradient por defecto) */}
+              <button
+                type="button"
+                onClick={() => setSelectedColor(null)}
+                title="Color por defecto"
+                style={{
+                  width: 32, height: 32, borderRadius: '50%',
+                  background: 'linear-gradient(135deg, var(--accent), var(--accent2))',
+                  border: `3px solid ${selectedColor === null ? 'var(--text)' : 'transparent'}`,
+                  cursor: 'pointer', outline: selectedColor === null ? '2px solid var(--accent)' : 'none',
+                  outlineOffset: 2, transition: 'outline .1s',
+                  flexShrink: 0,
+                }}
+              />
+              {AVATAR_COLORS.map(({ value, label }) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setSelectedColor(value)}
+                  title={label}
+                  style={{
+                    width: 32, height: 32, borderRadius: '50%',
+                    background: value,
+                    border: '3px solid transparent',
+                    cursor: 'pointer',
+                    outline: selectedColor === value ? `2px solid ${value}` : 'none',
+                    outlineOffset: 2, transition: 'outline .1s',
+                    flexShrink: 0,
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+
+          <p style={{ fontSize: '0.75rem', color: 'var(--muted)', lineHeight: 1.5, margin: 0 }}>
+            Tu avatar aparecerá en el sidebar, la carrera del día y el panel de admin.
           </p>
+
           <div style={{ display: 'flex', gap: 8 }}>
             <Button type="button" variant="ghost" onClick={() => setProfileOpen(false)} style={{ flex: 1 }}>
               Cancelar
             </Button>
             <Button type="submit" disabled={saving || !nombre.trim()} style={{ flex: 2 }}>
-              {saving ? 'Guardando…' : 'Guardar nombre'}
+              {saving ? 'Guardando…' : 'Guardar perfil'}
             </Button>
           </div>
         </form>
