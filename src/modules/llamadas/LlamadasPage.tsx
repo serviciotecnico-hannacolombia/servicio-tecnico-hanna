@@ -127,6 +127,21 @@ export function LlamadasPage() {
 
   const garantiaCount = llamadas.filter(l => l.garantia === 'SI').length
 
+  // Clientes con múltiples OTSTs — ordenados por total desc
+  const clientesMultiples = useMemo(() => {
+    const map: Record<string, { total: number; pendientes: number }> = {}
+    llamadas.forEach(l => {
+      const k = l.cliente?.trim() || '(Sin cliente)'
+      if (!map[k]) map[k] = { total: 0, pendientes: 0 }
+      map[k].total++
+      if (!l.estado) map[k].pendientes++
+    })
+    return Object.entries(map)
+      .filter(([, v]) => v.total >= 2)
+      .sort((a, b) => b[1].total - a[1].total)
+      .map(([cliente, v]) => ({ cliente, ...v }))
+  }, [llamadas])
+
   // Filtros combinados
   const filtradas = useMemo(() => {
     return llamadas.filter(l => {
@@ -300,43 +315,104 @@ export function LlamadasPage() {
             <StatCard value={noLlamado}   label="No llamado"   sublabel="no se intentó hoy" color="red"   />
           </div>
 
-          {/* Carrera del día */}
-          {scores.some(s => s.pts > 0) && (
+          {/* Carrera + Multi-OTST */}
+          {(scores.some(s => s.pts > 0) || clientesMultiples.length > 0) && (
             <div style={{ display: 'flex', gap: 12, marginBottom: 18, flexWrap: 'wrap' }}>
-              <Card style={{ flex: 1 }} bodyStyle={{ padding: '14px 18px' }}>
-                <div style={{ fontSize: '0.68rem', fontFamily: 'var(--mono)', fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span>🏆</span> Carrera del día
-                </div>
-                {scores.map((u, i) => {
-                  const maxPts = Math.max(1, scores[0].pts)
-                  const esLider = i === 0 && u.pts > 0
-                  return (
-                    <div key={u.nombre} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: i < scores.length - 1 ? 12 : 0 }}>
-                      <div style={{
-                        width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: '0.7rem', fontWeight: 800, color: '#fff', letterSpacing: '-0.5px',
-                        background: esLider ? 'linear-gradient(135deg,#d97706,#f59e0b)' : 'linear-gradient(135deg,var(--accent),var(--accent2))',
-                        boxShadow: esLider ? '0 0 0 2px #fde68a' : 'none',
-                      }}>
-                        {u.nombre.slice(0, 2).toUpperCase()}
+              {/* Clientes con varias OTSTs */}
+              {clientesMultiples.length > 0 && (
+                <Card style={{ flex: 1, minWidth: 220 }} bodyStyle={{ padding: '14px 18px' }}>
+                  <div style={{ fontSize: '0.68rem', fontFamily: 'var(--mono)', fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span>📦</span> Oportunidades — cliente con varias OTSTs
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+                    {clientesMultiples.map(({ cliente, total, pendientes }) => (
+                      <button
+                        key={cliente}
+                        onClick={() => { setBusqueda(busqueda === cliente ? '' : cliente); setFiltroEstado('all') }}
+                        title={`Filtrar tabla por "${cliente}"`}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 8, width: '100%',
+                          padding: '7px 10px', borderRadius: 8, border: '1.5px solid',
+                          borderColor: busqueda === cliente ? 'var(--accent)' : 'var(--border)',
+                          background: busqueda === cliente ? 'var(--accent-bg)' : 'var(--surface2)',
+                          cursor: 'pointer', textAlign: 'left', transition: 'all .12s',
+                        }}
+                        onMouseEnter={e => { if (busqueda !== cliente) (e.currentTarget as HTMLElement).style.borderColor = 'var(--accent)' }}
+                        onMouseLeave={e => { if (busqueda !== cliente) (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)' }}
+                      >
+                        {/* Badge total */}
+                        <span style={{
+                          minWidth: 26, height: 26, borderRadius: '50%', flexShrink: 0,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: '0.75rem', fontWeight: 800, fontFamily: 'var(--mono)',
+                          background: 'linear-gradient(135deg,var(--accent),var(--accent2))', color: '#fff',
+                        }}>{total}</span>
+
+                        {/* Nombre */}
+                        <span style={{ flex: 1, fontSize: '0.82rem', fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {cliente}
+                        </span>
+
+                        {/* Pendientes */}
+                        {pendientes > 0 && (
+                          <span style={{
+                            fontSize: '0.68rem', fontFamily: 'var(--mono)', fontWeight: 700,
+                            padding: '2px 7px', borderRadius: 10,
+                            background: 'var(--yellow-bg)', color: 'var(--yellow)',
+                            border: '1px solid var(--yellow-border)', flexShrink: 0,
+                          }}>{pendientes} pend.</span>
+                        )}
+                        {pendientes === 0 && (
+                          <span style={{
+                            fontSize: '0.68rem', fontFamily: 'var(--mono)', fontWeight: 700,
+                            padding: '2px 7px', borderRadius: 10,
+                            background: 'var(--green-bg)', color: 'var(--green)',
+                            border: '1px solid var(--green-border)', flexShrink: 0,
+                          }}>✓ listas</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </Card>
+              )}
+
+              {/* Carrera del día */}
+              {scores.some(s => s.pts > 0) && (
+                <Card style={{ flex: 1 }} bodyStyle={{ padding: '14px 18px' }}>
+                  <div style={{ fontSize: '0.68rem', fontFamily: 'var(--mono)', fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span>🏆</span> Carrera del día
+                  </div>
+                  {scores.map((u, i) => {
+                    const maxPts = Math.max(1, scores[0].pts)
+                    const esLider = i === 0 && u.pts > 0
+                    return (
+                      <div key={u.nombre} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: i < scores.length - 1 ? 12 : 0 }}>
+                        <div style={{
+                          width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: '0.7rem', fontWeight: 800, color: '#fff', letterSpacing: '-0.5px',
+                          background: esLider ? 'linear-gradient(135deg,#d97706,#f59e0b)' : 'linear-gradient(135deg,var(--accent),var(--accent2))',
+                          boxShadow: esLider ? '0 0 0 2px #fde68a' : 'none',
+                        }}>
+                          {u.nombre.slice(0, 2).toUpperCase()}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: '0.82rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
+                            {u.nombre}{esLider && ' 👑'}
+                          </div>
+                          <div style={{ fontSize: '0.65rem', fontFamily: 'var(--mono)', color: 'var(--muted)', margin: '2px 0 4px' }}>
+                            {u.cierre}✅ · {u.contactado}📞 · {u.sinContacto}📵
+                          </div>
+                          <div style={{ height: 5, background: 'var(--surface2)', borderRadius: 4, overflow: 'hidden' }}>
+                            <div style={{ height: '100%', width: `${u.pts / maxPts * 100}%`, borderRadius: 4, background: esLider ? 'linear-gradient(90deg,#d97706,#f59e0b)' : 'linear-gradient(90deg,var(--accent),var(--accent2))', transition: 'width .6s' }} />
+                          </div>
+                        </div>
+                        <div style={{ fontSize: '1rem', fontWeight: 700, fontFamily: 'var(--mono)', color: esLider ? '#d97706' : 'var(--accent)', minWidth: 28, textAlign: 'right' }}>{u.pts}</div>
                       </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: '0.82rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
-                          {u.nombre}{esLider && ' 👑'}
-                        </div>
-                        <div style={{ fontSize: '0.65rem', fontFamily: 'var(--mono)', color: 'var(--muted)', margin: '2px 0 4px' }}>
-                          {u.cierre}✅ · {u.contactado}📞 · {u.sinContacto}📵
-                        </div>
-                        <div style={{ height: 5, background: 'var(--surface2)', borderRadius: 4, overflow: 'hidden' }}>
-                          <div style={{ height: '100%', width: `${u.pts / maxPts * 100}%`, borderRadius: 4, background: esLider ? 'linear-gradient(90deg,#d97706,#f59e0b)' : 'linear-gradient(90deg,var(--accent),var(--accent2))', transition: 'width .6s' }} />
-                        </div>
-                      </div>
-                      <div style={{ fontSize: '1rem', fontWeight: 700, fontFamily: 'var(--mono)', color: esLider ? '#d97706' : 'var(--accent)', minWidth: 28, textAlign: 'right' }}>{u.pts}</div>
-                    </div>
-                  )
-                })}
-              </Card>
+                    )
+                  })}
+                </Card>
+              )}
             </div>
           )}
 
