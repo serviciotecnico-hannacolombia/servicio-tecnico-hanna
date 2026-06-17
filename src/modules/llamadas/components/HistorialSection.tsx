@@ -391,7 +391,7 @@ export function HistorialSection() {
                       <Pie data={pieData} cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={2} dataKey="value">
                         {pieData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
                       </Pie>
-                      <Tooltip formatter={(v: number, name: string) => [`${v} (${kpis.total ? Math.round(v / kpis.total * 100) : 0}%)`, name]} />
+                      <Tooltip formatter={(v, name) => [`${v} (${kpis.total ? Math.round(Number(v) / kpis.total * 100) : 0}%)`, name as string]} />
                     </PieChart>
                   </ResponsiveContainer>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 14px', marginTop: 4, justifyContent: 'center' }}>

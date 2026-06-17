@@ -36,7 +36,7 @@ function parseCSV(text: string): CsvRow[] {
       otst:      (cols[0] ?? '').trim(),
       cliente:   (cols[1] ?? '').trim(),
       ingeniero: (cols[2] ?? '').trim(),
-      garantia:  (g === 'si' || g === 'sí' || g === 'yes') ? 'SI' : 'NO',
+      garantia:  ((g === 'si' || g === 'sí' || g === 'yes') ? 'SI' : 'NO') as 'SI' | 'NO',
     }
   }).filter(r => r.otst)
 }

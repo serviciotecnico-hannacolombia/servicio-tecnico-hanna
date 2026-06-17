@@ -20,13 +20,6 @@ import type { LlamadaDiario, EstadoLlamada } from '../../types'
 
 type Tab = 'hoy' | 'historial'
 
-const ESTADOS_OPTS = [
-  { value: '',              label: '— Sin marcar' },
-  { value: 'CIERRE',       label: '✅ Cierre' },
-  { value: 'CONTACTADO',   label: '📞 Contactado' },
-  { value: 'SIN CONTACTO', label: '📵 Sin contacto' },
-  { value: 'NO LLAMADO',   label: '⏭ No llamado' },
-]
 
 const PUNTOS: Record<string, number> = { 'CIERRE': 3, 'CONTACTADO': 2, 'SIN CONTACTO': 1 }
 
