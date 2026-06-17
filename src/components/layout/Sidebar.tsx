@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
+import logo from '../../assets/logo.svg'
 import {
   Phone, Package, DollarSign, Wrench, FlaskConical, FileText,
   LogOut, ChevronLeft, Menu, Pencil, ShieldCheck,
@@ -110,21 +111,18 @@ export function Sidebar() {
       }}>
         {!collapsed && (
           <div style={{ overflow: 'hidden' }}>
-            <div style={{
-              fontWeight: 800,
-              fontSize: '1rem',
-              color: 'var(--accent)',
-              letterSpacing: '0.05em',
-              whiteSpace: 'nowrap',
-            }}>
-              HANNA
-            </div>
+            <img
+              src={logo}
+              alt="Hanna Instruments"
+              style={{ height: 28, width: 'auto', display: 'block' }}
+            />
             <div style={{
               fontSize: '0.65rem',
               color: 'var(--muted)',
               fontFamily: 'var(--mono)',
               textTransform: 'uppercase',
               letterSpacing: '0.1em',
+              marginTop: 4,
               whiteSpace: 'nowrap',
             }}>
               Servicio Técnico
