@@ -7,6 +7,7 @@ interface UserContextValue {
   displayName: string
   loading: boolean
   signOut: () => Promise<void>
+  updateDisplayName: (name: string) => Promise<void>
 }
 
 const UserContext = createContext<UserContextValue>({
@@ -14,6 +15,7 @@ const UserContext = createContext<UserContextValue>({
   displayName: '',
   loading: true,
   signOut: async () => {},
+  updateDisplayName: async () => {},
 })
 
 export function UserProvider({ children }: { children: ReactNode }) {
@@ -34,13 +36,19 @@ export function UserProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe()
   }, [])
 
-  const displayName = user?.email?.split('@')[0] ?? ''
+  const displayName = user?.user_metadata?.full_name ?? user?.email?.split('@')[0] ?? ''
 
   const signOut = async () => {
     await supabase.auth.signOut()
   }
 
-  return createElement(UserContext.Provider, { value: { user, displayName, loading, signOut } }, children)
+  const updateDisplayName = async (name: string) => {
+    const { data, error } = await supabase.auth.updateUser({ data: { full_name: name } })
+    if (error) throw error
+    setUser(data.user)
+  }
+
+  return createElement(UserContext.Provider, { value: { user, displayName, loading, signOut, updateDisplayName } }, children)
 }
 
 export function useUser(): UserContextValue {

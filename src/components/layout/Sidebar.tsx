@@ -1,10 +1,15 @@
+import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
   Phone, Package, DollarSign, Wrench, FlaskConical, FileText,
-  LogOut, ChevronLeft, Menu,
+  LogOut, ChevronLeft, Menu, Pencil,
 } from 'lucide-react'
+import { toast } from 'sonner'
 import { useSidebar } from './SidebarContext'
 import { useUser } from '../../hooks/useUser'
+import { Modal } from '../ui/Modal'
+import { Input } from '../ui/Input'
+import { Button } from '../ui/Button'
 
 const NAV_ITEMS = [
   { to: '/llamadas',    label: 'Control Llamadas',   icon: Phone        },
@@ -17,8 +22,28 @@ const NAV_ITEMS = [
 
 export function Sidebar() {
   const { collapsed, toggle } = useSidebar()
-  const { displayName, signOut } = useUser()
+  const { displayName, signOut, updateDisplayName } = useUser()
   const navigate = useNavigate()
+  const [profileOpen, setProfileOpen] = useState(false)
+  const [nombre, setNombre] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  const openProfile = () => { setNombre(displayName); setProfileOpen(true) }
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!nombre.trim()) return
+    setSaving(true)
+    try {
+      await updateDisplayName(nombre.trim())
+      toast.success('Nombre actualizado')
+      setProfileOpen(false)
+    } catch {
+      toast.error('Error al actualizar el nombre')
+    } finally {
+      setSaving(false)
+    }
+  }
 
   const handleSignOut = async () => {
     await signOut()
@@ -130,49 +155,72 @@ export function Sidebar() {
       </nav>
 
       {/* Footer */}
-      <div style={{
-        padding: collapsed ? '12px 0' : '14px 12px',
-        borderTop: '1px solid var(--border)',
-        flexShrink: 0,
-      }}>
+      <div style={{ padding: collapsed ? '12px 0' : '14px 12px', borderTop: '1px solid var(--border)', flexShrink: 0 }}>
         {!collapsed && displayName && (
-          <div style={{
-            fontSize: '0.8rem',
-            fontWeight: 600,
-            color: 'var(--text)',
-            marginBottom: 8,
-            padding: '0 4px',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-          }}>
-            {displayName}
-          </div>
+          <button
+            onClick={openProfile}
+            title="Editar nombre"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6, width: '100%',
+              padding: '6px 4px', border: 'none', borderRadius: 'var(--radius-sm)',
+              background: 'transparent', cursor: 'pointer', marginBottom: 8,
+              textAlign: 'left',
+            }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--surface2)' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
+          >
+            <div style={{
+              width: 26, height: 26, borderRadius: '50%', background: 'linear-gradient(135deg,var(--accent),var(--accent2))',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '0.65rem', fontWeight: 800, color: '#fff', flexShrink: 0,
+            }}>
+              {displayName.slice(0, 2).toUpperCase()}
+            </div>
+            <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {displayName}
+            </span>
+            <Pencil size={12} style={{ color: 'var(--muted)', flexShrink: 0 }} />
+          </button>
         )}
         <button
           onClick={handleSignOut}
           title="Cerrar sesión"
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: collapsed ? 'center' : 'flex-start',
-            gap: 6,
-            width: '100%',
-            padding: '7px 10px',
-            border: 'none',
-            borderRadius: 'var(--radius-sm)',
-            background: 'var(--red-bg)',
-            color: 'var(--red)',
-            fontSize: '0.8rem',
-            fontWeight: 600,
-            cursor: 'pointer',
-            fontFamily: 'var(--sans)',
+            display: 'flex', alignItems: 'center', justifyContent: collapsed ? 'center' : 'flex-start',
+            gap: 6, width: '100%', padding: '7px 10px', border: 'none',
+            borderRadius: 'var(--radius-sm)', background: 'var(--red-bg)', color: 'var(--red)',
+            fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--sans)',
           }}
         >
           <LogOut size={15} style={{ flexShrink: 0 }} />
           {!collapsed && 'Cerrar sesión'}
         </button>
       </div>
+
+      {/* Modal de perfil */}
+      <Modal open={profileOpen} onClose={() => setProfileOpen(false)} title="Editar perfil">
+        <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <Input
+            label="Nombre completo"
+            value={nombre}
+            onChange={e => setNombre(e.target.value)}
+            placeholder="Ej: Brayan Galeano"
+            required
+            autoFocus
+          />
+          <p style={{ fontSize: '0.78rem', color: 'var(--muted)', lineHeight: 1.5 }}>
+            Este nombre aparecerá en las llamadas que registres y en la carrera del día.
+          </p>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <Button type="button" variant="ghost" onClick={() => setProfileOpen(false)} style={{ flex: 1 }}>
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={saving || !nombre.trim()} style={{ flex: 2 }}>
+              {saving ? 'Guardando…' : 'Guardar nombre'}
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </aside>
   )
 }
