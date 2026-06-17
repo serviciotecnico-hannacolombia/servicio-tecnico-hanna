@@ -3,7 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import logo from '../../assets/logo.svg'
 import {
   Phone, Package, DollarSign, Wrench, FlaskConical, FileText,
-  LogOut, ChevronLeft, Menu, Pencil, ShieldCheck,
+  LogOut, Pencil, ShieldCheck,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useSidebar } from './SidebarContext'
@@ -12,6 +12,40 @@ import { Modal } from '../ui/Modal'
 import { Input } from '../ui/Input'
 import { Button } from '../ui/Button'
 import { Avatar } from '../ui/Avatar'
+
+// ── Hamburger animado ────────────────────────────────────────────────────────
+// open=false → 3 líneas (hamburguesa)   open=true → X (cerrar)
+function HamburgerIcon({ open }: { open: boolean }) {
+  const T = 'transform 0.24s cubic-bezier(.4,0,.2,1), opacity 0.18s ease'
+  const bar = (extra: React.CSSProperties): React.CSSProperties => ({
+    position: 'absolute',
+    left: 0,
+    width: 16,
+    height: 1.5,
+    background: 'currentColor',
+    borderRadius: 1,
+    transition: T,
+    ...extra,
+  })
+
+  return (
+    <div style={{ position: 'relative', width: 16, height: 12 }}>
+      <span style={bar({
+        top: 0,
+        transform: open ? 'translateY(5.25px) rotate(45deg)' : 'none',
+      })} />
+      <span style={bar({
+        top: 5.25,
+        opacity: open ? 0 : 1,
+        transform: open ? 'scaleX(0)' : 'none',
+      })} />
+      <span style={bar({
+        bottom: 0,
+        transform: open ? 'translateY(-5.25px) rotate(-45deg)' : 'none',
+      })} />
+    </div>
+  )
+}
 
 const NAV_ITEMS = [
   { to: '/llamadas',    label: 'Control Llamadas',   icon: Phone        },
@@ -144,9 +178,12 @@ export function Sidebar() {
             alignItems: 'center',
             justifyContent: 'center',
             flexShrink: 0,
+            transition: 'background 0.14s',
           }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--accent-bg)'; (e.currentTarget as HTMLElement).style.color = 'var(--accent)' }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'var(--surface2)'; (e.currentTarget as HTMLElement).style.color = 'var(--muted)' }}
         >
-          {collapsed ? <Menu size={16} /> : <ChevronLeft size={16} />}
+          <HamburgerIcon open={!collapsed} />
         </button>
       </div>
 

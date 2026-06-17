@@ -7,6 +7,7 @@ import { useUser } from '../../hooks/useUser'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
 import { Spinner } from '../ui/Spinner'
+import logo from '../../assets/logo.svg'
 
 export function LoginPage() {
   const { user, loading } = useUser()
@@ -61,22 +62,18 @@ export function LoginPage() {
       }}>
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: '36px' }}>
-          <div style={{
-            fontSize: '2.2rem',
-            fontWeight: 900,
-            color: 'var(--accent)',
-            letterSpacing: '0.08em',
-            lineHeight: 1,
-          }}>
-            HANNA
-          </div>
+          <img
+            src={logo}
+            alt="Hanna Instruments"
+            style={{ height: 42, width: 'auto', display: 'block', margin: '0 auto' }}
+          />
           <div style={{
             fontSize: '0.7rem',
             color: 'var(--muted)',
             fontFamily: 'var(--mono)',
             textTransform: 'uppercase',
             letterSpacing: '0.14em',
-            marginTop: '6px',
+            marginTop: '10px',
           }}>
             Servicio Técnico · Intranet
           </div>
