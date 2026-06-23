@@ -24,8 +24,15 @@ export function useLlamadasDiario() {
   useEffect(() => {
     const channel = supabase
       .channel('llamadas-diario-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'llamadas_diario' }, () => {
-        qc.invalidateQueries({ queryKey: ['llamadas-diario', fecha] })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'llamadas_diario' }, (payload) => {
+        if (payload.eventType === 'UPDATE') {
+          qc.setQueryData(['llamadas-diario', fecha], (old: LlamadaDiario[] | undefined) => {
+            if (!old) return old
+            return old.map(l => l.id === (payload.new as LlamadaDiario).id ? { ...l, ...(payload.new as LlamadaDiario) } : l)
+          })
+        } else {
+          qc.invalidateQueries({ queryKey: ['llamadas-diario', fecha] })
+        }
       })
       .subscribe()
     return () => { supabase.removeChannel(channel) }
@@ -66,8 +73,14 @@ export function useLlamadasDiario() {
         .update({ estado, usuario: estado ? usuario : '', hora, updated_at: new Date().toISOString() })
         .eq('id', id)
       if (error) throw error
+      return { id, estado, usuario: estado ? usuario : '', hora }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['llamadas-diario', fecha] }),
+    onSuccess: ({ id, estado, usuario, hora }) => {
+      qc.setQueryData(['llamadas-diario', fecha], (old: LlamadaDiario[] | undefined) => {
+        if (!old) return old
+        return old.map(l => l.id === id ? { ...l, estado, usuario, hora } : l)
+      })
+    },
   })
 
   const marcarVaciosNoLlamado = useMutation({

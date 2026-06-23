@@ -346,15 +346,7 @@ export function LlamadasPage() {
                           background: 'linear-gradient(135deg,var(--accent),var(--accent2))', color: '#fff',
                         }}>{total}</span>
 
-                        {/* Nombre — clic copia al portapapeles */}
-                        <span
-                          onClick={e => {
-                            e.stopPropagation()
-                            navigator.clipboard.writeText(cliente).then(() => toast.success(`"${cliente}" copiado`))
-                          }}
-                          title="Clic para copiar nombre"
-                          style={{ flex: 1, fontSize: '0.82rem', fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'copy' }}
-                        >
+                        <span style={{ flex: 1, fontSize: '0.82rem', fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {cliente}
                         </span>
 
