@@ -3,7 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import logo from '../../assets/logo.svg'
 import {
   Phone, Package, DollarSign, Wrench, FlaskConical, FileText,
-  LogOut, Pencil, ShieldCheck,
+  LogOut, Pencil, ShieldCheck, BarChart2,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useSidebar } from './SidebarContext'
@@ -53,7 +53,8 @@ const NAV_ITEMS = [
   { to: '/tarifas',     label: 'Tarifas de Envío',   icon: DollarSign   },
   { to: '/codigos',     label: 'Códigos y Partes',   icon: Wrench       },
   { to: '/ph',          label: 'Pendiente de pH',    icon: FlaskConical },
-  { to: '/editor',      label: 'Editor de Informes', icon: FileText     },
+  { to: '/editor',       label: 'Editor de Informes', icon: FileText  },
+  { to: '/indicadores',  label: 'Indicadores',        icon: BarChart2 },
 ]
 
 const ANIMALS = [

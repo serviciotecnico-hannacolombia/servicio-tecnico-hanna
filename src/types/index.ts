@@ -86,6 +86,30 @@ export interface TarifaZona {
   updated_at: string
 }
 
+export type CategoriaIndicador = 'mantenimiento' | 'calibracion' | 'codigos_hanna'
+
+export interface IndicadorMeta {
+  id: string
+  anio: number
+  categoria: CategoriaIndicador
+  mes: number
+  meta: number
+  porcentaje: number | null
+  created_at: string
+  updated_at: string
+}
+
+export interface IndicadorReal {
+  id: string
+  anio: number
+  categoria: CategoriaIndicador
+  mes: number
+  valor_real: number
+  actualizado_por: string | null
+  created_at: string
+  updated_at: string
+}
+
 export interface PlantillaInforme {
   id: string
   nombre: string
