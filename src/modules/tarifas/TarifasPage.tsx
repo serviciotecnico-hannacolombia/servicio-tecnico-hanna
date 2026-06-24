@@ -324,7 +324,7 @@ export function TarifasPage() {
                   value={ciudadQuery}
                   onChange={e => handleCiudadChange(e.target.value)}
                   onKeyDown={handleCiudadKey}
-                  onFocus={() => { if (ciudadQuery.trim().length >= 1 && !ciudadSel) setOpenSugg(true) }}
+                  onFocus={e => { e.currentTarget.style.borderColor = 'var(--accent)'; if (ciudadQuery.trim().length >= 1 && !ciudadSel) setOpenSugg(true) }}
                   placeholder="Ej: Medellín, Cali, Barranquilla…"
                   autoComplete="off"
                   style={{
@@ -334,7 +334,6 @@ export function TarifasPage() {
                     fontSize: '0.95rem', fontFamily: 'var(--sans)',
                     outline: 'none', transition: 'border-color .15s',
                   }}
-                  onFocus={e => { e.currentTarget.style.borderColor = 'var(--accent)' }}
                   onBlur={e => { if (!ciudadSel) e.currentTarget.style.borderColor = 'var(--border)' }}
                 />
                 {ciudadQuery && (
