@@ -110,6 +110,20 @@ export interface IndicadorReal {
   updated_at: string
 }
 
+export interface TarifaEnvio {
+  id: number
+  numero: number | null
+  departamento: string
+  ciudad: string
+  promesa: string | null
+  tarifa_hasta_2m: number | null
+  tarifa_2m_3m: number | null
+  tarifa_3m_4m: number | null
+  tarifa_4m_5m: number | null
+  tarifa_5m_6m: number | null
+  tarifa_mas_6m: number | null
+}
+
 export interface PlantillaInforme {
   id: string
   nombre: string
