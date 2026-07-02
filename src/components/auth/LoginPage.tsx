@@ -119,6 +119,33 @@ export function LoginPage() {
         <p style={{ textAlign: 'center', marginTop: 24, fontSize: '0.75rem', color: 'var(--muted)' }}>
           Acceso solo para el equipo de Servicio Técnico
         </p>
+
+        <a
+          href="https://www.instagram.com/brayansgl"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            display: 'inline-block',
+            width: '100%',
+            textAlign: 'center',
+            marginTop: 20,
+            fontSize: '0.72rem',
+            fontFamily: 'var(--mono)',
+            fontWeight: 700,
+            letterSpacing: '0.05em',
+            color: 'var(--muted)',
+            opacity: 0.65,
+            textDecoration: 'none',
+            animation: 'heartbeat 2.4s ease-in-out infinite',
+            transition: 'opacity .2s',
+          }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '1' }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '0.65' }}
+          onMouseDown={e => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.94)' }}
+          onMouseUp={e => { (e.currentTarget as HTMLElement).style.transform = '' }}
+        >
+          Desarrollado por @brayansgl 🐱
+        </a>
       </div>
     </div>
   )

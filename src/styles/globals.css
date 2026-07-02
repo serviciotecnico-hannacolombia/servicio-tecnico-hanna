@@ -78,6 +78,14 @@ body::before {
   to   { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes heartbeat {
+  0%, 100% { transform: scale(1);    }
+  14%       { transform: scale(1.12); }
+  28%       { transform: scale(1);    }
+  42%       { transform: scale(1.07); }
+  56%       { transform: scale(1);    }
+}
+
 input:focus, select:focus, textarea:focus {
   outline: 2px solid var(--accent);
   outline-offset: -1px;

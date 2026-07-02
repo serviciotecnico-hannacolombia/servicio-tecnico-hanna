@@ -316,6 +316,45 @@ export function Sidebar() {
           <LogOut size={15} style={{ flexShrink: 0 }} />
           {!collapsed && 'Cerrar sesión'}
         </button>
+
+        {!collapsed && (
+          <a
+            href="https://www.instagram.com/brayansgl"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              marginTop: 10,
+              fontSize: '0.62rem',
+              color: 'var(--muted)',
+              opacity: 0.45,
+              textAlign: 'center',
+              fontFamily: 'var(--mono)',
+              letterSpacing: '0.03em',
+              userSelect: 'none',
+              display: 'block',
+              textDecoration: 'none',
+              transition: 'opacity .2s, transform .2s',
+            }}
+            onMouseEnter={e => {
+              const el = e.currentTarget as HTMLElement
+              el.style.opacity = '0.85'
+              el.style.transform = 'scale(1.06)'
+            }}
+            onMouseLeave={e => {
+              const el = e.currentTarget as HTMLElement
+              el.style.opacity = '0.45'
+              el.style.transform = 'scale(1)'
+            }}
+            onMouseDown={e => {
+              (e.currentTarget as HTMLElement).style.transform = 'scale(0.94)'
+            }}
+            onMouseUp={e => {
+              (e.currentTarget as HTMLElement).style.transform = 'scale(1.06)'
+            }}
+          >
+            Desarrollado por @brayansgl 🐱
+          </a>
+        )}
       </div>
 
       {/* Modal de perfil */}
