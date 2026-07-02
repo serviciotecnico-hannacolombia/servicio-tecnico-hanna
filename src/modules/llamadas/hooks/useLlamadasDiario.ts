@@ -104,6 +104,14 @@ export function useLlamadasDiario() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['llamadas-diario', fecha] }),
   })
 
+  const limpiarDia = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from('llamadas_diario').delete().eq('fecha_dia', fecha)
+      if (error) throw error
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['llamadas-diario', fecha] }),
+  })
+
   const archivarDia = useMutation({
     mutationFn: async (llamadas: LlamadaDiario[]) => {
       const historico = llamadas.map(({ id: _i, created_at: _c, updated_at: _u, ...rest }) => ({
@@ -118,5 +126,5 @@ export function useLlamadasDiario() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['llamadas-diario', fecha] }),
   })
 
-  return { ...query, importCSV, addLlamada, updateEstado, marcarVaciosNoLlamado, deleteLlamada, archivarDia }
+  return { ...query, importCSV, addLlamada, updateEstado, marcarVaciosNoLlamado, deleteLlamada, archivarDia, limpiarDia }
 }

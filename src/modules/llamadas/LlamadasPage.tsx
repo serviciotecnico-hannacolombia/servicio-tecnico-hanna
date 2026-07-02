@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
-import { Upload, PlusCircle, Archive, Trash2, SkipForward } from 'lucide-react'
+import { Upload, PlusCircle, Archive, Trash2, SkipForward, Eraser } from 'lucide-react'
 import { toast } from 'sonner'
 import { Header } from '../../components/layout/Header'
 import { Card } from '../../components/ui/Card'
@@ -84,7 +84,11 @@ export function LlamadasPage() {
   const [tab, setTab] = useState<Tab>('hoy')
   const [addOpen, setAddOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
-  const [archivarOpen, setArchivarOpen] = useState(false)
+  const [archivarOpen, setArchivarOpen]       = useState(false)
+  const [limpiarOpen, setLimpiarOpen]         = useState(false)
+  const [confirmLimpiar, setConfirmLimpiar]   = useState('')
+
+  const CONFIRM_PHRASE = 'Borrar el día'
   const [popover, setPopover] = useState<{ id: string; top: number; left: number } | null>(null)
   const popoverRef = useRef<HTMLDivElement>(null)
   const [busqueda, setBusqueda] = useState('')
@@ -93,7 +97,7 @@ export function LlamadasPage() {
   const [filtroIngeniero, setFiltroIngeniero] = useState<string | null>(null)
   const { displayName } = useUser()
   const { data: profiles = [] } = useProfiles()
-  const { data: llamadas = [], isLoading, importCSV, addLlamada, updateEstado, marcarVaciosNoLlamado, deleteLlamada, archivarDia } = useLlamadasDiario()
+  const { data: llamadas = [], isLoading, importCSV, addLlamada, updateEstado, marcarVaciosNoLlamado, deleteLlamada, archivarDia, limpiarDia } = useLlamadasDiario()
 
   // Stats
   const cierre      = llamadas.filter(l => l.estado === 'CIERRE').length
@@ -196,6 +200,13 @@ export function LlamadasPage() {
     catch { toast.error('Error al archivar') }
   }
 
+  const handleLimpiar = async () => {
+    try { await limpiarDia.mutateAsync(); toast.success('Diario limpiado'); setLimpiarOpen(false); setConfirmLimpiar('') }
+    catch { toast.error('Error al limpiar') }
+  }
+
+  const closeLimpiar = () => { setLimpiarOpen(false); setConfirmLimpiar('') }
+
   const handleMarcarVacios = async () => {
     if (!confirm(`¿Marcar ${vacios} OTSTs vacíos como NO LLAMADO?`)) return
     try { await marcarVaciosNoLlamado.mutateAsync(displayName); toast.success(`${vacios} marcados como NO LLAMADO`) }
@@ -252,6 +263,9 @@ export function LlamadasPage() {
             )}
             <Button variant="ghost" size="sm" onClick={() => setArchivarOpen(true)} disabled={llamadas.length === 0}>
               <Archive size={14} /> Archivar día
+            </Button>
+            <Button variant="danger" size="sm" onClick={() => setLimpiarOpen(true)} disabled={llamadas.length === 0}>
+              <Eraser size={14} /> Limpiar día
             </Button>
             <Button variant="ghost" size="sm" onClick={() => setAddOpen(true)}>
               <PlusCircle size={14} /> Manual
@@ -515,6 +529,47 @@ export function LlamadasPage() {
         carrera={displayName}
         onAdd={data => addLlamada.mutateAsync(data)}
       />
+
+      <Modal open={limpiarOpen} onClose={closeLimpiar} title="Limpiar diario">
+        <p style={{ fontSize: '0.85rem', color: 'var(--muted)', marginBottom: 10, lineHeight: 1.6 }}>
+          Se eliminarán los <strong style={{ color: 'var(--text)' }}>{llamadas.length} registros</strong> del diario de hoy.
+        </p>
+        <p style={{ fontSize: '0.82rem', color: 'var(--red)', marginBottom: 20, lineHeight: 1.6 }}>
+          ⚠️ Esta acción <strong>no archiva ni guarda</strong> los datos. Se perderán permanentemente.
+        </p>
+
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>
+            Para confirmar, escribe <code style={{ background: 'var(--surface2)', padding: '2px 6px', borderRadius: 4, fontFamily: 'var(--mono)', color: 'var(--text)', fontSize: '0.8rem' }}>{CONFIRM_PHRASE}</code>
+          </label>
+          <input
+            autoFocus
+            value={confirmLimpiar}
+            onChange={e => setConfirmLimpiar(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && confirmLimpiar === CONFIRM_PHRASE) handleLimpiar() }}
+            placeholder={CONFIRM_PHRASE}
+            style={{
+              width: '100%', padding: '8px 12px', boxSizing: 'border-box',
+              border: `1.5px solid ${confirmLimpiar && confirmLimpiar !== CONFIRM_PHRASE ? 'var(--red)' : confirmLimpiar === CONFIRM_PHRASE ? 'var(--green)' : 'var(--border)'}`,
+              borderRadius: 'var(--radius-sm)', background: 'var(--surface)',
+              color: 'var(--text)', fontFamily: 'var(--mono)', fontSize: '0.875rem',
+              outline: 'none', transition: 'border-color .15s',
+            }}
+          />
+        </div>
+
+        <div style={{ display: 'flex', gap: 8 }}>
+          <Button variant="ghost" onClick={closeLimpiar} style={{ flex: 1 }}>Cancelar</Button>
+          <Button
+            variant="danger"
+            onClick={handleLimpiar}
+            disabled={confirmLimpiar !== CONFIRM_PHRASE || limpiarDia.isPending}
+            style={{ flex: 1 }}
+          >
+            {limpiarDia.isPending ? 'Limpiando…' : 'Sí, borrar todo'}
+          </Button>
+        </div>
+      </Modal>
 
       <Modal open={archivarOpen} onClose={() => setArchivarOpen(false)} title="Cerrar día y archivar">
         <div style={{ background: 'var(--surface2)', borderRadius: 'var(--radius-sm)', padding: '14px 16px', marginBottom: 18 }}>
