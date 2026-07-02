@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { UserPlus, Shield, Users, UserX, Trash2 } from 'lucide-react'
+import { UserPlus, Shield, Users, UserX, Trash2, Mail } from 'lucide-react'
 import { Header } from '../../components/layout/Header'
 import { Card } from '../../components/ui/Card'
+import { DestinatariosAdmin } from './components/DestinatariosAdmin'
 import { Button } from '../../components/ui/Button'
 import { Avatar } from '../../components/ui/Avatar'
 import { Spinner } from '../../components/ui/Spinner'
@@ -41,10 +42,13 @@ function ActiveBadge({ activo }: { activo: boolean }) {
   )
 }
 
+type AdminTab = 'usuarios' | 'destinatarios'
+
 export function AdminPage() {
   const { user: currentUser } = useUser()
   const { users, isLoading, updateRole, toggleActivo, createUser, deleteUser } = useUsers()
   const [createOpen, setCreateOpen] = useState(false)
+  const [tab, setTab] = useState<AdminTab>('usuarios')
 
   const total    = users.length
   const admins   = users.filter(u => u.role === 'admin').length
@@ -93,9 +97,38 @@ export function AdminPage() {
     }
   }
 
+  const tabStyle = (active: boolean): React.CSSProperties => ({
+    display: 'flex', alignItems: 'center', gap: 6,
+    padding: '8px 16px', border: 'none', borderRadius: 'var(--radius-sm)',
+    cursor: 'pointer', fontFamily: 'var(--sans)', fontWeight: 600, fontSize: '0.85rem',
+    background: active ? 'var(--accent)' : 'transparent',
+    color: active ? '#fff' : 'var(--muted)',
+    transition: 'all .14s',
+  })
+
   return (
     <div>
-      <Header title="Administración" subtitle="Gestión segura de usuarios de la intranet" />
+      <Header title="Administración" subtitle="Gestión de usuarios y configuración" />
+
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: 6, padding: '0 32px', marginBottom: 4 }}>
+        <button style={tabStyle(tab === 'usuarios')} onClick={() => setTab('usuarios')}>
+          <Users size={15} /> Usuarios
+        </button>
+        <button style={tabStyle(tab === 'destinatarios')} onClick={() => setTab('destinatarios')}>
+          <Mail size={15} /> Correos OC
+        </button>
+      </div>
+
+      {/* Tab: Destinatarios */}
+      {tab === 'destinatarios' && (
+        <div style={{ padding: '20px 32px' }}>
+          <DestinatariosAdmin />
+        </div>
+      )}
+
+      {/* Tab: Usuarios */}
+      {tab === 'usuarios' && <>
 
       {/* Stats */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
@@ -265,6 +298,7 @@ export function AdminPage() {
         onClose={() => setCreateOpen(false)}
         onSubmit={handleCreate}
       />
+      </>}
     </div>
   )
 }

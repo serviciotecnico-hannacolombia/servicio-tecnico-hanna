@@ -3,7 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import logo from '../../assets/logo.svg'
 import {
   Phone, Package, DollarSign, Wrench, FlaskConical, FileText,
-  LogOut, Pencil, ShieldCheck, BarChart2,
+  LogOut, Pencil, ShieldCheck, BarChart2, Mail,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useSidebar } from './SidebarContext'
@@ -55,6 +55,7 @@ const NAV_ITEMS = [
   { to: '/ph',          label: 'Pendiente de pH',    icon: FlaskConical },
   { to: '/editor',       label: 'Editor de Informes', icon: FileText  },
   { to: '/indicadores',  label: 'Indicadores',        icon: BarChart2 },
+  { to: '/correos',      label: 'Correos',             icon: Mail      },
 ]
 
 const ANIMALS = [

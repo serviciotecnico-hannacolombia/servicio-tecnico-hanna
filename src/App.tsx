@@ -15,6 +15,7 @@ import { PhPage } from './modules/ph/PhPage'
 import { EditorPage } from './modules/editor/EditorPage'
 import { AdminPage } from './modules/admin/AdminPage'
 import { IndicadoresPage } from './modules/indicadores/IndicadoresPage'
+import { FormatosPage } from './modules/formatos/FormatosPage'
 
 export default function App() {
   return (
@@ -38,6 +39,7 @@ export default function App() {
               <Route path="/ph"          element={<PhPage />} />
               <Route path="/editor"       element={<EditorPage />} />
               <Route path="/indicadores" element={<IndicadoresPage />} />
+              <Route path="/correos"     element={<FormatosPage />} />
               <Route
                 path="/admin"
                 element={

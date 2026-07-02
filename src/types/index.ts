@@ -1,5 +1,21 @@
 export type EstadoLlamada = 'CIERRE' | 'CONTACTADO' | 'SIN CONTACTO' | 'NO LLAMADO' | ''
 
+// ── Correos OC ────────────────────────────────────────────────
+export interface CorreoProveedor {
+  id: string
+  nombre: string
+  activo: boolean
+}
+
+export interface CorreoDestinatario {
+  id: string
+  proveedor_id: string
+  nombre: string
+  email: string
+  tipo: 'to' | 'cc'
+  orden: number
+}
+
 export type UserRole = 'admin' | 'user'
 
 export interface Profile {
