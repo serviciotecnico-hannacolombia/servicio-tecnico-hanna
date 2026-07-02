@@ -1,18 +1,34 @@
 import { useState } from 'react'
-import { Mail, ArrowLeft } from 'lucide-react'
+import { Mail, Award, ArrowLeft } from 'lucide-react'
 import { Header } from '../../components/layout/Header'
 import { CorreosOCPage } from './correos/CorreosOCPage'
+import { CertificadosPage } from './correos/CertificadosPage'
 
-type Vista = 'menu' | 'correos-oc'
+type Vista = 'menu' | 'correos-oc' | 'certificados'
 
-const FORMATOS = [
+const FORMATOS: {
+  id: Exclude<Vista, 'menu'>
+  titulo: string
+  descripcion: string
+  icon: React.ElementType
+  color: string
+  bg: string
+}[] = [
   {
-    id: 'correos-oc' as const,
+    id: 'correos-oc',
     titulo: 'Orden de Compra',
     descripcion: 'Genera el correo al proveedor con los datos de la OC y abre tu cliente de correo con todo completado.',
     icon: Mail,
     color: 'var(--accent)',
     bg: 'var(--accent-bg)',
+  },
+  {
+    id: 'certificados',
+    titulo: 'Certificados de Calibración',
+    descripcion: 'Genera el correo al cliente final con los certificados adjuntos. CC automático a Servicio Técnico.',
+    icon: Award,
+    color: 'var(--green)',
+    bg: 'var(--green-bg)',
   },
 ]
 
@@ -42,7 +58,8 @@ export function FormatosPage() {
           }
         />
         <div style={{ padding: '24px 32px' }}>
-          {vista === 'correos-oc' && <CorreosOCPage />}
+          {vista === 'correos-oc'   && <CorreosOCPage />}
+          {vista === 'certificados' && <CertificadosPage />}
         </div>
       </>
     )
