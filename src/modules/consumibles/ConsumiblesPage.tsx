@@ -110,7 +110,7 @@ export function ConsumiblesPage() {
       </div>
 
       {tab === 'ingreso'    && <TabIngreso    llegadas={llegadas} />}
-      {tab === 'destape'    && <TabDestape    llegadas={llegadas} />}
+      {tab === 'destape'    && <TabDestape    llegadas={llegadas} destapes={destapes} />}
       {tab === 'inventario' && <TabInventario llegadas={llegadas} destapes={destapes} />}
       {tab === 'buscar'     && <TabBuscar     llegadas={llegadas} destapes={destapes} />}
     </div>
@@ -242,13 +242,14 @@ function TabIngreso({ llegadas }: { llegadas: ConsumibleLlegada[] }) {
 
 // ── Tab Destape ────────────────────────────────────────────────────────────────
 
-function TabDestape({ llegadas }: { llegadas: ConsumibleLlegada[] }) {
+function TabDestape({ llegadas, destapes }: { llegadas: ConsumibleLlegada[], destapes: ConsumibleDestape[] }) {
   const qc              = useQueryClient()
   const qrRef           = useRef<HTMLInputElement>(null)
   const { displayName } = useUser()
 
   const [qr,           setQr]           = useState('')
   const [linked,       setLinked]       = useState<ConsumibleLlegada | null>(null)
+  const [matches,      setMatches]      = useState<ConsumibleLlegada[]>([])
   const [manualRef,    setManualRef]    = useState('')
   const [manualNombre, setManualNombre] = useState('')
   const [manualLote,   setManualLote]   = useState('')
@@ -257,18 +258,23 @@ function TabDestape({ llegadas }: { llegadas: ConsumibleLlegada[] }) {
   const [obs,          setObs]          = useState('')
   const [saving,       setSaving]       = useState(false)
 
+  const destapedIds = new Set(destapes.map(d => d.llegada_id).filter(Boolean))
+
   function handleQR(val: string) {
     setQr(val)
-    setLinked(null); setManualRef(''); setManualNombre(''); setManualLote('')
+    setLinked(null); setMatches([]); setManualRef(''); setManualNombre(''); setManualLote('')
     const parsed = parseQR(val)
     const searchKey = (parsed?.ref || val.trim()).toUpperCase()
     if (searchKey.length < 2) return
-    const match = llegadas.find(l =>
-      (l.ref || '').toUpperCase() === searchKey ||
-      (l.lote || '').toUpperCase() === searchKey
+    const found = llegadas.filter(l =>
+      ((l.ref || '').toUpperCase() === searchKey ||
+       (l.lote || '').toUpperCase() === searchKey) &&
+      !destapedIds.has(l.id)
     )
-    if (match) {
-      setLinked(match)
+    if (found.length === 1) {
+      setLinked(found[0])
+    } else if (found.length > 1) {
+      setMatches(found)
     } else if (parsed) {
       setManualRef(parsed.ref); setManualNombre(parsed.nombre); setManualLote(parsed.lote)
     }
@@ -295,7 +301,7 @@ function TabDestape({ llegadas }: { llegadas: ConsumibleLlegada[] }) {
   }
 
   function clear() {
-    setQr(''); setLinked(null); setManualRef(''); setManualNombre(''); setManualLote('')
+    setQr(''); setLinked(null); setMatches([]); setManualRef(''); setManualNombre(''); setManualLote('')
     setFecha(todayStr()); setObs('')
     qrRef.current?.focus()
   }
@@ -312,7 +318,39 @@ function TabDestape({ llegadas }: { llegadas: ConsumibleLlegada[] }) {
         <QRInput ref={qrRef} value={qr} onChange={handleQR} />
       </FG>
 
-      {hasQR && (
+      {matches.length > 1 && (
+        <div style={{ ...PREVIEW, borderColor: 'rgba(124,58,237,.3)', background: 'rgba(124,58,237,.04)', marginBottom: 14 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.6px', fontFamily: 'var(--mono)', color: 'var(--purple)', marginBottom: 10 }}>
+            {matches.length} unidades en stock — selecciona cuál destapar
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {matches.map(m => (
+              <button
+                key={m.id}
+                onClick={() => { setLinked(m); setMatches([]) }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px',
+                  border: '1.5px solid rgba(124,58,237,.25)', borderRadius: 8,
+                  background: 'var(--surface)', cursor: 'pointer', textAlign: 'left',
+                  fontFamily: 'var(--sans)', transition: 'all .12s',
+                }}
+                onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'var(--purple)'; el.style.background = 'var(--purple-bg)' }}
+                onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'rgba(124,58,237,.25)'; el.style.background = 'var(--surface)' }}
+              >
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600 }}>{m.nombre || m.ref}</div>
+                  <div style={{ fontSize: 11, fontFamily: 'var(--mono)', color: 'var(--muted)', marginTop: 2 }}>
+                    Llegó: {m.fecha} · Lote: {m.lote || '—'}{m.venc ? ` · Vence: ${m.venc}` : ''}
+                  </div>
+                </div>
+                <span style={{ fontSize: 11, fontFamily: 'var(--mono)', color: 'var(--purple)', fontWeight: 700 }}>Seleccionar →</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {hasQR && !matches.length && (
         <div style={{
           ...PREVIEW,
           borderColor: linked ? 'rgba(0,94,184,.3)' : 'rgba(224,123,0,.3)',
