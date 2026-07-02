@@ -11,7 +11,6 @@ import { LlamadasPage } from './modules/llamadas/LlamadasPage'
 import { ConsumiblesPage } from './modules/consumibles/ConsumiblesPage'
 import { TarifasPage } from './modules/tarifas/TarifasPage'
 import { CodigosPage } from './modules/codigos/CodigosPage'
-import { PhPage } from './modules/ph/PhPage'
 import { EditorPage } from './modules/editor/EditorPage'
 import { AdminPage } from './modules/admin/AdminPage'
 import { IndicadoresPage } from './modules/indicadores/IndicadoresPage'
@@ -36,7 +35,6 @@ export default function App() {
               <Route path="/consumibles" element={<ConsumiblesPage />} />
               <Route path="/tarifas"     element={<TarifasPage />} />
               <Route path="/codigos"     element={<CodigosPage />} />
-              <Route path="/ph"          element={<PhPage />} />
               <Route path="/editor"       element={<EditorPage />} />
               <Route path="/indicadores" element={<IndicadoresPage />} />
               <Route path="/correos"     element={<FormatosPage />} />

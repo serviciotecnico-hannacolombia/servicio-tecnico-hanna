@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import logo from '../../assets/logo.svg'
 import {
-  Phone, Package, DollarSign, Wrench, FlaskConical, FileText,
+  Phone, Package, DollarSign, Wrench, FileText,
   LogOut, Pencil, ShieldCheck, BarChart2, Mail, KeyRound, ChevronDown,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -53,7 +53,6 @@ const NAV_ITEMS = [
   { to: '/consumibles', label: 'Consumibles',         icon: Package      },
   { to: '/tarifas',     label: 'Tarifas de Envío',   icon: DollarSign   },
   { to: '/codigos',     label: 'Códigos y Partes',   icon: Wrench       },
-  { to: '/ph',          label: 'Pendiente de pH',    icon: FlaskConical },
   { to: '/editor',       label: 'Editor de Informes', icon: FileText  },
   { to: '/indicadores',  label: 'Indicadores',        icon: BarChart2 },
   { to: '/correos',      label: 'Correos',             icon: Mail      },
