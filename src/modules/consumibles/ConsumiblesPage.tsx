@@ -28,10 +28,13 @@ function parseQR(raw: string): ParsedQR | null {
   if (!raw.includes('Ñ') && !raw.includes('ñ')) return null
   const partes = raw.split(/[Ññ]/)
   if (partes.length < 4) return null
-  const ref  = partes[0].trim().replace(/'(\d+)$/, (_, n) => '-' + n.padStart(2, '0'))
-  const lote = partes[1].trim()
-  const venc = partes[3].trim().replace(/-/g, '/')
-  const desc = partes.slice(4).join('Ñ').trim()
+  const ref      = partes[0].trim()
+    .replace(/'(\d+)$/, (_, n) => '-' + n.padStart(2, '0'))  // HI9828'25 → HI9828-25
+    .replace(/-([A-Z])$/, '/$1')                              // HI76409A-P → HI76409A/P
+  const lote     = partes[1].trim()
+  const hasVenc  = partes.length >= 5
+  const venc     = hasVenc ? partes[3].trim().replace(/-/g, '/') : ''
+  const desc     = hasVenc ? partes.slice(4).join('Ñ').trim() : partes[3].trim()
   let nombre = desc
   let vol    = ''
   const volRx = /[''?]\s*(?:vol\.?\s*)?(\d[\d.,]*\s*(?:mL|ML|ml|L\b|l\b|G\b|g\b)\.?)/i
@@ -126,7 +129,8 @@ function TabIngreso({ llegadas }: { llegadas: ConsumibleLlegada[] }) {
   const [ref,        setRef]        = useState('')
   const [lote,       setLote]       = useState('')
   const [venc,       setVenc]       = useState('')
-  const [ubicacion,  setUbicacion]  = useState('')
+  const [vol,        setVol]        = useState('')
+  const [ubicacion,  setUbicacion]  = useState(() => localStorage.getItem('consumibles_ubicacion') ?? '')
   const [obs,        setObs]        = useState('')
   const [autoFilled, setAutoFilled] = useState(false)
   const [saving,     setSaving]     = useState(false)
@@ -136,7 +140,7 @@ function TabIngreso({ llegadas }: { llegadas: ConsumibleLlegada[] }) {
     const parsed = parseQR(val)
     if (parsed) {
       setNombre(parsed.nombre); setRef(parsed.ref); setLote(parsed.lote)
-      setVenc(parsed.venc); setAutoFilled(true)
+      setVenc(parsed.venc); setVol(parsed.vol); setAutoFilled(true)
       return
     }
     const up = val.trim().toUpperCase()
@@ -151,7 +155,7 @@ function TabIngreso({ llegadas }: { llegadas: ConsumibleLlegada[] }) {
       }
     }
     if (autoFilled) {
-      setNombre(''); setRef(''); setLote(''); setVenc(''); setAutoFilled(false)
+      setNombre(''); setRef(''); setLote(''); setVenc(''); setVol(''); setAutoFilled(false)
     }
   }
 
@@ -163,6 +167,7 @@ function TabIngreso({ llegadas }: { llegadas: ConsumibleLlegada[] }) {
       fecha: todayStr(), qr: qr.trim(),
       nombre: nombre.trim() || null, ref: ref.trim() || null,
       lote: lote.trim() || null, venc: venc.trim() || null,
+      vol: vol.trim() || null,
       responsable: displayName, ubicacion, obs: obs.trim() || null,
     })
     setSaving(false)
@@ -173,8 +178,8 @@ function TabIngreso({ llegadas }: { llegadas: ConsumibleLlegada[] }) {
   }
 
   function clear() {
-    setQr(''); setNombre(''); setRef(''); setLote(''); setVenc('')
-    setUbicacion(''); setObs(''); setAutoFilled(false)
+    setQr(''); setNombre(''); setRef(''); setLote(''); setVenc(''); setVol('')
+    setObs(''); setAutoFilled(false)
     qrRef.current?.focus()
   }
 
@@ -192,6 +197,7 @@ function TabIngreso({ llegadas }: { llegadas: ConsumibleLlegada[] }) {
             {ref  && <span>REF: <strong style={{ color: 'var(--text)' }}>{ref}</strong></span>}
             {lote && <span>LOTE: <strong style={{ color: 'var(--text)' }}>{lote}</strong></span>}
             {venc && <span>VENCE: <strong style={{ color: 'var(--text)' }}>{venc}</strong></span>}
+            {vol  && <span>VOL: <strong style={{ color: 'var(--text)' }}>{vol}</strong></span>}
           </div>
         </div>
       )}
@@ -209,11 +215,14 @@ function TabIngreso({ llegadas }: { llegadas: ConsumibleLlegada[] }) {
         <FG label="F. Vencimiento (AUTO)">
           <input value={venc} onChange={e => setVenc(e.target.value)} readOnly={autoFilled} placeholder="Auto desde QR" style={iS(autoFilled)} />
         </FG>
+        <FG label="Volumen (AUTO)">
+          <input value={vol} onChange={e => setVol(e.target.value)} readOnly={autoFilled} placeholder="Auto desde QR" style={iS(autoFilled && !!vol)} />
+        </FG>
         <FG label="Responsable">
           <input value={displayName} readOnly style={iS(true)} />
         </FG>
         <FG label="Ubicación">
-          <Select value={ubicacion} onChange={setUbicacion} options={UBICACIONES} placeholder="Seleccionar..." />
+          <Select value={ubicacion} onChange={v => { setUbicacion(v); localStorage.setItem('consumibles_ubicacion', v) }} options={UBICACIONES} placeholder="Seleccionar..." />
         </FG>
         <FG label="Fecha de registro">
           <input value={todayStr()} readOnly style={iS(false)} />
@@ -244,7 +253,7 @@ function TabDestape({ llegadas }: { llegadas: ConsumibleLlegada[] }) {
   const [manualNombre, setManualNombre] = useState('')
   const [manualLote,   setManualLote]   = useState('')
   const [fecha,        setFecha]        = useState(todayStr())
-  const [ubicacion,    setUbicacion]    = useState('')
+  const [ubicacion,    setUbicacion]    = useState(() => localStorage.getItem('consumibles_destape_ubicacion') ?? '')
   const [obs,          setObs]          = useState('')
   const [saving,       setSaving]       = useState(false)
 
@@ -287,7 +296,7 @@ function TabDestape({ llegadas }: { llegadas: ConsumibleLlegada[] }) {
 
   function clear() {
     setQr(''); setLinked(null); setManualRef(''); setManualNombre(''); setManualLote('')
-    setFecha(todayStr()); setUbicacion(''); setObs('')
+    setFecha(todayStr()); setObs('')
     qrRef.current?.focus()
   }
 
@@ -318,6 +327,7 @@ function TabDestape({ llegadas }: { llegadas: ConsumibleLlegada[] }) {
             <span>LOTE: <strong style={{ color: 'var(--text)' }}>{dispLote}</strong></span>
             {linked?.fecha && <span>Llegó: <strong style={{ color: 'var(--text)' }}>{linked.fecha}</strong></span>}
             {linked?.venc  && <span>Vence: <strong style={{ color: 'var(--text)' }}>{linked.venc}</strong></span>}
+            {linked?.vol   && <span>Vol: <strong style={{ color: 'var(--text)' }}>{linked.vol}</strong></span>}
           </div>
         </div>
       )}
@@ -330,7 +340,7 @@ function TabDestape({ llegadas }: { llegadas: ConsumibleLlegada[] }) {
           <input value={displayName} readOnly style={iS(true)} />
         </FG>
         <FG label="Ubicación donde se almacena abierto">
-          <Select value={ubicacion} onChange={setUbicacion} options={UBICACIONES} placeholder="Seleccionar..." />
+          <Select value={ubicacion} onChange={v => { setUbicacion(v); localStorage.setItem('consumibles_destape_ubicacion', v) }} options={UBICACIONES} placeholder="Seleccionar..." />
         </FG>
         <FG label="Observaciones" full>
           <textarea value={obs} onChange={e => setObs(e.target.value)} placeholder="Opcional..." rows={2} style={{ ...INP, resize: 'vertical' }} />
