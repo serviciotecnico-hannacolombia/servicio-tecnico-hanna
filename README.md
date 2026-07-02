@@ -1,73 +1,78 @@
-# React + TypeScript + Vite
+# Intranet — Servicio Técnico Hanna Instruments Colombia
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Aplicación web interna para el equipo de Servicio Técnico de Hanna Instruments Colombia. Centraliza el seguimiento diario de llamadas, el control de consumibles, la gestión de tarifas, certificados y órdenes de compra en una sola herramienta de uso exclusivo del equipo.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Módulos
 
-## React Compiler
+### Control de Llamadas
+Seguimiento diario de OTSTs asignadas al equipo. Permite importar la lista del día desde CSV, registrar el estado de cada llamada (Cierre, Contactado, Sin contacto, No llamado), ver el avance en tiempo real y archivar el día al finalizar. Incluye una carrera interna con puntaje por usuario y detección de clientes con múltiples OTSTs.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### Consumibles
+Control de llegadas y destapes de soluciones técnicas (buffers, estándares, reactivos). Lee el código QR del envase en formato Hanna (`Ñ`-delimitado) y extrae automáticamente la referencia, lote, vencimiento, volumen y descripción. Lleva inventario de unidades en stock y destapadas, con historial completo y búsqueda por referencia o lote.
 
-## Expanding the ESLint configuration
+### Tarifas de Envío
+Gestión de las tarifas de envío vigentes por transportadora y destino.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Códigos y Partes
+Consulta de códigos de repuestos y partes de instrumentos.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### Editor de Informes
+Editor WYSIWYG para redactar y formatear informes técnicos con plantillas reutilizables.
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+### Indicadores
+Tablero de metas e indicadores reales del área de servicio técnico.
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### Correos
+Generación rápida de correos preformateados que se abren directamente en el cliente de correo del usuario (sin APIs externas):
+
+- **Orden de Compra** — genera el correo al proveedor de calibración con destinatarios TO/CC configurados por proveedor, datos de la OC, NIT, RMV y fecha estimada de envío.
+- **Certificados de Calibración** — genera el correo al cliente final con CC fijo a Servicio Técnico, saludo inclusivo (Estimado/Estimada) y nombre del cliente normalizado automáticamente desde el código de servicio.
+
+Los destinatarios de cada proveedor se administran desde el panel de **Administración → Correos OC**.
+
+### Administración *(solo admins)*
+Gestión de usuarios: creación, cambio de rol, activación/desactivación y eliminación. Incluye la configuración de destinatarios de correo TO/CC por proveedor de calibración.
+
+---
+
+## Stack
+
+| Capa | Tecnología |
+|---|---|
+| Frontend | React 19 + TypeScript + Vite |
+| Estilos | CSS variables (design tokens), estilos inline |
+| Backend / DB | Supabase (PostgreSQL + Auth + Realtime) |
+| Estado servidor | TanStack Query v5 |
+| Formularios | React Hook Form + Zod |
+| Gráficas | Recharts |
+| Iconos | Lucide React |
+| Notificaciones | Sonner |
+| Routing | React Router v7 |
+
+---
+
+## Desarrollo local
+
+```bash
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Requiere un archivo `.env` con las variables de Supabase:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```env
+VITE_SUPABASE_URL=https://xxxx.supabase.co
+VITE_SUPABASE_ANON_KEY=xxxx
 ```
+
+---
+
+## Despliegue
+
+La aplicación está configurada para Vercel con soporte de SPA routing (`vercel.json` incluido). Cualquier push a `main` genera un despliegue automático.
+
+---
+
+Desarrollado por [@brayansgl](https://www.instagram.com/brayansgl) 🐱
