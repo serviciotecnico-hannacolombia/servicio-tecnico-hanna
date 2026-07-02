@@ -3,11 +3,12 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import logo from '../../assets/logo.svg'
 import {
   Phone, Package, DollarSign, Wrench, FlaskConical, FileText,
-  LogOut, Pencil, ShieldCheck, BarChart2, Mail,
+  LogOut, Pencil, ShieldCheck, BarChart2, Mail, KeyRound, ChevronDown,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useSidebar } from './SidebarContext'
 import { useUser } from '../../hooks/useUser'
+import { supabase } from '../../lib/supabase'
 import { Modal } from '../ui/Modal'
 import { Input } from '../ui/Input'
 import { Button } from '../ui/Button'
@@ -77,13 +78,40 @@ const AVATAR_COLORS = [
 
 export function Sidebar() {
   const { collapsed, toggle } = useSidebar()
-  const { displayName, profile, isAdmin, signOut, updateDisplayName, updateAvatar } = useUser()
+  const { user, displayName, profile, isAdmin, signOut, updateDisplayName, updateAvatar } = useUser()
   const navigate = useNavigate()
   const [profileOpen, setProfileOpen] = useState(false)
   const [nombre, setNombre] = useState('')
   const [selectedEmoji, setSelectedEmoji] = useState<string | null>(null)
   const [selectedColor, setSelectedColor] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+
+  const [pwdOpen,    setPwdOpen]    = useState(false)
+  const [pwdActual,  setPwdActual]  = useState('')
+  const [pwdNueva,   setPwdNueva]   = useState('')
+  const [pwdConfirm, setPwdConfirm] = useState('')
+  const [savingPwd,  setSavingPwd]  = useState(false)
+
+  const handleCambiarPwd = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (pwdNueva.length < 6) return toast.error('La nueva contraseña debe tener al menos 6 caracteres')
+    if (pwdNueva !== pwdConfirm) return toast.error('Las contraseñas no coinciden')
+    setSavingPwd(true)
+    try {
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email: user?.email ?? '', password: pwdActual,
+      })
+      if (authError) { toast.error('Contraseña actual incorrecta'); return }
+      const { error } = await supabase.auth.updateUser({ password: pwdNueva })
+      if (error) throw error
+      toast.success('Contraseña actualizada')
+      setPwdActual(''); setPwdNueva(''); setPwdConfirm(''); setPwdOpen(false)
+    } catch {
+      toast.error('Error al cambiar la contraseña')
+    } finally {
+      setSavingPwd(false)
+    }
+  }
 
   const openProfile = () => {
     setNombre(displayName)
@@ -479,6 +507,55 @@ export function Sidebar() {
             </Button>
           </div>
         </form>
+
+        {/* Cambiar contraseña */}
+        <div style={{ borderTop: '1px solid var(--border)', marginTop: 20, paddingTop: 16 }}>
+          <button
+            type="button"
+            onClick={() => { setPwdOpen(o => !o); setPwdActual(''); setPwdNueva(''); setPwdConfirm('') }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8, width: '100%',
+              background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+              fontSize: '0.82rem', fontWeight: 600, color: 'var(--muted)',
+            }}
+          >
+            <KeyRound size={14} />
+            Cambiar contraseña
+            <ChevronDown size={14} style={{ marginLeft: 'auto', transition: 'transform .2s', transform: pwdOpen ? 'rotate(180deg)' : 'none' }} />
+          </button>
+
+          {pwdOpen && (
+            <form onSubmit={handleCambiarPwd} style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 14 }}>
+              <Input
+                label="Contraseña actual"
+                type="password"
+                value={pwdActual}
+                onChange={e => setPwdActual(e.target.value)}
+                placeholder="••••••••"
+                required
+              />
+              <Input
+                label="Nueva contraseña"
+                type="password"
+                value={pwdNueva}
+                onChange={e => setPwdNueva(e.target.value)}
+                placeholder="Mínimo 6 caracteres"
+                required
+              />
+              <Input
+                label="Confirmar nueva contraseña"
+                type="password"
+                value={pwdConfirm}
+                onChange={e => setPwdConfirm(e.target.value)}
+                placeholder="••••••••"
+                required
+              />
+              <Button type="submit" disabled={savingPwd || !pwdActual || !pwdNueva || !pwdConfirm}>
+                {savingPwd ? 'Actualizando…' : 'Actualizar contraseña'}
+              </Button>
+            </form>
+          )}
+        </div>
       </Modal>
     </aside>
   )
