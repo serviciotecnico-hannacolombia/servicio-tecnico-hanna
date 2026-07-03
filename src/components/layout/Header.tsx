@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 
 interface HeaderProps {
   title: string
-  subtitle?: string
+  subtitle?: ReactNode
   actions?: ReactNode
 }
 
