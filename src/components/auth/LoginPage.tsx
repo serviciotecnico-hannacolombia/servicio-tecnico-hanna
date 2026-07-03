@@ -144,7 +144,7 @@ export function LoginPage() {
           onMouseDown={e => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.94)' }}
           onMouseUp={e => { (e.currentTarget as HTMLElement).style.transform = '' }}
         >
-          Desarrollado por @brayansgl 🐱
+          Desarrollado por @brayansgl <span className="bat-icon" aria-hidden="true" />
         </a>
       </div>
     </div>

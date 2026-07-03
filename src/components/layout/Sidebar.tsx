@@ -379,7 +379,7 @@ export function Sidebar() {
               (e.currentTarget as HTMLElement).style.transform = 'scale(1.06)'
             }}
           >
-            Desarrollado por @brayansgl 🐱
+            Desarrollado por @brayansgl <span className="bat-icon" aria-hidden="true" />
           </a>
         )}
       </div>
