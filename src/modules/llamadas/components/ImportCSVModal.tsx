@@ -1,7 +1,24 @@
 import { useState, useRef } from 'react'
-import { Upload } from 'lucide-react'
+import { Upload, Download } from 'lucide-react'
 import { Modal } from '../../../components/ui/Modal'
 import { Button } from '../../../components/ui/Button'
+
+const EJEMPLO_FILAS = [
+  ['34156', 'Distraves S.A.', 'Juan Pérez', 'SI'],
+  ['34200', 'Avícola RC', 'Carlos Gómez', 'NO'],
+  ['34211', 'Pollos El Bucanero', 'Juan Pérez', 'NO'],
+]
+
+function descargarEjemplo() {
+  const headers = ['OTST', 'Cliente', 'Técnico Asignado', '¿En garantía?']
+  const csv = [headers, ...EJEMPLO_FILAS].map(r => r.join(',')).join('\r\n')
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url; a.download = 'ejemplo_llamadas.csv'
+  document.body.appendChild(a); a.click(); document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+}
 
 interface CsvRow {
   otst: string
@@ -96,6 +113,44 @@ export function ImportCSVModal({ open, onClose, existing, onImport }: Props) {
           </div>
           <input ref={inputRef} type="file" accept=".csv,.txt" onChange={handleFile} style={{ display: 'none' }} />
         </div>
+
+        {/* Ejemplo de formato esperado */}
+        {rows.length === 0 && (
+          <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '12px 14px', background: 'var(--surface2)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+              <p style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text)' }}>Formato esperado del CSV</p>
+              <button type="button" onClick={descargarEjemplo} style={{
+                display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: '1px solid var(--border)',
+                borderRadius: 6, padding: '4px 9px', fontSize: '0.72rem', color: 'var(--accent)', cursor: 'pointer', fontFamily: 'var(--sans)',
+              }}>
+                <Download size={12} /> Descargar ejemplo
+              </button>
+            </div>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.72rem' }}>
+                <thead>
+                  <tr>
+                    {['OTST', 'Cliente', 'Técnico Asignado', '¿En garantía?'].map(h => (
+                      <th key={h} style={{ padding: '5px 8px', textAlign: 'left', color: 'var(--muted)', fontFamily: 'var(--mono)', fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px solid var(--border)' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {EJEMPLO_FILAS.map((r, i) => (
+                    <tr key={i}>
+                      {r.map((v, j) => (
+                        <td key={j} style={{ padding: '5px 8px', color: j === 0 ? 'var(--accent)' : 'var(--muted)', fontFamily: j === 0 ? 'var(--mono)' : 'var(--sans)', fontWeight: j === 0 ? 600 : 400 }}>{v}</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p style={{ fontSize: '0.68rem', color: 'var(--muted)', marginTop: 8 }}>
+              Primera fila = encabezados (se ignora al importar). El orden de las columnas debe ser exactamente ese. "¿En garantía?" acepta SI/NO/SÍ/YES.
+            </p>
+          </div>
+        )}
 
         {/* Preview */}
         {rows.length > 0 && (

@@ -9,7 +9,7 @@ import { StatCard } from '../../../components/ui/StatCard'
 import { Button } from '../../../components/ui/Button'
 import { Table, type Column } from '../../../components/ui/Table'
 import { Spinner } from '../../../components/ui/Spinner'
-import { useHistorial } from '../hooks/useHistorial'
+import { useHistorial, useCierres } from '../hooks/useHistorial'
 import { INTRANET_URL } from '../../../lib/constants'
 import type { LlamadaHistorico } from '../../../types'
 
@@ -98,6 +98,7 @@ export function HistorialSection() {
   const PAGE = 50
 
   const { data: todos = [], isLoading } = useHistorial(desde, hasta)
+  const { data: cierres = [] } = useCierres(desde, hasta)
 
   // Selects dinámicos
   const ingenieros = useMemo(() => [...new Set(todos.map(r => r.ingeniero).filter(Boolean) as string[])].sort(), [todos])
@@ -438,6 +439,44 @@ export function HistorialSection() {
                   </ResponsiveContainer>
                 </Card>
               </div>
+
+              {/* Cierres automáticos del día */}
+              <Card title="Cierres del día (registro de cierre automático)">
+                {cierres.length === 0 ? (
+                  <div style={{ color: '#6b7a99', fontSize: '0.85rem' }}>Sin cierres registrados en este rango</div>
+                ) : (
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
+                      <thead>
+                        <tr>
+                          {['Fecha', 'Total OTST', 'Marcadas auto (No llamado)', 'Tipo', 'Cerrado a las'].map(h => (
+                            <th key={h} style={{ textAlign: 'left', padding: '8px 12px', fontFamily: 'DM Mono, monospace', fontSize: '0.68rem', color: '#6b7a99', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px solid #edf1f7' }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {cierres.map(c => (
+                          <tr key={c.fecha} style={{ borderBottom: '1px solid #edf1f7' }}>
+                            <td style={{ padding: '8px 12px', fontFamily: 'DM Mono, monospace' }}>{fmtFecha(c.fecha)}</td>
+                            <td style={{ padding: '8px 12px' }}>{c.total_llamadas}</td>
+                            <td style={{ padding: '8px 12px' }}>{c.marcadas_no_llamado}</td>
+                            <td style={{ padding: '8px 12px' }}>
+                              <span style={{
+                                padding: '2px 8px', borderRadius: 12, fontSize: '0.7rem', fontWeight: 700, fontFamily: 'DM Mono, monospace',
+                                background: c.tipo === 'automatico' ? '#f0fdf4' : '#edf1f7',
+                                color: c.tipo === 'automatico' ? '#16a34a' : '#6b7a99',
+                              }}>{c.tipo === 'automatico' ? 'Automático' : 'Manual'}</span>
+                            </td>
+                            <td style={{ padding: '8px 12px', fontFamily: 'DM Mono, monospace', color: '#6b7a99' }}>
+                              {new Date(c.cerrado_en).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: false })}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </Card>
             </div>
           )}
 

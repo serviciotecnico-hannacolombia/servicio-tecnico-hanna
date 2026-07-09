@@ -56,6 +56,14 @@ export interface LlamadaHistorico {
   archivado_at: string
 }
 
+export interface LlamadaCierre {
+  fecha: string
+  total_llamadas: number
+  marcadas_no_llamado: number
+  tipo: 'automatico' | 'manual'
+  cerrado_en: string
+}
+
 export interface ConsumibleLlegada {
   id: string
   fecha: string
