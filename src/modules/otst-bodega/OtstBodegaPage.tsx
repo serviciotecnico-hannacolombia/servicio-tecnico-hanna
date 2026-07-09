@@ -247,13 +247,18 @@ function TabIngreso({ zonas, bodega, columnas }: { zonas: OtstBodegaZona[], bode
 
     qc.invalidateQueries({ queryKey: ['otst_bodega'] })
     qc.invalidateQueries({ queryKey: ['otst_bodega_movimientos'] })
-    clear()
+    clearParaSiguiente()
+  }
+
+  // Mantiene la ubicación (columna/fila/subcolumna) para agregar varias OTST seguidas al mismo lugar.
+  function clearParaSiguiente() {
+    setQr(''); setOtst(''); setMes(''); setAnio(''); setCorreo(''); setNota(''); setAutoFilled(false)
+    qrRef.current?.focus()
   }
 
   function clear() {
-    setQr(''); setOtst(''); setMes(''); setAnio(''); setCorreo('')
-    setColumna(''); setFila(''); setSubcolumna(''); setNota(''); setAutoFilled(false)
-    qrRef.current?.focus()
+    clearParaSiguiente()
+    setColumna(''); setFila(''); setSubcolumna('')
   }
 
   return (
