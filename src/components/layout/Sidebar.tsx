@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import logo from '../../assets/logo.svg'
 import {
-  Phone, Package, DollarSign, Wrench, FileText,
+  Phone, Package, DollarSign, Wrench, FileText, Warehouse,
   LogOut, Pencil, ShieldCheck, BarChart2, Mail, KeyRound, ChevronDown,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -50,6 +50,7 @@ function HamburgerIcon({ open }: { open: boolean }) {
 
 const NAV_ITEMS = [
   { to: '/llamadas',    label: 'Control Llamadas',   icon: Phone        },
+  { to: '/bodega',      label: 'Bodega OTST',         icon: Warehouse    },
   { to: '/consumibles', label: 'Consumibles',         icon: Package      },
   { to: '/tarifas',     label: 'Tarifas de Envío',   icon: DollarSign   },
   { to: '/codigos',     label: 'Códigos y Partes',   icon: Wrench       },

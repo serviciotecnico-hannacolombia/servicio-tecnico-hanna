@@ -8,6 +8,7 @@ import { AdminGuard } from './components/auth/AdminGuard'
 import { LoginPage } from './components/auth/LoginPage'
 import { AppLayout } from './components/layout/AppLayout'
 import { LlamadasPage } from './modules/llamadas/LlamadasPage'
+import { OtstBodegaPage } from './modules/otst-bodega/OtstBodegaPage'
 import { ConsumiblesPage } from './modules/consumibles/ConsumiblesPage'
 import { TarifasPage } from './modules/tarifas/TarifasPage'
 import { CodigosPage } from './modules/codigos/CodigosPage'
@@ -32,6 +33,7 @@ export default function App() {
             >
               <Route index element={<Navigate to="/llamadas" replace />} />
               <Route path="/llamadas"    element={<LlamadasPage />} />
+              <Route path="/bodega"      element={<OtstBodegaPage />} />
               <Route path="/consumibles" element={<ConsumiblesPage />} />
               <Route path="/tarifas"     element={<TarifasPage />} />
               <Route path="/codigos"     element={<CodigosPage />} />
