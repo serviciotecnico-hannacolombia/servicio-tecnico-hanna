@@ -1,14 +1,16 @@
 import { useState, useRef, forwardRef } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Search, Warehouse, AlertTriangle, ArrowRightLeft, Mail, CheckCircle2, Download, Trash2, X } from 'lucide-react'
+import { Search, Warehouse, AlertTriangle, ArrowRightLeft, Mail, CheckCircle2, Download, Trash2, X, ListTodo, MapPinOff } from 'lucide-react'
 import { toast } from 'sonner'
 import { supabase } from '../../lib/supabase'
 import { Header } from '../../components/layout/Header'
 import { Card } from '../../components/ui/Card'
 import { Modal } from '../../components/ui/Modal'
 import { useUser } from '../../hooks/useUser'
+import { useProfiles } from '../../hooks/useProfiles'
 import { exportToCSV, todayISO } from '../../lib/utils'
-import type { OtstBodega, OtstBodegaMovimiento, OtstBodegaZona, OtstBodegaConfig, EstadoOtstBodega } from '../../types'
+import { INTRANET_URL } from '../../lib/constants'
+import type { OtstBodega, OtstBodegaMovimiento, OtstBodegaZona, OtstBodegaConfig, EstadoOtstBodega, OtstBodegaPendiente } from '../../types'
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -104,45 +106,70 @@ function useConfig() {
   })
 }
 
+function usePendientes() {
+  return useQuery({
+    queryKey: ['otst_bodega_pendientes'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('otst_bodega_pendientes').select('*').order('created_at', { ascending: false })
+      if (error) throw error
+      return data as OtstBodegaPendiente[]
+    },
+  })
+}
+
 // ── Page ───────────────────────────────────────────────────────────────────────
 
-type Tab = 'ingreso' | 'bodega' | 'historial' | 'config'
+type Tab = 'ingreso' | 'bodega' | 'pendientes' | 'historial' | 'config'
 
 export function OtstBodegaPage() {
   const [tab, setTab] = useState<Tab>('ingreso')
   const { data: bodega     = [] } = useBodega()
   const { data: movimientos = [] } = useMovimientos()
   const { data: zonas      = [] } = useZonas()
+  const { data: pendientes = [] } = usePendientes()
   const { data: config } = useConfig()
   const umbral   = config?.umbral_meses ?? 3
   const columnas = config?.columnas ?? DEFAULT_COLUMNAS
+  const abiertas = pendientes.filter(p => p.estado === 'pendiente').length
 
   return (
     <div>
-      <Header title="Bodega OTST" subtitle="Ubicación física y control de OTST abandonadas en bodega" />
+      <Header title="Bodega" subtitle="Ubicación física y control de OTST abandonadas en bodega" />
 
       <div style={{ display: 'flex', gap: 4, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 4, marginBottom: 24 }}>
         {([
-          ['ingreso',   '📥', 'Ingreso'],
-          ['bodega',    '🗄️', 'Bodega'],
-          ['historial', '🕓', 'Historial'],
-          ['config',    '⚙️', 'Config'],
+          ['ingreso',    '📥', 'Ingreso'],
+          ['bodega',     '🗄️', 'Bodega'],
+          ['pendientes', '📋', 'Pendientes'],
+          ['historial',  '🕓', 'Historial'],
+          ['config',     '⚙️', 'Config'],
         ] as [Tab, string, string][]).map(([id, icon, label]) => (
           <button key={id} onClick={() => setTab(id)} style={{
             flex: 1, padding: '10px 16px', border: 'none', borderRadius: 9, cursor: 'pointer',
             fontSize: 13, fontWeight: tab === id ? 600 : 500, fontFamily: 'var(--sans)',
             background: tab === id ? 'var(--accent)' : 'transparent',
             color: tab === id ? '#fff' : 'var(--muted)', transition: 'all .18s',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
           }}>
             {icon} {label}
+            {id === 'pendientes' && abiertas > 0 && (
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                minWidth: 18, height: 18, padding: '0 5px', borderRadius: 10,
+                background: tab === id ? 'rgba(255,255,255,.25)' : '#c0392b',
+                color: '#fff', fontSize: 10, fontWeight: 700, fontFamily: 'var(--mono)',
+              }}>{abiertas}</span>
+            )}
           </button>
         ))}
       </div>
 
-      {tab === 'ingreso'   && <TabIngreso   zonas={zonas} bodega={bodega} columnas={columnas} />}
-      {tab === 'bodega'    && <TabBodega    bodega={bodega} umbral={umbral} columnas={columnas} />}
-      {tab === 'historial' && <TabHistorial bodega={bodega} movimientos={movimientos} />}
-      {tab === 'config'    && <TabConfig    zonas={zonas} config={config} bodega={bodega} />}
+      {tab === 'ingreso'    && <TabIngreso    zonas={zonas} bodega={bodega} columnas={columnas} />}
+      {tab === 'bodega'     && <TabBodega     bodega={bodega} umbral={umbral} columnas={columnas} pendientes={pendientes} />}
+      {tab === 'pendientes' && <TabPendientes bodega={bodega} pendientes={pendientes} umbral={umbral} />}
+      {tab === 'historial'  && <TabHistorial  bodega={bodega} movimientos={movimientos} />}
+      {tab === 'config'     && <TabConfig     zonas={zonas} config={config} bodega={bodega} />}
     </div>
   )
 }
@@ -303,16 +330,19 @@ function TabIngreso({ zonas, bodega, columnas }: { zonas: OtstBodegaZona[], bode
 
 // ── Tab Bodega ─────────────────────────────────────────────────────────────────
 
-function TabBodega({ bodega, umbral, columnas }: { bodega: OtstBodega[], umbral: number, columnas: string[] }) {
+function TabBodega({ bodega, umbral, columnas, pendientes }: { bodega: OtstBodega[], umbral: number, columnas: string[], pendientes: OtstBodegaPendiente[] }) {
   const { isAdmin } = useUser()
   const [search,  setSearch]  = useState('')
   const [colF,    setColF]    = useState('')
   const [estadoF, setEstadoF] = useState<'all' | EstadoOtstBodega>('all')
   const [soloAbandonadas, setSoloAbandonadas] = useState(false)
-  const [accionItem, setAccionItem] = useState<{ item: OtstBodega, tipo: 'mover' | 'contactar' | 'retirar' | 'eliminar' } | null>(null)
+  const [accionItem, setAccionItem] = useState<{ item: OtstBodega, tipo: 'mover' | 'contactar' | 'retirar' | 'eliminar' | 'pendiente' } | null>(null)
+
+  const otstPendientes = new Set(pendientes.filter(p => p.estado === 'pendiente').map(p => p.otst.trim().toLowerCase()))
 
   const activos = bodega.filter(r => r.estado !== 'retirado')
   const abandonadas = activos.filter(r => mesesTranscurridos(r.mes_ingreso, r.anio_ingreso) >= umbral)
+  const conNovedad = activos.filter(r => r.estado === 'novedad')
   const mes = new Date().toISOString().slice(0, 7)
   const esteMes = bodega.filter(r => r.created_at?.startsWith(mes)).length
 
@@ -346,6 +376,7 @@ function TabBodega({ bodega, umbral, columnas }: { bodega: OtstBodega[], umbral:
         'Antiguedad (meses)': antig,
         Abandonada: antig >= umbral ? 'Si' : 'No',
         Estado: r.estado,
+        'Responsable Novedad': r.responsable_novedad || '',
         Nota: r.nota || '',
         Usuario: r.usuario || '',
         'Creado en': r.created_at,
@@ -357,10 +388,11 @@ function TabBodega({ bodega, umbral, columnas }: { bodega: OtstBodega[], umbral:
 
   return (
     <div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 24 }}>
         {([
           ['En bodega',   activos.length,      'var(--accent)'],
           ['Abandonadas', abandonadas.length,  '#c0392b'],
+          ['Con novedad', conNovedad.length,    '#7c3aed'],
           ['Este mes',    esteMes,             '#2e9e4e'],
         ] as [string, number, string][]).map(([label, num, color]) => (
           <div key={label} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 18 }}>
@@ -389,6 +421,7 @@ function TabBodega({ bodega, umbral, columnas }: { bodega: OtstBodega[], umbral:
               <option value="all">Todos</option>
               <option value="en_bodega">En bodega</option>
               <option value="contactado">Contactado</option>
+              <option value="novedad">Novedad</option>
             </select>
           </div>
           <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--muted)', paddingBottom: 10 }}>
@@ -424,8 +457,10 @@ function TabBodega({ bodega, umbral, columnas }: { bodega: OtstBodega[], umbral:
                 const abandonada = antig >= umbral
                 return (
                   <tr key={r.id} style={{ borderBottom: '1px solid rgba(221,227,237,.5)' }}>
-                    <td style={{ padding: '10px 14px', fontWeight: 600 }}>{r.otst}</td>
-                    <td style={{ padding: '10px 14px', fontSize: 11 }}>{r.correo_cliente || '—'}</td>
+                    <td style={{ padding: '10px 14px', fontWeight: 600 }}><OtstLink otst={r.otst} /></td>
+                    <td style={{ padding: '10px 14px', fontSize: 11 }}>
+                      {r.correo_cliente ? <CopyableText value={r.correo_cliente} /> : '—'}
+                    </td>
                     <td style={TMONO}>{nombreMesAnio(r.mes_ingreso, r.anio_ingreso)}</td>
                     <td style={{ padding: '10px 14px' }}><span style={B_LOC}>{codigoUbicacion(r.columna, r.fila, r.subcolumna)}</span></td>
                     <td style={{ padding: '10px 14px' }}>
@@ -435,15 +470,28 @@ function TabBodega({ bodega, umbral, columnas }: { bodega: OtstBodega[], umbral:
                       </span>
                     </td>
                     <td style={{ padding: '10px 14px' }}>
-                      <span style={r.estado === 'contactado' ? B_CONTACTADO : B_LOC}>
-                        {r.estado === 'contactado' ? 'Contactado' : 'En bodega'}
-                      </span>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                          {r.estado === 'novedad'
+                            ? <span style={B_NOVEDAD}><MapPinOff size={11} style={{ marginRight: 3, verticalAlign: -1 }} />Novedad</span>
+                            : <span style={r.estado === 'contactado' ? B_CONTACTADO : B_LOC}>{r.estado === 'contactado' ? 'Contactado' : 'En bodega'}</span>}
+                          {otstPendientes.has(r.otst.trim().toLowerCase()) && <span style={B_PENDIENTE}>📋 Pendiente</span>}
+                        </div>
+                        {r.estado === 'novedad' && r.responsable_novedad && (
+                          <span style={{ fontSize: 10, color: 'var(--muted)', fontFamily: 'var(--mono)' }}>→ {r.responsable_novedad}</span>
+                        )}
+                      </div>
                     </td>
                     <td style={{ padding: '8px 14px', whiteSpace: 'nowrap' }}>
                       <div style={{ display: 'flex', gap: 6 }}>
                         <IconBtn title="Mover"     onClick={() => setAccionItem({ item: r, tipo: 'mover' })}><ArrowRightLeft size={14} /></IconBtn>
                         <IconBtn title="Contactar" onClick={() => setAccionItem({ item: r, tipo: 'contactar' })}><Mail size={14} /></IconBtn>
                         <IconBtn title="Retirar"   onClick={() => setAccionItem({ item: r, tipo: 'retirar' })}><CheckCircle2 size={14} /></IconBtn>
+                        {!otstPendientes.has(r.otst.trim().toLowerCase()) && (
+                          <IconBtn title="Agregar a pendientes de despacho" onClick={() => setAccionItem({ item: r, tipo: 'pendiente' })}>
+                            <ListTodo size={14} />
+                          </IconBtn>
+                        )}
                         {isAdmin && (
                           <IconBtn title="Eliminar" onClick={() => setAccionItem({ item: r, tipo: 'eliminar' })}>
                             <Trash2 size={14} color="#c0392b" />
@@ -463,6 +511,7 @@ function TabBodega({ bodega, umbral, columnas }: { bodega: OtstBodega[], umbral:
       {accionItem?.tipo === 'contactar' && <ModalContactar item={accionItem.item} onClose={() => setAccionItem(null)} />}
       {accionItem?.tipo === 'retirar'   && <ModalRetirar   item={accionItem.item} onClose={() => setAccionItem(null)} />}
       {accionItem?.tipo === 'eliminar'  && <ModalEliminar  item={accionItem.item} onClose={() => setAccionItem(null)} />}
+      {accionItem?.tipo === 'pendiente' && <ModalAgregarPendiente item={accionItem.item} onClose={() => setAccionItem(null)} />}
     </div>
   )
 }
@@ -670,6 +719,376 @@ function ModalEliminar({ item, onClose }: { item: OtstBodega, onClose: () => voi
   )
 }
 
+function ModalAgregarPendiente({ item, onClose }: { item: OtstBodega, onClose: () => void }) {
+  const qc              = useQueryClient()
+  const { displayName } = useUser()
+  const [nota, setNota] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  async function submit() {
+    setSaving(true)
+    const { error } = await supabase.from('otst_bodega_pendientes').insert({
+      otst: item.otst, otst_id: item.id, nota: nota.trim() || null, solicitado_por: displayName, estado: 'pendiente',
+    })
+    setSaving(false)
+    if (error) { toast.error('Error: ' + error.message); return }
+    toast.success('Agregada a pendientes de despacho')
+    qc.invalidateQueries({ queryKey: ['otst_bodega_pendientes'] })
+    onClose()
+  }
+
+  return (
+    <Modal open onClose={onClose} title={`Agregar a pendientes — OTST ${item.otst}`}>
+      <div style={{ ...PREVIEW, marginTop: 0 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.6px', fontFamily: 'var(--mono)', color: 'var(--accent)', marginBottom: 4 }}>
+          Ubicación actual
+        </div>
+        <div style={{ fontSize: 20, fontWeight: 800, fontFamily: 'var(--mono)' }}>{codigoUbicacion(item.columna, item.fila, item.subcolumna)}</div>
+      </div>
+      <FG label="Motivo de la solicitud" hint="Ej. Cliente pidió despacho por correo / pasar a logística para envío">
+        <textarea value={nota} onChange={e => setNota(e.target.value)} placeholder="Opcional..." rows={2} style={{ ...INP, resize: 'vertical' }} autoFocus />
+      </FG>
+      <Actions>
+        <button onClick={onClose} style={GHOST}>Cancelar</button>
+        <button onClick={submit} disabled={saving} style={PRI}>{saving ? 'Guardando…' : '+ Agregar a pendientes'}</button>
+      </Actions>
+    </Modal>
+  )
+}
+
+function ModalNovedad({ item, onClose }: { item: OtstBodega, onClose: () => void }) {
+  const qc              = useQueryClient()
+  const { displayName } = useUser()
+  const { data: profiles = [] } = useProfiles()
+  const activos = profiles.filter(p => p.activo)
+  const [responsable, setResponsable] = useState('')
+  const [motivo, setMotivo] = useState('No se encontró físicamente en la ubicación registrada')
+  const [saving, setSaving] = useState(false)
+
+  async function submit() {
+    if (!responsable) { toast.error('Selecciona un responsable'); return }
+    setSaving(true)
+    const codigo = codigoUbicacion(item.columna, item.fila, item.subcolumna)
+    const { error } = await supabase.from('otst_bodega')
+      .update({ estado: 'novedad', responsable_novedad: responsable, updated_at: new Date().toISOString() })
+      .eq('id', item.id)
+    if (error) { toast.error('Error: ' + error.message); setSaving(false); return }
+
+    const { error: movError } = await supabase.from('otst_bodega_movimientos').insert({
+      otst_id: item.id, tipo: 'novedad', usuario: displayName,
+      ubicacion_origen: codigo, ubicacion_destino: codigo,
+      motivo: `${motivo.trim() || 'Novedad reportada'} — asignado a ${responsable}`,
+    })
+    setSaving(false)
+    if (movError) toast.error('Se marcó la novedad, pero falló el historial: ' + movError.message)
+    else toast.success('OTST marcada con novedad')
+    qc.invalidateQueries({ queryKey: ['otst_bodega'] })
+    qc.invalidateQueries({ queryKey: ['otst_bodega_movimientos'] })
+    onClose()
+  }
+
+  return (
+    <Modal open onClose={onClose} title={`Marcar novedad — OTST ${item.otst}`}>
+      <p style={{ fontSize: 13, color: 'var(--muted)' }}>
+        El sistema indica que debería estar en <strong>{codigoUbicacion(item.columna, item.fila, item.subcolumna)}</strong>, pero no se encontró físicamente. Asigna un responsable para investigarlo.
+      </p>
+      <FG label="Motivo / detalle">
+        <textarea value={motivo} onChange={e => setMotivo(e.target.value)} rows={2} style={{ ...INP, resize: 'vertical' }} />
+      </FG>
+      <div style={{ marginTop: 14 }}>
+        <FG label="Responsable de investigar">
+          <select value={responsable} onChange={e => setResponsable(e.target.value)} style={INP}>
+            <option value="">Seleccionar...</option>
+            {activos.map(p => (
+              <option key={p.id} value={p.full_name || p.email}>{p.full_name || p.email}</option>
+            ))}
+          </select>
+        </FG>
+      </div>
+      <Actions>
+        <button onClick={onClose} style={GHOST}>Cancelar</button>
+        <button onClick={submit} disabled={saving} style={{ ...PRI, background: '#c0392b' }}>{saving ? 'Guardando…' : '⚠ Marcar novedad'}</button>
+      </Actions>
+    </Modal>
+  )
+}
+
+function ModalResolverNovedad({ item, onClose }: { item: OtstBodega, onClose: () => void }) {
+  const qc              = useQueryClient()
+  const { displayName } = useUser()
+  const [nota, setNota] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  async function submit() {
+    setSaving(true)
+    const codigo = codigoUbicacion(item.columna, item.fila, item.subcolumna)
+    const { error } = await supabase.from('otst_bodega')
+      .update({ estado: 'en_bodega', responsable_novedad: null, updated_at: new Date().toISOString() })
+      .eq('id', item.id)
+    if (error) { toast.error('Error: ' + error.message); setSaving(false); return }
+
+    const { error: movError } = await supabase.from('otst_bodega_movimientos').insert({
+      otst_id: item.id, tipo: 'novedad', usuario: displayName,
+      ubicacion_origen: codigo, ubicacion_destino: codigo,
+      motivo: `Novedad resuelta${nota.trim() ? ': ' + nota.trim() : ''}`,
+    })
+    setSaving(false)
+    if (movError) toast.error('Se resolvió, pero falló el historial: ' + movError.message)
+    else toast.success('Novedad resuelta')
+    qc.invalidateQueries({ queryKey: ['otst_bodega'] })
+    qc.invalidateQueries({ queryKey: ['otst_bodega_movimientos'] })
+    onClose()
+  }
+
+  return (
+    <Modal open onClose={onClose} title={`Resolver novedad — OTST ${item.otst}`}>
+      <p style={{ fontSize: 13, color: 'var(--muted)' }}>
+        Responsable actual: <strong>{item.responsable_novedad || '—'}</strong>
+      </p>
+      <FG label="¿Cómo se resolvió?">
+        <textarea value={nota} onChange={e => setNota(e.target.value)} placeholder="Ej. Se encontró en la misma ubicación, estaba mal registrada la fila..." rows={2} style={{ ...INP, resize: 'vertical' }} autoFocus />
+      </FG>
+      <Actions>
+        <button onClick={onClose} style={GHOST}>Cancelar</button>
+        <button onClick={submit} disabled={saving} style={PRI}>{saving ? 'Guardando…' : '✓ Resolver novedad'}</button>
+      </Actions>
+    </Modal>
+  )
+}
+
+// ── Tab Pendientes (to-do de despachos) ─────────────────────────────────────────
+
+function diasTranscurridos(fecha: string): number {
+  return Math.max(0, Math.floor((Date.now() - new Date(fecha).getTime()) / 86400000))
+}
+
+function TabPendientes({ bodega, pendientes, umbral }: { bodega: OtstBodega[], pendientes: OtstBodegaPendiente[], umbral: number }) {
+  const qc              = useQueryClient()
+  const { displayName } = useUser()
+  const otstRef          = useRef<HTMLInputElement>(null)
+  const [otstInput, setOtstInput] = useState('')
+  const [notaInput, setNotaInput] = useState('')
+  const [saving,    setSaving]    = useState(false)
+  const [verCompletados, setVerCompletados] = useState(false)
+  const [completando, setCompletando] = useState<{ pendiente: OtstBodegaPendiente, item: OtstBodega } | null>(null)
+  const [marcandoNovedad, setMarcandoNovedad] = useState<OtstBodega | null>(null)
+  const [resolviendoNovedad, setResolviendoNovedad] = useState<OtstBodega | null>(null)
+
+  function resolverItem(p: OtstBodegaPendiente): OtstBodega | undefined {
+    return bodega.find(b => b.otst.trim().toLowerCase() === p.otst.trim().toLowerCase())
+  }
+
+  const yaTienePendiente = new Set(pendientes.filter(p => p.estado === 'pendiente').map(p => p.otst.trim().toLowerCase()))
+
+  async function agregar() {
+    const otst = otstInput.trim()
+    if (!otst) { toast.error('Ingresa el número de OTST'); return }
+    if (yaTienePendiente.has(otst.toLowerCase())) { toast.error(`Ya existe una solicitud pendiente para la OTST ${otst}`); return }
+    setSaving(true)
+    const match = bodega.find(b => b.otst.trim().toLowerCase() === otst.toLowerCase())
+    const { error } = await supabase.from('otst_bodega_pendientes').insert({
+      otst, otst_id: match?.id ?? null, nota: notaInput.trim() || null, solicitado_por: displayName, estado: 'pendiente',
+    })
+    setSaving(false)
+    if (error) { toast.error('Error: ' + error.message); return }
+    toast.success(match ? 'Agregada a pendientes de despacho' : 'Agregada a pendientes (aún no está registrada en bodega)')
+    qc.invalidateQueries({ queryKey: ['otst_bodega_pendientes'] })
+    setOtstInput(''); setNotaInput('')
+    otstRef.current?.focus()
+  }
+
+  async function quitar(id: string) {
+    const { error } = await supabase.from('otst_bodega_pendientes').delete().eq('id', id)
+    if (error) { toast.error('Error: ' + error.message); return }
+    qc.invalidateQueries({ queryKey: ['otst_bodega_pendientes'] })
+  }
+
+  const abiertos = pendientes
+    .filter(p => p.estado === 'pendiente')
+    .map(p => ({ p, item: resolverItem(p) }))
+    .sort((a, b) => a.p.created_at.localeCompare(b.p.created_at))
+
+  const completados = pendientes
+    .filter(p => p.estado === 'completado')
+    .map(p => ({ p, item: resolverItem(p) }))
+
+  return (
+    <div>
+      <Card>
+        <SecTitle>Agregar solicitud de despacho</SecTitle>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+          <div style={{ flex: '0 0 160px' }}>
+            <FL>OTST</FL>
+            <input
+              ref={otstRef} value={otstInput}
+              onChange={e => setOtstInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); agregar() } }}
+              placeholder="Número..." style={INP} autoFocus
+            />
+          </div>
+          <div style={{ flex: 1, minWidth: 200 }}>
+            <FL>Motivo (opcional)</FL>
+            <input
+              value={notaInput} onChange={e => setNotaInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); agregar() } }}
+              placeholder="Ej. Cliente pidió despacho por correo..." style={INP}
+            />
+          </div>
+          <button onClick={agregar} disabled={saving} style={PRI}>{saving ? 'Guardando…' : '+ Agregar'}</button>
+        </div>
+      </Card>
+
+      <div style={{ marginTop: 20 }}>
+        <SecTitle>Pendientes de despacho ({abiertos.length})</SecTitle>
+        {abiertos.length === 0 ? (
+          <Card><div style={EMPTY}><ListTodo size={32} strokeWidth={1.5} /><p>No hay solicitudes pendientes</p></div></Card>
+        ) : (
+          <Card bodyStyle={{ padding: 0 }}>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                <thead>
+                  <tr>
+                    {['OTST', 'Ubicación', 'Antigüedad', 'Solicitado por', 'Hace', 'Nota', 'Acciones'].map(h => (
+                      <th key={h} style={TH}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {abiertos.map(({ p, item }) => {
+                    const dias = diasTranscurridos(p.created_at)
+                    const antig = item ? mesesTranscurridos(item.mes_ingreso, item.anio_ingreso) : null
+                    return (
+                      <tr key={p.id} style={{ borderBottom: '1px solid rgba(221,227,237,.5)' }}>
+                        <td style={{ padding: '10px 14px', fontWeight: 600 }}><OtstLink otst={p.otst} /></td>
+                        <td style={{ padding: '10px 14px' }}>
+                          {!item ? (
+                            <span style={B_ABANDONADA}><AlertTriangle size={11} style={{ marginRight: 3, verticalAlign: -1 }} />No encontrada en bodega</span>
+                          ) : item.estado === 'novedad' ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                              <span style={B_NOVEDAD}><MapPinOff size={11} style={{ marginRight: 3, verticalAlign: -1 }} />Novedad en {codigoUbicacion(item.columna, item.fila, item.subcolumna)}</span>
+                              {item.responsable_novedad && <span style={{ fontSize: 10, color: 'var(--muted)', fontFamily: 'var(--mono)' }}>→ {item.responsable_novedad}</span>}
+                            </div>
+                          ) : (
+                            <span style={{ ...B_LOC, fontSize: 13, fontWeight: 700 }}>{codigoUbicacion(item.columna, item.fila, item.subcolumna)}</span>
+                          )}
+                        </td>
+                        <td style={{ padding: '10px 14px' }}>
+                          {antig === null ? '—' : (
+                            <span style={antig >= umbral ? B_ABANDONADA : B_OK}>{antig} mes{antig !== 1 ? 'es' : ''}</span>
+                          )}
+                        </td>
+                        <td style={{ padding: '10px 14px' }}>{p.solicitado_por || '—'}</td>
+                        <td style={TMONO}>hace {dias} día{dias !== 1 ? 's' : ''}</td>
+                        <td style={{ padding: '10px 14px', maxWidth: 220 }}>{p.nota || '—'}</td>
+                        <td style={{ padding: '8px 14px', whiteSpace: 'nowrap' }}>
+                          <div style={{ display: 'flex', gap: 6 }}>
+                            {item && (
+                              <button onClick={() => setCompletando({ pendiente: p, item })} style={{ ...PRI, padding: '6px 12px', fontSize: 12 }}>
+                                ✓ Completar
+                              </button>
+                            )}
+                            {item && (
+                              item.estado === 'novedad' ? (
+                                <IconBtn title="Resolver novedad" onClick={() => setResolviendoNovedad(item)}>
+                                  <CheckCircle2 size={14} color="#7c3aed" />
+                                </IconBtn>
+                              ) : (
+                                <IconBtn title="No se encontró físicamente / marcar novedad" onClick={() => setMarcandoNovedad(item)}>
+                                  <MapPinOff size={14} color="#c0392b" />
+                                </IconBtn>
+                              )
+                            )}
+                            <IconBtn title="Quitar de pendientes" onClick={() => quitar(p.id)}><X size={14} /></IconBtn>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        )}
+      </div>
+
+      <div style={{ marginTop: 20 }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--muted)', cursor: 'pointer' }}>
+          <input type="checkbox" checked={verCompletados} onChange={e => setVerCompletados(e.target.checked)} />
+          Ver completados ({completados.length})
+        </label>
+        {verCompletados && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 12 }}>
+            {completados.map(({ p, item }) => (
+              <div key={p.id} style={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 16px', fontSize: 12, opacity: .8 }}>
+                <strong>OTST <OtstLink otst={p.otst} /></strong>{item ? ` (${codigoUbicacion(item.columna, item.fila, item.subcolumna)})` : ''} — despachado por {p.completado_por || '—'} el {p.completado_at ? new Date(p.completado_at).toLocaleString() : '—'}
+                {p.nota && <div style={{ marginTop: 4, color: 'var(--muted)' }}>{p.nota}</div>}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {completando && (
+        <ModalCompletarPendiente pendiente={completando.pendiente} item={completando.item} onClose={() => setCompletando(null)} />
+      )}
+      {marcandoNovedad && (
+        <ModalNovedad item={marcandoNovedad} onClose={() => setMarcandoNovedad(null)} />
+      )}
+      {resolviendoNovedad && (
+        <ModalResolverNovedad item={resolviendoNovedad} onClose={() => setResolviendoNovedad(null)} />
+      )}
+    </div>
+  )
+}
+
+function ModalCompletarPendiente({ pendiente, item, onClose }: { pendiente: OtstBodegaPendiente, item: OtstBodega, onClose: () => void }) {
+  const qc              = useQueryClient()
+  const { displayName } = useUser()
+  const [motivo, setMotivo] = useState(pendiente.nota || '')
+  const [saving, setSaving] = useState(false)
+
+  async function submit() {
+    setSaving(true)
+    const codigo = codigoUbicacion(item.columna, item.fila, item.subcolumna)
+    const { error } = await supabase.from('otst_bodega')
+      .update({ estado: 'retirado', updated_at: new Date().toISOString() })
+      .eq('id', item.id)
+    if (error) { toast.error('Error: ' + error.message); setSaving(false); return }
+
+    const { error: movError } = await supabase.from('otst_bodega_movimientos').insert({
+      otst_id: item.id, tipo: 'retiro', usuario: displayName,
+      ubicacion_origen: codigo, ubicacion_destino: codigo, motivo: motivo.trim() || null,
+    })
+    const { error: pendError } = await supabase.from('otst_bodega_pendientes')
+      .update({ estado: 'completado', completado_por: displayName, completado_at: new Date().toISOString() })
+      .eq('id', pendiente.id)
+
+    setSaving(false)
+    if (movError || pendError) toast.error('Se retiró, pero falló actualizar el historial/pendiente')
+    else toast.success('OTST despachada y retirada de bodega')
+
+    qc.invalidateQueries({ queryKey: ['otst_bodega'] })
+    qc.invalidateQueries({ queryKey: ['otst_bodega_movimientos'] })
+    qc.invalidateQueries({ queryKey: ['otst_bodega_pendientes'] })
+    onClose()
+  }
+
+  return (
+    <Modal open onClose={onClose} title={`Completar despacho — OTST ${item.otst}`}>
+      <p style={{ fontSize: 13, color: 'var(--muted)' }}>
+        Esto marca la OTST como retirada de bodega y cierra esta solicitud pendiente.
+      </p>
+      <FG label="Motivo / observación">
+        <textarea value={motivo} onChange={e => setMotivo(e.target.value)} placeholder="Opcional..." rows={2} style={{ ...INP, resize: 'vertical' }} />
+      </FG>
+      <Actions>
+        <button onClick={onClose} style={GHOST}>Cancelar</button>
+        <button onClick={submit} disabled={saving} style={PRI}>{saving ? 'Guardando…' : '✓ Confirmar despacho'}</button>
+      </Actions>
+    </Modal>
+  )
+}
+
 // ── Tab Historial ──────────────────────────────────────────────────────────────
 
 function TabHistorial({ bodega, movimientos }: { bodega: OtstBodega[], movimientos: OtstBodegaMovimiento[] }) {
@@ -700,12 +1119,12 @@ function TabHistorial({ bodega, movimientos }: { bodega: OtstBodega[], movimient
 function TimelineCard({ item, movimientos }: { item: OtstBodega, movimientos: OtstBodegaMovimiento[] }) {
   const { isAdmin } = useUser()
   const [eliminando, setEliminando] = useState(false)
-  const iconos: Record<string, string> = { ingreso: '📥', traslado: '🔄', contacto: '✉️', retiro: '✅' }
+  const iconos: Record<string, string> = { ingreso: '📥', traslado: '🔄', contacto: '✉️', retiro: '✅', novedad: '⚠️' }
   return (
     <div style={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 12, padding: 20, marginBottom: 12 }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 12 }}>
         <div>
-          <div style={{ fontSize: 14, fontWeight: 700 }}>OTST {item.otst}</div>
+          <div style={{ fontSize: 14, fontWeight: 700 }}>OTST <OtstLink otst={item.otst} /></div>
           <div style={{ fontSize: 11, marginTop: 4, color: 'var(--muted)', fontFamily: 'var(--mono)' }}>
             Ubicación actual: {codigoUbicacion(item.columna, item.fila, item.subcolumna)} · {item.estado}
           </div>
@@ -907,6 +1326,38 @@ function TabConfig({ zonas, config, bodega }: { zonas: OtstBodegaZona[], config?
 
 // ── Shared UI components ───────────────────────────────────────────────────────
 
+function OtstLink({ otst }: { otst: string }) {
+  return (
+    <a href={INTRANET_URL + otst} target="_blank" rel="noopener noreferrer"
+      onClick={e => e.stopPropagation()}
+      style={{
+        color: 'var(--accent)', fontFamily: 'var(--mono)', fontWeight: 700, fontSize: 'inherit',
+        textDecoration: 'none', padding: '2px 7px', borderRadius: 6,
+        background: 'var(--accent-bg)', display: 'inline-block', transition: 'all .15s',
+      }}
+      onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.background = 'var(--accent)'; el.style.color = '#fff' }}
+      onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.background = 'var(--accent-bg)'; el.style.color = 'var(--accent)' }}
+    >
+      {otst}
+    </a>
+  )
+}
+
+function CopyableText({ value }: { value: string }) {
+  function copy(e: React.MouseEvent) {
+    e.stopPropagation()
+    navigator.clipboard.writeText(value).then(() => toast.success('Correo copiado al portapapeles'))
+  }
+  return (
+    <span onClick={copy} title="Clic para copiar" style={{ cursor: 'pointer' }}
+      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.textDecoration = 'underline' }}
+      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.textDecoration = 'none' }}
+    >
+      {value}
+    </span>
+  )
+}
+
 function IconBtn({ title, onClick, children }: { title: string, onClick: () => void, children: React.ReactNode }) {
   return (
     <button title={title} onClick={onClick} style={{
@@ -985,6 +1436,8 @@ const B_LOC: React.CSSProperties = { display: 'inline-block', padding: '2px 8px'
 const B_OK: React.CSSProperties  = { display: 'inline-block', padding: '2px 8px', borderRadius: 20, fontFamily: 'var(--mono)', fontSize: 10, fontWeight: 500, background: 'rgba(46,158,78,.1)', color: '#2e9e4e', border: '1px solid rgba(46,158,78,.25)' }
 const B_ABANDONADA: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: 20, fontFamily: 'var(--mono)', fontSize: 10, fontWeight: 700, background: 'rgba(192,57,43,.1)', color: '#c0392b', border: '1px solid rgba(192,57,43,.3)' }
 const B_CONTACTADO: React.CSSProperties = { display: 'inline-block', padding: '2px 8px', borderRadius: 20, fontFamily: 'var(--mono)', fontSize: 10, fontWeight: 500, background: 'rgba(224,123,0,.1)', color: '#e07b00', border: '1px solid rgba(224,123,0,.25)' }
+const B_PENDIENTE: React.CSSProperties = { display: 'inline-block', padding: '2px 8px', borderRadius: 20, fontFamily: 'var(--mono)', fontSize: 10, fontWeight: 700, background: 'rgba(124,58,237,.1)', color: '#7c3aed', border: '1px solid rgba(124,58,237,.3)' }
+const B_NOVEDAD: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: 20, fontFamily: 'var(--mono)', fontSize: 10, fontWeight: 700, background: 'rgba(192,57,43,.1)', color: '#c0392b', border: '1px solid rgba(192,57,43,.3)' }
 
 const EMPTY_TD: React.CSSProperties = { textAlign: 'center', padding: '40px 20px', color: 'var(--muted)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }
 const EMPTY: React.CSSProperties    = { textAlign: 'center', padding: '50px 20px', color: 'var(--muted)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }

@@ -50,7 +50,7 @@ function HamburgerIcon({ open }: { open: boolean }) {
 
 const NAV_ITEMS = [
   { to: '/llamadas',    label: 'Control Llamadas',   icon: Phone        },
-  { to: '/bodega',      label: 'Bodega OTST',         icon: Warehouse    },
+  { to: '/bodega',      label: 'Bodega',              icon: Warehouse    },
   { to: '/consumibles', label: 'Consumibles',         icon: Package      },
   { to: '/tarifas',     label: 'Tarifas de Envío',   icon: DollarSign   },
   { to: '/codigos',     label: 'Códigos y Partes',   icon: Wrench       },

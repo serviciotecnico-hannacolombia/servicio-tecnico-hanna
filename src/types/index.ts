@@ -140,8 +140,8 @@ export interface TarifaEnvio {
   tarifa_mas_6m: number | null
 }
 
-export type EstadoOtstBodega = 'en_bodega' | 'contactado' | 'retirado'
-export type TipoMovimientoOtst = 'ingreso' | 'traslado' | 'contacto' | 'retiro'
+export type EstadoOtstBodega = 'en_bodega' | 'contactado' | 'retirado' | 'novedad'
+export type TipoMovimientoOtst = 'ingreso' | 'traslado' | 'contacto' | 'retiro' | 'novedad'
 
 export interface OtstBodega {
   id: string
@@ -155,6 +155,7 @@ export interface OtstBodega {
   estado: EstadoOtstBodega
   nota: string | null
   usuario: string | null
+  responsable_novedad: string | null
   created_at: string
   updated_at: string
 }
@@ -182,6 +183,20 @@ export interface OtstBodegaConfig {
   id: number
   umbral_meses: number
   columnas: string[]
+}
+
+export type EstadoPendienteOtst = 'pendiente' | 'completado'
+
+export interface OtstBodegaPendiente {
+  id: string
+  otst: string
+  otst_id: string | null
+  nota: string | null
+  estado: EstadoPendienteOtst
+  solicitado_por: string | null
+  completado_por: string | null
+  completado_at: string | null
+  created_at: string
 }
 
 export interface PlantillaInforme {
