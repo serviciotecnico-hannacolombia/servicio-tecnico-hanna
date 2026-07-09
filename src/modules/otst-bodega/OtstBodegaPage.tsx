@@ -31,16 +31,24 @@ interface ParsedOtstQR {
   correo: string
 }
 
+// Algunos lectores de QR emiten teclas en layout US mientras Windows está en
+// layout ES, lo que corrompe los separadores: '-' → ', '|' → Ç/], '@' → ".
+// Se acepta cualquiera de esas variantes al parsear.
+const SEP_GRUPO = /['-]/
+const SEP_CORREO = /[|Çç\]}]/
+
 function parseOtstQR(raw: string): ParsedOtstQR | null {
-  if (!raw.includes('|')) return null
-  const [izq, correo] = raw.split('|')
-  const partes = izq.trim().split('-')
+  const sepIdx = raw.search(SEP_CORREO)
+  if (sepIdx === -1) return null
+  const izq = raw.slice(0, sepIdx)
+  const correo = raw.slice(sepIdx + 1).replace(/"/g, '@')
+  const partes = izq.trim().split(SEP_GRUPO)
   if (partes.length !== 3) return null
   const [otst, mesStr, anioStr] = partes
   const mes  = parseInt(mesStr, 10)
   const anio = parseInt(anioStr, 10)
   if (!otst.trim() || !mes || mes < 1 || mes > 12 || !anio || anio < 2000 || anio > 2100) return null
-  return { otst: otst.trim(), mes, anio, correo: (correo ?? '').trim() }
+  return { otst: otst.trim(), mes, anio, correo: correo.trim() }
 }
 
 function codigoUbicacion(columna: string, fila: number | string, subcolumna: number | string): string {
