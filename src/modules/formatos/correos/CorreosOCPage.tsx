@@ -60,6 +60,12 @@ function formatearFecha(iso: string): string {
   return `${d}/${m}/${y}`
 }
 
+const SITIOS_SERVICIO = [
+  'En Hanna Sede El Dorado',
+  'En Laboratorio Permanente',
+  'En Instalaciones del cliente final',
+]
+
 function generarMailto(
   destinatarios: CorreoDestinatario[],
   ocCompleta: string,
@@ -68,6 +74,7 @@ function generarMailto(
   rmv: string,
   otst: string,
   fechaEnvio: string,
+  sitio: string,
 ): string {
   const to = destinatarios.filter(d => d.tipo === 'to').map(d => d.email).join(',')
   const cc = destinatarios.filter(d => d.tipo === 'cc').map(d => d.email).join(',')
@@ -86,6 +93,7 @@ function generarMailto(
       ? [`  • OTST    : ${otst}${fechaEnvio ? `  (Envío est. ${formatearFecha(fechaEnvio)})` : ''}`]
       : []),
     `  • N° OC   : ${ocCompleta}`,
+    `  • Sitio   : ${sitio}`,
     ``,
     `Quedo atento a cualquier novedad.`,
     ``,
@@ -108,12 +116,13 @@ export function CorreosOCPage() {
   const [rmv, setRmv]                 = useState('')
   const [otst, setOtst]               = useState('')
   const [fechaEnvio, setFechaEnvio]   = useState('')
+  const [sitio, setSitio]             = useState('')
   const [abierto, setAbierto]         = useState(false)
 
   const ocCompleta = numOC.trim() ? construirOC(numOC) : ''
 
   const limpiar = () => {
-    setNumOC(''); setCliente(''); setNit(''); setRmv(''); setOtst(''); setFechaEnvio('')
+    setNumOC(''); setCliente(''); setNit(''); setRmv(''); setOtst(''); setFechaEnvio(''); setSitio('')
     setAbierto(false)
   }
 
@@ -147,13 +156,13 @@ export function CorreosOCPage() {
   const toList = destinatarios.filter(d => d.tipo === 'to')
   const ccList = destinatarios.filter(d => d.tipo === 'cc')
 
-  const camposOk = proveedorId && numOC.trim() && cliente.trim() && nit.trim() && rmv.trim() && (!otst.trim() || fechaEnvio)
+  const camposOk = proveedorId && numOC.trim() && cliente.trim() && nit.trim() && rmv.trim() && !!sitio && (!otst.trim() || fechaEnvio)
   const destinatariosOk = toList.length > 0
 
   const handleAbrir = () => {
     if (!camposOk) return toast.error('Completa todos los campos obligatorios')
     if (!destinatariosOk) return toast.error('Este proveedor no tiene destinatarios TO configurados')
-    const url = generarMailto(destinatarios, ocCompleta, cliente, nit, rmv, otst, fechaEnvio)
+    const url = generarMailto(destinatarios, ocCompleta, cliente, nit, rmv, otst, fechaEnvio, sitio)
     window.location.href = url
     setAbierto(true)
   }
@@ -267,6 +276,16 @@ export function CorreosOCPage() {
               />
             </div>
           )}
+        </div>
+
+        <div>
+          <label style={labelStyle}>
+            Sitio de programación del servicio <span style={{ color: 'var(--red)', marginLeft: 2 }}>*</span>
+          </label>
+          <select style={inputStyle} value={sitio} onChange={e => setSitio(e.target.value)}>
+            <option value="">— Selecciona el sitio —</option>
+            {SITIOS_SERVICIO.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
         </div>
 
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
