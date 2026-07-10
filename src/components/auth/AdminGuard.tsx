@@ -1,10 +1,11 @@
 import { Navigate } from 'react-router-dom'
 import { useUser } from '../../hooks/useUser'
+import { getDefaultRoute } from '../../lib/constants'
 import { Spinner } from '../ui/Spinner'
 import type { ReactNode } from 'react'
 
 export function AdminGuard({ children }: { children: ReactNode }) {
-  const { isAdmin, loading } = useUser()
+  const { isAdmin, hasModule, loading } = useUser()
 
   if (loading) {
     return (
@@ -14,7 +15,7 @@ export function AdminGuard({ children }: { children: ReactNode }) {
     )
   }
 
-  if (!isAdmin) return <Navigate to="/llamadas" replace />
+  if (!isAdmin) return <Navigate to={getDefaultRoute(hasModule)} replace />
 
   return <>{children}</>
 }

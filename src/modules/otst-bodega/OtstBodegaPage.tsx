@@ -149,9 +149,9 @@ export function OtstBodegaPage() {
 
       <div style={{ display: 'flex', gap: 4, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 4, marginBottom: 24 }}>
         {([
-          ...(canRegistrarIngreso ? [['ingreso', '📥', 'Ingreso']] : []),
+          ['pendientes', '📋', 'Despacho'],
           ['bodega',     '🗄️', 'Bodega'],
-          ['pendientes', '📋', 'Pendientes'],
+          ...(canRegistrarIngreso ? [['ingreso', '📥', 'Ingreso']] : []),
           ['historial',  '🕓', 'Historial'],
           ['config',     '⚙️', 'Config'],
         ] as [Tab, string, string][]).map(([id, icon, label]) => (

@@ -1,19 +1,25 @@
 import { useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Mail, Lock } from 'lucide-react'
+import { Mail, Lock, User } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
+import { getDefaultRoute } from '../../lib/constants'
 import { useUser } from '../../hooks/useUser'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
 import { Spinner } from '../ui/Spinner'
 import logo from '../../assets/logo.svg'
 
+const ALLOWED_DOMAIN = 'hannacolombia.com'
+
 export function LoginPage() {
-  const { user, loading } = useUser()
+  const { user, loading, hasModule } = useUser()
   const navigate = useNavigate()
+  const [mode, setMode] = useState<'login' | 'signup'>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [fullName, setFullName] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
   if (loading) {
@@ -24,9 +30,15 @@ export function LoginPage() {
     )
   }
 
-  if (user) return <Navigate to="/llamadas" replace />
+  if (user) return <Navigate to={getDefaultRoute(hasModule)} replace />
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const switchMode = (next: 'login' | 'signup') => {
+    setMode(next)
+    setPassword('')
+    setConfirmPassword('')
+  }
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setSubmitting(true)
     const { error } = await supabase.auth.signInWithPassword({ email, password })
@@ -36,9 +48,39 @@ export function LoginPage() {
         ? 'Correo o contraseña incorrectos'
         : error.message)
     } else {
-      navigate('/llamadas')
+      navigate('/')
     }
   }
+
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!email.toLowerCase().endsWith(`@${ALLOWED_DOMAIN}`)) {
+      toast.error(`Solo se permiten cuentas con correo @${ALLOWED_DOMAIN}`)
+      return
+    }
+    if (password !== confirmPassword) {
+      toast.error('Las contraseñas no coinciden')
+      return
+    }
+    setSubmitting(true)
+    try {
+      const { data, error } = await supabase.functions.invoke('self-signup', {
+        body: { email, full_name: fullName, password },
+      })
+      if (error) throw error
+      if (!data?.success) throw new Error(data?.error ?? 'Error al crear la cuenta')
+
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
+      if (signInError) throw signInError
+      navigate('/')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Error al crear la cuenta')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handleSubmit = mode === 'login' ? handleLogin : handleSignup
 
   return (
     <div style={{
@@ -88,14 +130,25 @@ export function LoginPage() {
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {mode === 'signup' && (
+            <Input
+              label="Nombre completo"
+              value={fullName}
+              onChange={e => setFullName(e.target.value)}
+              placeholder="Ej: José Arcadio Buendía"
+              required
+              autoFocus
+              icon={<User size={15} />}
+            />
+          )}
           <Input
             label="Correo electrónico"
             type="email"
             value={email}
             onChange={e => setEmail(e.target.value)}
-            placeholder="usuario@hannainst.com"
+            placeholder={mode === 'signup' ? `usuario@${ALLOWED_DOMAIN}` : 'usuario@hannainst.com'}
             required
-            autoFocus
+            autoFocus={mode === 'login'}
             icon={<Mail size={15} />}
           />
           <Input
@@ -105,19 +158,55 @@ export function LoginPage() {
             onChange={e => setPassword(e.target.value)}
             placeholder="••••••••"
             required
+            minLength={mode === 'signup' ? 6 : undefined}
             icon={<Lock size={15} />}
           />
+          {mode === 'signup' && (
+            <Input
+              label="Confirmar contraseña"
+              type="password"
+              value={confirmPassword}
+              onChange={e => setConfirmPassword(e.target.value)}
+              placeholder="••••••••"
+              required
+              minLength={6}
+              icon={<Lock size={15} />}
+            />
+          )}
           <Button
             type="submit"
             disabled={submitting}
             style={{ marginTop: 8, width: '100%', padding: '11px 18px', fontSize: '0.9rem' }}
           >
-            {submitting ? <Spinner size={16} color="#fff" /> : 'Ingresar'}
+            {submitting ? <Spinner size={16} color="#fff" /> : mode === 'login' ? 'Ingresar' : 'Crear cuenta'}
           </Button>
         </form>
 
-        <p style={{ textAlign: 'center', marginTop: 24, fontSize: '0.75rem', color: 'var(--muted)' }}>
-          Acceso solo para el equipo de Servicio Técnico
+        <p style={{ textAlign: 'center', marginTop: 20, fontSize: '0.8rem' }}>
+          {mode === 'login' ? (
+            <>
+              <span style={{ color: 'var(--muted)' }}>¿Eres del equipo y no tienes cuenta? </span>
+              <button
+                type="button"
+                onClick={() => switchMode('signup')}
+                style={{ background: 'none', border: 'none', padding: 0, color: 'var(--accent)', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--sans)', fontSize: 'inherit' }}
+              >
+                Crear cuenta
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={() => switchMode('login')}
+              style={{ background: 'none', border: 'none', padding: 0, color: 'var(--accent)', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--sans)', fontSize: 'inherit' }}
+            >
+              ← Volver a iniciar sesión
+            </button>
+          )}
+        </p>
+
+        <p style={{ textAlign: 'center', marginTop: 8, fontSize: '0.75rem', color: 'var(--muted)' }}>
+          {mode === 'signup' ? `Solo se permiten correos @${ALLOWED_DOMAIN}` : 'Acceso solo para el equipo de Servicio Técnico'}
         </p>
 
         <a

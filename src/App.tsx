@@ -2,7 +2,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from 'sonner'
 import { queryClient } from './lib/queryClient'
-import { UserProvider } from './hooks/useUser'
+import { getDefaultRoute } from './lib/constants'
+import { UserProvider, useUser } from './hooks/useUser'
 import { AuthGuard } from './components/auth/AuthGuard'
 import { AdminGuard } from './components/auth/AdminGuard'
 import { ModuleGuard } from './components/auth/ModuleGuard'
@@ -18,6 +19,11 @@ import { AdminPage } from './modules/admin/AdminPage'
 import { IndicadoresPage } from './modules/indicadores/IndicadoresPage'
 import { FormatosPage } from './modules/formatos/FormatosPage'
 
+function DefaultRedirect() {
+  const { hasModule } = useUser()
+  return <Navigate to={getDefaultRoute(hasModule)} replace />
+}
+
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -32,7 +38,7 @@ export default function App() {
                 </AuthGuard>
               }
             >
-              <Route index element={<Navigate to="/llamadas" replace />} />
+              <Route index element={<DefaultRedirect />} />
               <Route path="/llamadas"    element={<ModuleGuard moduleKey="llamadas"><LlamadasPage /></ModuleGuard>} />
               <Route path="/bodega"      element={<ModuleGuard moduleKey="bodega"><OtstBodegaPage /></ModuleGuard>} />
               <Route path="/consumibles" element={<ModuleGuard moduleKey="consumibles"><ConsumiblesPage /></ModuleGuard>} />
