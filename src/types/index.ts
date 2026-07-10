@@ -16,13 +16,25 @@ export interface CorreoDestinatario {
   orden: number
 }
 
-export type UserRole = 'admin' | 'user'
+export type ModuleKey =
+  | 'llamadas' | 'bodega' | 'consumibles' | 'tarifas' | 'codigos'
+  | 'editor' | 'indicadores' | 'correos' | 'admin'
+
+export type CapabilityKey =
+  | 'importar_csv_tarifas' | 'importar_csv_codigos' | 'importar_csv_llamadas'
+  | 'bodega_registrar_ingreso' | 'editar_codigos' | 'gestion_codigos' | 'bodega_eliminar'
+
+export interface Role {
+  id: string
+  name: string
+  created_at: string
+}
 
 export interface Profile {
   id: string
   email: string
   full_name: string | null
-  role: UserRole
+  role_id: string | null
   activo: boolean
   avatar_emoji: string | null
   avatar_color: string | null

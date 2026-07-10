@@ -210,7 +210,8 @@ function SuggestDropdown({
 // ─── Tab Equipos ──────────────────────────────────────────────────────────────
 
 function TabEquipos({ items }: { items: CodInetItem[] }) {
-  const { isAdmin } = useUser()
+  const { hasCapability } = useUser()
+  const canEditar = hasCapability('editar_codigos')
   const qc = useQueryClient()
 
   const [query, setQuery]         = useState('')
@@ -364,7 +365,7 @@ function TabEquipos({ items }: { items: CodInetItem[] }) {
               {hasValue ? value : 'No aplica'}
             </span>
             <CopyBtn value={value} label={label} disabled={!hasValue} />
-            {isAdmin && iconBtn(() => startEdit(field, value), <Pencil size={13} />)}
+            {canEditar && iconBtn(() => startEdit(field, value), <Pencil size={13} />)}
           </>
         )}
       </div>
@@ -1109,7 +1110,8 @@ HI 9814,Multiparámetro,ORP + pH,9814-01,`}
 
 export function CodigosPage() {
   const { data, isLoading, error, refetch, isFetching } = useCodigosData()
-  const { isAdmin } = useUser()
+  const { hasCapability } = useUser()
+  const canGestion = hasCapability('gestion_codigos')
   const [tab, setTab] = useState<'equipos' | 'precios' | 'gestion'>('equipos')
 
   const inetItems  = data?.codInet.items ?? []
@@ -1180,12 +1182,12 @@ export function CodigosPage() {
           }}>
             {tabBtn('equipos', '🔧', 'Equipos', inetCount)}
             {tabBtn('precios', '💰', 'Precios', priceCount)}
-            {isAdmin && tabBtn('gestion', '⚙️', 'Gestión')}
+            {canGestion && tabBtn('gestion', '⚙️', 'Gestión')}
           </div>
 
           {tab === 'equipos' && <TabEquipos items={data!.codInet.items} />}
           {tab === 'precios' && <TabPrecios items={data!.spPrice.items} />}
-          {tab === 'gestion' && isAdmin && <TabGestion items={inetItems} />}
+          {tab === 'gestion' && canGestion && <TabGestion items={inetItems} />}
         </>
       )}
     </div>

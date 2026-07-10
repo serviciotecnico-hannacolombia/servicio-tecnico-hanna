@@ -131,7 +131,9 @@ function usePendientes() {
 type Tab = 'ingreso' | 'bodega' | 'pendientes' | 'historial' | 'config'
 
 export function OtstBodegaPage() {
-  const [tab, setTab] = useState<Tab>('ingreso')
+  const { hasCapability } = useUser()
+  const canRegistrarIngreso = hasCapability('bodega_registrar_ingreso')
+  const [tab, setTab] = useState<Tab>(canRegistrarIngreso ? 'ingreso' : 'bodega')
   const { data: bodega     = [] } = useBodega()
   const { data: movimientos = [] } = useMovimientos()
   const { data: zonas      = [] } = useZonas()
@@ -147,7 +149,7 @@ export function OtstBodegaPage() {
 
       <div style={{ display: 'flex', gap: 4, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 4, marginBottom: 24 }}>
         {([
-          ['ingreso',    '📥', 'Ingreso'],
+          ...(canRegistrarIngreso ? [['ingreso', '📥', 'Ingreso']] : []),
           ['bodega',     '🗄️', 'Bodega'],
           ['pendientes', '📋', 'Pendientes'],
           ['historial',  '🕓', 'Historial'],
@@ -344,7 +346,8 @@ function TabIngreso({ zonas, bodega, columnas }: { zonas: OtstBodegaZona[], bode
 // ── Tab Bodega ─────────────────────────────────────────────────────────────────
 
 function TabBodega({ bodega, umbral, columnas, pendientes }: { bodega: OtstBodega[], umbral: number, columnas: string[], pendientes: OtstBodegaPendiente[] }) {
-  const { isAdmin } = useUser()
+  const { hasCapability } = useUser()
+  const canEliminar = hasCapability('bodega_eliminar')
   const [search,  setSearch]  = useState('')
   const [colF,    setColF]    = useState('')
   const [estadoF, setEstadoF] = useState<'all' | EstadoOtstBodega>('all')
@@ -505,7 +508,7 @@ function TabBodega({ bodega, umbral, columnas, pendientes }: { bodega: OtstBodeg
                             <ListTodo size={14} />
                           </IconBtn>
                         )}
-                        {isAdmin && (
+                        {canEliminar && (
                           <IconBtn title="Eliminar" onClick={() => setAccionItem({ item: r, tipo: 'eliminar' })}>
                             <Trash2 size={14} color="#c0392b" />
                           </IconBtn>
@@ -1130,7 +1133,8 @@ function TabHistorial({ bodega, movimientos }: { bodega: OtstBodega[], movimient
 }
 
 function TimelineCard({ item, movimientos }: { item: OtstBodega, movimientos: OtstBodegaMovimiento[] }) {
-  const { isAdmin } = useUser()
+  const { hasCapability } = useUser()
+  const canEliminar = hasCapability('bodega_eliminar')
   const [eliminando, setEliminando] = useState(false)
   const iconos: Record<string, string> = { ingreso: '📥', traslado: '🔄', contacto: '✉️', retiro: '✅', novedad: '⚠️' }
   return (
@@ -1142,7 +1146,7 @@ function TimelineCard({ item, movimientos }: { item: OtstBodega, movimientos: Ot
             Ubicación actual: {codigoUbicacion(item.columna, item.fila, item.subcolumna)} · {item.estado}
           </div>
         </div>
-        {isAdmin && (
+        {canEliminar && (
           <IconBtn title="Eliminar" onClick={() => setEliminando(true)}><Trash2 size={14} color="#c0392b" /></IconBtn>
         )}
       </div>

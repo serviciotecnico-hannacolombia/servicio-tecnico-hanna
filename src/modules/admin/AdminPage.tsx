@@ -1,29 +1,32 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { UserPlus, Shield, Users, UserX, Trash2, Mail } from 'lucide-react'
+import { UserPlus, Shield, Users, UserX, Trash2, Mail, ShieldCheck } from 'lucide-react'
 import { Header } from '../../components/layout/Header'
 import { Card } from '../../components/ui/Card'
 import { DestinatariosAdmin } from './components/DestinatariosAdmin'
+import { RolesMatrix } from './components/RolesMatrix'
 import { Button } from '../../components/ui/Button'
 import { Avatar } from '../../components/ui/Avatar'
 import { Spinner } from '../../components/ui/Spinner'
 import { CreateUserModal } from './components/CreateUserModal'
 import { useUsers } from './hooks/useUsers'
+import { useRoles } from './hooks/useRoles'
 import { useUser } from '../../hooks/useUser'
-import type { Profile, UserRole } from '../../types'
+import type { Profile } from '../../types'
 
-function RoleBadge({ role }: { role: UserRole }) {
-  const isAdmin = role === 'admin'
+function RoleBadge({ roleName }: { roleName: string | null }) {
+  const isAdmin = roleName === 'Admin'
+  const sinRol = !roleName
   return (
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: 4,
       padding: '3px 10px', borderRadius: 20, fontSize: '0.72rem', fontWeight: 700,
       fontFamily: 'var(--mono)',
-      background: isAdmin ? 'var(--purple-bg)' : 'var(--surface2)',
-      color: isAdmin ? 'var(--purple)' : 'var(--muted)',
-      border: `1px solid ${isAdmin ? 'rgba(124,58,237,.3)' : 'var(--border)'}`,
+      background: sinRol ? 'var(--red-bg)' : isAdmin ? 'var(--purple-bg)' : 'var(--surface2)',
+      color: sinRol ? 'var(--red)' : isAdmin ? 'var(--purple)' : 'var(--muted)',
+      border: `1px solid ${sinRol ? 'var(--red-border)' : isAdmin ? 'rgba(124,58,237,.3)' : 'var(--border)'}`,
     }}>
-      {isAdmin ? '👑 Admin' : '👤 Usuario'}
+      {sinRol ? '⚠ Sin rol' : isAdmin ? `👑 ${roleName}` : roleName}
     </span>
   )
 }
@@ -42,25 +45,30 @@ function ActiveBadge({ activo }: { activo: boolean }) {
   )
 }
 
-type AdminTab = 'usuarios' | 'destinatarios'
+type AdminTab = 'usuarios' | 'roles' | 'destinatarios'
 
 export function AdminPage() {
   const { user: currentUser } = useUser()
   const { users, isLoading, updateRole, toggleActivo, createUser, deleteUser } = useUsers()
+  const { roles } = useRoles()
   const [createOpen, setCreateOpen] = useState(false)
   const [tab, setTab] = useState<AdminTab>('usuarios')
 
+  const rolesById = new Map(roles.map(r => [r.id, r]))
+  const adminRoleId = roles.find(r => r.name === 'Admin')?.id
+
   const total    = users.length
-  const admins   = users.filter(u => u.role === 'admin').length
+  const admins   = users.filter(u => u.role_id === adminRoleId).length
   const inactive = users.filter(u => !u.activo).length
 
-  const handleRoleChange = async (u: Profile) => {
-    const newRole: UserRole = u.role === 'admin' ? 'user' : 'admin'
-    const label = newRole === 'admin' ? 'administrador' : 'usuario'
-    if (!confirm(`¿Cambiar a ${u.full_name ?? u.email} a ${label}?`)) return
+  const handleRoleChange = async (u: Profile, newRoleIdRaw: string) => {
+    const newRoleId = newRoleIdRaw || null
+    if (newRoleId === u.role_id) return
+    const roleName = newRoleId ? (rolesById.get(newRoleId)?.name ?? 'sin rol') : 'sin rol'
+    if (!confirm(`¿Cambiar a ${u.full_name ?? u.email} al rol "${roleName}"?`)) return
     try {
-      await updateRole.mutateAsync({ id: u.id, role: newRole })
-      toast.success(`Rol actualizado a ${label}`)
+      await updateRole.mutateAsync({ id: u.id, role_id: newRoleId })
+      toast.success(`Rol actualizado a ${roleName}`)
     } catch {
       toast.error('Error al cambiar el rol')
     }
@@ -87,7 +95,7 @@ export function AdminPage() {
     }
   }
 
-  const handleCreate = async (data: { email: string; full_name: string; role: UserRole; password: string }) => {
+  const handleCreate = async (data: { email: string; full_name: string; role_id: string; password: string }) => {
     try {
       await createUser.mutateAsync(data)
       toast.success(`Usuario ${data.full_name} creado`)
@@ -115,10 +123,20 @@ export function AdminPage() {
         <button style={tabStyle(tab === 'usuarios')} onClick={() => setTab('usuarios')}>
           <Users size={15} /> Usuarios
         </button>
+        <button style={tabStyle(tab === 'roles')} onClick={() => setTab('roles')}>
+          <ShieldCheck size={15} /> Roles y Permisos
+        </button>
         <button style={tabStyle(tab === 'destinatarios')} onClick={() => setTab('destinatarios')}>
           <Mail size={15} /> Correos OC
         </button>
       </div>
+
+      {/* Tab: Roles y Permisos */}
+      {tab === 'roles' && (
+        <div style={{ padding: '20px 32px' }}>
+          <RolesMatrix />
+        </div>
+      )}
 
       {/* Tab: Destinatarios */}
       {tab === 'destinatarios' && (
@@ -210,7 +228,7 @@ export function AdminPage() {
                           <Avatar
                             name={name}
                             emoji={u.avatar_emoji}
-                            color={u.avatar_color ?? (u.role === 'admin' ? '#7c3aed' : undefined)}
+                            color={u.avatar_color ?? (rolesById.get(u.role_id ?? '')?.name === 'Admin' ? '#7c3aed' : undefined)}
                             size={36}
                           />
                           <div>
@@ -231,7 +249,7 @@ export function AdminPage() {
 
                       {/* Rol */}
                       <td style={{ padding: '12px 16px' }}>
-                        <RoleBadge role={u.role} />
+                        <RoleBadge roleName={rolesById.get(u.role_id ?? '')?.name ?? null} />
                       </td>
 
                       {/* Estado */}
@@ -249,15 +267,22 @@ export function AdminPage() {
                         {isMe ? (
                           <span style={{ fontSize: '0.75rem', color: 'var(--muted)', fontStyle: 'italic' }}>—</span>
                         ) : (
-                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                            <ActionBtn
-                              onClick={() => handleRoleChange(u)}
+                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+                            <select
+                              value={u.role_id ?? ''}
                               disabled={updateRole.isPending}
-                              color={u.role === 'admin' ? 'var(--muted)' : 'var(--purple)'}
-                              bg={u.role === 'admin' ? 'var(--surface2)' : 'var(--purple-bg)'}
+                              onChange={e => handleRoleChange(u, e.target.value)}
+                              style={{
+                                padding: '4px 8px', borderRadius: 6, border: '1px solid var(--border)',
+                                background: 'var(--surface)', color: 'var(--text)', fontSize: '0.75rem',
+                                fontFamily: 'var(--sans)', cursor: 'pointer',
+                              }}
                             >
-                              {u.role === 'admin' ? 'Quitar admin' : 'Hacer admin'}
-                            </ActionBtn>
+                              <option value="">Sin rol</option>
+                              {roles.map(role => (
+                                <option key={role.id} value={role.id}>{role.name}</option>
+                              ))}
+                            </select>
                             <ActionBtn
                               onClick={() => handleToggleActivo(u)}
                               disabled={toggleActivo.isPending}

@@ -13,6 +13,7 @@ import { Modal } from '../ui/Modal'
 import { Input } from '../ui/Input'
 import { Button } from '../ui/Button'
 import { Avatar } from '../ui/Avatar'
+import type { ModuleKey } from '../../types'
 
 // ── Hamburger animado ────────────────────────────────────────────────────────
 // open=false → 3 líneas (hamburguesa)   open=true → X (cerrar)
@@ -48,15 +49,15 @@ function HamburgerIcon({ open }: { open: boolean }) {
   )
 }
 
-const NAV_ITEMS = [
-  { to: '/llamadas',    label: 'Control Llamadas',   icon: Phone        },
-  { to: '/bodega',      label: 'Bodega',              icon: Warehouse    },
-  { to: '/consumibles', label: 'Consumibles',         icon: Package      },
-  { to: '/tarifas',     label: 'Tarifas de Envío',   icon: DollarSign   },
-  { to: '/codigos',     label: 'Códigos y Partes',   icon: Wrench       },
-  { to: '/editor',       label: 'Editor de Informes', icon: FileText  },
-  { to: '/indicadores',  label: 'Indicadores',        icon: BarChart2 },
-  { to: '/correos',      label: 'Correos',             icon: Mail      },
+const NAV_ITEMS: { to: string; label: string; icon: typeof Phone; moduleKey: ModuleKey }[] = [
+  { to: '/llamadas',    label: 'Control Llamadas',   icon: Phone,      moduleKey: 'llamadas'    },
+  { to: '/bodega',      label: 'Bodega',              icon: Warehouse,  moduleKey: 'bodega'      },
+  { to: '/consumibles', label: 'Consumibles',         icon: Package,    moduleKey: 'consumibles' },
+  { to: '/tarifas',     label: 'Tarifas de Envío',   icon: DollarSign, moduleKey: 'tarifas'     },
+  { to: '/codigos',     label: 'Códigos y Partes',   icon: Wrench,     moduleKey: 'codigos'     },
+  { to: '/editor',       label: 'Editor de Informes', icon: FileText,   moduleKey: 'editor'      },
+  { to: '/indicadores',  label: 'Indicadores',        icon: BarChart2,  moduleKey: 'indicadores' },
+  { to: '/correos',      label: 'Correos',             icon: Mail,       moduleKey: 'correos'     },
 ]
 
 const ANIMALS = [
@@ -78,7 +79,7 @@ const AVATAR_COLORS = [
 
 export function Sidebar() {
   const { collapsed, toggle } = useSidebar()
-  const { user, displayName, profile, isAdmin, signOut, updateDisplayName, updateAvatar } = useUser()
+  const { user, displayName, profile, isAdmin, hasModule, signOut, updateDisplayName, updateAvatar } = useUser()
   const navigate = useNavigate()
   const [profileOpen, setProfileOpen] = useState(false)
   const [nombre, setNombre] = useState('')
@@ -219,7 +220,7 @@ export function Sidebar() {
 
       {/* Nav */}
       <nav style={{ flex: 1, padding: '10px 0', overflowY: 'auto', overflowX: 'hidden' }}>
-        {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
+        {NAV_ITEMS.filter(item => hasModule(item.moduleKey)).map(({ to, label, icon: Icon }) => (
           <NavLink
             key={to}
             to={to}

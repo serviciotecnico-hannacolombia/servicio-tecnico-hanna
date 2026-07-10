@@ -2,32 +2,31 @@ import { useState } from 'react'
 import { Modal } from '../../../components/ui/Modal'
 import { Input } from '../../../components/ui/Input'
 import { Button } from '../../../components/ui/Button'
-import type { UserRole } from '../../../types'
+import { useRoles } from '../hooks/useRoles'
 
 interface Props {
   open: boolean
   onClose: () => void
-  onSubmit: (data: { email: string; full_name: string; role: UserRole; password: string }) => Promise<void>
+  onSubmit: (data: { email: string; full_name: string; role_id: string; password: string }) => Promise<void>
 }
 
-const ROLE_OPTS: { value: UserRole; label: string; desc: string }[] = [
-  { value: 'user',  label: '👤 Usuario', desc: 'Acceso a los módulos de la intranet' },
-  { value: 'admin', label: '👑 Admin',   desc: 'Puede gestionar usuarios y acceder a todo' },
-]
-
 export function CreateUserModal({ open, onClose, onSubmit }: Props) {
-  const [form, setForm] = useState({ email: '', full_name: '', role: 'user' as UserRole, password: '' })
+  const { roles } = useRoles()
+  const [form, setForm] = useState({ email: '', full_name: '', role_id: '', password: '' })
   const [saving, setSaving] = useState(false)
+
+  const effectiveRoleId = form.role_id || roles[0]?.id || ''
 
   const set = (field: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm(f => ({ ...f, [field]: e.target.value }))
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!effectiveRoleId) return
     setSaving(true)
     try {
-      await onSubmit(form)
-      setForm({ email: '', full_name: '', role: 'user', password: '' })
+      await onSubmit({ ...form, role_id: effectiveRoleId })
+      setForm({ email: '', full_name: '', role_id: '', password: '' })
       onClose()
     } finally {
       setSaving(false)
@@ -65,31 +64,24 @@ export function CreateUserModal({ open, onClose, onSubmit }: Props) {
 
         <div>
           <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--muted)', marginBottom: 8 }}>Rol</div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            {ROLE_OPTS.map(opt => {
-              const active = form.role === opt.value
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {roles.map(role => {
+              const active = effectiveRoleId === role.id
               return (
                 <button
-                  key={opt.value}
+                  key={role.id}
                   type="button"
-                  onClick={() => setForm(f => ({ ...f, role: opt.value }))}
+                  onClick={() => setForm(f => ({ ...f, role_id: role.id }))}
                   style={{
-                    flex: 1, padding: '10px 12px', border: '1.5px solid',
-                    borderColor: active
-                      ? opt.value === 'admin' ? 'var(--purple)' : 'var(--accent)'
-                      : 'var(--border)',
+                    padding: '8px 12px', border: '1.5px solid',
+                    borderColor: active ? 'var(--accent)' : 'var(--border)',
                     borderRadius: 'var(--radius-sm)',
-                    background: active
-                      ? opt.value === 'admin' ? 'var(--purple-bg)' : 'var(--accent-bg)'
-                      : 'var(--surface)',
-                    color: active
-                      ? opt.value === 'admin' ? 'var(--purple)' : 'var(--accent)'
-                      : 'var(--muted)',
-                    cursor: 'pointer', textAlign: 'left', transition: 'all .12s',
+                    background: active ? 'var(--accent-bg)' : 'var(--surface)',
+                    color: active ? 'var(--accent)' : 'var(--muted)',
+                    cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem', transition: 'all .12s',
                   }}
                 >
-                  <div style={{ fontWeight: 700, fontSize: '0.82rem', marginBottom: 2 }}>{opt.label}</div>
-                  <div style={{ fontSize: '0.7rem', opacity: 0.8 }}>{opt.desc}</div>
+                  {role.name}
                 </button>
               )
             })}
@@ -104,7 +96,7 @@ export function CreateUserModal({ open, onClose, onSubmit }: Props) {
           <Button type="button" variant="ghost" onClick={onClose} style={{ flex: 1 }}>
             Cancelar
           </Button>
-          <Button type="submit" disabled={saving || !form.email || !form.full_name || form.password.length < 6} style={{ flex: 2 }}>
+          <Button type="submit" disabled={saving || !form.email || !form.full_name || !effectiveRoleId || form.password.length < 6} style={{ flex: 2 }}>
             {saving ? 'Creando cuenta…' : 'Crear usuario'}
           </Button>
         </div>

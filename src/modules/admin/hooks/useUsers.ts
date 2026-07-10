@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../../lib/supabase'
-import type { Profile, UserRole } from '../../../types'
+import type { Profile } from '../../../types'
 
 const KEY = ['admin', 'users']
 
@@ -20,8 +20,8 @@ export function useUsers() {
   })
 
   const updateRole = useMutation({
-    mutationFn: async ({ id, role }: { id: string; role: UserRole }) => {
-      const { error } = await supabase.from('profiles').update({ role }).eq('id', id)
+    mutationFn: async ({ id, role_id }: { id: string; role_id: string | null }) => {
+      const { error } = await supabase.from('profiles').update({ role_id }).eq('id', id)
       if (error) throw error
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
@@ -36,7 +36,7 @@ export function useUsers() {
   })
 
   const createUser = useMutation({
-    mutationFn: async (payload: { email: string; full_name: string; role: UserRole; password: string }) => {
+    mutationFn: async (payload: { email: string; full_name: string; role_id: string; password: string }) => {
       const { data, error } = await supabase.functions.invoke('manage-users', {
         body: { action: 'create', ...payload },
       })

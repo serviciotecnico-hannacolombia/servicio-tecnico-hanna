@@ -5,6 +5,7 @@ import { queryClient } from './lib/queryClient'
 import { UserProvider } from './hooks/useUser'
 import { AuthGuard } from './components/auth/AuthGuard'
 import { AdminGuard } from './components/auth/AdminGuard'
+import { ModuleGuard } from './components/auth/ModuleGuard'
 import { LoginPage } from './components/auth/LoginPage'
 import { AppLayout } from './components/layout/AppLayout'
 import { LlamadasPage } from './modules/llamadas/LlamadasPage'
@@ -32,14 +33,14 @@ export default function App() {
               }
             >
               <Route index element={<Navigate to="/llamadas" replace />} />
-              <Route path="/llamadas"    element={<LlamadasPage />} />
-              <Route path="/bodega"      element={<OtstBodegaPage />} />
-              <Route path="/consumibles" element={<ConsumiblesPage />} />
-              <Route path="/tarifas"     element={<TarifasPage />} />
-              <Route path="/codigos"     element={<CodigosPage />} />
-              <Route path="/editor"       element={<EditorPage />} />
-              <Route path="/indicadores" element={<IndicadoresPage />} />
-              <Route path="/correos"     element={<FormatosPage />} />
+              <Route path="/llamadas"    element={<ModuleGuard moduleKey="llamadas"><LlamadasPage /></ModuleGuard>} />
+              <Route path="/bodega"      element={<ModuleGuard moduleKey="bodega"><OtstBodegaPage /></ModuleGuard>} />
+              <Route path="/consumibles" element={<ModuleGuard moduleKey="consumibles"><ConsumiblesPage /></ModuleGuard>} />
+              <Route path="/tarifas"     element={<ModuleGuard moduleKey="tarifas"><TarifasPage /></ModuleGuard>} />
+              <Route path="/codigos"     element={<ModuleGuard moduleKey="codigos"><CodigosPage /></ModuleGuard>} />
+              <Route path="/editor"       element={<ModuleGuard moduleKey="editor"><EditorPage /></ModuleGuard>} />
+              <Route path="/indicadores" element={<ModuleGuard moduleKey="indicadores"><IndicadoresPage /></ModuleGuard>} />
+              <Route path="/correos"     element={<ModuleGuard moduleKey="correos"><FormatosPage /></ModuleGuard>} />
               <Route
                 path="/admin"
                 element={

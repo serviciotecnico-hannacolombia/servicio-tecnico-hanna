@@ -29,14 +29,10 @@ Deno.serve(async (req) => {
     const { data: { user }, error: authErr } = await caller.auth.getUser()
     if (authErr || !user) throw new Error('No autenticado')
 
-    const { data: callerProfile, error: profileErr } = await caller
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
+    const { data: isAdmin, error: rpcErr } = await caller.rpc('has_module', { _module_key: 'admin' })
 
-    if (profileErr || callerProfile?.role !== 'admin') {
-      throw new Error('Se requiere rol de administrador')
+    if (rpcErr || !isAdmin) {
+      throw new Error('Se requiere el módulo de Administración')
     }
 
     // Admin client uses service_role — never exposed to the browser
@@ -50,10 +46,10 @@ Deno.serve(async (req) => {
     const { action } = body
 
     if (action === 'create') {
-      const { email, full_name, role = 'user', password } = body
+      const { email, full_name, role_id, password } = body
 
-      if (!email || !password || !full_name) {
-        throw new Error('email, full_name y password son requeridos')
+      if (!email || !password || !full_name || !role_id) {
+        throw new Error('email, full_name, role_id y password son requeridos')
       }
       if (password.length < 6) {
         throw new Error('La contraseña debe tener mínimo 6 caracteres')
@@ -63,7 +59,7 @@ Deno.serve(async (req) => {
         email,
         password,
         email_confirm: true,
-        user_metadata: { full_name, role },
+        user_metadata: { full_name, role_id },
       })
 
       if (error) throw error

@@ -124,7 +124,8 @@ function CopyBtn({ value, label }: { value: string; label: string }) {
 
 export function TarifasPage() {
   const { data: tarifas = [], isLoading } = useTarifas()
-  const { isAdmin } = useUser()
+  const { hasCapability } = useUser()
+  const canImportar = hasCapability('importar_csv_tarifas')
   const qc = useQueryClient()
 
   // ── Import state ──
@@ -281,7 +282,7 @@ export function TarifasPage() {
       <Header
         title="Tarifas de Envío"
         subtitle={tarifas.length > 0 ? `${tarifas.length} ciudades disponibles` : 'Cargando…'}
-        actions={isAdmin ? (
+        actions={canImportar ? (
           <Button variant="ghost" size="sm" onClick={() => setShowImport(true)}
             style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <Upload size={13} /> Importar CSV

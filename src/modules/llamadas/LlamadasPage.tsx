@@ -95,7 +95,8 @@ export function LlamadasPage() {
   const [filtroEstado, setFiltroEstado] = useState<'all' | 'pending' | 'done'>('all')
   const [filtroGarantia, setFiltroGarantia] = useState(false)
   const [filtroIngeniero, setFiltroIngeniero] = useState<string | null>(null)
-  const { displayName } = useUser()
+  const { displayName, hasCapability } = useUser()
+  const canImportarCSV = hasCapability('importar_csv_llamadas')
   const { data: profiles = [] } = useProfiles()
   const { data: llamadas = [], isLoading, importCSV, addLlamada, updateEstado, marcarVaciosNoLlamado, deleteLlamada, archivarDia, limpiarDia } = useLlamadasDiario()
 
@@ -270,9 +271,11 @@ export function LlamadasPage() {
             <Button variant="ghost" size="sm" onClick={() => setAddOpen(true)}>
               <PlusCircle size={14} /> Manual
             </Button>
-            <Button size="sm" onClick={() => setImportOpen(true)}>
-              <Upload size={14} /> Cargar CSV
-            </Button>
+            {canImportarCSV && (
+              <Button size="sm" onClick={() => setImportOpen(true)}>
+                <Upload size={14} /> Cargar CSV
+              </Button>
+            )}
           </>
         )}
       </div>
