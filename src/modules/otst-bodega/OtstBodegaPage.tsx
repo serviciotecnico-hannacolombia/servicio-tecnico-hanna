@@ -1,6 +1,6 @@
-import { useState, useRef, forwardRef } from 'react'
+import { useState, useRef, useEffect, forwardRef } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Search, Warehouse, AlertTriangle, ArrowRightLeft, Mail, CheckCircle2, Download, Trash2, X, ListTodo, MapPinOff } from 'lucide-react'
+import { Search, Warehouse, AlertTriangle, ArrowRightLeft, Mail, CheckCircle2, Download, Trash2, X, ListTodo, MapPinOff, Pencil, MoreVertical } from 'lucide-react'
 import { toast } from 'sonner'
 import { supabase } from '../../lib/supabase'
 import { Header } from '../../components/layout/Header'
@@ -22,33 +22,44 @@ const MESES = [
   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
 ]
 
-// ── QR Parser (formato "OTST-MM-AAAA|correo") ─────────────────────────────────
+// ── QR Parser (formato "OTST-MM-AAAA|NIT|correo") ─────────────────────────────
 
 interface ParsedOtstQR {
   otst: string
   mes: number
   anio: number
+  nit: string
   correo: string
 }
 
 // Algunos lectores de QR emiten teclas en layout US mientras Windows está en
 // layout ES, lo que corrompe los separadores: '-' → ', '|' → Ç/], '@' → ".
 // Se acepta cualquiera de esas variantes al parsear.
+// Formato nuevo: "OTST-MM-AAAA|NIT|correo". Se acepta también el formato
+// antiguo sin NIT ("OTST-MM-AAAA|correo") para QR ya impresos.
 const SEP_GRUPO = /['-]/
-const SEP_CORREO = /[|Çç\]}]/
+const SEP_CAMPO = /[|Çç\]}]/
 
 function parseOtstQR(raw: string): ParsedOtstQR | null {
-  const sepIdx = raw.search(SEP_CORREO)
-  if (sepIdx === -1) return null
-  const izq = raw.slice(0, sepIdx)
-  const correo = raw.slice(sepIdx + 1).replace(/"/g, '@')
-  const partes = izq.trim().split(SEP_GRUPO)
-  if (partes.length !== 3) return null
-  const [otst, mesStr, anioStr] = partes
+  const partes = raw.split(SEP_CAMPO)
+  let grupo: string, nit: string, correo: string
+  if (partes.length === 3) {
+    [grupo, nit, correo] = partes
+  } else if (partes.length === 2) {
+    [grupo, correo] = partes
+    nit = ''
+  } else {
+    return null
+  }
+  correo = correo.replace(/"/g, '@').trim()
+  nit = nit.trim()
+  const gPartes = grupo.trim().split(SEP_GRUPO)
+  if (gPartes.length !== 3) return null
+  const [otst, mesStr, anioStr] = gPartes
   const mes  = parseInt(mesStr, 10)
   const anio = parseInt(anioStr, 10)
   if (!otst.trim() || !mes || mes < 1 || mes > 12 || !anio || anio < 2000 || anio > 2100) return null
-  return { otst: otst.trim(), mes, anio, correo: correo.trim() }
+  return { otst: otst.trim(), mes, anio, nit, correo }
 }
 
 function codigoUbicacion(columna: string, fila: number | string, subcolumna: number | string): string {
@@ -195,6 +206,7 @@ function TabIngreso({ zonas, bodega, columnas }: { zonas: OtstBodegaZona[], bode
   const [otst,       setOtst]       = useState('')
   const [mes,        setMes]        = useState<number | ''>('')
   const [anio,       setAnio]       = useState<number | ''>('')
+  const [nit,        setNit]        = useState('')
   const [correo,     setCorreo]     = useState('')
   const [columna,    setColumna]    = useState('')
   const [fila,       setFila]       = useState<number | ''>('')
@@ -212,12 +224,12 @@ function TabIngreso({ zonas, bodega, columnas }: { zonas: OtstBodegaZona[], bode
     setQr(val)
     const parsed = parseOtstQR(val)
     if (parsed) {
-      setOtst(parsed.otst); setMes(parsed.mes); setAnio(parsed.anio); setCorreo(parsed.correo)
+      setOtst(parsed.otst); setMes(parsed.mes); setAnio(parsed.anio); setNit(parsed.nit); setCorreo(parsed.correo)
       setAutoFilled(true)
       return
     }
     if (autoFilled) {
-      setOtst(''); setMes(''); setAnio(''); setCorreo(''); setAutoFilled(false)
+      setOtst(''); setMes(''); setAnio(''); setNit(''); setCorreo(''); setAutoFilled(false)
     }
   }
 
@@ -229,7 +241,7 @@ function TabIngreso({ zonas, bodega, columnas }: { zonas: OtstBodegaZona[], bode
     setSaving(true)
     const codigo = codigoUbicacion(columna, fila, subcolumna)
     const { data, error } = await supabase.from('otst_bodega').insert({
-      otst: otst.trim(), correo_cliente: correo.trim() || null,
+      otst: otst.trim(), correo_cliente: correo.trim() || null, nit_cliente: nit.trim() || null,
       mes_ingreso: mes, anio_ingreso: anio,
       columna, fila, subcolumna,
       estado: 'en_bodega', nota: nota.trim() || null, usuario: displayName,
@@ -254,7 +266,7 @@ function TabIngreso({ zonas, bodega, columnas }: { zonas: OtstBodegaZona[], bode
 
   // Mantiene la ubicación (columna/fila/subcolumna) para agregar varias OTST seguidas al mismo lugar.
   function clearParaSiguiente() {
-    setQr(''); setOtst(''); setMes(''); setAnio(''); setCorreo(''); setNota(''); setAutoFilled(false)
+    setQr(''); setOtst(''); setMes(''); setAnio(''); setNit(''); setCorreo(''); setNota(''); setAutoFilled(false)
     qrRef.current?.focus()
   }
 
@@ -274,6 +286,9 @@ function TabIngreso({ zonas, bodega, columnas }: { zonas: OtstBodegaZona[], bode
         <FG label="OTST (AUTO)" hint={duplicada ? '⚠ Esta OTST ya está registrada en bodega' : undefined}>
           <input value={otst} onChange={e => setOtst(e.target.value)} readOnly={autoFilled}
             placeholder="Auto desde QR" style={duplicada ? { ...iS(autoFilled), borderColor: '#c0392b' } : iS(autoFilled)} />
+        </FG>
+        <FG label="NIT del cliente (AUTO)">
+          <input value={nit} onChange={e => setNit(e.target.value)} readOnly={autoFilled} placeholder="Auto desde QR" style={iS(autoFilled)} />
         </FG>
         <FG label="Correo del cliente (AUTO)">
           <input value={correo} onChange={e => setCorreo(e.target.value)} readOnly={autoFilled} placeholder="Auto desde QR" style={iS(autoFilled)} />
@@ -352,7 +367,7 @@ function TabBodega({ bodega, umbral, columnas, pendientes }: { bodega: OtstBodeg
   const [colF,    setColF]    = useState('')
   const [estadoF, setEstadoF] = useState<'all' | EstadoOtstBodega>('all')
   const [soloAbandonadas, setSoloAbandonadas] = useState(false)
-  const [accionItem, setAccionItem] = useState<{ item: OtstBodega, tipo: 'mover' | 'contactar' | 'retirar' | 'eliminar' | 'pendiente' } | null>(null)
+  const [accionItem, setAccionItem] = useState<{ item: OtstBodega, tipo: 'mover' | 'contactar' | 'retirar' | 'eliminar' | 'pendiente' | 'editar' } | null>(null)
 
   const otstPendientes = new Set(pendientes.filter(p => p.estado === 'pendiente').map(p => p.otst.trim().toLowerCase()))
 
@@ -364,7 +379,7 @@ function TabBodega({ bodega, umbral, columnas, pendientes }: { bodega: OtstBodeg
 
   const rows = activos.filter(r => {
     const q  = search.toLowerCase()
-    const ok = !q || [r.otst, r.correo_cliente].some(f => f?.toLowerCase().includes(q))
+    const ok = !q || [r.otst, r.correo_cliente, r.nit_cliente].some(f => f?.toLowerCase().includes(q))
     const okC = !colF || r.columna === colF
     const okE = estadoF === 'all' || r.estado === estadoF
     const esAbandonada = mesesTranscurridos(r.mes_ingreso, r.anio_ingreso) >= umbral
@@ -382,6 +397,7 @@ function TabBodega({ bodega, umbral, columnas, pendientes }: { bodega: OtstBodeg
       const antig = mesesTranscurridos(r.mes_ingreso, r.anio_ingreso)
       return {
         OTST: r.otst,
+        NIT: r.nit_cliente || '',
         Correo: r.correo_cliente || '',
         'Mes Ingreso': MESES[r.mes_ingreso] || r.mes_ingreso,
         'Año Ingreso': r.anio_ingreso,
@@ -422,7 +438,7 @@ function TabBodega({ bodega, umbral, columnas, pendientes }: { bodega: OtstBodeg
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 14, padding: 14, background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 10 }}>
           <div style={{ flex: 1, minWidth: 180 }}>
             <FL>Buscar</FL>
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="OTST, correo..." style={INP} />
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="OTST, NIT, correo..." style={INP} />
           </div>
           <div>
             <FL>Columna</FL>
@@ -460,20 +476,23 @@ function TabBodega({ bodega, umbral, columnas, pendientes }: { bodega: OtstBodeg
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
             <thead>
               <tr>
-                {['OTST', 'Correo', 'F. Ingreso', 'Ubicación', 'Antigüedad', 'Estado', 'Acciones'].map(h => (
+                {['OTST', 'NIT', 'Correo', 'F. Ingreso', 'Ubicación', 'Antigüedad', 'Estado', 'Acciones'].map(h => (
                   <th key={h} style={TH}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {rows.length === 0 ? (
-                <tr><td colSpan={7}><div style={EMPTY_TD}><Warehouse size={30} strokeWidth={1.5} /><p>Sin registros</p></div></td></tr>
+                <tr><td colSpan={8}><div style={EMPTY_TD}><Warehouse size={30} strokeWidth={1.5} /><p>Sin registros</p></div></td></tr>
               ) : rows.map(r => {
                 const antig = mesesTranscurridos(r.mes_ingreso, r.anio_ingreso)
                 const abandonada = antig >= umbral
                 return (
                   <tr key={r.id} style={{ borderBottom: '1px solid rgba(221,227,237,.5)' }}>
                     <td style={{ padding: '10px 14px', fontWeight: 600 }}><OtstLink otst={r.otst} /></td>
+                    <td style={{ padding: '10px 14px', fontSize: 11 }}>
+                      {r.nit_cliente ? <CopyableText value={r.nit_cliente} label="NIT" /> : '—'}
+                    </td>
                     <td style={{ padding: '10px 14px', fontSize: 11 }}>
                       {r.correo_cliente ? <CopyableText value={r.correo_cliente} /> : '—'}
                     </td>
@@ -498,22 +517,12 @@ function TabBodega({ bodega, umbral, columnas, pendientes }: { bodega: OtstBodeg
                         )}
                       </div>
                     </td>
-                    <td style={{ padding: '8px 14px', whiteSpace: 'nowrap' }}>
-                      <div style={{ display: 'flex', gap: 6 }}>
-                        <IconBtn title="Mover"     onClick={() => setAccionItem({ item: r, tipo: 'mover' })}><ArrowRightLeft size={14} /></IconBtn>
-                        <IconBtn title="Contactar" onClick={() => setAccionItem({ item: r, tipo: 'contactar' })}><Mail size={14} /></IconBtn>
-                        <IconBtn title="Retirar"   onClick={() => setAccionItem({ item: r, tipo: 'retirar' })}><CheckCircle2 size={14} /></IconBtn>
-                        {!otstPendientes.has(r.otst.trim().toLowerCase()) && (
-                          <IconBtn title="Agregar a pendientes de despacho" onClick={() => setAccionItem({ item: r, tipo: 'pendiente' })}>
-                            <ListTodo size={14} />
-                          </IconBtn>
-                        )}
-                        {canEliminar && (
-                          <IconBtn title="Eliminar" onClick={() => setAccionItem({ item: r, tipo: 'eliminar' })}>
-                            <Trash2 size={14} color="#c0392b" />
-                          </IconBtn>
-                        )}
-                      </div>
+                    <td style={{ padding: '8px 14px', whiteSpace: 'nowrap', textAlign: 'right' }}>
+                      <RowActionsMenu
+                        isPendiente={otstPendientes.has(r.otst.trim().toLowerCase())}
+                        canEliminar={canEliminar}
+                        onAction={tipo => setAccionItem({ item: r, tipo })}
+                      />
                     </td>
                   </tr>
                 )
@@ -523,12 +532,66 @@ function TabBodega({ bodega, umbral, columnas, pendientes }: { bodega: OtstBodeg
         </div>
       </Card>
 
+      {accionItem?.tipo === 'editar'    && <ModalEditarContacto item={accionItem.item} onClose={() => setAccionItem(null)} />}
       {accionItem?.tipo === 'mover'     && <ModalMover     item={accionItem.item} columnas={columnas} onClose={() => setAccionItem(null)} />}
       {accionItem?.tipo === 'contactar' && <ModalContactar item={accionItem.item} onClose={() => setAccionItem(null)} />}
       {accionItem?.tipo === 'retirar'   && <ModalRetirar   item={accionItem.item} onClose={() => setAccionItem(null)} />}
       {accionItem?.tipo === 'eliminar'  && <ModalEliminar  item={accionItem.item} onClose={() => setAccionItem(null)} />}
       {accionItem?.tipo === 'pendiente' && <ModalAgregarPendiente item={accionItem.item} onClose={() => setAccionItem(null)} />}
     </div>
+  )
+}
+
+function ModalEditarContacto({ item, onClose }: { item: OtstBodega, onClose: () => void }) {
+  const qc              = useQueryClient()
+  const { displayName } = useUser()
+  const [correo, setCorreo] = useState(item.correo_cliente || '')
+  const [nit,    setNit]    = useState(item.nit_cliente || '')
+  const [saving, setSaving] = useState(false)
+
+  async function submit() {
+    const nuevoCorreo = correo.trim() || null
+    const nuevoNit    = nit.trim() || null
+    if (nuevoCorreo === (item.correo_cliente || null) && nuevoNit === (item.nit_cliente || null)) {
+      onClose(); return
+    }
+    setSaving(true)
+    const { error } = await supabase.from('otst_bodega')
+      .update({ correo_cliente: nuevoCorreo, nit_cliente: nuevoNit, updated_at: new Date().toISOString() })
+      .eq('id', item.id)
+    if (error) { toast.error('Error: ' + error.message); setSaving(false); return }
+
+    const cambios: string[] = []
+    if (nuevoCorreo !== (item.correo_cliente || null)) cambios.push(`Correo: "${item.correo_cliente || '—'}" → "${nuevoCorreo || '—'}"`)
+    if (nuevoNit !== (item.nit_cliente || null))       cambios.push(`NIT: "${item.nit_cliente || '—'}" → "${nuevoNit || '—'}"`)
+    const codigo = codigoUbicacion(item.columna, item.fila, item.subcolumna)
+    const { error: movError } = await supabase.from('otst_bodega_movimientos').insert({
+      otst_id: item.id, tipo: 'edicion', usuario: displayName,
+      ubicacion_origen: codigo, ubicacion_destino: codigo, motivo: cambios.join(' · '),
+    })
+    setSaving(false)
+    if (movError) toast.error('Se actualizó, pero falló el historial: ' + movError.message)
+    else toast.success('Datos de contacto actualizados')
+    qc.invalidateQueries({ queryKey: ['otst_bodega'] })
+    qc.invalidateQueries({ queryKey: ['otst_bodega_movimientos'] })
+    onClose()
+  }
+
+  return (
+    <Modal open onClose={onClose} title={`Editar correo / NIT — OTST ${item.otst}`}>
+      <FG label="Correo del cliente">
+        <input value={correo} onChange={e => setCorreo(e.target.value)} placeholder="correo@cliente.com" style={INP} autoFocus />
+      </FG>
+      <div style={{ marginTop: 14 }}>
+        <FG label="NIT del cliente">
+          <input value={nit} onChange={e => setNit(e.target.value)} placeholder="Número de NIT" style={INP} />
+        </FG>
+      </div>
+      <Actions>
+        <button onClick={onClose} style={GHOST}>Cancelar</button>
+        <button onClick={submit} disabled={saving} style={PRI}>{saving ? 'Guardando…' : '✓ Guardar cambios'}</button>
+      </Actions>
+    </Modal>
   )
 }
 
@@ -1136,7 +1199,7 @@ function TimelineCard({ item, movimientos }: { item: OtstBodega, movimientos: Ot
   const { hasCapability } = useUser()
   const canEliminar = hasCapability('bodega_eliminar')
   const [eliminando, setEliminando] = useState(false)
-  const iconos: Record<string, string> = { ingreso: '📥', traslado: '🔄', contacto: '✉️', retiro: '✅', novedad: '⚠️' }
+  const iconos: Record<string, string> = { ingreso: '📥', traslado: '🔄', contacto: '✉️', retiro: '✅', novedad: '⚠️', edicion: '✏️' }
   return (
     <div style={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 12, padding: 20, marginBottom: 12 }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 12 }}>
@@ -1360,10 +1423,10 @@ function OtstLink({ otst }: { otst: string }) {
   )
 }
 
-function CopyableText({ value }: { value: string }) {
+function CopyableText({ value, label = 'Correo' }: { value: string, label?: string }) {
   function copy(e: React.MouseEvent) {
     e.stopPropagation()
-    navigator.clipboard.writeText(value).then(() => toast.success('Correo copiado al portapapeles'))
+    navigator.clipboard.writeText(value).then(() => toast.success(`${label} copiado al portapapeles`))
   }
   return (
     <span onClick={copy} title="Clic para copiar" style={{ cursor: 'pointer' }}
@@ -1372,6 +1435,64 @@ function CopyableText({ value }: { value: string }) {
     >
       {value}
     </span>
+  )
+}
+
+type AccionTipo = 'editar' | 'mover' | 'contactar' | 'retirar' | 'eliminar' | 'pendiente'
+
+function RowActionsMenu({ isPendiente, canEliminar, onAction }: {
+  isPendiente: boolean, canEliminar: boolean, onAction: (tipo: AccionTipo) => void,
+}) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    function onDocClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', onDocClick)
+    return () => document.removeEventListener('mousedown', onDocClick)
+  }, [open])
+
+  function choose(tipo: AccionTipo) {
+    setOpen(false)
+    onAction(tipo)
+  }
+
+  const items: { tipo: AccionTipo, label: string, icon: React.ReactNode, danger?: boolean }[] = [
+    { tipo: 'editar',     label: 'Editar correo / NIT',   icon: <Pencil size={13} /> },
+    { tipo: 'mover',      label: 'Mover ubicación',       icon: <ArrowRightLeft size={13} /> },
+    { tipo: 'contactar',  label: 'Contactar cliente',     icon: <Mail size={13} /> },
+    { tipo: 'retirar',    label: 'Retirar',               icon: <CheckCircle2 size={13} /> },
+    ...(!isPendiente ? [{ tipo: 'pendiente' as const, label: 'Agregar a pendientes', icon: <ListTodo size={13} /> }] : []),
+    ...(canEliminar ? [{ tipo: 'eliminar' as const, label: 'Eliminar', icon: <Trash2 size={13} />, danger: true }] : []),
+  ]
+
+  return (
+    <div ref={ref} style={{ position: 'relative', display: 'inline-block' }}>
+      <IconBtn title="Acciones" onClick={() => setOpen(o => !o)}><MoreVertical size={14} /></IconBtn>
+      {open && (
+        <div style={{
+          position: 'absolute', right: 0, top: 'calc(100% + 4px)', zIndex: 20, minWidth: 200,
+          background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10,
+          boxShadow: '0 8px 24px rgba(0,0,0,.14)', padding: 6, display: 'flex', flexDirection: 'column', gap: 1,
+        }}>
+          {items.map(it => (
+            <button key={it.tipo} onClick={() => choose(it.tipo)} style={{
+              display: 'flex', alignItems: 'center', gap: 9, padding: '9px 10px', border: 'none',
+              background: 'transparent', borderRadius: 7, cursor: 'pointer', fontSize: 12.5,
+              fontFamily: 'var(--sans)', color: it.danger ? '#c0392b' : 'var(--text)', textAlign: 'left',
+            }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--surface2)' }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
+            >
+              {it.icon}{it.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
 

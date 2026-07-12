@@ -167,6 +167,7 @@ export interface OtstBodega {
   id: string
   otst: string
   correo_cliente: string | null
+  nit_cliente: string | null
   mes_ingreso: number
   anio_ingreso: number
   columna: string
