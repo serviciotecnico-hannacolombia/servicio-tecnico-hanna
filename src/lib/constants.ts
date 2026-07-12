@@ -13,6 +13,7 @@ export const MODULE_ROUTES: { key: ModuleKey; path: string }[] = [
   { key: 'editor',      path: '/editor' },
   { key: 'indicadores', path: '/indicadores' },
   { key: 'correos',     path: '/correos' },
+  { key: 'reporte_st',  path: '/reporte-st' },
   { key: 'admin',       path: '/admin' },
 ]
 

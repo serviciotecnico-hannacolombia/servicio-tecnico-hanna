@@ -18,7 +18,7 @@ export interface CorreoDestinatario {
 
 export type ModuleKey =
   | 'llamadas' | 'bodega' | 'consumibles' | 'tarifas' | 'codigos'
-  | 'editor' | 'indicadores' | 'correos' | 'admin'
+  | 'editor' | 'indicadores' | 'correos' | 'reporte_st' | 'admin'
 
 export type CapabilityKey =
   | 'importar_csv_tarifas' | 'importar_csv_codigos' | 'importar_csv_llamadas'
