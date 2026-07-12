@@ -75,6 +75,15 @@ function nombreMesAnio(mes: number, anio: number): string {
   return `${MESES[mes] ?? mes} ${anio}`
 }
 
+function claveMesAnio(mes: number, anio: number): number {
+  return anio * 12 + mes
+}
+
+function rangoZonaLabel(z: OtstBodegaZona): string {
+  if (z.mes_inicio === z.mes_fin && z.anio_inicio === z.anio_fin) return nombreMesAnio(z.mes_inicio, z.anio_inicio)
+  return `${nombreMesAnio(z.mes_inicio, z.anio_inicio)} – ${nombreMesAnio(z.mes_fin, z.anio_fin)}`
+}
+
 // ── Supabase queries ───────────────────────────────────────────────────────────
 
 function useBodega() {
@@ -106,7 +115,7 @@ function useZonas() {
     queryKey: ['otst_bodega_zonas'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('otst_bodega_zonas').select('*').order('anio', { ascending: false }).order('mes', { ascending: false })
+        .from('otst_bodega_zonas').select('*').order('anio_inicio', { ascending: false }).order('mes_inicio', { ascending: false })
       if (error) throw error
       return data as OtstBodegaZona[]
     },
@@ -215,7 +224,12 @@ function TabIngreso({ zonas, bodega, columnas }: { zonas: OtstBodegaZona[], bode
   const [autoFilled, setAutoFilled] = useState(false)
   const [saving,     setSaving]     = useState(false)
 
-  const zonaSugerida = mes && anio ? zonas.find(z => z.mes === mes && z.anio === anio) : undefined
+  const zonaSugerida = mes && anio
+    ? zonas.find(z => {
+        const clave = claveMesAnio(mes as number, anio as number)
+        return clave >= claveMesAnio(z.mes_inicio, z.anio_inicio) && clave <= claveMesAnio(z.mes_fin, z.anio_fin)
+      })
+    : undefined
   const duplicada = otst.trim().length > 0
     ? bodega.find(r => r.otst.trim().toLowerCase() === otst.trim().toLowerCase())
     : undefined
@@ -1251,6 +1265,9 @@ function TabConfig({ zonas, config, bodega }: { zonas: OtstBodegaZona[], config?
 
   const [mes, setMes] = useState<number | ''>('')
   const [anio, setAnio] = useState<number | ''>(new Date().getFullYear())
+  const [esRango, setEsRango] = useState(false)
+  const [mesFin, setMesFin] = useState<number | ''>('')
+  const [anioFin, setAnioFin] = useState<number | ''>(new Date().getFullYear())
   const [cols, setCols] = useState<string[]>([])
   const [savingZona, setSavingZona] = useState(false)
 
@@ -1298,13 +1315,19 @@ function TabConfig({ zonas, config, bodega }: { zonas: OtstBodegaZona[], config?
 
   async function guardarZona() {
     if (!mes || !anio || cols.length === 0) { toast.error('Selecciona mes, año y al menos una columna'); return }
+    const mFin  = esRango ? mesFin  : mes
+    const aFin  = esRango ? anioFin : anio
+    if (!mFin || !aFin) { toast.error('Indica el mes y año de fin del rango'); return }
+    if (claveMesAnio(mFin as number, aFin as number) < claveMesAnio(mes as number, anio as number)) {
+      toast.error('El fin del rango debe ser igual o posterior al inicio'); return
+    }
     setSavingZona(true)
     const { error } = await supabase.from('otst_bodega_zonas')
-      .upsert({ mes, anio, columnas: cols }, { onConflict: 'mes,anio' })
+      .insert({ mes_inicio: mes, anio_inicio: anio, mes_fin: mFin, anio_fin: aFin, columnas: cols })
     setSavingZona(false)
     if (error) { toast.error('Error: ' + error.message); return }
     toast.success('Zona guardada')
-    setMes(''); setCols([])
+    setMes(''); setCols([]); setEsRango(false); setMesFin(''); setAnioFin(new Date().getFullYear())
     qc.invalidateQueries({ queryKey: ['otst_bodega_zonas'] })
   }
 
@@ -1353,16 +1376,29 @@ function TabConfig({ zonas, config, bodega }: { zonas: OtstBodegaZona[], config?
 
       <Card>
         <SecTitle>Zonas de rotación mensual</SecTitle>
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 16 }}>
-          <FG label="Mes">
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 12 }}>
+          <FG label={esRango ? 'Mes inicio' : 'Mes'}>
             <select value={mes} onChange={e => setMes(e.target.value ? Number(e.target.value) : '')} style={INP}>
               <option value="">Seleccionar...</option>
               {MESES.slice(1).map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
             </select>
           </FG>
-          <FG label="Año">
+          <FG label={esRango ? 'Año inicio' : 'Año'}>
             <input type="number" value={anio} onChange={e => setAnio(e.target.value ? Number(e.target.value) : '')} style={{ ...INP, width: 100 }} />
           </FG>
+          {esRango && (
+            <>
+              <FG label="Mes fin">
+                <select value={mesFin} onChange={e => setMesFin(e.target.value ? Number(e.target.value) : '')} style={INP}>
+                  <option value="">Seleccionar...</option>
+                  {MESES.slice(1).map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
+                </select>
+              </FG>
+              <FG label="Año fin">
+                <input type="number" value={anioFin} onChange={e => setAnioFin(e.target.value ? Number(e.target.value) : '')} style={{ ...INP, width: 100 }} />
+              </FG>
+            </>
+          )}
           <FG label="Columnas asignadas">
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               {columnas.map(c => (
@@ -1375,21 +1411,25 @@ function TabConfig({ zonas, config, bodega }: { zonas: OtstBodegaZona[], config?
               ))}
             </div>
           </FG>
-          <button onClick={guardarZona} disabled={savingZona} style={PRI}>{savingZona ? 'Guardando…' : '+ Agregar / actualizar zona'}</button>
+          <button onClick={guardarZona} disabled={savingZona} style={PRI}>{savingZona ? 'Guardando…' : '+ Agregar zona'}</button>
         </div>
+
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--muted)', cursor: 'pointer', marginBottom: 16 }}>
+          <input type="checkbox" checked={esRango} onChange={e => setEsRango(e.target.checked)} />
+          Aplicar a un rango de meses (ej. todo el año: Enero 2024 a Diciembre 2024)
+        </label>
 
         <div style={{ overflowX: 'auto', borderRadius: 10, border: '1px solid var(--border)' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
             <thead>
-              <tr>{['Mes', 'Año', 'Columnas', ''].map(h => <th key={h} style={TH}>{h}</th>)}</tr>
+              <tr>{['Período', 'Columnas', ''].map(h => <th key={h} style={TH}>{h}</th>)}</tr>
             </thead>
             <tbody>
               {zonas.length === 0 ? (
-                <tr><td colSpan={4}><div style={EMPTY_TD}><p>Sin zonas configuradas</p></div></td></tr>
+                <tr><td colSpan={3}><div style={EMPTY_TD}><p>Sin zonas configuradas</p></div></td></tr>
               ) : zonas.map(z => (
                 <tr key={z.id} style={{ borderBottom: '1px solid rgba(221,227,237,.5)' }}>
-                  <td style={{ padding: '10px 14px' }}>{MESES[z.mes]}</td>
-                  <td style={TMONO}>{z.anio}</td>
+                  <td style={TMONO}>{rangoZonaLabel(z)}</td>
                   <td style={{ padding: '10px 14px' }}>{z.columnas.join(', ')}</td>
                   <td style={{ padding: '10px 14px' }}>
                     <button onClick={() => eliminarZona(z.id)} style={GHOST}>Eliminar</button>

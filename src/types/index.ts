@@ -194,8 +194,10 @@ export interface OtstBodegaMovimiento {
 
 export interface OtstBodegaZona {
   id: string
-  mes: number
-  anio: number
+  mes_inicio: number
+  anio_inicio: number
+  mes_fin: number
+  anio_fin: number
   columnas: string[]
   created_at: string
 }
