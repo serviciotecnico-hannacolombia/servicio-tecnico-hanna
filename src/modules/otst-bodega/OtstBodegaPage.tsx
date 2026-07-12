@@ -17,6 +17,14 @@ import type { OtstBodega, OtstBodegaMovimiento, OtstBodegaZona, OtstBodegaConfig
 const DEFAULT_COLUMNAS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
 const FILAS       = [0, 1, 2, 3]
 const SUBCOLUMNAS = [1, 2]
+
+// Solo las columnas A-H rotan mensualmente. Cualquier columna posterior (I, J, K...)
+// es de "parqueo": una vez que una OTST llega ahí por rotación, ya no vuelve a rotar
+// y se considera abandonada — solo debe salir de bodega (despacho/retiro).
+const COLUMNAS_ROTATIVAS = new Set(DEFAULT_COLUMNAS)
+function esColumnaRotativa(c: string): boolean {
+  return COLUMNAS_ROTATIVAS.has(c)
+}
 const MESES = [
   '', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
@@ -71,6 +79,12 @@ function mesesTranscurridos(mes: number, anio: number): number {
   return (now.getFullYear() - anio) * 12 + (now.getMonth() + 1 - mes)
 }
 
+// Una OTST se considera abandonada si superó el umbral de meses, o si ya salió
+// de las columnas rotativas (A-H) y por lo tanto ya no volverá a rotar.
+function esAbandonada(r: OtstBodega, umbral: number): boolean {
+  return !esColumnaRotativa(r.columna) || mesesTranscurridos(r.mes_ingreso, r.anio_ingreso) >= umbral
+}
+
 function nombreMesAnio(mes: number, anio: number): string {
   return `${MESES[mes] ?? mes} ${anio}`
 }
@@ -82,6 +96,13 @@ function claveMesAnio(mes: number, anio: number): number {
 function rangoZonaLabel(z: OtstBodegaZona): string {
   if (z.mes_inicio === z.mes_fin && z.anio_inicio === z.anio_fin) return nombreMesAnio(z.mes_inicio, z.anio_inicio)
   return `${nombreMesAnio(z.mes_inicio, z.anio_inicio)} – ${nombreMesAnio(z.mes_fin, z.anio_fin)}`
+}
+
+// Una zona es "rotativa" si asigna columnas A-H (la entrada de OTST del mes).
+// Si asigna columnas de parqueo (I, J, K...) es solo un registro histórico de
+// dónde quedó archivada una zona ya migrada — nunca vuelve a rotar.
+function esZonaRotativa(z: OtstBodegaZona): boolean {
+  return z.columnas.every(esColumnaRotativa)
 }
 
 // ── Supabase queries ───────────────────────────────────────────────────────────
@@ -148,7 +169,7 @@ function usePendientes() {
 
 // ── Page ───────────────────────────────────────────────────────────────────────
 
-type Tab = 'ingreso' | 'bodega' | 'pendientes' | 'historial' | 'config'
+type Tab = 'ingreso' | 'bodega' | 'rotacion' | 'pendientes' | 'historial' | 'config'
 
 export function OtstBodegaPage() {
   const { hasCapability } = useUser()
@@ -172,6 +193,7 @@ export function OtstBodegaPage() {
           ['pendientes', '📋', 'Despacho'],
           ['bodega',     '🗄️', 'Bodega'],
           ...(canRegistrarIngreso ? [['ingreso', '📥', 'Ingreso']] : []),
+          ...(canRegistrarIngreso ? [['rotacion', '🔁', 'Rotación']] : []),
           ['historial',  '🕓', 'Historial'],
           ['config',     '⚙️', 'Config'],
         ] as [Tab, string, string][]).map(([id, icon, label]) => (
@@ -197,6 +219,7 @@ export function OtstBodegaPage() {
 
       {tab === 'ingreso'    && <TabIngreso    zonas={zonas} bodega={bodega} columnas={columnas} />}
       {tab === 'bodega'     && <TabBodega     bodega={bodega} umbral={umbral} columnas={columnas} pendientes={pendientes} />}
+      {tab === 'rotacion'   && <TabRotacion   bodega={bodega} zonas={zonas} columnas={columnas} />}
       {tab === 'pendientes' && <TabPendientes bodega={bodega} pendientes={pendientes} umbral={umbral} />}
       {tab === 'historial'  && <TabHistorial  bodega={bodega} movimientos={movimientos} />}
       {tab === 'config'     && <TabConfig     zonas={zonas} config={config} bodega={bodega} />}
@@ -225,7 +248,7 @@ function TabIngreso({ zonas, bodega, columnas }: { zonas: OtstBodegaZona[], bode
   const [saving,     setSaving]     = useState(false)
 
   const zonaSugerida = mes && anio
-    ? zonas.find(z => {
+    ? zonas.filter(esZonaRotativa).find(z => {
         const clave = claveMesAnio(mes as number, anio as number)
         return clave >= claveMesAnio(z.mes_inicio, z.anio_inicio) && clave <= claveMesAnio(z.mes_fin, z.anio_fin)
       })
@@ -332,10 +355,10 @@ function TabIngreso({ zonas, bodega, columnas }: { zonas: OtstBodegaZona[], bode
 
       <SecTitle>Ubicación asignada</SecTitle>
       <div style={G3}>
-        <FG label="Columna">
+        <FG label="Columna" hint="Solo columnas A-H: son las que rotan mensualmente">
           <select value={columna} onChange={e => setColumna(e.target.value)} style={INP}>
             <option value="">Seleccionar...</option>
-            {columnas.map(c => <option key={c} value={c}>{c}</option>)}
+            {columnas.filter(esColumnaRotativa).map(c => <option key={c} value={c}>{c}</option>)}
           </select>
         </FG>
         <FG label="Fila">
@@ -386,7 +409,7 @@ function TabBodega({ bodega, umbral, columnas, pendientes }: { bodega: OtstBodeg
   const otstPendientes = new Set(pendientes.filter(p => p.estado === 'pendiente').map(p => p.otst.trim().toLowerCase()))
 
   const activos = bodega.filter(r => r.estado !== 'retirado')
-  const abandonadas = activos.filter(r => mesesTranscurridos(r.mes_ingreso, r.anio_ingreso) >= umbral)
+  const abandonadas = activos.filter(r => esAbandonada(r, umbral))
   const conNovedad = activos.filter(r => r.estado === 'novedad')
   const mes = new Date().toISOString().slice(0, 7)
   const esteMes = bodega.filter(r => r.created_at?.startsWith(mes)).length
@@ -396,8 +419,7 @@ function TabBodega({ bodega, umbral, columnas, pendientes }: { bodega: OtstBodeg
     const ok = !q || [r.otst, r.correo_cliente, r.nit_cliente].some(f => f?.toLowerCase().includes(q))
     const okC = !colF || r.columna === colF
     const okE = estadoF === 'all' || r.estado === estadoF
-    const esAbandonada = mesesTranscurridos(r.mes_ingreso, r.anio_ingreso) >= umbral
-    const okA = !soloAbandonadas || esAbandonada
+    const okA = !soloAbandonadas || esAbandonada(r, umbral)
     return ok && okC && okE && okA
   })
 
@@ -420,7 +442,8 @@ function TabBodega({ bodega, umbral, columnas, pendientes }: { bodega: OtstBodeg
         Subcolumna: r.subcolumna,
         Ubicacion: codigoUbicacion(r.columna, r.fila, r.subcolumna),
         'Antiguedad (meses)': antig,
-        Abandonada: antig >= umbral ? 'Si' : 'No',
+        Abandonada: esAbandonada(r, umbral) ? 'Si' : 'No',
+        'Fuera de rotación': !esColumnaRotativa(r.columna) ? 'Si' : 'No',
         Estado: r.estado,
         'Responsable Novedad': r.responsable_novedad || '',
         Nota: r.nota || '',
@@ -500,7 +523,8 @@ function TabBodega({ bodega, umbral, columnas, pendientes }: { bodega: OtstBodeg
                 <tr><td colSpan={8}><div style={EMPTY_TD}><Warehouse size={30} strokeWidth={1.5} /><p>Sin registros</p></div></td></tr>
               ) : rows.map(r => {
                 const antig = mesesTranscurridos(r.mes_ingreso, r.anio_ingreso)
-                const abandonada = antig >= umbral
+                const fueraDeRotacion = !esColumnaRotativa(r.columna)
+                const abandonada = esAbandonada(r, umbral)
                 return (
                   <tr key={r.id} style={{ borderBottom: '1px solid rgba(221,227,237,.5)' }}>
                     <td style={{ padding: '10px 14px', fontWeight: 600 }}><OtstLink otst={r.otst} /></td>
@@ -515,7 +539,7 @@ function TabBodega({ bodega, umbral, columnas, pendientes }: { bodega: OtstBodeg
                     <td style={{ padding: '10px 14px' }}>
                       <span style={abandonada ? B_ABANDONADA : B_OK}>
                         {abandonada && <AlertTriangle size={11} style={{ marginRight: 3, verticalAlign: -1 }} />}
-                        {antig} mes{antig !== 1 ? 'es' : ''}
+                        {fueraDeRotacion ? 'Fuera de rotación · ' : ''}{antig} mes{antig !== 1 ? 'es' : ''}
                       </span>
                     </td>
                     <td style={{ padding: '10px 14px' }}>
@@ -612,6 +636,10 @@ function ModalEditarContacto({ item, onClose }: { item: OtstBodega, onClose: () 
 function ModalMover({ item, columnas, onClose }: { item: OtstBodega, columnas: string[], onClose: () => void }) {
   const qc              = useQueryClient()
   const { displayName } = useUser()
+  // Una vez que una OTST sale de las columnas rotativas (A-H) hacia parqueo, ya no
+  // puede volver: solo se ofrecen otras columnas de parqueo como destino.
+  const enParqueo = !esColumnaRotativa(item.columna)
+  const opcionesColumna = enParqueo ? columnas.filter(c => !esColumnaRotativa(c)) : columnas
   const [columna,    setColumna]    = useState(item.columna)
   const [fila,       setFila]       = useState<number>(item.fila)
   const [subcolumna, setSubcolumna] = useState<number>(item.subcolumna)
@@ -619,6 +647,9 @@ function ModalMover({ item, columnas, onClose }: { item: OtstBodega, columnas: s
   const [saving,     setSaving]     = useState(false)
 
   async function submit() {
+    if (enParqueo && esColumnaRotativa(columna)) {
+      toast.error('Esta OTST ya salió de rotación: no puede volver a una columna A-H'); return
+    }
     setSaving(true)
     const origen  = codigoUbicacion(item.columna, item.fila, item.subcolumna)
     const destino = codigoUbicacion(columna, fila, subcolumna)
@@ -640,10 +671,15 @@ function ModalMover({ item, columnas, onClose }: { item: OtstBodega, columnas: s
 
   return (
     <Modal open onClose={onClose} title={`Mover OTST ${item.otst}`}>
+      {enParqueo && (
+        <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>
+          Esta OTST ya está fuera de rotación (columna {item.columna}). Solo puede moverse a otra columna de parqueo, no de vuelta a A-H.
+        </p>
+      )}
       <div style={G3}>
         <FG label="Columna">
           <select value={columna} onChange={e => setColumna(e.target.value)} style={INP}>
-            {columnas.map(c => <option key={c} value={c}>{c}</option>)}
+            {opcionesColumna.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
         </FG>
         <FG label="Fila">
@@ -946,6 +982,301 @@ function ModalResolverNovedad({ item, onClose }: { item: OtstBodega, onClose: ()
         <button onClick={submit} disabled={saving} style={PRI}>{saving ? 'Guardando…' : '✓ Resolver novedad'}</button>
       </Actions>
     </Modal>
+  )
+}
+
+// ── Tab Rotación (vaciar columnas de una zona vencida hacia una nueva) ─────────
+
+interface EscaneoRotacion { fila: number, subcolumna: number, extra: boolean }
+
+function TabRotacion({ bodega, zonas, columnas }: { bodega: OtstBodega[], zonas: OtstBodegaZona[], columnas: string[] }) {
+  const qc              = useQueryClient()
+  const { displayName } = useUser()
+  const { data: profiles = [] } = useProfiles()
+  const activos = profiles.filter(p => p.activo)
+  const scanRef          = useRef<HTMLInputElement>(null)
+
+  const [iniciada,   setIniciada]   = useState(false)
+  const [origen,     setOrigen]     = useState<string[]>([])
+  const [destino,    setDestino]    = useState('')
+  const [esperadas,  setEsperadas]  = useState<OtstBodega[]>([])
+  const [fila,       setFila]       = useState<number | ''>('')
+  const [subcolumna, setSubcolumna] = useState<number | ''>('')
+  const [scanValue,  setScanValue]  = useState('')
+  const [escaneos,   setEscaneos]   = useState<Map<string, EscaneoRotacion>>(new Map())
+  const [responsableFaltantes, setResponsableFaltantes] = useState('')
+  const [saving,     setSaving]     = useState(false)
+
+  const ahora = new Date()
+  const claveAhora = claveMesAnio(ahora.getMonth() + 1, ahora.getFullYear())
+  const zonasVencidas = zonas
+    // Las zonas de parqueo (columnas fuera de A-H) ya son el destino final de una
+    // rotación pasada: no vuelven a rotar, así que nunca deben sugerirse aquí.
+    .filter(esZonaRotativa)
+    .filter(z => claveMesAnio(z.mes_fin, z.anio_fin) < claveAhora)
+    .map(z => ({ zona: z, pendientes: bodega.filter(r => r.estado !== 'retirado' && z.columnas.includes(r.columna)).length }))
+    .filter(x => x.pendientes > 0)
+
+  function toggleOrigen(c: string) {
+    setOrigen(prev => prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c].sort())
+  }
+
+  function iniciar() {
+    if (origen.length === 0) { toast.error('Selecciona al menos una columna de origen'); return }
+    if (!destino) { toast.error('Selecciona la columna destino'); return }
+    if (origen.includes(destino)) { toast.error('La columna destino no puede ser una de las columnas de origen'); return }
+    setEsperadas(bodega.filter(r => r.estado !== 'retirado' && origen.includes(r.columna)))
+    setEscaneos(new Map())
+    setResponsableFaltantes('')
+    setIniciada(true)
+    setTimeout(() => scanRef.current?.focus(), 0)
+  }
+
+  function cancelar() {
+    setIniciada(false); setOrigen([]); setDestino(''); setEsperadas([]); setEscaneos(new Map())
+    setFila(''); setSubcolumna(''); setScanValue(''); setResponsableFaltantes('')
+  }
+
+  function handleScan() {
+    const raw = scanValue.trim()
+    if (!raw) return
+    const parsed = parseOtstQR(raw)
+    const codigo = (parsed?.otst || raw).trim()
+    if (fila === '' || subcolumna === '') { toast.error('Selecciona fila y subcolumna de destino antes de escanear'); return }
+    const match = bodega.find(b => b.otst.trim().toLowerCase() === codigo.toLowerCase())
+    if (!match) { toast.error(`OTST ${codigo} no está registrada en bodega`); setScanValue(''); return }
+    if (match.estado === 'retirado') { toast.error(`OTST ${codigo} ya fue retirada de bodega`); setScanValue(''); return }
+    if (escaneos.has(match.id)) { toast.error(`OTST ${codigo} ya fue escaneada`); setScanValue(''); return }
+    const esExtra = !esperadas.some(e => e.id === match.id)
+    setEscaneos(prev => new Map(prev).set(match.id, { fila: fila as number, subcolumna: subcolumna as number, extra: esExtra }))
+    toast.success(esExtra ? `⚠ OTST ${match.otst} no esperada aquí — se migrará con nota` : `OTST ${match.otst} verificada`)
+    setScanValue('')
+  }
+
+  function quitarEscaneo(id: string) {
+    setEscaneos(prev => { const next = new Map(prev); next.delete(id); return next })
+  }
+
+  const escaneadas = esperadas.filter(e => escaneos.has(e.id))
+  const faltantes  = esperadas.filter(e => !escaneos.has(e.id))
+  const extras     = [...escaneos.entries()]
+    .filter(([id]) => !esperadas.some(e => e.id === id))
+    .map(([id]) => bodega.find(b => b.id === id)).filter((x): x is OtstBodega => !!x)
+
+  async function confirmar() {
+    if (faltantes.length > 0 && !responsableFaltantes) {
+      toast.error('Selecciona un responsable para las OTST faltantes'); return
+    }
+    setSaving(true)
+    const origenLabel = origen.join(', ')
+    let errores = 0
+
+    await Promise.all([...escaneos.entries()].map(async ([id, e]) => {
+      const item = bodega.find(b => b.id === id)
+      if (!item) return
+      const origenCodigo  = codigoUbicacion(item.columna, item.fila, item.subcolumna)
+      const destinoCodigo = codigoUbicacion(destino, e.fila, e.subcolumna)
+      const { error } = await supabase.from('otst_bodega')
+        .update({ columna: destino, fila: e.fila, subcolumna: e.subcolumna, updated_at: new Date().toISOString() })
+        .eq('id', id)
+      if (error) { errores++; return }
+      await supabase.from('otst_bodega_movimientos').insert({
+        otst_id: id, tipo: 'traslado', usuario: displayName,
+        ubicacion_origen: origenCodigo, ubicacion_destino: destinoCodigo,
+        motivo: e.extra
+          ? `Rotación de bodega (${origenLabel} → ${destino}): OTST fuera de las columnas esperadas, migrada igualmente`
+          : `Rotación de bodega: columnas ${origenLabel} → ${destino}`,
+      })
+    }))
+
+    if (faltantes.length > 0) {
+      await Promise.all(faltantes.map(async item => {
+        const codigo = codigoUbicacion(item.columna, item.fila, item.subcolumna)
+        const { error } = await supabase.from('otst_bodega')
+          .update({ estado: 'novedad', responsable_novedad: responsableFaltantes, updated_at: new Date().toISOString() })
+          .eq('id', item.id)
+        if (error) { errores++; return }
+        await supabase.from('otst_bodega_movimientos').insert({
+          otst_id: item.id, tipo: 'novedad', usuario: displayName,
+          ubicacion_origen: codigo, ubicacion_destino: codigo,
+          motivo: `No se encontró durante rotación de bodega (${origenLabel} → ${destino}) — asignado a ${responsableFaltantes}`,
+        })
+      }))
+    }
+
+    setSaving(false)
+    if (errores > 0) toast.error(`Rotación aplicada con ${errores} error(es). Revisa el historial.`)
+    else toast.success('Rotación completada')
+    qc.invalidateQueries({ queryKey: ['otst_bodega'] })
+    qc.invalidateQueries({ queryKey: ['otst_bodega_movimientos'] })
+    cancelar()
+  }
+
+  if (!iniciada) {
+    return (
+      <Card>
+        <SecTitle>Iniciar rotación de bodega</SecTitle>
+        <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 16 }}>
+          Cuando cierra una zona mensual hay que vaciar sus columnas físicamente. Elige las columnas a vaciar y la columna destino;
+          luego verifica escaneando cada OTST a medida que la mueves, antes de confirmar el cambio en el sistema.
+        </p>
+
+        {zonasVencidas.length > 0 && (
+          <div style={{ ...PREVIEW, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.6px', fontFamily: 'var(--mono)', color: 'var(--accent)' }}>
+              Zonas vencidas con OTST pendientes de migrar
+            </div>
+            {zonasVencidas.map(({ zona, pendientes }) => (
+              <button key={zona.id} onClick={() => setOrigen(zona.columnas)} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
+                padding: '8px 12px', border: '1px solid var(--border)', borderRadius: 8,
+                background: 'var(--surface2)', cursor: 'pointer', fontFamily: 'var(--sans)', fontSize: 12.5, color: 'var(--text)',
+              }}>
+                <span>{rangoZonaLabel(zona)} · columnas <strong>{zona.columnas.join(', ')}</strong></span>
+                <span style={B_ABANDONADA}>{pendientes} OTST</span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div style={G2}>
+          <FG label="Columnas a vaciar (origen)" hint="Solo A-H: son las que rotan mensualmente">
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {columnas.filter(esColumnaRotativa).map(c => (
+                <button key={c} onClick={() => toggleOrigen(c)} style={{
+                  width: 36, height: 36, borderRadius: 8, cursor: 'pointer', fontFamily: 'var(--mono)', fontWeight: 700,
+                  border: `1px solid ${origen.includes(c) ? '#c0392b' : 'var(--border)'}`,
+                  background: origen.includes(c) ? '#c0392b' : 'var(--surface2)',
+                  color: origen.includes(c) ? '#fff' : 'var(--text)',
+                }}>{c}</button>
+              ))}
+            </div>
+          </FG>
+          <FG label="Columna destino" hint="Columna de parqueo (fuera de A-H): ya no vuelve a rotar">
+            <select value={destino} onChange={e => setDestino(e.target.value)} style={INP}>
+              <option value="">Seleccionar...</option>
+              {columnas.filter(c => !esColumnaRotativa(c)).map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </FG>
+        </div>
+
+        {columnas.filter(c => !esColumnaRotativa(c)).length === 0 && (
+          <p style={{ fontSize: 12, color: '#c0392b', marginTop: 10 }}>
+            No hay columnas de parqueo creadas todavía. Ve a la pestaña Config → "Columnas físicas" y agrega una nueva letra (ej. I) antes de iniciar la rotación.
+          </p>
+        )}
+
+        {origen.length > 0 && (
+          <p style={{ fontSize: 12, color: 'var(--muted)', marginTop: 12 }}>
+            Esto afecta a <strong>{bodega.filter(r => r.estado !== 'retirado' && origen.includes(r.columna)).length}</strong> OTST
+            actualmente en columna{origen.length !== 1 ? 's' : ''} {origen.join(', ')}.
+          </p>
+        )}
+
+        <Actions>
+          <button onClick={iniciar} style={PRI}>▶ Iniciar rotación</button>
+        </Actions>
+      </Card>
+    )
+  }
+
+  return (
+    <div>
+      <Card>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, marginBottom: 16 }}>
+          <div style={{ fontSize: 13 }}>
+            Rotación en curso: <strong>{origen.join(', ')}</strong> → <strong>{destino}</strong>
+          </div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <span style={B_LOC}>Esperadas {esperadas.length}</span>
+            <span style={B_OK}>Escaneadas {escaneadas.length}</span>
+            <span style={faltantes.length > 0 ? B_ABANDONADA : B_OK}>Faltantes {faltantes.length}</span>
+            {extras.length > 0 && <span style={B_NOVEDAD}>Extras {extras.length}</span>}
+          </div>
+        </div>
+
+        <div style={G3}>
+          <FG label="Escanear OTST" hint="Acepta el QR completo o solo el número de OTST">
+            <input ref={scanRef} value={scanValue} onChange={e => setScanValue(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleScan() } }}
+              placeholder="Escanear o escribir..." style={INP} autoFocus />
+          </FG>
+          <FG label="Fila destino">
+            <select value={fila} onChange={e => setFila(e.target.value ? Number(e.target.value) : '')} style={INP}>
+              <option value="">Seleccionar...</option>
+              {FILAS.map(f => <option key={f} value={f}>{f}</option>)}
+            </select>
+          </FG>
+          <FG label="Subcolumna destino">
+            <select value={subcolumna} onChange={e => setSubcolumna(e.target.value ? Number(e.target.value) : '')} style={INP}>
+              <option value="">Seleccionar...</option>
+              {SUBCOLUMNAS.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </FG>
+        </div>
+
+        {faltantes.length > 0 && (
+          <div style={{ marginTop: 20 }}>
+            <SecTitle>Faltantes ({faltantes.length})</SecTitle>
+            <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 10 }}>
+              No han sido escaneadas. Si cierras la rotación así, quedarán marcadas como <strong>Novedad</strong> para investigar.
+            </p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
+              {faltantes.map(f => (
+                <span key={f.id} style={B_ABANDONADA}>{f.otst} · {codigoUbicacion(f.columna, f.fila, f.subcolumna)}</span>
+              ))}
+            </div>
+            <FG label="Responsable de investigar faltantes">
+              <select value={responsableFaltantes} onChange={e => setResponsableFaltantes(e.target.value)} style={INP}>
+                <option value="">Seleccionar...</option>
+                {activos.map(p => <option key={p.id} value={p.full_name || p.email}>{p.full_name || p.email}</option>)}
+              </select>
+            </FG>
+          </div>
+        )}
+
+        {escaneadas.length > 0 && (
+          <div style={{ marginTop: 20 }}>
+            <SecTitle>Verificadas ({escaneadas.length})</SecTitle>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {escaneadas.map(e => {
+                const dest = escaneos.get(e.id)!
+                return (
+                  <span key={e.id} style={{ ...B_OK, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <CheckCircle2 size={11} /> {e.otst} → {codigoUbicacion(destino, dest.fila, dest.subcolumna)}
+                    <X size={11} style={{ cursor: 'pointer' }} onClick={() => quitarEscaneo(e.id)} />
+                  </span>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {extras.length > 0 && (
+          <div style={{ marginTop: 20 }}>
+            <SecTitle>Extras — no esperadas en {origen.join(', ')} ({extras.length})</SecTitle>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {extras.map(e => {
+                const dest = escaneos.get(e.id)!
+                return (
+                  <span key={e.id} style={{ ...B_NOVEDAD, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <AlertTriangle size={11} /> {e.otst} (estaba en {codigoUbicacion(e.columna, e.fila, e.subcolumna)}) → {codigoUbicacion(destino, dest.fila, dest.subcolumna)}
+                    <X size={11} style={{ cursor: 'pointer' }} onClick={() => quitarEscaneo(e.id)} />
+                  </span>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        <Actions>
+          <button onClick={cancelar} style={GHOST}>✕ Cancelar rotación</button>
+          <button onClick={confirmar} disabled={saving} style={PRI}>
+            {saving ? 'Guardando…' : faltantes.length > 0 ? '✓ Cerrar y marcar faltantes como novedad' : '✓ Confirmar rotación'}
+          </button>
+        </Actions>
+      </Card>
+    </div>
   )
 }
 
@@ -1399,7 +1730,7 @@ function TabConfig({ zonas, config, bodega }: { zonas: OtstBodegaZona[], config?
               </FG>
             </>
           )}
-          <FG label="Columnas asignadas">
+          <FG label="Columnas asignadas" hint="A-H para la zona activa del mes; una columna de parqueo (ej. P) si estás documentando dónde quedó una zona ya migrada">
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               {columnas.map(c => (
                 <button key={c} onClick={() => toggleCol(c)} style={{
@@ -1422,15 +1753,20 @@ function TabConfig({ zonas, config, bodega }: { zonas: OtstBodegaZona[], config?
         <div style={{ overflowX: 'auto', borderRadius: 10, border: '1px solid var(--border)' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
             <thead>
-              <tr>{['Período', 'Columnas', ''].map(h => <th key={h} style={TH}>{h}</th>)}</tr>
+              <tr>{['Período', 'Columnas', 'Tipo', ''].map(h => <th key={h} style={TH}>{h}</th>)}</tr>
             </thead>
             <tbody>
               {zonas.length === 0 ? (
-                <tr><td colSpan={3}><div style={EMPTY_TD}><p>Sin zonas configuradas</p></div></td></tr>
+                <tr><td colSpan={4}><div style={EMPTY_TD}><p>Sin zonas configuradas</p></div></td></tr>
               ) : zonas.map(z => (
                 <tr key={z.id} style={{ borderBottom: '1px solid rgba(221,227,237,.5)' }}>
                   <td style={TMONO}>{rangoZonaLabel(z)}</td>
                   <td style={{ padding: '10px 14px' }}>{z.columnas.join(', ')}</td>
+                  <td style={{ padding: '10px 14px' }}>
+                    {esZonaRotativa(z)
+                      ? <span style={B_LOC}>Rotativa</span>
+                      : <span style={B_NOVEDAD}>Parqueo</span>}
+                  </td>
                   <td style={{ padding: '10px 14px' }}>
                     <button onClick={() => eliminarZona(z.id)} style={GHOST}>Eliminar</button>
                   </td>
