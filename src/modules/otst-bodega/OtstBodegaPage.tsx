@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect, forwardRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Search, Warehouse, AlertTriangle, ArrowRightLeft, Mail, CheckCircle2, Download, Trash2, X, ListTodo, MapPinOff, Pencil, MoreVertical } from 'lucide-react'
+import Papa from 'papaparse'
+import { Search, Warehouse, AlertTriangle, ArrowRightLeft, Mail, CheckCircle2, Download, Upload, Trash2, X, ListTodo, MapPinOff, Pencil, MoreVertical } from 'lucide-react'
 import { toast } from 'sonner'
 import { supabase } from '../../lib/supabase'
 import { Header } from '../../components/layout/Header'
@@ -84,6 +85,13 @@ function mesesTranscurridos(mes: number, anio: number): number {
 // de las columnas rotativas (A-H) y por lo tanto ya no volverá a rotar.
 function esAbandonada(r: OtstBodega, umbral: number): boolean {
   return !esColumnaRotativa(r.columna) || mesesTranscurridos(r.mes_ingreso, r.anio_ingreso) >= umbral
+}
+
+// Un mismo NIT puede venir con distintos dígitos de verificación según de dónde
+// se copie ("900471974", "900471974.1", "900471974-5"...) — se agrupan todos
+// bajo el número base, antes del primer separador.
+function normalizarNit(nit: string): string {
+  return nit.trim().split(/[.-]/)[0].replace(/\D/g, '')
 }
 
 function nombreMesAnio(mes: number, anio: number): string {
@@ -416,6 +424,23 @@ function TabBodega({ bodega, umbral, columnas, pendientes }: { bodega: OtstBodeg
   const mes = new Date().toISOString().slice(0, 7)
   const esteMes = bodega.filter(r => r.created_at?.startsWith(mes)).length
 
+  const topClientesAbandonadas = (() => {
+    const counts = new Map<string, number>()
+    abandonadas.forEach(r => {
+      const nit = r.nit_cliente?.trim()
+      if (!nit) return
+      const key = normalizarNit(nit)
+      if (!key) return
+      counts.set(key, (counts.get(key) || 0) + 1)
+    })
+    return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3)
+  })()
+
+  function filtrarPorCliente(nit: string) {
+    setSearch(nit)
+    setSoloAbandonadas(true)
+  }
+
   let rows = activos.filter(r => {
     const q  = search.toLowerCase()
     const ok = !q || [r.otst, r.correo_cliente, r.nit_cliente].some(f => f?.toLowerCase().includes(q))
@@ -483,6 +508,31 @@ function TabBodega({ bodega, umbral, columnas, pendientes }: { bodega: OtstBodeg
           </div>
         ))}
       </div>
+
+      {topClientesAbandonadas.length > 0 && (
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ fontFamily: 'var(--mono)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.8px', color: 'var(--muted)', marginBottom: 10 }}>
+            Top clientes con más OTST abandonadas
+          </div>
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            {topClientesAbandonadas.map(([nit, count], i) => (
+              <button key={nit} onClick={() => filtrarPorCliente(nit)} title="Clic para filtrar todas sus OTST abandonadas" style={{
+                display: 'flex', alignItems: 'center', gap: 12, padding: '12px 18px', cursor: 'pointer',
+                background: 'var(--surface)', border: '1px solid var(--red-border)', borderRadius: 12, textAlign: 'left',
+              }}>
+                <span style={{
+                  width: 26, height: 26, borderRadius: '50%', background: '#c0392b', color: '#fff', fontWeight: 700,
+                  fontSize: 12, fontFamily: 'var(--mono)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                }}>#{i + 1}</span>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 700, fontFamily: 'var(--mono)' }}>NIT {nit}</div>
+                  <div style={{ fontSize: 11, color: '#c0392b' }}>{count} OTST abandonada{count !== 1 ? 's' : ''}</div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <Card>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 14, padding: 14, background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 10 }}>
@@ -1687,6 +1737,79 @@ function TabConfig({ zonas, config, bodega }: { zonas: OtstBodegaZona[], config?
     qc.invalidateQueries({ queryKey: ['otst_bodega_zonas'] })
   }
 
+  // ── NIT: exportar sin NIT / importar CSV masivo ────────────────────────────
+  const [importandoNit, setImportandoNit] = useState(false)
+  const [resultadoImportNit, setResultadoImportNit] = useState<{
+    actualizadas: number
+    omitidas: { otst: string, nitActual: string, nitNuevo: string }[]
+    noEncontradas: string[]
+    sinCambio: number
+  } | null>(null)
+
+  const sinNit = bodega.filter(r => !r.nit_cliente?.trim())
+
+  function exportarSinNit() {
+    if (!sinNit.length) { toast.error('No hay OTST sin NIT registrado'); return }
+    const data = sinNit.map(r => ({
+      OTST: r.otst,
+      Correo: r.correo_cliente || '',
+      'Mes Ingreso': MESES[r.mes_ingreso] || r.mes_ingreso,
+      'Año Ingreso': r.anio_ingreso,
+      Ubicacion: codigoUbicacion(r.columna, r.fila, r.subcolumna),
+      Estado: r.estado,
+      NIT: '',
+    }))
+    exportToCSV(data, `bodega_sin_nit_${todayISO()}`)
+  }
+
+  function importarNitCSV(file: File) {
+    setImportandoNit(true)
+    Papa.parse<Record<string, string>>(file, {
+      header: true, skipEmptyLines: true,
+      complete: async res => {
+        const cols = res.meta.fields?.map(f => f.trim().toLowerCase()) || []
+        const otstKey = res.meta.fields?.[cols.indexOf('otst')]
+        const nitKey = res.meta.fields?.[cols.indexOf('nit')]
+        if (!otstKey || !nitKey) {
+          toast.error('El CSV debe tener las columnas "otst" y "nit"')
+          setImportandoNit(false)
+          return
+        }
+
+        const omitidas: { otst: string, nitActual: string, nitNuevo: string }[] = []
+        const noEncontradas: string[] = []
+        let actualizadas = 0, sinCambio = 0
+
+        for (const row of res.data) {
+          const otst = (row[otstKey] || '').trim()
+          const nitNuevo = (row[nitKey] || '').trim()
+          if (!otst || !nitNuevo) continue
+          const match = bodega.find(r => r.otst.trim().toLowerCase() === otst.toLowerCase())
+          if (!match) { noEncontradas.push(otst); continue }
+          const nitActual = match.nit_cliente?.trim() || ''
+          if (nitActual && nitActual !== nitNuevo) {
+            omitidas.push({ otst: match.otst, nitActual, nitNuevo })
+            continue
+          }
+          if (nitActual === nitNuevo) { sinCambio++; continue }
+          const { error } = await supabase.from('otst_bodega')
+            .update({ nit_cliente: nitNuevo, updated_at: new Date().toISOString() })
+            .eq('id', match.id)
+          if (error) { omitidas.push({ otst: match.otst, nitActual: '(error al guardar)', nitNuevo }); continue }
+          actualizadas++
+        }
+
+        setImportandoNit(false)
+        setResultadoImportNit({ actualizadas, omitidas, noEncontradas, sinCambio })
+        if (actualizadas) toast.success(`${actualizadas} NIT actualizado(s)`)
+        if (omitidas.length) toast.error(`${omitidas.length} OTST ya tenían un NIT distinto — omitidas, revisa el detalle`)
+        if (!actualizadas && !omitidas.length && !noEncontradas.length) toast('Nada para actualizar en este archivo')
+        qc.invalidateQueries({ queryKey: ['otst_bodega'] })
+      },
+      error: () => { toast.error('No se pudo leer el archivo CSV'); setImportandoNit(false) },
+    })
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <Card>
@@ -1794,6 +1917,66 @@ function TabConfig({ zonas, config, bodega }: { zonas: OtstBodegaZona[], config?
             </tbody>
           </table>
         </div>
+      </Card>
+
+      <Card>
+        <SecTitle>NIT de clientes</SecTitle>
+        <div style={G2}>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Exportar OTST sin NIT</div>
+            <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>
+              Descarga un CSV con las <strong>{sinNit.length}</strong> OTST que aún no tienen NIT registrado, para completarlas y volver a importarlas.
+            </p>
+            <button onClick={exportarSinNit} style={{ ...GHOST, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Download size={13} /> Exportar sin NIT ({sinNit.length})
+            </button>
+          </div>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Importar NIT desde CSV</div>
+            <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>
+              El archivo debe tener columnas <code style={{ fontFamily: 'var(--mono)', background: 'var(--surface2)', padding: '1px 5px', borderRadius: 4, border: '1px solid var(--border)' }}>otst</code> y <code style={{ fontFamily: 'var(--mono)', background: 'var(--surface2)', padding: '1px 5px', borderRadius: 4, border: '1px solid var(--border)' }}>nit</code>. Si una OTST ya tiene un NIT distinto guardado, <strong>no se sobrescribe</strong> — queda en el detalle de omitidas para que la revises.
+            </p>
+            <label style={{ ...GHOST, display: 'inline-flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+              <Upload size={13} /> {importandoNit ? 'Procesando…' : 'Importar CSV de NIT'}
+              <input type="file" accept=".csv" style={{ display: 'none' }} disabled={importandoNit}
+                onChange={e => { const f = e.target.files?.[0]; if (f) importarNitCSV(f); e.target.value = '' }} />
+            </label>
+          </div>
+        </div>
+
+        {resultadoImportNit && (
+          <div style={{ marginTop: 18 }}>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+              <span style={B_OK}>{resultadoImportNit.actualizadas} actualizada{resultadoImportNit.actualizadas !== 1 ? 's' : ''}</span>
+              {resultadoImportNit.sinCambio > 0 && <span style={B_LOC}>{resultadoImportNit.sinCambio} sin cambios (ya coincidía)</span>}
+              {resultadoImportNit.omitidas.length > 0 && <span style={B_ABANDONADA}>{resultadoImportNit.omitidas.length} omitida{resultadoImportNit.omitidas.length !== 1 ? 's' : ''} (NIT distinto)</span>}
+              {resultadoImportNit.noEncontradas.length > 0 && <span style={B_NOVEDAD}>{resultadoImportNit.noEncontradas.length} no encontrada{resultadoImportNit.noEncontradas.length !== 1 ? 's' : ''}</span>}
+            </div>
+
+            {resultadoImportNit.omitidas.length > 0 && (
+              <div style={{ overflowX: 'auto', borderRadius: 10, border: '1px solid var(--border)', marginBottom: 12 }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                  <thead><tr>{['OTST', 'NIT actual', 'NIT en el CSV'].map(h => <th key={h} style={TH}>{h}</th>)}</tr></thead>
+                  <tbody>
+                    {resultadoImportNit.omitidas.map(o => (
+                      <tr key={o.otst} style={{ borderBottom: '1px solid rgba(221,227,237,.5)' }}>
+                        <td style={{ padding: '8px 14px', fontWeight: 600 }}><OtstLink otst={o.otst} /></td>
+                        <td style={TMONO}>{o.nitActual}</td>
+                        <td style={TMONO}>{o.nitNuevo}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {resultadoImportNit.noEncontradas.length > 0 && (
+              <p style={{ fontSize: 12, color: 'var(--muted)' }}>
+                No encontradas en bodega: {resultadoImportNit.noEncontradas.join(', ')}
+              </p>
+            )}
+          </div>
+        )}
       </Card>
     </div>
   )
