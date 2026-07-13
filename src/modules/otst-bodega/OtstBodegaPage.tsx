@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, forwardRef } from 'react'
+import { createPortal } from 'react-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Search, Warehouse, AlertTriangle, ArrowRightLeft, Mail, CheckCircle2, Download, Trash2, X, ListTodo, MapPinOff, Pencil, MoreVertical } from 'lucide-react'
 import { toast } from 'sonner'
@@ -1820,15 +1821,41 @@ function RowActionsMenu({ isPendiente, canEliminar, onAction }: {
   isPendiente: boolean, canEliminar: boolean, onAction: (tipo: AccionTipo) => void,
 }) {
   const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
+  const [coords, setCoords] = useState<{ top: number, right: number } | null>(null)
+  const btnRef = useRef<HTMLButtonElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
 
+  function openMenu() {
+    const rect = btnRef.current?.getBoundingClientRect()
+    if (rect) setCoords({ top: rect.bottom + 4, right: window.innerWidth - rect.right })
+    setOpen(true)
+  }
+
+  // El menú se renderiza en un portal (document.body) con position:fixed en vez
+  // de position:absolute dentro de la fila, porque el contenedor de la tabla
+  // tiene overflowX:auto — eso hace que el navegador fuerce overflow-y:auto
+  // también (regla CSS: si un eje no es "visible" el otro deja de serlo), lo
+  // que recortaba el menú al abrirlo cerca del borde inferior de la tabla
+  // (siempre visible con pocas filas, ej. al filtrar a una sola OTST).
   useEffect(() => {
     if (!open) return
     function onDocClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+      if (menuRef.current?.contains(e.target as Node)) return
+      if (btnRef.current?.contains(e.target as Node)) return
+      setOpen(false)
     }
+    function onEscape(e: KeyboardEvent) { if (e.key === 'Escape') setOpen(false) }
+    function onScrollOrResize() { setOpen(false) }
     document.addEventListener('mousedown', onDocClick)
-    return () => document.removeEventListener('mousedown', onDocClick)
+    document.addEventListener('keydown', onEscape)
+    window.addEventListener('scroll', onScrollOrResize, true)
+    window.addEventListener('resize', onScrollOrResize)
+    return () => {
+      document.removeEventListener('mousedown', onDocClick)
+      document.removeEventListener('keydown', onEscape)
+      window.removeEventListener('scroll', onScrollOrResize, true)
+      window.removeEventListener('resize', onScrollOrResize)
+    }
   }, [open])
 
   function choose(tipo: AccionTipo) {
@@ -1846,11 +1873,17 @@ function RowActionsMenu({ isPendiente, canEliminar, onAction }: {
   ]
 
   return (
-    <div ref={ref} style={{ position: 'relative', display: 'inline-block' }}>
-      <IconBtn title="Acciones" onClick={() => setOpen(o => !o)}><MoreVertical size={14} /></IconBtn>
-      {open && (
-        <div style={{
-          position: 'absolute', right: 0, top: 'calc(100% + 4px)', zIndex: 20, minWidth: 200,
+    <>
+      <button ref={btnRef} title="Acciones" onClick={() => (open ? setOpen(false) : openMenu())} style={{
+        width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        borderRadius: 7, border: '1px solid var(--border)', background: 'var(--surface2)',
+        color: 'var(--muted)', cursor: 'pointer',
+      }}>
+        <MoreVertical size={14} />
+      </button>
+      {open && coords && createPortal(
+        <div ref={menuRef} style={{
+          position: 'fixed', top: coords.top, right: coords.right, zIndex: 1000, minWidth: 200,
           background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10,
           boxShadow: '0 8px 24px rgba(0,0,0,.14)', padding: 6, display: 'flex', flexDirection: 'column', gap: 1,
         }}>
@@ -1866,9 +1899,10 @@ function RowActionsMenu({ isPendiente, canEliminar, onAction }: {
               {it.icon}{it.label}
             </button>
           ))}
-        </div>
+        </div>,
+        document.body
       )}
-    </div>
+    </>
   )
 }
 
