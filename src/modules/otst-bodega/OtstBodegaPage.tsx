@@ -405,6 +405,7 @@ function TabBodega({ bodega, umbral, columnas, pendientes }: { bodega: OtstBodeg
   const [colF,    setColF]    = useState('')
   const [estadoF, setEstadoF] = useState<'all' | EstadoOtstBodega>('all')
   const [soloAbandonadas, setSoloAbandonadas] = useState(false)
+  const [ordenAntig, setOrdenAntig] = useState<'desc' | 'asc' | null>(null)
   const [accionItem, setAccionItem] = useState<{ item: OtstBodega, tipo: 'mover' | 'contactar' | 'retirar' | 'eliminar' | 'pendiente' | 'editar' } | null>(null)
 
   const otstPendientes = new Set(pendientes.filter(p => p.estado === 'pendiente').map(p => p.otst.trim().toLowerCase()))
@@ -415,7 +416,7 @@ function TabBodega({ bodega, umbral, columnas, pendientes }: { bodega: OtstBodeg
   const mes = new Date().toISOString().slice(0, 7)
   const esteMes = bodega.filter(r => r.created_at?.startsWith(mes)).length
 
-  const rows = activos.filter(r => {
+  let rows = activos.filter(r => {
     const q  = search.toLowerCase()
     const ok = !q || [r.otst, r.correo_cliente, r.nit_cliente].some(f => f?.toLowerCase().includes(q))
     const okC = !colF || r.columna === colF
@@ -423,9 +424,20 @@ function TabBodega({ bodega, umbral, columnas, pendientes }: { bodega: OtstBodeg
     const okA = !soloAbandonadas || esAbandonada(r, umbral)
     return ok && okC && okE && okA
   })
+  if (ordenAntig) {
+    rows = [...rows].sort((a, b) => {
+      const av = mesesTranscurridos(a.mes_ingreso, a.anio_ingreso)
+      const bv = mesesTranscurridos(b.mes_ingreso, b.anio_ingreso)
+      return ordenAntig === 'desc' ? bv - av : av - bv
+    })
+  }
+
+  function toggleOrdenAntig() {
+    setOrdenAntig(prev => prev === 'desc' ? 'asc' : prev === 'asc' ? null : 'desc')
+  }
 
   function clearFilters() {
-    setSearch(''); setColF(''); setEstadoF('all'); setSoloAbandonadas(false)
+    setSearch(''); setColF(''); setEstadoF('all'); setSoloAbandonadas(false); setOrdenAntig(null)
   }
 
   function exportarCSV() {
@@ -514,7 +526,13 @@ function TabBodega({ bodega, umbral, columnas, pendientes }: { bodega: OtstBodeg
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
             <thead>
               <tr>
-                {['OTST', 'NIT', 'Correo', 'F. Ingreso', 'Ubicación', 'Antigüedad', 'Estado', 'Acciones'].map(h => (
+                {['OTST', 'NIT', 'Correo', 'F. Ingreso', 'Ubicación'].map(h => (
+                  <th key={h} style={TH}>{h}</th>
+                ))}
+                <th style={{ ...TH, cursor: 'pointer', userSelect: 'none' }} onClick={toggleOrdenAntig} title="Ordenar por antigüedad">
+                  Antigüedad {ordenAntig === 'desc' ? '▼' : ordenAntig === 'asc' ? '▲' : '↕'}
+                </th>
+                {['Estado', 'Acciones'].map(h => (
                   <th key={h} style={TH}>{h}</th>
                 ))}
               </tr>
