@@ -18,7 +18,7 @@ export interface CorreoDestinatario {
 
 export type ModuleKey =
   | 'llamadas' | 'bodega' | 'consumibles' | 'tarifas' | 'codigos'
-  | 'editor' | 'indicadores' | 'correos' | 'reporte_st' | 'admin'
+  | 'editor' | 'indicadores' | 'correos' | 'reporte_st' | 'tareas' | 'admin'
 
 export type CapabilityKey =
   | 'importar_csv_tarifas' | 'importar_csv_codigos' | 'importar_csv_llamadas'
@@ -230,6 +230,23 @@ export interface PlantillaInforme {
   categoria: string | null
   activa: boolean
   created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+// ── Tareas ───────────────────────────────────────────────────────────────────
+
+export type EstadoTarea = 'pendiente' | 'completada'
+
+export interface Tarea {
+  id: string
+  titulo: string
+  descripcion: string | null
+  creado_por: string
+  asignado_a: string
+  fecha_vencimiento: string | null
+  estado: EstadoTarea
+  completado_at: string | null
   created_at: string
   updated_at: string
 }

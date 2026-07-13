@@ -17,6 +17,7 @@ const MODULE_LABELS: Record<ModuleKey, string> = {
   indicadores: 'Indicadores',
   correos: 'Correos',
   reporte_st: 'Reporte ST',
+  tareas: 'Tareas',
   admin: 'Administración',
 }
 

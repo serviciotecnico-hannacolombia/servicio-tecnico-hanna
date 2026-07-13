@@ -19,6 +19,7 @@ import { AdminPage } from './modules/admin/AdminPage'
 import { IndicadoresPage } from './modules/indicadores/IndicadoresPage'
 import { FormatosPage } from './modules/formatos/FormatosPage'
 import { ReporteSTPage } from './modules/reporte-st/ReporteSTPage'
+import { TareasPage } from './modules/tareas/TareasPage'
 
 function DefaultRedirect() {
   const { hasModule } = useUser()
@@ -49,6 +50,7 @@ export default function App() {
               <Route path="/indicadores" element={<ModuleGuard moduleKey="indicadores"><IndicadoresPage /></ModuleGuard>} />
               <Route path="/correos"     element={<ModuleGuard moduleKey="correos"><FormatosPage /></ModuleGuard>} />
               <Route path="/reporte-st"  element={<ModuleGuard moduleKey="reporte_st"><ReporteSTPage /></ModuleGuard>} />
+              <Route path="/tareas"     element={<ModuleGuard moduleKey="tareas"><TareasPage /></ModuleGuard>} />
               <Route
                 path="/admin"
                 element={

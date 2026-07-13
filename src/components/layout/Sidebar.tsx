@@ -3,7 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import logo from '../../assets/logo.svg'
 import {
   Phone, Package, DollarSign, Wrench, FileText, Warehouse,
-  LogOut, Pencil, ShieldCheck, BarChart2, Mail, KeyRound, ChevronDown, Timer,
+  LogOut, Pencil, ShieldCheck, BarChart2, Mail, KeyRound, ChevronDown, Timer, ListTodo,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useSidebar } from './SidebarContext'
@@ -13,6 +13,7 @@ import { Modal } from '../ui/Modal'
 import { Input } from '../ui/Input'
 import { Button } from '../ui/Button'
 import { Avatar } from '../ui/Avatar'
+import { useTareasBadgeCount } from '../../modules/tareas/hooks/useTareas'
 import type { ModuleKey } from '../../types'
 
 // ── Hamburger animado ────────────────────────────────────────────────────────
@@ -59,6 +60,7 @@ const NAV_ITEMS: { to: string; label: string; icon: typeof Phone; moduleKey: Mod
   { to: '/indicadores',  label: 'Indicadores',        icon: BarChart2,  moduleKey: 'indicadores' },
   { to: '/correos',      label: 'Correos',             icon: Mail,       moduleKey: 'correos'     },
   { to: '/reporte-st',   label: 'Reporte ST',          icon: Timer,      moduleKey: 'reporte_st'  },
+  { to: '/tareas',       label: 'Tareas',               icon: ListTodo,   moduleKey: 'tareas'      },
 ]
 
 const ANIMALS = [
@@ -82,6 +84,7 @@ export function Sidebar() {
   const { collapsed, toggle } = useSidebar()
   const { user, displayName, profile, isAdmin, hasModule, signOut, updateDisplayName, updateAvatar } = useUser()
   const navigate = useNavigate()
+  const tareasBadge = useTareasBadgeCount()
   const [profileOpen, setProfileOpen] = useState(false)
   const [nombre, setNombre] = useState('')
   const [selectedEmoji, setSelectedEmoji] = useState<string | null>(null)
@@ -221,32 +224,52 @@ export function Sidebar() {
 
       {/* Nav */}
       <nav style={{ flex: 1, padding: '10px 0', overflowY: 'auto', overflowX: 'hidden' }}>
-        {NAV_ITEMS.filter(item => hasModule(item.moduleKey)).map(({ to, label, icon: Icon }) => (
-          <NavLink
-            key={to}
-            to={to}
-            title={collapsed ? label : undefined}
-            style={({ isActive }) => ({
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-              padding: collapsed ? '11px 0' : '10px 16px',
-              justifyContent: collapsed ? 'center' : 'flex-start',
-              textDecoration: 'none',
-              fontSize: '0.875rem',
-              fontWeight: 500,
-              color: isActive ? 'var(--accent)' : 'var(--muted)',
-              background: isActive ? 'var(--accent-bg)' : 'transparent',
-              borderLeft: isActive ? '3px solid var(--accent)' : '3px solid transparent',
-              transition: 'all 0.14s',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-            })}
-          >
-            <Icon size={18} style={{ flexShrink: 0 }} />
-            {!collapsed && <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>}
-          </NavLink>
-        ))}
+        {NAV_ITEMS.filter(item => hasModule(item.moduleKey)).map(({ to, label, icon: Icon, moduleKey }) => {
+          const badge = moduleKey === 'tareas' ? tareasBadge : 0
+          return (
+            <NavLink
+              key={to}
+              to={to}
+              title={collapsed ? `${label}${badge > 0 ? ` (${badge})` : ''}` : undefined}
+              style={({ isActive }) => ({
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                padding: collapsed ? '11px 0' : '10px 16px',
+                justifyContent: collapsed ? 'center' : 'flex-start',
+                textDecoration: 'none',
+                fontSize: '0.875rem',
+                fontWeight: 500,
+                color: isActive ? 'var(--accent)' : 'var(--muted)',
+                background: isActive ? 'var(--accent-bg)' : 'transparent',
+                borderLeft: isActive ? '3px solid var(--accent)' : '3px solid transparent',
+                transition: 'all 0.14s',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                position: 'relative',
+              })}
+            >
+              <span style={{ position: 'relative', display: 'inline-flex', flexShrink: 0 }}>
+                <Icon size={18} />
+                {badge > 0 && collapsed && (
+                  <span style={{
+                    position: 'absolute', top: -5, right: -7, minWidth: 15, height: 15, padding: '0 3px',
+                    borderRadius: 8, background: '#c0392b', color: '#fff', fontSize: 9, fontWeight: 700,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--mono)',
+                  }}>{badge > 9 ? '9+' : badge}</span>
+                )}
+              </span>
+              {!collapsed && <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', flex: 1 }}>{label}</span>}
+              {!collapsed && badge > 0 && (
+                <span style={{
+                  minWidth: 18, height: 18, padding: '0 5px', borderRadius: 10, background: '#c0392b', color: '#fff',
+                  fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontFamily: 'var(--mono)', flexShrink: 0,
+                }}>{badge > 99 ? '99+' : badge}</span>
+              )}
+            </NavLink>
+          )
+        })}
 
         {isAdmin && (
           <>
