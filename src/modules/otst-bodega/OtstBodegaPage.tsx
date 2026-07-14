@@ -257,7 +257,7 @@ function TabIngreso({ zonas, bodega, columnas }: { zonas: OtstBodegaZona[], bode
   const [saving,     setSaving]     = useState(false)
 
   const zonaSugerida = mes && anio
-    ? zonas.filter(esZonaRotativa).find(z => {
+    ? zonas.find(z => {
         const clave = claveMesAnio(mes as number, anio as number)
         return clave >= claveMesAnio(z.mes_inicio, z.anio_inicio) && clave <= claveMesAnio(z.mes_fin, z.anio_fin)
       })
@@ -357,17 +357,37 @@ function TabIngreso({ zonas, bodega, columnas }: { zonas: OtstBodegaZona[], bode
         <div style={{ ...PREVIEW, marginTop: 14 }}>
           <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.6px', fontFamily: 'var(--mono)', color: 'var(--accent)', marginBottom: 4 }}>
             Zona sugerida para {nombreMesAnio(mes as number, anio as number)}
+            {!esZonaRotativa(zonaSugerida) && ' (ya rotada a parqueo)'}
           </div>
-          <div style={{ fontSize: 13 }}>Columnas: <strong>{zonaSugerida.columnas.join(', ')}</strong></div>
+          <div style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <span>Columnas: <strong>{zonaSugerida.columnas.join(', ')}</strong></span>
+            <div style={{ display: 'flex', gap: 6 }}>
+              {zonaSugerida.columnas.map(c => (
+                <button key={c} type="button" onClick={() => setColumna(c)} style={{
+                  ...GHOST, padding: '4px 10px', fontSize: 12,
+                  ...(columna === c ? { background: 'var(--accent)', color: '#fff', borderColor: 'var(--accent)' } : {}),
+                }}>
+                  Usar {c}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 
       <SecTitle>Ubicación asignada</SecTitle>
       <div style={G3}>
-        <FG label="Columna" hint="Solo columnas A-H: son las que rotan mensualmente">
+        <FG label="Columna" hint="Incluye columnas de parqueo — úsalas si la zona del mes ya rotó fuera de A-H">
           <select value={columna} onChange={e => setColumna(e.target.value)} style={INP}>
             <option value="">Seleccionar...</option>
-            {columnas.filter(esColumnaRotativa).map(c => <option key={c} value={c}>{c}</option>)}
+            <optgroup label="Rotativas (A-H)">
+              {columnas.filter(esColumnaRotativa).map(c => <option key={c} value={c}>{c}</option>)}
+            </optgroup>
+            {columnas.some(c => !esColumnaRotativa(c)) && (
+              <optgroup label="Parqueo">
+                {columnas.filter(c => !esColumnaRotativa(c)).map(c => <option key={c} value={c}>{c}</option>)}
+              </optgroup>
+            )}
           </select>
         </FG>
         <FG label="Fila">
