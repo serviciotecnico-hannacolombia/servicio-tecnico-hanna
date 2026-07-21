@@ -520,6 +520,13 @@ function TabPrecios({ items }: { items: SpPriceItem[] }) {
   const total = rows.filter(r => selected.has(r.code)).reduce((s, r) => s + (Number(r.precio_a_cobrar) || 0), 0)
   const countSel = rows.filter(r => selected.has(r.code)).length
 
+  const copyResumen = () => {
+    const selRows = rows.filter(r => selected.has(r.code))
+    const lines = selRows.map(r => `- ${r.code} - ${r.description || r.product} - ${fmtCOP(Number(r.precio_a_cobrar) || 0)}`)
+    lines.push('- Mantenimiento: ')
+    copy(lines.join('\n'), 'Resumen')
+  }
+
   return (
     <div>
       <Card title="Buscar por producto" style={{ overflow: 'visible' }}>
@@ -659,24 +666,45 @@ function TabPrecios({ items }: { items: SpPriceItem[] }) {
               </div>
             </div>
 
-            <button
-              disabled={countSel === 0}
-              onClick={() => copy(String(total), 'Total')}
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: 8,
-                padding: '12px 24px', borderRadius: 'var(--radius-sm)',
-                background: countSel > 0 ? 'var(--accent)' : 'var(--surface)',
-                color: countSel > 0 ? '#fff' : 'var(--muted)',
-                border: 'none', fontFamily: 'var(--sans)', fontSize: '0.875rem',
-                fontWeight: 700, cursor: countSel > 0 ? 'pointer' : 'not-allowed',
-                opacity: countSel === 0 ? 0.5 : 1, transition: 'all .2s', flexShrink: 0,
-              }}
-              onMouseEnter={e => { if (countSel > 0) (e.currentTarget as HTMLElement).style.opacity = '0.85' }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = countSel === 0 ? '0.5' : '1' }}
-            >
-              <Copy size={15} />
-              Copiar total
-            </button>
+            <div style={{ display: 'flex', gap: 10, flexShrink: 0 }}>
+              <button
+                disabled={countSel === 0}
+                onClick={copyResumen}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 8,
+                  padding: '12px 24px', borderRadius: 'var(--radius-sm)',
+                  background: 'var(--surface)',
+                  color: countSel > 0 ? 'var(--accent)' : 'var(--muted)',
+                  border: `1.5px solid ${countSel > 0 ? 'var(--accent)' : 'var(--border)'}`,
+                  fontFamily: 'var(--sans)', fontSize: '0.875rem',
+                  fontWeight: 700, cursor: countSel > 0 ? 'pointer' : 'not-allowed',
+                  opacity: countSel === 0 ? 0.5 : 1, transition: 'all .2s',
+                }}
+                onMouseEnter={e => { if (countSel > 0) (e.currentTarget as HTMLElement).style.opacity = '0.85' }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = countSel === 0 ? '0.5' : '1' }}
+              >
+                <Copy size={15} />
+                Copiar resumen
+              </button>
+              <button
+                disabled={countSel === 0}
+                onClick={() => copy(String(total), 'Total')}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 8,
+                  padding: '12px 24px', borderRadius: 'var(--radius-sm)',
+                  background: countSel > 0 ? 'var(--accent)' : 'var(--surface)',
+                  color: countSel > 0 ? '#fff' : 'var(--muted)',
+                  border: 'none', fontFamily: 'var(--sans)', fontSize: '0.875rem',
+                  fontWeight: 700, cursor: countSel > 0 ? 'pointer' : 'not-allowed',
+                  opacity: countSel === 0 ? 0.5 : 1, transition: 'all .2s',
+                }}
+                onMouseEnter={e => { if (countSel > 0) (e.currentTarget as HTMLElement).style.opacity = '0.85' }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = countSel === 0 ? '0.5' : '1' }}
+              >
+                <Copy size={15} />
+                Copiar total
+              </button>
+            </div>
           </div>
         </>
       )}
