@@ -20,6 +20,7 @@ import { IndicadoresPage } from './modules/indicadores/IndicadoresPage'
 import { FormatosPage } from './modules/formatos/FormatosPage'
 import { ReporteSTPage } from './modules/reporte-st/ReporteSTPage'
 import { TareasPage } from './modules/tareas/TareasPage'
+import { MantenimientoProgramadoPage } from './modules/mantenimiento-programado/MantenimientoProgramadoPage'
 
 function DefaultRedirect() {
   const { hasModule } = useUser()
@@ -51,6 +52,7 @@ export default function App() {
               <Route path="/correos"     element={<ModuleGuard moduleKey="correos"><FormatosPage /></ModuleGuard>} />
               <Route path="/reporte-st"  element={<ModuleGuard moduleKey="reporte_st"><ReporteSTPage /></ModuleGuard>} />
               <Route path="/tareas"     element={<ModuleGuard moduleKey="tareas"><TareasPage /></ModuleGuard>} />
+              <Route path="/mantenimiento-programado" element={<ModuleGuard moduleKey="mantenimiento_programado"><MantenimientoProgramadoPage /></ModuleGuard>} />
               <Route
                 path="/admin"
                 element={

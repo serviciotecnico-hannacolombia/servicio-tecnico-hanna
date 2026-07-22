@@ -18,7 +18,8 @@ export interface CorreoDestinatario {
 
 export type ModuleKey =
   | 'llamadas' | 'bodega' | 'consumibles' | 'tarifas' | 'codigos'
-  | 'editor' | 'indicadores' | 'correos' | 'reporte_st' | 'tareas' | 'admin'
+  | 'editor' | 'indicadores' | 'correos' | 'reporte_st' | 'tareas'
+  | 'mantenimiento_programado' | 'admin'
 
 export type CapabilityKey =
   | 'importar_csv_tarifas' | 'importar_csv_codigos' | 'importar_csv_llamadas'
@@ -249,4 +250,35 @@ export interface Tarea {
   completado_at: string | null
   created_at: string
   updated_at: string
+}
+
+// ── Mantenimiento Programado ──────────────────────────────────────────────────
+
+export type Periodicidad = 'trimestral' | 'semestral' | 'anual'
+export type EstadoEquipoMantenimiento = 'activo' | 'cancelado'
+
+export interface EquipoMantenimiento {
+  id: string
+  serial: string
+  familia: string
+  cliente: string
+  codigo_mantprog: string | null
+  periodicidad: Periodicidad
+  fecha_compra: string
+  proxima_fecha: string
+  estado: EstadoEquipoMantenimiento
+  observaciones: string | null
+  creado_por: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface EventoMantenimiento {
+  id: string
+  equipo_id: string
+  fecha_recepcion: string
+  fecha_entrega: string | null
+  observaciones: string | null
+  responsable: string | null
+  created_at: string
 }
