@@ -12,6 +12,7 @@ import { useUser } from '../../hooks/useUser'
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
 interface SpPriceItem {
+  id: string
   code: string
   product: string
   description: string
@@ -34,7 +35,7 @@ function useCodigosData() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('codigos_sp_price')
-        .select('code, product, description, precio_a_cobrar')
+        .select('id, code, product, description, precio_a_cobrar')
         .order('product')
       if (error) throw error
       return data as SpPriceItem[]
@@ -70,6 +71,14 @@ function useCodigosData() {
 
 const fmtCOP = (n: number) =>
   '$' + n.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+
+// Acepta montos tipo "$42,875.00" (separador de miles ",", decimales ".")
+function parsePrecioMonto(raw: string): number | null {
+  const cleaned = raw.replace(/[^0-9.]/g, '')
+  if (!cleaned) return null
+  const n = parseFloat(cleaned)
+  return Number.isFinite(n) ? n : null
+}
 
 function getCalib(item: CodInetItem) {
   return (item.codigo_calibracion || '').trim()
@@ -779,7 +788,15 @@ function Modal({ title, onClose, children, width = 560 }: {
 
 const EMPTY_FORM: CodInetItem = { codigo: '', familia: '', descripcion: '', codigo_mantenimiento: '', codigo_calibracion: '' }
 
-function TabGestion({ items }: { items: CodInetItem[] }) {
+interface PlanPrecios {
+  actualizar: { id: string, code: string, product: string, precioActual: number, precioNuevo: number }[]
+  nuevos: { code: string, product: string, description: string, precio: number }[]
+  sinCambio: number
+  ambiguos: string[]
+  invalidas: { code: string, valor: string }[]
+}
+
+function TabGestion({ items, spItems }: { items: CodInetItem[], spItems: SpPriceItem[] }) {
   const qc = useQueryClient()
 
   const [search, setSearch]     = useState('')
@@ -796,6 +813,12 @@ function TabGestion({ items }: { items: CodInetItem[] }) {
   const [importMode, setImportMode]     = useState<'upsert' | 'replace'>('upsert')
   const [importing, setImporting]       = useState(false)
   const [importMsg, setImportMsg]       = useState('')
+
+  const [showImportPrecios, setShowImportPrecios] = useState(false)
+  const [planPrecios, setPlanPrecios]             = useState<PlanPrecios | null>(null)
+  const [csvErrorPrecios, setCsvErrorPrecios]     = useState('')
+  const [importingPrecios, setImportingPrecios]   = useState(false)
+  const [importMsgPrecios, setImportMsgPrecios]   = useState('')
 
   const PAGE = 25
   const filtered = items.filter(r =>
@@ -887,6 +910,92 @@ function TabGestion({ items }: { items: CodInetItem[] }) {
     }
   }
 
+  // ── CSV import de precios (codigos_sp_price) ──
+  const handleFilePrecios = (file: File) => {
+    setCsvErrorPrecios(''); setPlanPrecios(null); setImportMsgPrecios('')
+    const reader = new FileReader()
+    reader.onload = e => {
+      const text = e.target?.result as string
+      const rows = parseCSV(text)
+      if (!rows.length) { setCsvErrorPrecios('El archivo está vacío o no tiene el formato correcto.'); return }
+      const headers = Object.keys(rows[0])
+      const codeKey    = headers.find(h => h === 'code' || h === 'código')
+      const productKey = headers.find(h => h === 'product' || h === 'producto')
+      const descKey    = headers.find(h => h === 'description' || h === 'descripción')
+      const priceKey   = headers.find(h => h.includes('valor') || h.includes('precio'))
+      if (!codeKey || !priceKey) {
+        setCsvErrorPrecios('No se encontraron las columnas "Code" y "valor a cobrar". Revisa el encabezado del CSV.')
+        return
+      }
+
+      // Un mismo código puede repetirse en el archivo con datos distintos (error
+      // del listado de origen) — se agrupan para detectarlo y no aplicarlo a ciegas.
+      const porCodigo = new Map<string, { product: string, description: string, precio: number }[]>()
+      const invalidas: PlanPrecios['invalidas'] = []
+
+      for (const row of rows) {
+        const code = (row[codeKey] || '').trim()
+        if (!code) continue
+        const valorTexto = (row[priceKey] || '').trim()
+        const precio = parsePrecioMonto(valorTexto)
+        if (precio === null) { invalidas.push({ code, valor: valorTexto }); continue }
+        const list = porCodigo.get(code) || []
+        list.push({ product: productKey ? row[productKey] || '' : '', description: descKey ? row[descKey] || '' : '', precio })
+        porCodigo.set(code, list)
+      }
+
+      const ambiguos: string[] = []
+      const actualizar: PlanPrecios['actualizar'] = []
+      const nuevos: PlanPrecios['nuevos'] = []
+      let sinCambio = 0
+
+      for (const [code, entries] of porCodigo) {
+        if (entries.length > 1) { ambiguos.push(code); continue }
+        const entry = entries[0]
+        const matches = spItems.filter(r => r.code.trim().toLowerCase() === code.toLowerCase())
+        if (matches.length > 1) { ambiguos.push(code); continue }
+        if (matches.length === 1) {
+          const actual = Number(matches[0].precio_a_cobrar) || 0
+          if (Math.abs(actual - entry.precio) < 0.01) sinCambio++
+          else actualizar.push({ id: matches[0].id, code, product: matches[0].product, precioActual: actual, precioNuevo: entry.precio })
+        } else {
+          nuevos.push({ code, product: entry.product, description: entry.description, precio: entry.precio })
+        }
+      }
+
+      setPlanPrecios({ actualizar, nuevos, sinCambio, ambiguos, invalidas })
+    }
+    reader.readAsText(file, 'UTF-8')
+  }
+
+  const runImportPrecios = async () => {
+    if (!planPrecios) return
+    setImportingPrecios(true)
+    try {
+      if (planPrecios.nuevos.length) {
+        setImportMsgPrecios(`Agregando ${planPrecios.nuevos.length} código(s) nuevo(s)…`)
+        const { error } = await supabase.from('codigos_sp_price').insert(
+          planPrecios.nuevos.map(n => ({ code: n.code, product: n.product, description: n.description || null, precio_a_cobrar: n.precio }))
+        )
+        if (error) throw error
+      }
+      let actualizados = 0
+      for (const a of planPrecios.actualizar) {
+        setImportMsgPrecios(`Actualizando precios… ${actualizados + 1} / ${planPrecios.actualizar.length}`)
+        const { error } = await supabase.from('codigos_sp_price').update({ precio_a_cobrar: a.precioNuevo }).eq('id', a.id)
+        if (error) throw error
+        actualizados++
+      }
+      await qc.invalidateQueries({ queryKey: ['codigos-sp-price'] })
+      toast.success(`${actualizados} precio(s) actualizado(s), ${planPrecios.nuevos.length} código(s) nuevo(s) agregado(s)`)
+      setShowImportPrecios(false); setPlanPrecios(null); setImportMsgPrecios('')
+    } catch {
+      toast.error('Error durante la actualización de precios')
+    } finally {
+      setImportingPrecios(false)
+    }
+  }
+
   const formField = (label: string, key: keyof CodInetItem, required?: boolean) => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
       <label style={{ fontSize: '0.72rem', fontFamily: 'var(--mono)', textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--muted)' }}>
@@ -931,6 +1040,9 @@ function TabGestion({ items }: { items: CodInetItem[] }) {
         </Button>
         <Button size="sm" onClick={() => { setAddForm(EMPTY_FORM); setShowAdd(true) }} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <Plus size={13} /> Agregar equipo
+        </Button>
+        <Button size="sm" variant="ghost" onClick={() => setShowImportPrecios(true)} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Upload size={13} /> Actualizar precios (CSV)
         </Button>
       </div>
 
@@ -1130,6 +1242,134 @@ HI 9814,Multiparámetro,ORP + pH,9814-01,`}
           </div>
         </Modal>
       )}
+
+      {/* Modal: Actualizar precios (CSV) */}
+      {showImportPrecios && (
+        <Modal
+          title="Actualizar precios — CSV"
+          onClose={() => { if (!importingPrecios) { setShowImportPrecios(false); setPlanPrecios(null); setCsvErrorPrecios(''); setImportMsgPrecios('') } }}
+          width={680}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+            <div style={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 8, padding: 14 }}>
+              <p style={{ fontSize: '0.78rem', fontFamily: 'var(--mono)', color: 'var(--muted)', marginBottom: 8, fontWeight: 600 }}>FORMATO ESPERADO DEL CSV:</p>
+              <pre style={{ fontSize: '0.72rem', fontFamily: 'var(--mono)', color: 'var(--text)', margin: 0, overflowX: 'auto' }}>
+{`Code,Product,Description,valor a cobrar
+SP122-1,HI122,HI122 Main Board Spare Part,"$1,214,500.00"`}
+              </pre>
+              <p style={{ fontSize: '0.7rem', color: 'var(--muted)', marginTop: 8, marginBottom: 0 }}>
+                • Códigos que ya existen: se actualiza solo el precio.<br />
+                • Códigos que no existen: se agregan como nuevos.<br />
+                • Un mismo código repetido con datos distintos en el archivo (o que ya está duplicado en la base) no se toca — queda listado para revisión manual.
+              </p>
+            </div>
+
+            <div>
+              <label style={{ fontSize: '0.72rem', fontFamily: 'var(--mono)', textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--muted)', display: 'block', marginBottom: 8 }}>
+                Archivo CSV
+              </label>
+              <input
+                type="file"
+                accept=".csv,text/csv"
+                disabled={importingPrecios}
+                onChange={e => { const f = e.target.files?.[0]; if (f) handleFilePrecios(f) }}
+                style={{ fontSize: '0.875rem', color: 'var(--text)' }}
+              />
+              {csvErrorPrecios && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, color: 'var(--red, #dc2626)', fontSize: '0.8rem' }}>
+                  <AlertTriangle size={14} />{csvErrorPrecios}
+                </div>
+              )}
+            </div>
+
+            {planPrecios && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '0.75rem', fontFamily: 'var(--mono)', padding: '4px 10px', borderRadius: 8, background: 'var(--accent-bg)', color: 'var(--accent)' }}>
+                    {planPrecios.actualizar.length} a actualizar
+                  </span>
+                  <span style={{ fontSize: '0.75rem', fontFamily: 'var(--mono)', padding: '4px 10px', borderRadius: 8, background: 'var(--surface2)', border: '1px solid var(--border)' }}>
+                    {planPrecios.nuevos.length} nuevo(s)
+                  </span>
+                  <span style={{ fontSize: '0.75rem', fontFamily: 'var(--mono)', padding: '4px 10px', borderRadius: 8, background: 'var(--surface2)', border: '1px solid var(--border)' }}>
+                    {planPrecios.sinCambio} sin cambios
+                  </span>
+                  {planPrecios.ambiguos.length > 0 && (
+                    <span style={{ fontSize: '0.75rem', fontFamily: 'var(--mono)', padding: '4px 10px', borderRadius: 8, background: '#fef3c7', color: '#92400e' }}>
+                      {planPrecios.ambiguos.length} ambiguo(s)
+                    </span>
+                  )}
+                  {planPrecios.invalidas.length > 0 && (
+                    <span style={{ fontSize: '0.75rem', fontFamily: 'var(--mono)', padding: '4px 10px', borderRadius: 8, background: '#fee2e2', color: '#991b1b' }}>
+                      {planPrecios.invalidas.length} precio(s) inválido(s)
+                    </span>
+                  )}
+                </div>
+
+                {planPrecios.actualizar.length > 0 && (
+                  <div style={{ overflowX: 'auto', borderRadius: 6, border: '1px solid var(--border)' }}>
+                    <table style={{ borderCollapse: 'collapse', fontSize: '0.72rem', fontFamily: 'var(--mono)', width: '100%' }}>
+                      <thead>
+                        <tr>
+                          {['Código', 'Precio actual', 'Precio nuevo'].map(h => (
+                            <th key={h} style={{ textAlign: 'left', padding: '4px 10px', color: 'var(--muted)', borderBottom: '1px solid var(--border)' }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {planPrecios.actualizar.slice(0, 5).map(a => (
+                          <tr key={a.id}>
+                            <td style={{ padding: '4px 10px', color: 'var(--accent)' }}>{a.code}</td>
+                            <td style={{ padding: '4px 10px' }}>{fmtCOP(a.precioActual)}</td>
+                            <td style={{ padding: '4px 10px', fontWeight: 700 }}>{fmtCOP(a.precioNuevo)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {planPrecios.actualizar.length > 5 && (
+                      <p style={{ fontSize: '0.7rem', color: 'var(--muted)', padding: '6px 10px', margin: 0 }}>
+                        … y {planPrecios.actualizar.length - 5} más
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {planPrecios.ambiguos.length > 0 && (
+                  <p style={{ fontSize: '0.75rem', color: '#92400e', margin: 0 }}>
+                    Códigos ambiguos (no se aplican): {planPrecios.ambiguos.join(', ')}
+                  </p>
+                )}
+
+                {planPrecios.invalidas.length > 0 && (
+                  <p style={{ fontSize: '0.75rem', color: '#991b1b', margin: 0 }}>
+                    Precios que no se pudieron leer: {planPrecios.invalidas.slice(0, 5).map(i => `${i.code} ("${i.valor}")`).join(', ')}
+                    {planPrecios.invalidas.length > 5 ? '…' : ''}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {importMsgPrecios && (
+              <p style={{ fontSize: '0.8rem', fontFamily: 'var(--mono)', color: 'var(--accent)', margin: 0 }}>{importMsgPrecios}</p>
+            )}
+
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <Button variant="ghost" onClick={() => { setShowImportPrecios(false); setPlanPrecios(null); setCsvErrorPrecios(''); setImportMsgPrecios('') }} disabled={importingPrecios}>
+                Cancelar
+              </Button>
+              <Button
+                onClick={runImportPrecios}
+                disabled={!planPrecios || importingPrecios || (planPrecios.actualizar.length === 0 && planPrecios.nuevos.length === 0)}
+                style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+              >
+                {importingPrecios
+                  ? <><Spinner size={14} /> {importMsgPrecios || 'Aplicando…'}</>
+                  : <><Upload size={13} /> Aplicar cambios {planPrecios ? `(${planPrecios.actualizar.length + planPrecios.nuevos.length})` : ''}</>}
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   )
 }
@@ -1143,8 +1383,9 @@ export function CodigosPage() {
   const [tab, setTab] = useState<'equipos' | 'precios' | 'gestion'>('equipos')
 
   const inetItems  = data?.codInet.items ?? []
+  const spItems    = data?.spPrice.items ?? []
   const inetCount  = inetItems.length
-  const priceCount = [...new Set((data?.spPrice.items ?? []).map(r => r.product).filter(Boolean))].length
+  const priceCount = [...new Set(spItems.map(r => r.product).filter(Boolean))].length
 
   const tabBtn = (key: 'equipos' | 'precios' | 'gestion', icon: string, label: string, count?: number) => (
     <button
@@ -1215,7 +1456,7 @@ export function CodigosPage() {
 
           {tab === 'equipos' && <TabEquipos items={data!.codInet.items} />}
           {tab === 'precios' && <TabPrecios items={data!.spPrice.items} />}
-          {tab === 'gestion' && canGestion && <TabGestion items={inetItems} />}
+          {tab === 'gestion' && canGestion && <TabGestion items={inetItems} spItems={spItems} />}
         </>
       )}
     </div>
