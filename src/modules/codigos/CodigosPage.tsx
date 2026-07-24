@@ -29,30 +29,32 @@ interface CodInetItem {
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
+// PostgREST limita cada respuesta a 1000 filas por defecto — sin paginar, cualquier
+// catálogo más grande que eso se corta en silencio y el resto nunca llega al cliente.
+async function fetchAllRows<T>(table: string, select: string, orderCol: string): Promise<T[]> {
+  const PAGE = 1000
+  const all: T[] = []
+  let from = 0
+  for (;;) {
+    const { data, error } = await supabase.from(table).select(select).order(orderCol).range(from, from + PAGE - 1)
+    if (error) throw error
+    all.push(...(data as T[]))
+    if (!data || data.length < PAGE) break
+    from += PAGE
+  }
+  return all
+}
+
 function useCodigosData() {
   const spQuery = useQuery<SpPriceItem[]>({
     queryKey: ['codigos-sp-price'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('codigos_sp_price')
-        .select('id, code, product, description, precio_a_cobrar')
-        .order('product')
-      if (error) throw error
-      return data as SpPriceItem[]
-    },
+    queryFn: () => fetchAllRows<SpPriceItem>('codigos_sp_price', 'id, code, product, description, precio_a_cobrar', 'product'),
     staleTime: 10 * 60 * 1000,
   })
 
   const inetQuery = useQuery<CodInetItem[]>({
     queryKey: ['codigos-inet'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('codigos_inet')
-        .select('codigo, familia, descripcion, codigo_mantenimiento, codigo_calibracion')
-        .order('codigo')
-      if (error) throw error
-      return data as CodInetItem[]
-    },
+    queryFn: () => fetchAllRows<CodInetItem>('codigos_inet', 'codigo, familia, descripcion, codigo_mantenimiento, codigo_calibracion', 'codigo'),
     staleTime: 10 * 60 * 1000,
   })
 
