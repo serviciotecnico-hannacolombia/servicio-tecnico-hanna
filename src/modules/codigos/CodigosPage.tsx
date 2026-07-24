@@ -789,7 +789,7 @@ function Modal({ title, onClose, children, width = 560 }: {
 const EMPTY_FORM: CodInetItem = { codigo: '', familia: '', descripcion: '', codigo_mantenimiento: '', codigo_calibracion: '' }
 
 interface PlanPrecios {
-  actualizar: { id: string, code: string, product: string, precioActual: number, precioNuevo: number }[]
+  actualizar: { id: string, code: string, productActual: string, productNuevo: string, descripcionNueva: string, precioActual: number, precioNuevo: number }[]
   nuevos: { code: string, product: string, description: string, precio: number }[]
   sinCambio: number
   ambiguos: string[]
@@ -956,8 +956,15 @@ function TabGestion({ items, spItems }: { items: CodInetItem[], spItems: SpPrice
         if (matches.length > 1) { ambiguos.push(code); continue }
         if (matches.length === 1) {
           const actual = Number(matches[0].precio_a_cobrar) || 0
-          if (Math.abs(actual - entry.precio) < 0.01) sinCambio++
-          else actualizar.push({ id: matches[0].id, code, product: matches[0].product, precioActual: actual, precioNuevo: entry.precio })
+          const precioIgual = Math.abs(actual - entry.precio) < 0.01
+          const productoIgual = matches[0].product.trim() === entry.product.trim()
+          const descripcionIgual = (matches[0].description || '').trim() === entry.description.trim()
+          if (precioIgual && productoIgual && descripcionIgual) sinCambio++
+          else actualizar.push({
+            id: matches[0].id, code,
+            productActual: matches[0].product, productNuevo: entry.product, descripcionNueva: entry.description,
+            precioActual: actual, precioNuevo: entry.precio,
+          })
         } else {
           nuevos.push({ code, product: entry.product, description: entry.description, precio: entry.precio })
         }
@@ -973,16 +980,20 @@ function TabGestion({ items, spItems }: { items: CodInetItem[], spItems: SpPrice
     setImportingPrecios(true)
     try {
       if (planPrecios.nuevos.length) {
-        setImportMsgPrecios(`Agregando ${planPrecios.nuevos.length} código(s) nuevo(s)…`)
-        const { error } = await supabase.from('codigos_sp_price').insert(
-          planPrecios.nuevos.map(n => ({ code: n.code, product: n.product, description: n.description || null, precio_a_cobrar: n.precio }))
-        )
-        if (error) throw error
+        const BATCH = 500
+        const nuevosRows = planPrecios.nuevos.map(n => ({ code: n.code, product: n.product, description: n.description || null, precio_a_cobrar: n.precio }))
+        for (let i = 0; i < nuevosRows.length; i += BATCH) {
+          setImportMsgPrecios(`Agregando códigos nuevos… ${Math.min(i + BATCH, nuevosRows.length)} / ${nuevosRows.length}`)
+          const { error } = await supabase.from('codigos_sp_price').insert(nuevosRows.slice(i, i + BATCH))
+          if (error) throw error
+        }
       }
       let actualizados = 0
       for (const a of planPrecios.actualizar) {
         setImportMsgPrecios(`Actualizando precios… ${actualizados + 1} / ${planPrecios.actualizar.length}`)
-        const { error } = await supabase.from('codigos_sp_price').update({ precio_a_cobrar: a.precioNuevo }).eq('id', a.id)
+        const { error } = await supabase.from('codigos_sp_price')
+          .update({ product: a.productNuevo, description: a.descripcionNueva || null, precio_a_cobrar: a.precioNuevo })
+          .eq('id', a.id)
         if (error) throw error
         actualizados++
       }
@@ -1311,7 +1322,7 @@ SP122-1,HI122,HI122 Main Board Spare Part,"$1,214,500.00"`}
                     <table style={{ borderCollapse: 'collapse', fontSize: '0.72rem', fontFamily: 'var(--mono)', width: '100%' }}>
                       <thead>
                         <tr>
-                          {['Código', 'Precio actual', 'Precio nuevo'].map(h => (
+                          {['Código', 'Producto', 'Precio actual', 'Precio nuevo'].map(h => (
                             <th key={h} style={{ textAlign: 'left', padding: '4px 10px', color: 'var(--muted)', borderBottom: '1px solid var(--border)' }}>{h}</th>
                           ))}
                         </tr>
@@ -1320,6 +1331,9 @@ SP122-1,HI122,HI122 Main Board Spare Part,"$1,214,500.00"`}
                         {planPrecios.actualizar.slice(0, 5).map(a => (
                           <tr key={a.id}>
                             <td style={{ padding: '4px 10px', color: 'var(--accent)' }}>{a.code}</td>
+                            <td style={{ padding: '4px 10px' }}>
+                              {a.productActual === a.productNuevo ? a.productNuevo : <>{a.productActual} → <strong>{a.productNuevo}</strong></>}
+                            </td>
                             <td style={{ padding: '4px 10px' }}>{fmtCOP(a.precioActual)}</td>
                             <td style={{ padding: '4px 10px', fontWeight: 700 }}>{fmtCOP(a.precioNuevo)}</td>
                           </tr>
