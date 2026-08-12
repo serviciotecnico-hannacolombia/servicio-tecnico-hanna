@@ -4,6 +4,7 @@ import logo from '../../assets/logo.svg'
 import {
   Phone, Package, DollarSign, Wrench, FileText, Warehouse,
   LogOut, Pencil, ShieldCheck, BarChart2, Mail, KeyRound, ChevronDown, Timer, ListTodo, CalendarClock,
+  FlaskConical,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useSidebar } from './SidebarContext'
@@ -62,6 +63,7 @@ const NAV_ITEMS: { to: string; label: string; icon: typeof Phone; moduleKey: Mod
   { to: '/reporte-st',   label: 'Reporte ST',          icon: Timer,      moduleKey: 'reporte_st'  },
   { to: '/tareas',       label: 'Tareas',               icon: ListTodo,   moduleKey: 'tareas'      },
   { to: '/mantenimiento-programado', label: 'Mantenimiento Programado', icon: CalendarClock, moduleKey: 'mantenimiento_programado' },
+  { to: '/calibraciones', label: 'Calibraciones', icon: FlaskConical, moduleKey: 'calibraciones' },
 ]
 
 const ANIMALS = [

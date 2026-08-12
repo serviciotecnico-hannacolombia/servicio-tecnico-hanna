@@ -19,11 +19,12 @@ export interface CorreoDestinatario {
 export type ModuleKey =
   | 'llamadas' | 'bodega' | 'consumibles' | 'tarifas' | 'codigos'
   | 'editor' | 'indicadores' | 'correos' | 'reporte_st' | 'tareas'
-  | 'mantenimiento_programado' | 'admin'
+  | 'mantenimiento_programado' | 'calibraciones' | 'admin'
 
 export type CapabilityKey =
   | 'importar_csv_tarifas' | 'importar_csv_codigos' | 'importar_csv_llamadas'
   | 'bodega_registrar_ingreso' | 'editar_codigos' | 'gestion_codigos' | 'bodega_eliminar'
+  | 'calibraciones_editar'
 
 export interface Role {
   id: string
@@ -280,5 +281,78 @@ export interface EventoMantenimiento {
   fecha_entrega: string | null
   observaciones: string | null
   responsable: string | null
+  created_at: string
+}
+
+// ── Calibraciones ──────────────────────────────────────────────────────────────
+
+export type Modalidad = 'laboratorio_externo' | 'in_situ' | 'sede_hanna_dorado'
+
+export type EstadoCalibracion =
+  | 'oc_creada' | 'para_enviar' | 'en_mantenimiento_reparacion'
+  | 'en_programacion_visita' | 'visita_programada' | 'enviado'
+  | 'en_calibracion' | 'en_retorno' | 'novedad'
+  | 'recolectado_en_hanna' | 'a_falta_certificado' | 'terminado'
+
+export interface RvCalibrItem {
+  codigo: string
+  magnitud: string
+  descripcion: string
+  modalidades_permitidas: Modalidad[]
+  solo_laboratorio_externo: boolean
+  envio_exclusivo_tcc: boolean
+  activo: boolean
+}
+
+export interface OrdenCalibracion {
+  id: string
+  numero_oc: string | null
+  cliente: string
+  correo_cliente: string | null
+  asesor_id: string | null
+  correo_asesor: string | null
+  saci: string | null
+  link_solicitud: string | null
+  otst: string | null
+  link_otst: string | null
+  codigo_recepcion: string | null
+  rmv_fv: string | null
+  modalidad: Modalidad | null
+  lugar_ejecucion: string | null
+  proveedor: string | null
+  estado: EstadoCalibracion
+  novedad_detalle: string | null
+  enviado_cliente_final: boolean
+  fecha_programada_envio: string | null
+  fecha_envio: string | null
+  nota_envio: string | null
+  certificado_fecha_inicio: string | null
+  certificado_fecha_fin: string | null
+  fecha_salida_lab: string | null
+  fecha_retorno: string | null
+  nota_retorno: string | null
+  fecha_llegada_hanna: string | null
+  fecha_entrega_certificado: string | null
+  carta_entrega: string | null
+  carta_certificado: string | null
+  parametros_nota: string | null
+  valor_oc_antes_iva: number | null
+  creado_por: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface OrdenCalibracionParametro {
+  orden_id: string
+  rv_calibr_codigo: string
+}
+
+export interface OrdenCalibracionHistorial {
+  id: string
+  orden_id: string
+  usuario_id: string | null
+  campo: string
+  valor_anterior: string | null
+  valor_nuevo: string | null
   created_at: string
 }
