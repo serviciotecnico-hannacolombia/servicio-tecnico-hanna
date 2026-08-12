@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../../lib/supabase'
 import { useUser } from '../../../hooks/useUser'
-import type { EstadoCalibracion, Modalidad, OrdenCalibracion, OrdenCalibracionHistorial, OrdenCalibracionParametro, RvCalibrItem } from '../../../types'
+import type { Asesor, CorreoProveedor, EstadoCalibracion, Modalidad, OrdenCalibracion, OrdenCalibracionHistorial, OrdenCalibracionParametro, RvCalibrItem } from '../../../types'
 
 export function useOrdenesCalibracion() {
   const { user } = useUser()
@@ -35,14 +35,50 @@ export function useCatalogoRvCalibr() {
   return useQuery({
     queryKey: ['rv_calibr_catalogo'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('rv_calibr_catalogo').select('*').order('codigo')
+      const { data, error } = await supabase.from('rv_calibr_catalogo').select('*')
       if (error) throw error
-      return data as RvCalibrItem[]
+      // Orden numérico (1, 2, 3…) — un ORDER BY de texto en 'codigo' pondría
+      // "RV CALIBR.10" antes que "RV CALIBR.2".
+      return (data as RvCalibrItem[]).sort((a, b) =>
+        Number(a.codigo.replace(/\D/g, '')) - Number(b.codigo.replace(/\D/g, '')))
     },
     enabled: !!user,
   })
 }
+
+export function useAsesores() {
+  const { user } = useUser()
+  return useQuery({
+    queryKey: ['calibraciones_asesores'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('calibraciones_asesores').select('*').order('nombre')
+      if (error) throw error
+      return data as Asesor[]
+    },
+    enabled: !!user,
+  })
+}
+
+// Reutiliza el maestro de proveedores del módulo de Correos OC
+// (correos_proveedores) — son los mismos laboratorios de calibración a los
+// que ya se les envían las órdenes de compra por correo.
+export function useProveedores() {
+  const { user } = useUser()
+  return useQuery({
+    queryKey: ['correos_proveedores'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('correos_proveedores').select('*').order('nombre')
+      if (error) throw error
+      return data as CorreoProveedor[]
+    },
+    enabled: !!user,
+  })
+}
+
+// Sede Hanna Dorado solo calibra con este laboratorio.
+export const PROVEEDOR_SEDE_HANNA = 'METROLOGICAL CENTER SAS'
 
 export function useHistorialOrden(ordenId: string | null) {
   return useQuery({
@@ -65,6 +101,7 @@ export function useInvalidateCalibraciones() {
     ordenes: () => qc.invalidateQueries({ queryKey: ['ordenes_calibracion', user?.id] }),
     parametros: (ordenId: string) => qc.invalidateQueries({ queryKey: ['ordenes_calibracion_parametros', ordenId] }),
     catalogo: () => qc.invalidateQueries({ queryKey: ['rv_calibr_catalogo'] }),
+    asesores: () => qc.invalidateQueries({ queryKey: ['calibraciones_asesores'] }),
     historial: (ordenId: string) => qc.invalidateQueries({ queryKey: ['ordenes_calibracion_historial', ordenId] }),
   }
 }
@@ -99,8 +136,7 @@ const GRUPO_POR_ESTADO: Record<EstadoCalibracion, GrupoEstado> = {
   en_calibracion: 'en_curso',
   en_retorno: 'en_curso',
   novedad: 'en_curso',
-  recolectado_en_hanna: 'completado',
-  a_falta_certificado: 'completado',
+  control_calidad: 'completado',
   terminado: 'completado',
 }
 
@@ -117,16 +153,135 @@ export const MODALIDAD_LABEL: Record<Modalidad, string> = {
 export const ESTADO_LABEL: Record<EstadoCalibracion, string> = {
   oc_creada: 'OC creada',
   para_enviar: 'Para enviar',
-  en_mantenimiento_reparacion: 'En mantenimiento/reparación',
+  en_mantenimiento_reparacion: 'En mantenimiento y reparación',
   en_programacion_visita: 'En programación de visita',
   visita_programada: 'Visita programada',
   enviado: 'Enviado',
   en_calibracion: 'En calibración',
   en_retorno: 'En retorno',
   novedad: 'Novedad',
-  recolectado_en_hanna: 'Recolectado / en Hanna',
-  a_falta_certificado: 'A falta de certificado',
+  control_calidad: 'Control de calidad',
   terminado: 'Terminado',
+}
+
+// ── Flujo de estados: difiere según modalidad. Laboratorio externo pasa por
+// envío/retorno del equipo; sede Hanna Dorado e in situ programan una visita
+// en vez de enviarlo. Ambos flujos cierran con "Control de calidad" antes de
+// Terminado. Cada etapa declara los campos que pide el asistente al avanzar
+// a la siguiente (ModalAvanzarEtapa en OrdenCalibracionDetailPage). ─────────
+
+export interface CampoTransicion {
+  key: keyof OrdenCalibracion
+  label: string
+  tipo: 'date' | 'text'
+}
+
+export interface EtapaFlujo {
+  key: string
+  label: string
+  match: EstadoCalibracion[]
+  siguiente?: { estado: EstadoCalibracion, label: string, campos: CampoTransicion[] }
+}
+
+const CAMPOS_CIERRE: CampoTransicion[] = [
+  { key: 'fecha_entrega_certificado', label: 'Entrega del certificado', tipo: 'date' },
+  { key: 'carta_entrega', label: 'Carta de entrega', tipo: 'text' },
+  { key: 'carta_certificado', label: 'Carta del certificado', tipo: 'text' },
+]
+
+export const FLUJO_LABORATORIO: EtapaFlujo[] = [
+  {
+    key: 'oc_creada', label: 'OC creada', match: ['oc_creada', 'para_enviar'],
+    siguiente: {
+      estado: 'enviado', label: 'Enviado', campos: [
+        { key: 'fecha_envio', label: 'Fecha de envío', tipo: 'date' },
+        { key: 'proveedor', label: 'Proveedor (laboratorio)', tipo: 'text' },
+        { key: 'nota_envio', label: 'Nota de envío', tipo: 'text' },
+      ],
+    },
+  },
+  {
+    key: 'enviado', label: 'Enviado', match: ['enviado'],
+    siguiente: {
+      estado: 'en_calibracion', label: 'En calibración', campos: [
+        { key: 'codigo_recepcion', label: 'Código de recepción', tipo: 'text' },
+        { key: 'certificado_fecha_inicio', label: 'Inicio de calibración', tipo: 'date' },
+      ],
+    },
+  },
+  {
+    key: 'en_calibracion', label: 'En calibración', match: ['en_calibracion'],
+    siguiente: {
+      estado: 'en_retorno', label: 'En retorno', campos: [
+        { key: 'certificado_fecha_fin', label: 'Fin de calibración (emisión de certificado)', tipo: 'date' },
+        { key: 'fecha_salida_lab', label: 'Salida del laboratorio', tipo: 'date' },
+      ],
+    },
+  },
+  {
+    key: 'en_retorno', label: 'En retorno', match: ['en_retorno'],
+    siguiente: {
+      estado: 'control_calidad', label: 'Control de calidad', campos: [
+        { key: 'fecha_retorno', label: 'Fecha de retorno', tipo: 'date' },
+        { key: 'fecha_llegada_hanna', label: 'Llegada a Hanna', tipo: 'date' },
+        { key: 'nota_retorno', label: 'Nota de retorno', tipo: 'text' },
+      ],
+    },
+  },
+  {
+    key: 'control_calidad', label: 'Control de calidad', match: ['control_calidad'],
+    siguiente: { estado: 'terminado', label: 'Terminado', campos: CAMPOS_CIERRE },
+  },
+  { key: 'terminado', label: 'Terminado', match: ['terminado'] },
+]
+
+export const FLUJO_SITIO: EtapaFlujo[] = [
+  // Sin "siguiente": el paso de OC creada → Visita programada (con su fecha
+  // ideal) se decide inline en el bloque "Siguiente paso" de Fechas del
+  // proceso, no en el asistente modal.
+  { key: 'oc_creada', label: 'OC creada', match: ['oc_creada', 'para_enviar'] },
+  {
+    key: 'visita_programada', label: 'Visita programada', match: ['en_programacion_visita', 'visita_programada'],
+    siguiente: {
+      estado: 'en_calibracion', label: 'En calibración', campos: [
+        { key: 'codigo_recepcion', label: 'Código de recepción', tipo: 'text' },
+        { key: 'certificado_fecha_inicio', label: 'Inicio de calibración', tipo: 'date' },
+      ],
+    },
+  },
+  {
+    key: 'en_calibracion', label: 'En calibración', match: ['en_calibracion'],
+    siguiente: {
+      estado: 'control_calidad', label: 'Control de calidad', campos: [
+        { key: 'certificado_fecha_fin', label: 'Fin de calibración (emisión de certificado)', tipo: 'date' },
+      ],
+    },
+  },
+  {
+    key: 'control_calidad', label: 'Control de calidad', match: ['control_calidad'],
+    siguiente: { estado: 'terminado', label: 'Terminado', campos: CAMPOS_CIERRE },
+  },
+  { key: 'terminado', label: 'Terminado', match: ['terminado'] },
+]
+
+// Mantenimiento/reparación es un desvío opcional, no un paso fijo del
+// flujo — solo se inserta como su propio escalón (paso 2) mientras la orden
+// está efectivamente ahí. Al salir de mantenimiento, el stepper vuelve a la
+// secuencia normal sin dejar una marca "completada" falsa para un desvío
+// que la orden pudo no haber tomado nunca.
+const ETAPA_MANTENIMIENTO: EtapaFlujo = {
+  key: 'en_mantenimiento_reparacion', label: 'En mantenimiento y reparación',
+  match: ['en_mantenimiento_reparacion'],
+}
+
+// Con modalidad sin definir todavía no sabemos si el siguiente paso es
+// "Enviado" o "Visita programada" — se usa el flujo de laboratorio solo para
+// pintar el stepper; el asistente de avance se deshabilita hasta que se
+// elija la modalidad (ver OrdenCalibracionDetailPage).
+export function flujoPorModalidad(modalidad: Modalidad | null, estadoActual?: EstadoCalibracion): EtapaFlujo[] {
+  const base = modalidad === 'sede_hanna_dorado' || modalidad === 'in_situ' ? FLUJO_SITIO : FLUJO_LABORATORIO
+  if (estadoActual !== 'en_mantenimiento_reparacion') return base
+  return [base[0], ETAPA_MANTENIMIENTO, ...base.slice(1)]
 }
 
 // ── Semáforo simplificado (días calendario, no días hábiles exactos) ───────
@@ -143,7 +298,7 @@ function localISO(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
-function hoyISO(): string { return localISO(new Date()) }
+export function hoyISO(): string { return localISO(new Date()) }
 
 export function estaVencido(orden: Pick<OrdenCalibracion, 'estado' | 'certificado_fecha_fin' | 'fecha_programada_envio'>): boolean {
   if (grupoEstado(orden.estado) === 'completado' || orden.estado === 'novedad') return false
@@ -182,6 +337,8 @@ export const CAMPO_LABEL: Record<string, string> = {
   estado: 'Estado',
   novedad_detalle: 'Detalle de novedad',
   enviado_cliente_final: 'Enviado a cliente final',
+  cantidad_equipos: 'Cantidad de equipos',
+  fecha_salida_mantenimiento: 'Salida de mantenimiento',
   fecha_programada_envio: 'Programada de envío',
   fecha_envio: 'Envío',
   nota_envio: 'Nota de envío',
@@ -201,6 +358,7 @@ export const CAMPO_LABEL: Record<string, string> = {
 const CAMPOS_FECHA = new Set([
   'fecha_programada_envio', 'fecha_envio', 'certificado_fecha_inicio', 'certificado_fecha_fin',
   'fecha_salida_lab', 'fecha_retorno', 'fecha_llegada_hanna', 'fecha_entrega_certificado',
+  'fecha_salida_mantenimiento',
 ])
 
 export function formatValorHistorial(campo: string, valor: string | null): string {

@@ -1,23 +1,26 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Plus, Pencil, FlaskConical, AlertTriangle, Search, ChevronRight } from 'lucide-react'
+import { Plus, Pencil, FlaskConical, Users, AlertTriangle, Search, ChevronRight } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { Header } from '../../components/layout/Header'
 import { Card } from '../../components/ui/Card'
 import { Modal } from '../../components/ui/Modal'
 import { useUser } from '../../hooks/useUser'
 import {
-  useOrdenesCalibracion, useCatalogoRvCalibr, useInvalidateCalibraciones,
+  useOrdenesCalibracion, useCatalogoRvCalibr, useAsesores, useInvalidateCalibraciones,
   grupoEstado, ESTADO_LABEL, MODALIDAD_LABEL, estaVencido, proximoAVencer, fechaLimite,
 } from './hooks/useCalibraciones'
 import {
   FG, IconBtn, Stat, INP, PRI, GHOST, B_INFO, B_VENCIDA, B_PROXIMA, B_NOVEDAD,
   GRUPO_COLOR, EMPTY, fmtFecha, fmtCOP,
 } from './ui'
-import type { Modalidad, RvCalibrItem } from '../../types'
+import type { Asesor, Modalidad, RvCalibrItem } from '../../types'
 
 type VistaFiltro = 'activas' | 'vencidas' | 'completadas' | 'todas'
+type Tab = 'ordenes' | 'catalogo' | 'asesores'
+
+const TAB_LABEL: Record<Tab, string> = { ordenes: 'Órdenes', catalogo: 'Catálogo RV CALIBR', asesores: 'Asesores' }
 
 export function CalibracionesPage() {
   const navigate = useNavigate()
@@ -25,9 +28,10 @@ export function CalibracionesPage() {
   const puedeEditar = hasCapability('calibraciones_editar')
   const { data: ordenes = [], isLoading } = useOrdenesCalibracion()
   const { data: catalogo = [] } = useCatalogoRvCalibr()
+  const { data: asesores = [] } = useAsesores()
   const invalidate = useInvalidateCalibraciones()
 
-  const [tab, setTab] = useState<'ordenes' | 'catalogo'>('ordenes')
+  const [tab, setTab] = useState<Tab>('ordenes')
   const [vista, setVista] = useState<VistaFiltro>('activas')
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(0)
@@ -66,15 +70,15 @@ export function CalibracionesPage() {
         actions={puedeEditar ? <button onClick={() => navigate('/calibraciones/nueva')} style={PRI}><Plus size={14} style={{ verticalAlign: -2 }} /> Nueva orden</button> : undefined}
       />
 
-      <div style={{ display: 'flex', gap: 4, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 4, marginBottom: 20, maxWidth: 360 }}>
-        {(['ordenes', ...(puedeEditar ? ['catalogo'] as const : [])] as const).map(t => (
+      <div style={{ display: 'flex', gap: 4, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 4, marginBottom: 20, maxWidth: 480 }}>
+        {(['ordenes', ...(puedeEditar ? ['catalogo', 'asesores'] as const : [])] as Tab[]).map(t => (
           <button key={t} onClick={() => setTab(t)} style={{
             flex: 1, padding: '9px 14px', border: 'none', borderRadius: 9,
             background: tab === t ? 'var(--accent)' : 'transparent',
             color: tab === t ? '#fff' : 'var(--muted)',
             fontFamily: 'var(--sans)', fontSize: '0.85rem', fontWeight: tab === t ? 700 : 500,
             cursor: 'pointer', transition: 'all .18s',
-          }}>{t === 'ordenes' ? 'Órdenes' : 'Catálogo RV CALIBR'}</button>
+          }}>{TAB_LABEL[t]}</button>
         ))}
       </div>
 
@@ -168,8 +172,10 @@ export function CalibracionesPage() {
             )}
           </Card>
         </>
-      ) : (
+      ) : tab === 'catalogo' ? (
         <CatalogoTab catalogo={catalogo} onSaved={invalidate.catalogo} />
+      ) : (
+        <AsesoresTab asesores={asesores} onSaved={invalidate.asesores} />
       )}
     </div>
   )
@@ -177,32 +183,74 @@ export function CalibracionesPage() {
 
 // ── Catálogo RV CALIBR ───────────────────────────────────────────────────────
 
+type FiltroModalidad = 'todas' | Modalidad
+
+const FILTRO_MODALIDAD_OPCIONES: [FiltroModalidad, string][] = [
+  ['todas', 'Todas'],
+  ['laboratorio_externo', 'Laboratorio externo'],
+  ['in_situ', 'In Situ'],
+  ['sede_hanna_dorado', 'Sede Hanna Dorado'],
+]
+
 function CatalogoTab({ catalogo, onSaved }: { catalogo: RvCalibrItem[], onSaved: () => void }) {
   const [editando, setEditando] = useState<RvCalibrItem | null>(null)
+  const [search, setSearch] = useState('')
+  const [filtroModalidad, setFiltroModalidad] = useState<FiltroModalidad>('todas')
+
+  const filtrado = catalogo
+    .filter(c => filtroModalidad === 'todas' || c.modalidades_permitidas.includes(filtroModalidad))
+    .filter(c => {
+      const q = search.toLowerCase().trim()
+      if (!q) return true
+      return c.codigo.toLowerCase().includes(q)
+        || c.magnitud.toLowerCase().includes(q)
+        || c.descripcion.toLowerCase().includes(q)
+    })
 
   return (
     <Card>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {catalogo.map(c => (
-          <div key={c.codigo} style={{
-            display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px',
-            border: '1px solid var(--border)', borderRadius: 10, background: 'var(--surface2)',
-            opacity: c.activo ? 1 : 0.5,
-          }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text)' }}>{c.codigo} — {c.magnitud}</div>
-              <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>{c.descripcion}</div>
-              <div style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--mono)', marginTop: 4, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                <span>Modalidades: {c.modalidades_permitidas.map(m => MODALIDAD_LABEL[m]).join(', ') || '—'}</span>
-                {c.solo_laboratorio_externo && <span style={{ color: 'var(--red)' }}>Solo laboratorio externo</span>}
-                {c.envio_exclusivo_tcc && <span style={{ color: 'var(--red)' }}>Envío exclusivo TCC</span>}
-                {!c.activo && <span>Inactivo</span>}
-              </div>
-            </div>
-            <IconBtn title="Editar" onClick={() => setEditando(c)}><Pencil size={14} /></IconBtn>
-          </div>
-        ))}
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', marginBottom: 14 }}>
+        <div style={{ display: 'flex', gap: 4, background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 9, padding: 3, flexWrap: 'wrap' }}>
+          {FILTRO_MODALIDAD_OPCIONES.map(([v, label]) => (
+            <button key={v} onClick={() => setFiltroModalidad(v)} style={{
+              padding: '6px 12px', border: 'none', borderRadius: 7, cursor: 'pointer', fontSize: 12,
+              fontWeight: filtroModalidad === v ? 600 : 500, fontFamily: 'var(--sans)',
+              background: filtroModalidad === v ? 'var(--accent)' : 'transparent',
+              color: filtroModalidad === v ? '#fff' : 'var(--muted)',
+            }}>{label}</button>
+          ))}
+        </div>
+        <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
+          <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)', pointerEvents: 'none' }} />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por código, magnitud o descripción..." style={{ ...INP, paddingLeft: 34 }} />
+        </div>
       </div>
+
+      {filtrado.length === 0 ? (
+        <div style={EMPTY}><FlaskConical size={32} strokeWidth={1.5} /><p>No hay servicios para este filtro</p></div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {filtrado.map(c => (
+            <div key={c.codigo} style={{
+              display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px',
+              border: '1px solid var(--border)', borderRadius: 10, background: 'var(--surface2)',
+              opacity: c.activo ? 1 : 0.5,
+            }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text)' }}>{c.codigo} — {c.magnitud}</div>
+                <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>{c.descripcion}</div>
+                <div style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--mono)', marginTop: 4, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                  <span>Modalidades: {c.modalidades_permitidas.map(m => MODALIDAD_LABEL[m]).join(', ') || '—'}</span>
+                  {c.solo_laboratorio_externo && <span style={{ color: 'var(--red)' }}>Solo laboratorio externo</span>}
+                  {c.envio_exclusivo_tcc && <span style={{ color: 'var(--red)' }}>Envío exclusivo TCC</span>}
+                  {!c.activo && <span>Inactivo</span>}
+                </div>
+              </div>
+              <IconBtn title="Editar" onClick={() => setEditando(c)}><Pencil size={14} /></IconBtn>
+            </div>
+          ))}
+        </div>
+      )}
 
       {editando && (
         <ModalCatalogoItem item={editando} onClose={() => setEditando(null)} onSaved={onSaved} />
@@ -272,6 +320,124 @@ function ModalCatalogoItem({ item, onClose, onSaved }: { item: RvCalibrItem, onC
       <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 20 }}>
         <button onClick={onClose} style={GHOST}>Cancelar</button>
         <button onClick={submit} disabled={saving} style={PRI}>{saving ? 'Guardando…' : '✓ Guardar cambios'}</button>
+      </div>
+    </Modal>
+  )
+}
+
+// ── Asesores ──────────────────────────────────────────────────────────────
+
+const PLATAFORMAS_SUGERIDAS = [
+  'Preferente', 'Nuevos negocios', 'Televentas', 'Canal Indirecto Y Cooperativo', 'Educación', 'Territory',
+]
+
+function AsesoresTab({ asesores, onSaved }: { asesores: Asesor[], onSaved: () => void }) {
+  const [search, setSearch] = useState('')
+  const [editando, setEditando] = useState<Asesor | null>(null)
+  const [creando, setCreando] = useState(false)
+
+  const filtrados = asesores.filter(a => {
+    const q = search.toLowerCase().trim()
+    if (!q) return true
+    return a.nombre.toLowerCase().includes(q)
+      || a.correo.toLowerCase().includes(q)
+      || (a.plataforma || '').toLowerCase().includes(q)
+  })
+
+  return (
+    <Card>
+      <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 14 }}>
+        <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
+          <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)', pointerEvents: 'none' }} />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por nombre, correo o plataforma..." style={{ ...INP, paddingLeft: 34 }} />
+        </div>
+        <button onClick={() => setCreando(true)} style={PRI}><Plus size={14} style={{ verticalAlign: -2 }} /> Nuevo asesor</button>
+      </div>
+
+      {filtrados.length === 0 ? (
+        <div style={EMPTY}><Users size={32} strokeWidth={1.5} /><p>No hay asesores para este filtro</p></div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {filtrados.map(a => (
+            <div key={a.id} style={{
+              display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px',
+              border: '1px solid var(--border)', borderRadius: 10, background: 'var(--surface2)',
+              opacity: a.activo ? 1 : 0.5,
+            }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text)' }}>{a.nombre}</div>
+                <div style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--mono)', marginTop: 4, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+                  <span>{a.correo}</span>
+                  {a.plataforma && <span style={B_INFO}>{a.plataforma}</span>}
+                  {!a.activo && <span>Inactivo</span>}
+                </div>
+              </div>
+              <IconBtn title="Editar" onClick={() => setEditando(a)}><Pencil size={14} /></IconBtn>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {(editando || creando) && (
+        <ModalAsesor
+          asesor={editando}
+          onClose={() => { setEditando(null); setCreando(false) }}
+          onSaved={onSaved}
+        />
+      )}
+    </Card>
+  )
+}
+
+function ModalAsesor({ asesor, onClose, onSaved }: { asesor: Asesor | null, onClose: () => void, onSaved: () => void }) {
+  const [nombre, setNombre] = useState(asesor?.nombre || '')
+  const [correo, setCorreo] = useState(asesor?.correo || '')
+  const [plataforma, setPlataforma] = useState(asesor?.plataforma || '')
+  const [activo, setActivo] = useState(asesor?.activo ?? true)
+  const [saving, setSaving] = useState(false)
+
+  async function submit() {
+    if (!nombre.trim()) { toast.error('Ingresa el nombre'); return }
+    if (!correo.trim()) { toast.error('Ingresa el correo'); return }
+
+    setSaving(true)
+    const payload = {
+      nombre: nombre.trim(), correo: correo.trim().toLowerCase(),
+      plataforma: plataforma.trim() || null, activo,
+    }
+    const { error } = asesor
+      ? await supabase.from('calibraciones_asesores').update(payload).eq('id', asesor.id)
+      : await supabase.from('calibraciones_asesores').insert(payload)
+    setSaving(false)
+    if (error) {
+      toast.error(error.code === '23505' ? 'Ya existe un asesor con ese correo' : 'Error: ' + error.message)
+      return
+    }
+    toast.success(asesor ? 'Asesor actualizado' : 'Asesor creado')
+    onSaved()
+    onClose()
+  }
+
+  return (
+    <Modal open onClose={onClose} title={asesor ? `Editar ${asesor.nombre}` : 'Nuevo asesor'} width={440}>
+      <FG label="Nombre"><input value={nombre} onChange={e => setNombre(e.target.value)} style={INP} autoFocus /></FG>
+      <div style={{ marginTop: 14 }}>
+        <FG label="Correo electrónico"><input value={correo} onChange={e => setCorreo(e.target.value)} style={INP} /></FG>
+      </div>
+      <div style={{ marginTop: 14 }}>
+        <FG label="Plataforma">
+          <input value={plataforma} onChange={e => setPlataforma(e.target.value)} list="plataformas-sugeridas" style={INP} />
+          <datalist id="plataformas-sugeridas">{PLATAFORMAS_SUGERIDAS.map(p => <option key={p} value={p} />)}</datalist>
+        </FG>
+      </div>
+      <div style={{ marginTop: 14 }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
+          <input type="checkbox" checked={activo} onChange={e => setActivo(e.target.checked)} /> Activo
+        </label>
+      </div>
+      <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 20 }}>
+        <button onClick={onClose} style={GHOST}>Cancelar</button>
+        <button onClick={submit} disabled={saving} style={PRI}>{saving ? 'Guardando…' : asesor ? '✓ Guardar cambios' : '+ Crear asesor'}</button>
       </div>
     </Modal>
   )

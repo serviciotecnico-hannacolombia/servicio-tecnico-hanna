@@ -292,7 +292,7 @@ export type EstadoCalibracion =
   | 'oc_creada' | 'para_enviar' | 'en_mantenimiento_reparacion'
   | 'en_programacion_visita' | 'visita_programada' | 'enviado'
   | 'en_calibracion' | 'en_retorno' | 'novedad'
-  | 'recolectado_en_hanna' | 'a_falta_certificado' | 'terminado'
+  | 'control_calidad' | 'terminado'
 
 export interface RvCalibrItem {
   codigo: string
@@ -323,6 +323,8 @@ export interface OrdenCalibracion {
   estado: EstadoCalibracion
   novedad_detalle: string | null
   enviado_cliente_final: boolean
+  cantidad_equipos: number | null
+  fecha_salida_mantenimiento: string | null
   fecha_programada_envio: string | null
   fecha_envio: string | null
   nota_envio: string | null
@@ -355,4 +357,14 @@ export interface OrdenCalibracionHistorial {
   valor_anterior: string | null
   valor_nuevo: string | null
   created_at: string
+}
+
+export interface Asesor {
+  id: string
+  nombre: string
+  correo: string
+  plataforma: string | null
+  activo: boolean
+  created_at: string
+  updated_at: string
 }
