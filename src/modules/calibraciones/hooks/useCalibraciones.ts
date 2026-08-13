@@ -27,7 +27,7 @@ export function useCalibracionesBadgeCount(): number {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('ordenes_calibracion')
-        .select('estado, certificado_fecha_fin, fecha_programada_envio, fecha_envio, fecha_retorno, fecha_llegada_hanna, estado_desde')
+        .select('estado, modalidad, certificado_fecha_fin, fecha_programada_envio, fecha_llegada_metrologo, fecha_envio, fecha_retorno, fecha_llegada_hanna, estado_desde')
         .neq('estado', 'terminado')
       if (error) throw error
       return data as OrdenParaSemaforo[]
@@ -311,31 +311,63 @@ const UMBRAL_PROXIMA_DIAS_HABILES = 2
 const UMBRAL_VENCIDA_DIAS_HABILES = 4
 
 // Regla de semáforo por estado. Un estado puede tener una fecha objetivo
-// propia (campoFecha, comparada contra hoy en días calendario) y/o un SLA de
+// propia — un campo fijo (campoFecha, comparado contra hoy en días
+// calendario) o, cuando el objetivo no es un campo directo sino un cálculo,
+// una función (calcularObjetivo). El flujo in situ / Sede Hanna Dorado
+// recalcula el límite general varias veces según avanza (no hay una sola
+// "fecha_programada_envio" que sirva para todo el proceso, como en el
+// comentario original suponía):
+//   1. en_programacion_visita / visita_programada → fecha_programada_envio
+//      ("Fecha estimada de la visita").
+//   2. en_calibracion (sitio) → fecha_llegada_metrologo + 10 días (guía).
+//      certificado_fecha_fin todavía no existe en este punto del flujo sitio.
+//   3. control_calidad / carga_al_sistema → certificado_fecha_fin + 10 días.
+//      Ese certificado_fecha_fin es "fecha de fin de calibración" (se fija
+//      al salir de en_calibracion) — todavía no es la fecha oficial.
+//   4. envio_certificados → certificado_fecha_fin sin +10: en carga_al_
+//      sistema el usuario reconfirma/edita ese mismo campo como "Fecha
+//      estimada de finalización" oficial al salir hacia envío de
+//      certificados, y de ahí en adelante ya no cambia.
+// En laboratorio externo certificado_fecha_fin se fija una sola vez (al
+// salir de "Enviado") y nunca se reescribe, así que ahí no aplica ningún +10
+// — por eso en_calibracion/control_calidad distinguen por modalidad.
+// Aparte de la fecha objetivo, un estado puede tener también un SLA de
 // tránsito propio en días hábiles desde un campo de referencia — hoy usado
 // por "enviado" (fecha_envio, normalmente TCC, entrega máx. 3 días hábiles),
 // "en_retorno" (fecha_retorno, mismo SLA de vuelta) y "control_calidad"
-// (fecha_llegada_hanna, 1 día hábil completo para revisar el equipo — llegó
-// hoy, próxima a vencer desde ya; al día hábil siguiente ya está vencida).
-// Cuando un estado tiene ambas, se evalúan las dos y manda la más urgente:
-// certificado_fecha_fin sigue siendo el plazo máximo de todo el servicio,
-// pero cada tramo interno puede tener su propio límite más corto adentro.
+// (fecha_llegada_hanna, 1 día hábil completo para revisar el equipo). Cuando
+// un estado tiene fecha objetivo y SLA de tránsito a la vez, se evalúan las
+// dos y manda la más urgente.
 interface ReglaSemaforo {
   campoFecha?: 'fecha_programada_envio' | 'certificado_fecha_fin'
+  calcularObjetivo?: (orden: Pick<OrdenCalibracion, 'modalidad' | 'certificado_fecha_fin' | 'fecha_llegada_metrologo'>) => string | null
   campoReferenciaHabiles?: 'fecha_envio' | 'fecha_retorno' | 'fecha_llegada_hanna'
   umbralProximaHabiles?: number
   umbralVencidaHabiles?: number
 }
+
+const ES_LABORATORIO = (modalidad: OrdenCalibracion['modalidad']) => modalidad === 'laboratorio_externo'
 
 const REGLA_POR_ESTADO: Partial<Record<EstadoCalibracion, ReglaSemaforo>> = {
   para_enviar: { campoFecha: 'fecha_programada_envio' },
   en_programacion_visita: { campoFecha: 'fecha_programada_envio' },
   visita_programada: { campoFecha: 'fecha_programada_envio' },
   enviado: { campoReferenciaHabiles: 'fecha_envio', umbralProximaHabiles: 2, umbralVencidaHabiles: 3 },
-  en_calibracion: { campoFecha: 'certificado_fecha_fin' },
+  en_calibracion: {
+    calcularObjetivo: orden => ES_LABORATORIO(orden.modalidad)
+      ? orden.certificado_fecha_fin
+      : (orden.fecha_llegada_metrologo ? sumarDias(orden.fecha_llegada_metrologo, 10) : null),
+  },
   en_retorno: { campoFecha: 'certificado_fecha_fin', campoReferenciaHabiles: 'fecha_retorno', umbralProximaHabiles: 2, umbralVencidaHabiles: 3 },
-  control_calidad: { campoFecha: 'certificado_fecha_fin', campoReferenciaHabiles: 'fecha_llegada_hanna', umbralProximaHabiles: 0, umbralVencidaHabiles: 1 },
-  carga_al_sistema: { campoFecha: 'certificado_fecha_fin' },
+  control_calidad: {
+    calcularObjetivo: orden => ES_LABORATORIO(orden.modalidad)
+      ? orden.certificado_fecha_fin
+      : (orden.certificado_fecha_fin ? sumarDias(orden.certificado_fecha_fin, 10) : null),
+    campoReferenciaHabiles: 'fecha_llegada_hanna', umbralProximaHabiles: 0, umbralVencidaHabiles: 1,
+  },
+  carga_al_sistema: {
+    calcularObjetivo: orden => orden.certificado_fecha_fin ? sumarDias(orden.certificado_fecha_fin, 10) : null,
+  },
   envio_certificados: { campoFecha: 'certificado_fecha_fin' },
 }
 
@@ -350,14 +382,15 @@ const ETIQUETA_REFERENCIA_HABILES: Partial<Record<EstadoCalibracion, string>> = 
 
 // Fecha objetivo de la orden según su estado actual — null si el estado no
 // tiene una fecha propia todavía (usar antigüedad en días hábiles en su lugar).
-export function fechaObjetivo(orden: Pick<OrdenCalibracion, 'estado' | 'certificado_fecha_fin' | 'fecha_programada_envio'>): string | null {
-  const campo = REGLA_POR_ESTADO[orden.estado]?.campoFecha
-  return campo ? orden[campo] : null
+export function fechaObjetivo(orden: Pick<OrdenCalibracion, 'estado' | 'modalidad' | 'certificado_fecha_fin' | 'fecha_programada_envio' | 'fecha_llegada_metrologo'>): string | null {
+  const regla = REGLA_POR_ESTADO[orden.estado]
+  if (regla?.calcularObjetivo) return regla.calcularObjetivo(orden)
+  return regla?.campoFecha ? orden[regla.campoFecha] : null
 }
 
 export type NivelSemaforo = 'ok' | 'proxima' | 'vencida'
 
-type OrdenParaSemaforo = Pick<OrdenCalibracion, 'estado' | 'certificado_fecha_fin' | 'fecha_programada_envio' | 'fecha_envio' | 'fecha_retorno' | 'fecha_llegada_hanna' | 'estado_desde'>
+type OrdenParaSemaforo = Pick<OrdenCalibracion, 'estado' | 'modalidad' | 'certificado_fecha_fin' | 'fecha_programada_envio' | 'fecha_llegada_metrologo' | 'fecha_envio' | 'fecha_retorno' | 'fecha_llegada_hanna' | 'estado_desde'>
 
 // Convierte una fecha `date` (YYYY-MM-DD, sin hora) a medianoche local —
 // new Date(str) la interpreta en UTC y se corre un día en Colombia (UTC-5).
@@ -537,6 +570,14 @@ function textoMargenHabiles(margen: number): string {
 export function evaluarEfectividad(orden: Partial<OrdenCalibracion>): { checkpoints: CheckpointEfectividad[], porcentaje: number | null } {
   const checkpoints: CheckpointEfectividad[] = []
   const esLab = orden.modalidad === 'laboratorio_externo'
+
+  // 0. Mantenimiento y reparación a tiempo — solo si la orden realmente pasó
+  // por ahí (fecha_salida_mantenimiento_real solo existe en ese caso). Se
+  // evalúa igual en ambos flujos, laboratorio y sitio, es el mismo tramo.
+  if (orden.fecha_salida_mantenimiento && orden.fecha_salida_mantenimiento_real) {
+    const margen = diasCalendarioEntre(orden.fecha_salida_mantenimiento_real, orden.fecha_salida_mantenimiento)
+    checkpoints.push({ etapa: 'Mantenimiento y reparación', cumplio: margen >= 0, margenTexto: textoMargenCalendario(margen) })
+  }
 
   // 1. Envío (lab) / Visita (in situ · sede Hanna) a tiempo — vs. la fecha
   // ideal definida en la creación (o al salir de mantenimiento).

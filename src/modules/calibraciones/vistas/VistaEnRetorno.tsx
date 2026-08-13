@@ -23,8 +23,10 @@ export function VistaEnRetorno({ form, puedeEditar, soloLectura, saving, onAvanz
   // sigue siendo distinto del plazo general (certificado_fecha_fin).
   const semaforoInfo = form.estado === 'en_retorno' && form.estado_desde ? {
     estado: form.estado,
+    modalidad: form.modalidad ?? null,
     certificado_fecha_fin: form.certificado_fecha_fin ?? null,
     fecha_programada_envio: form.fecha_programada_envio ?? null,
+    fecha_llegada_metrologo: form.fecha_llegada_metrologo ?? null,
     fecha_envio: form.fecha_envio ?? null,
     fecha_retorno: form.fecha_retorno ?? null,
     fecha_llegada_hanna: form.fecha_llegada_hanna ?? null,

@@ -23,12 +23,16 @@ export function VistaControlCalidad({ form, asesorSeleccionado, puedeEditar, sol
   const otstCodigos = parseOtstCodes(form.otst)
 
   // Control de calidad tiene un SLA propio de 1 día hábil completo desde que
-  // el equipo llegó a Hanna — mucho más corto que el plazo general
-  // (certificado_fecha_fin), que sigue vigente como límite de todo el servicio.
+  // el equipo llegó a Hanna — mucho más corto que el plazo general. En
+  // laboratorio ese plazo general es certificado_fecha_fin tal cual; en
+  // sitio, certificado_fecha_fin + 10 días (todavía no es la fecha oficial,
+  // ver REGLA_POR_ESTADO en useCalibraciones.ts).
   const semaforoInfo = form.estado === 'control_calidad' && form.estado_desde ? {
     estado: form.estado,
+    modalidad: form.modalidad ?? null,
     certificado_fecha_fin: form.certificado_fecha_fin ?? null,
     fecha_programada_envio: form.fecha_programada_envio ?? null,
+    fecha_llegada_metrologo: form.fecha_llegada_metrologo ?? null,
     fecha_envio: form.fecha_envio ?? null,
     fecha_retorno: form.fecha_retorno ?? null,
     fecha_llegada_hanna: form.fecha_llegada_hanna ?? null,
