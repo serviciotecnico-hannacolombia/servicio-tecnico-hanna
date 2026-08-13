@@ -27,6 +27,7 @@ export function VistaEnRetorno({ form, puedeEditar, soloLectura, saving, onAvanz
     fecha_programada_envio: form.fecha_programada_envio ?? null,
     fecha_envio: form.fecha_envio ?? null,
     fecha_retorno: form.fecha_retorno ?? null,
+    fecha_llegada_hanna: form.fecha_llegada_hanna ?? null,
     estado_desde: form.estado_desde,
   } : null
   const nivelTransporte = semaforoInfo ? semaforoOrden(semaforoInfo) : 'ok'

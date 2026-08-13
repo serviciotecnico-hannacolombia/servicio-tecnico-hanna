@@ -14,7 +14,7 @@ import {
   flujoPorModalidad, PROVEEDOR_SEDE_HANNA, miercolesSiguiente,
 } from './hooks/useCalibraciones'
 import type { EtapaFlujo } from './hooks/useCalibraciones'
-import { FG, Seccion, Grid2, INP, PRI, GHOST, B_INFO, B_VENCIDA, B_PROXIMA, GRUPO_COLOR, fmtFecha, fechaLocalISO } from './ui'
+import { FG, Seccion, Grid2, INP, PRI, GHOST, B_INFO, B_VENCIDA, B_PROXIMA, GRUPO_COLOR, fmtFecha, fmtCOP, fechaLocalISO } from './ui'
 import { IdentificacionFields, ReferenciasFields, linkOtst, parseOtstCodes } from './vistas/CamposCompartidos'
 import { generarMailtoOC } from './correo'
 import { VistaMantenimiento } from './vistas/VistaMantenimiento'
@@ -90,14 +90,26 @@ export function OrdenCalibracionDetailPage() {
   // actual — no queda "atascado" viendo una etapa pasada tras avanzar.
   useEffect(() => { setVistaIdx(null) }, [orden?.estado])
 
+  // Un mismo guardado (ej. avanzar de etapa) dispara el trigger de auditoría
+  // una sola vez, pero inserta una fila de historial por cada campo que
+  // cambió — todas con el mismo usuario_id y created_at (misma transacción).
+  // Se agrupan aquí para mostrar el nombre y la hora una sola vez, con el
+  // resumen de todos los campos debajo, en vez de repetirlos por cada campo.
+  interface GrupoHistorial { usuario_id: string | null, created_at: string, entradas: typeof historial }
   const historialPorDia = useMemo(() => {
-    const map = new Map<string, typeof historial>()
+    const porDia = new Map<string, GrupoHistorial[]>()
     for (const h of historial) {
       const dia = fechaLocalISO(h.created_at)
-      if (!map.has(dia)) map.set(dia, [])
-      map.get(dia)!.push(h)
+      if (!porDia.has(dia)) porDia.set(dia, [])
+      const grupos = porDia.get(dia)!
+      const ultimo = grupos[grupos.length - 1]
+      if (ultimo && ultimo.usuario_id === h.usuario_id && ultimo.created_at === h.created_at) {
+        ultimo.entradas.push(h)
+      } else {
+        grupos.push({ usuario_id: h.usuario_id, created_at: h.created_at, entradas: [h] })
+      }
     }
-    return [...map.entries()]
+    return [...porDia.entries()]
   }, [historial])
 
   const profileName = (uid: string | null) => {
@@ -510,6 +522,27 @@ export function OrdenCalibracionDetailPage() {
                     />
                   </FG>
                 </div>
+                <div style={{ width: 300 }}>
+                  <FG label="Valor OC antes de IVA">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <input
+                        type="text" inputMode="numeric"
+                        value={form.valor_oc_antes_iva != null ? String(form.valor_oc_antes_iva) : ''}
+                        onChange={e => {
+                          const digits = e.target.value.replace(/\D/g, '')
+                          set('valor_oc_antes_iva', digits ? Number(digits) : null)
+                        }}
+                        placeholder="1000000"
+                        style={{ ...INP, flex: 1, minWidth: 0 }}
+                      />
+                      {form.valor_oc_antes_iva != null && (
+                        <span style={{ fontSize: 12, color: 'var(--muted)', fontFamily: 'var(--mono)', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                          {fmtCOP(form.valor_oc_antes_iva)} COP
+                        </span>
+                      )}
+                    </div>
+                  </FG>
+                </div>
               </div>
               <div style={{ marginTop: 14 }}>
                 <FG label="Notas de parámetros (histórico / texto libre)">
@@ -607,23 +640,27 @@ export function OrdenCalibracionDetailPage() {
                     <div style={{ fontSize: 10.5, fontFamily: 'var(--mono)', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 8 }}>
                       {fmtFecha(dia)}
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, borderLeft: '2px solid var(--border)', paddingLeft: 12 }}>
-                      {entradas.map(h => (
-                        <div key={h.id} style={{ fontSize: 12.5 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, borderLeft: '2px solid var(--border)', paddingLeft: 12 }}>
+                      {entradas.map(grupo => (
+                        <div key={`${grupo.usuario_id}-${grupo.created_at}`} style={{ fontSize: 12.5 }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-                            <strong style={{ color: 'var(--text)' }}>{profileName(h.usuario_id)}</strong>
+                            <strong style={{ color: 'var(--text)' }}>{profileName(grupo.usuario_id)}</strong>
                             <span style={{ color: 'var(--muted)', fontFamily: 'var(--mono)', fontSize: 10.5, flexShrink: 0 }}>
-                              {horaLocal(h.created_at)}
+                              {horaLocal(grupo.created_at)}
                             </span>
                           </div>
-                          <div style={{ color: 'var(--muted)', marginTop: 2 }}>
-                            {h.campo === 'creacion' || h.campo === 'servicios' ? (
-                              <span>{CAMPO_LABEL[h.campo]}{h.valor_nuevo ? `: ${h.valor_nuevo}` : ''}</span>
-                            ) : (
-                              <span>
-                                {CAMPO_LABEL[h.campo] || h.campo}: <em style={{ fontStyle: 'normal', textDecoration: 'line-through', opacity: 0.7 }}>{formatValorHistorial(h.campo, h.valor_anterior)}</em> → <strong style={{ color: 'var(--text)' }}>{formatValorHistorial(h.campo, h.valor_nuevo)}</strong>
-                              </span>
-                            )}
+                          <div style={{ color: 'var(--muted)', marginTop: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            {grupo.entradas.map(h => (
+                              <div key={h.id}>
+                                {h.campo === 'creacion' || h.campo === 'servicios' ? (
+                                  <span>{CAMPO_LABEL[h.campo]}{h.valor_nuevo ? `: ${h.valor_nuevo}` : ''}</span>
+                                ) : (
+                                  <span>
+                                    {CAMPO_LABEL[h.campo] || h.campo}: <em style={{ fontStyle: 'normal', textDecoration: 'line-through', opacity: 0.7 }}>{formatValorHistorial(h.campo, h.valor_anterior)}</em> → <strong style={{ color: 'var(--text)' }}>{formatValorHistorial(h.campo, h.valor_nuevo)}</strong>
+                                  </span>
+                                )}
+                              </div>
+                            ))}
                           </div>
                         </div>
                       ))}

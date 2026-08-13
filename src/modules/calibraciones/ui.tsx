@@ -19,7 +19,7 @@ export function fmtCOP(n: number | null): string {
   return '$' + n.toLocaleString('es-CO', { maximumFractionDigits: 0 })
 }
 
-export function Stat({ label, value, color }: { label: string, value: number, color: string }) {
+export function Stat({ label, value, color }: { label: string, value: number | string, color: string }) {
   return (
     <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '16px 20px' }}>
       <div style={{ fontSize: 28, fontWeight: 700, fontFamily: 'var(--mono)', color }}>{value}</div>

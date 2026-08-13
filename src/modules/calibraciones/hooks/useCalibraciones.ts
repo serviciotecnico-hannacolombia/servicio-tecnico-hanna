@@ -503,6 +503,153 @@ export function infoAntiguedadEstado(orden: OrdenParaSemaforo): { etiqueta: stri
   return null
 }
 
+// ── Efectividad de tiempos (retrospectiva, para la vista "Terminado") ──────
+// A diferencia del semáforo en vivo (que mide contra "hoy"), esto compara
+// las fechas que la propia orden ya tiene guardadas — cada tramo se evalúa
+// con el mismo par de campos que ya se captura en las vistas del flujo, sin
+// depender del historial de auditoría. Cada checkpoint solo se evalúa si
+// ambas fechas del par existen (algunas rutas se saltan un tramo, ej. una
+// orden que pasó por mantenimiento nunca tuvo fecha_programada_envio).
+
+export interface CheckpointEfectividad {
+  etapa: string
+  cumplio: boolean
+  margenTexto: string
+}
+
+function diasCalendarioEntre(desdeISO: string, hastaISO: string): number {
+  const desde = fechaLocalDesdeISO(desdeISO)
+  const hasta = fechaLocalDesdeISO(hastaISO)
+  return Math.round((hasta.getTime() - desde.getTime()) / 86_400_000)
+}
+
+function textoMargenCalendario(margen: number): string {
+  if (margen > 0) return `Se adelantó ${margen} día${margen !== 1 ? 's' : ''}`
+  if (margen < 0) return `Se pasó ${-margen} día${-margen !== 1 ? 's' : ''}`
+  return 'Justo a tiempo'
+}
+function textoMargenHabiles(margen: number): string {
+  if (margen > 0) return `Se adelantó ${margen} día${margen !== 1 ? 's' : ''} hábil${margen !== 1 ? 'es' : ''}`
+  if (margen < 0) return `Se pasó ${-margen} día${-margen !== 1 ? 's' : ''} hábil${-margen !== 1 ? 'es' : ''}`
+  return 'Justo a tiempo'
+}
+
+export function evaluarEfectividad(orden: Partial<OrdenCalibracion>): { checkpoints: CheckpointEfectividad[], porcentaje: number | null } {
+  const checkpoints: CheckpointEfectividad[] = []
+  const esLab = orden.modalidad === 'laboratorio_externo'
+
+  // 1. Envío (lab) / Visita (in situ · sede Hanna) a tiempo — vs. la fecha
+  // ideal definida en la creación (o al salir de mantenimiento).
+  if (orden.fecha_programada_envio) {
+    const actual = esLab ? orden.fecha_envio : orden.fecha_llegada_metrologo
+    if (actual) {
+      const margen = diasCalendarioEntre(actual, orden.fecha_programada_envio)
+      checkpoints.push({ etapa: esLab ? 'Envío' : 'Visita', cumplio: margen >= 0, margenTexto: textoMargenCalendario(margen) })
+    }
+  }
+
+  // 2. Tránsito de envío — 3 días hábiles (solo laboratorio externo).
+  if (esLab && orden.fecha_envio && orden.certificado_fecha_inicio) {
+    const habiles = businessDaysBetween(fechaLocalDesdeISO(orden.fecha_envio), fechaLocalDesdeISO(orden.certificado_fecha_inicio))
+    checkpoints.push({ etapa: 'Tránsito de envío', cumplio: habiles <= 3, margenTexto: textoMargenHabiles(3 - habiles) })
+  }
+
+  // 3. Tránsito de retorno — 3 días hábiles (solo laboratorio externo).
+  if (esLab && orden.fecha_retorno && orden.fecha_llegada_hanna) {
+    const habiles = businessDaysBetween(fechaLocalDesdeISO(orden.fecha_retorno), fechaLocalDesdeISO(orden.fecha_llegada_hanna))
+    checkpoints.push({ etapa: 'Tránsito de retorno', cumplio: habiles <= 3, margenTexto: textoMargenHabiles(3 - habiles) })
+  }
+
+  // 4. Control de calidad — 1 día hábil. El punto de partida difiere por
+  // modalidad: en laboratorio es la llegada a Hanna; en sitio, el fin de la
+  // calibración ya marca el inicio de control de calidad (no hay retorno).
+  const inicioControlCalidad = esLab ? orden.fecha_llegada_hanna : orden.certificado_fecha_fin
+  if (inicioControlCalidad && orden.fecha_control_calidad) {
+    const habiles = businessDaysBetween(fechaLocalDesdeISO(inicioControlCalidad), fechaLocalDesdeISO(orden.fecha_control_calidad))
+    checkpoints.push({ etapa: 'Control de calidad', cumplio: habiles <= 1, margenTexto: textoMargenHabiles(1 - habiles) })
+  }
+
+  // 5. Plazo general del servicio — certificado_fecha_fin es el compromiso
+  // máximo de todo el proceso; se cumple si el certificado se entregó a
+  // tiempo, sin importar cuánto tardó cada tramo individual.
+  if (orden.certificado_fecha_fin && orden.fecha_entrega_certificado) {
+    const margen = diasCalendarioEntre(orden.fecha_entrega_certificado, orden.certificado_fecha_fin)
+    checkpoints.push({ etapa: 'Plazo general del servicio', cumplio: margen >= 0, margenTexto: textoMargenCalendario(margen) })
+  }
+
+  if (checkpoints.length === 0) return { checkpoints, porcentaje: null }
+  const cumplidos = checkpoints.filter(c => c.cumplio).length
+  return { checkpoints, porcentaje: Math.round((cumplidos / checkpoints.length) * 100) }
+}
+
+// Promedio de efectividad sobre las últimas `n` órdenes terminadas (más
+// recientes primero por updated_at, que en una orden ya cerrada coincide con
+// el momento en que se guardó la transición a "Terminado"). Ignora las
+// órdenes sin checkpoints evaluables (evaluarEfectividad devuelve null).
+export function efectividadPromedio(ordenes: OrdenCalibracion[], n = 30): number | null {
+  const porcentajes = ordenes
+    .filter(o => grupoEstado(o.estado) === 'completado')
+    .sort((a, b) => b.updated_at.localeCompare(a.updated_at))
+    .slice(0, n)
+    .map(o => evaluarEfectividad(o).porcentaje)
+    .filter((p): p is number => p !== null)
+
+  if (porcentajes.length === 0) return null
+  return Math.round(porcentajes.reduce((sum, p) => sum + p, 0) / porcentajes.length)
+}
+
+// ── Resumen histórico mensual (para la pestaña Análisis) ───────────────────
+
+export interface ResumenMes {
+  mes: string
+  mesLabel: string
+  ordenesCreadas: number
+  equiposGestionados: number
+  efectividadPromedio: number | null
+}
+
+const MES_CORTO = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+
+// Órdenes creadas y equipos gestionados se cuentan por mes de created_at.
+// La efectividad se cuenta por mes en que la orden se cerró (updated_at de
+// una orden terminada, igual que en efectividadPromedio) — una orden creada
+// en enero pero cerrada en marzo aporta su % al mes de marzo, no al de enero.
+export function resumenMensual(ordenes: OrdenCalibracion[], meses = 12): ResumenMes[] {
+  const ahora = new Date()
+  const resultado: ResumenMes[] = []
+
+  for (let i = meses - 1; i >= 0; i--) {
+    const d = new Date(ahora.getFullYear(), ahora.getMonth() - i, 1)
+    const anio = d.getFullYear()
+    const mesIdx = d.getMonth()
+
+    const creadasEsteMes = ordenes.filter(o => {
+      const c = new Date(o.created_at)
+      return c.getFullYear() === anio && c.getMonth() === mesIdx
+    })
+    const terminadasEsteMes = ordenes.filter(o => {
+      if (grupoEstado(o.estado) !== 'completado') return false
+      const u = new Date(o.updated_at)
+      return u.getFullYear() === anio && u.getMonth() === mesIdx
+    })
+    const efectividades = terminadasEsteMes
+      .map(o => evaluarEfectividad(o).porcentaje)
+      .filter((p): p is number => p !== null)
+
+    resultado.push({
+      mes: `${anio}-${String(mesIdx + 1).padStart(2, '0')}`,
+      mesLabel: `${MES_CORTO[mesIdx]} ${anio}`,
+      ordenesCreadas: creadasEsteMes.length,
+      equiposGestionados: creadasEsteMes.reduce((s, o) => s + (o.cantidad_equipos || 0), 0),
+      efectividadPromedio: efectividades.length
+        ? Math.round(efectividades.reduce((s, p) => s + p, 0) / efectividades.length)
+        : null,
+    })
+  }
+
+  return resultado
+}
+
 // Ruta in situ / sede Hanna: al terminar mantenimiento se sugiere la fecha
 // de la visita como el primer miércoles DESPUÉS de la salida de
 // mantenimiento (nunca el mismo día, aunque ese día ya sea miércoles).

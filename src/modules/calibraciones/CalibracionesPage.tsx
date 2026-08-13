@@ -15,12 +15,13 @@ import {
   FG, IconBtn, Stat, INP, PRI, GHOST, B_INFO, B_VENCIDA, B_PROXIMA, B_NOVEDAD,
   GRUPO_COLOR, EMPTY, fmtFecha, fmtCOP,
 } from './ui'
+import { AnalisisTab } from './AnalisisTab'
 import type { Asesor, CorreoProveedor, EstadoCalibracion, Modalidad, RvCalibrItem } from '../../types'
 
 type VistaFiltro = 'activas' | 'vencidas' | 'completadas' | 'todas'
-type Tab = 'ordenes' | 'catalogo' | 'asesores'
+type Tab = 'ordenes' | 'analisis' | 'catalogo' | 'asesores'
 
-const TAB_LABEL: Record<Tab, string> = { ordenes: 'Órdenes', catalogo: 'Catálogo RV CALIBR', asesores: 'Asesores' }
+const TAB_LABEL: Record<Tab, string> = { ordenes: 'Órdenes', analisis: 'Análisis', catalogo: 'Catálogo RV CALIBR', asesores: 'Asesores' }
 
 // Filtros de Estado / Modalidad / Asesor — se recuerdan entre sesiones para
 // no tener que reconfigurarlos cada vez que se entra al módulo.
@@ -107,8 +108,8 @@ export function CalibracionesPage() {
         actions={puedeEditar ? <button onClick={() => navigate('/calibraciones/nueva')} style={PRI}><Plus size={14} style={{ verticalAlign: -2 }} /> Nueva orden</button> : undefined}
       />
 
-      <div style={{ display: 'flex', gap: 4, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 4, marginBottom: 20, maxWidth: 480 }}>
-        {(['ordenes', ...(puedeEditar ? ['catalogo', 'asesores'] as const : [])] as Tab[]).map(t => (
+      <div style={{ display: 'flex', gap: 4, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 4, marginBottom: 20, maxWidth: 620 }}>
+        {(['ordenes', 'analisis', ...(puedeEditar ? ['catalogo', 'asesores'] as const : [])] as Tab[]).map(t => (
           <button key={t} onClick={() => setTab(t)} style={{
             flex: 1, padding: '9px 14px', border: 'none', borderRadius: 9,
             background: tab === t ? 'var(--accent)' : 'transparent',
@@ -140,7 +141,7 @@ export function CalibracionesPage() {
             </div>
           )}
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14, marginBottom: 20 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 14, marginBottom: 20 }}>
             <Stat label="Pendientes" value={pendientesCount} color="var(--muted)" />
             <Stat label="En curso" value={enCursoCount} color="var(--accent)" />
             <Stat label="Próximas a vencer" value={proximasCount} color="var(--yellow, #ca8a04)" />
@@ -281,6 +282,8 @@ export function CalibracionesPage() {
             )}
           </Card>
         </>
+      ) : tab === 'analisis' ? (
+        <AnalisisTab ordenes={ordenes} />
       ) : tab === 'catalogo' ? (
         <CatalogoTab catalogo={catalogo} proveedores={proveedores} onSaved={invalidate.catalogo} />
       ) : (

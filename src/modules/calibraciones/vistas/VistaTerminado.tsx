@@ -4,9 +4,9 @@
 // etapa del stepper, con los datos que se capturaron ahí.
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { CheckCircle2, ChevronDown, ChevronRight } from 'lucide-react'
+import { CheckCircle2, ChevronDown, ChevronRight, XCircle } from 'lucide-react'
 import { FG, Grid2, INP, B_INFO, fmtFecha, fmtCOP } from '../ui'
-import { MODALIDAD_LABEL } from '../hooks/useCalibraciones'
+import { MODALIDAD_LABEL, evaluarEfectividad } from '../hooks/useCalibraciones'
 import { linkOtst, linkSaci, parseOtstCodes } from './CamposCompartidos'
 import type { Asesor, OrdenCalibracion, RvCalibrItem } from '../../../types'
 
@@ -56,6 +56,9 @@ export function VistaTerminado({ form, catalogo, codigosSel, asesorSeleccionado 
   const otstCodigos = parseOtstCodes(form.otst)
   const serviciosSeleccionados = catalogo.filter(c => codigosSel.has(c.codigo))
   const esLaboratorio = form.modalidad === 'laboratorio_externo'
+  const { checkpoints, porcentaje } = evaluarEfectividad(form)
+  const colorEfectividad = porcentaje == null ? 'var(--muted)'
+    : porcentaje >= 80 ? 'var(--green, #16a34a)' : porcentaje >= 50 ? 'var(--yellow, #ca8a04)' : 'var(--red)'
 
   return (
     <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: 24 }}>
@@ -66,6 +69,37 @@ export function VistaTerminado({ form, catalogo, codigosSel, asesorSeleccionado 
       }}>
         <CheckCircle2 size={16} /> Orden terminada — resumen completo del proceso
       </div>
+
+      {porcentaje != null && (
+        <Bloque titulo="Efectividad de tiempos">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 16, flexWrap: 'wrap' }}>
+            <div style={{ fontSize: 36, fontWeight: 800, fontFamily: 'var(--mono)', color: colorEfectividad, lineHeight: 1 }}>
+              {porcentaje}%
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--muted)' }}>
+              {checkpoints.filter(c => c.cumplio).length} de {checkpoints.length} etapas cumplieron su plazo
+            </div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {checkpoints.map(cp => (
+              <div key={cp.etapa} style={{
+                display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 8,
+                background: cp.cumplio ? 'var(--green-bg, #dcfce7)' : 'var(--red-bg)',
+                border: `1px solid ${cp.cumplio ? 'var(--green-border, #86efac)' : 'var(--red-border)'}`,
+              }}>
+                {cp.cumplio
+                  ? <CheckCircle2 size={16} color="var(--green, #16a34a)" style={{ flexShrink: 0 }} />
+                  : <XCircle size={16} color="var(--red)" style={{ flexShrink: 0 }} />}
+                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', flex: 1 }}>{cp.etapa}</span>
+                <span style={{
+                  fontSize: 12, fontFamily: 'var(--mono)', fontWeight: 600,
+                  color: cp.cumplio ? 'var(--green, #16a34a)' : 'var(--red)',
+                }}>{cp.margenTexto}</span>
+              </div>
+            ))}
+          </div>
+        </Bloque>
+      )}
 
       <Bloque titulo="Identificación">
         <Grid2>
