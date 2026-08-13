@@ -167,6 +167,7 @@ export function OrdenCalibracionDetailPage() {
       if (!datos.proveedor?.trim()) { toast.error('Ingresa el proveedor (laboratorio)'); return }
       if (codigosSel.size === 0) { toast.error('Selecciona al menos un servicio en Servicios RV CALIBR'); return }
       if (!datos.cantidad_equipos) { toast.error('Ingresa la cantidad de equipos'); return }
+      if (!datos.valor_oc_antes_iva) { toast.error('Ingresa el valor OC antes de IVA'); return }
       if (!datos.estado || datos.estado === 'oc_creada') { toast.error('Define el Siguiente paso antes de crear la orden'); return }
       if (datos.estado === 'en_mantenimiento_reparacion' && !datos.fecha_salida_mantenimiento) {
         toast.error('Ingresa la fecha de salida de mantenimiento'); return
@@ -523,7 +524,7 @@ export function OrdenCalibracionDetailPage() {
                   </FG>
                 </div>
                 <div style={{ width: 300 }}>
-                  <FG label="Valor OC antes de IVA">
+                  <FG label="Valor OC antes de IVA" required={esNueva}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <input
                         type="text" inputMode="numeric"

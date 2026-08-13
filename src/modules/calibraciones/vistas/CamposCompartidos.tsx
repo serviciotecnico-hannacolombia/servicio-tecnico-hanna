@@ -63,7 +63,7 @@ export function IdentificacionFields({ form, set, esNueva, asesores, asesorSelec
   ordenes: Pick<OrdenCalibracion, 'id' | 'numero_oc' | 'cliente'>[]
 }) {
   const { numero, anio } = parseNumeroOC(form.numero_oc)
-  const sugerido = sugerirNumeroOC(ordenes, anio)
+  const sugerido = String(sugerirNumeroOC(ordenes, anio)).padStart(3, '0')
   const duplicada = ordenConMismoNumeroOC(ordenes, form.numero_oc, form.id)
 
   return (
@@ -80,6 +80,9 @@ export function IdentificacionFields({ form, set, esNueva, asesores, asesorSelec
               onChange={e => {
                 const digits = e.target.value.replace(/\D/g, '')
                 set('numero_oc', digits ? `ST${digits}-${anio}` : '')
+              }}
+              onBlur={() => {
+                if (numero && numero.length < 3) set('numero_oc', `ST${numero.padStart(3, '0')}-${anio}`)
               }}
               inputMode="numeric"
               placeholder="211"
