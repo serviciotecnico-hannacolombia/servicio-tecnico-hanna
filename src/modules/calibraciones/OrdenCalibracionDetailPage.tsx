@@ -18,6 +18,7 @@ import type { EtapaFlujo } from './hooks/useCalibraciones'
 import { FG, Seccion, Grid2, INP, PRI, GHOST, B_INFO, B_VENCIDA, B_PROXIMA, B_NOVEDAD, GRUPO_COLOR, fmtFecha, fmtCOP, fechaLocalISO } from './ui'
 import { IdentificacionFields, ReferenciasFields, linkOtst, parseOtstCodes } from './vistas/CamposCompartidos'
 import { generarMailtoOC } from './correo'
+import { notificarCambioEstado } from './notificaciones'
 import { VistaMantenimiento } from './vistas/VistaMantenimiento'
 import { VistaVisitaProgramada } from './vistas/VistaVisitaProgramada'
 import { VistaParaEnviar } from './vistas/VistaParaEnviar'
@@ -257,6 +258,10 @@ export function OrdenCalibracionDetailPage() {
         if (error) toast.error('Error al agregar servicios: ' + error.message)
       }
       await logServiciosChange(ordenId, codigosAntes, codigosSel)
+    }
+
+    if (ordenId && payload.estado && payload.estado !== orden?.estado) {
+      notificarCambioEstado(ordenId, orden?.estado, payload.estado, payload, user?.email ?? null)
     }
 
     setSaving(false)
