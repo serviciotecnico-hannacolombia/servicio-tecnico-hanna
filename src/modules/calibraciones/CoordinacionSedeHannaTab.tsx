@@ -9,7 +9,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { ChevronLeft, ChevronRight, CalendarClock, Wrench } from 'lucide-react'
+import { ChevronLeft, ChevronRight, CalendarClock, Wrench, FlaskConical } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { Card } from '../../components/ui/Card'
 import { Stat, B_INFO, INP, GHOST, fmtFecha, EMPTY } from './ui'
@@ -112,6 +112,13 @@ export function CoordinacionSedeHannaTab({ ordenes, parametros, catalogo }: {
       && enSemana(o.fecha_salida_mantenimiento))
     .sort((a, b) => (a.fecha_salida_mantenimiento || '').localeCompare(b.fecha_salida_mantenimiento || ''))
 
+  // Sin filtro de semana — a diferencia de mantenimiento/visita (eventos con
+  // fecha propia), "en calibración" es un estado en curso: se muestran todas
+  // las que están activas ahora mismo, sin importar cuándo llegó el metrólogo.
+  const ordenesEnCalibracion = ordenes
+    .filter(o => o.modalidad === 'sede_hanna_dorado' && o.estado === 'en_calibracion')
+    .sort((a, b) => (b.fecha_llegada_metrologo || '').localeCompare(a.fecha_llegada_metrologo || ''))
+
   const conteoMagnitudes = new Map<string, number>()
   for (const o of ordenesVisita) {
     for (const m of magnitudesDe(o)) conteoMagnitudes.set(m, (conteoMagnitudes.get(m) || 0) + 1)
@@ -149,6 +156,7 @@ export function CoordinacionSedeHannaTab({ ordenes, parametros, catalogo }: {
         <Stat label="Visitas esta semana" value={ordenesVisita.length} color="var(--accent)" />
         <Stat label="Total equipos" value={totalEquipos} color="var(--accent)" />
         <Stat label="Saliendo de mantenimiento" value={ordenesMantenimiento.length} color="var(--yellow, #ca8a04)" />
+        <Stat label="En calibración" value={ordenesEnCalibracion.length} color="var(--green, #16a34a)" />
         {[...conteoMagnitudes.entries()].map(([magnitud, n]) => (
           <Stat key={magnitud} label={magnitud} value={n} color="var(--accent)" />
         ))}
@@ -176,7 +184,7 @@ export function CoordinacionSedeHannaTab({ ordenes, parametros, catalogo }: {
 
       <Card>
         {ordenesVisita.length === 0 ? (
-          <div style={EMPTY}><CalendarClock size={32} strokeWidth={1.5} /><p>No hay visitas programadas de Sede Hanna Dorado para esta semana</p></div>
+          <div style={EMPTY}><CalendarClock size={32} strokeWidth={1.5} /><p>No hay visitas programadas pendientes de Sede Hanna Dorado para esta semana</p></div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {ordenesVisita.map(o => (
@@ -190,6 +198,26 @@ export function CoordinacionSedeHannaTab({ ordenes, parametros, catalogo }: {
           </div>
         )}
       </Card>
+
+      {ordenesEnCalibracion.length > 0 && (
+        <Card>
+          <h4 style={{
+            fontSize: 12, fontWeight: 700, color: 'var(--green, #16a34a)', textTransform: 'uppercase',
+            letterSpacing: '.6px', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 6,
+          }}>
+            <FlaskConical size={13} /> En calibración ahora mismo
+          </h4>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {ordenesEnCalibracion.map(o => (
+              <FilaOrden
+                key={o.id} orden={o} magnitudes={magnitudesDe(o)}
+                etiquetaFecha="Llegada del metrólogo(a)" fecha={o.fecha_llegada_metrologo}
+                onClick={() => navigate(`/calibraciones/${o.id}`)}
+              />
+            ))}
+          </div>
+        </Card>
+      )}
     </div>
   )
 }
