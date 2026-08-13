@@ -142,7 +142,9 @@ export function VistaTerminado({ form, catalogo, codigosSel, asesorSeleccionado 
       {form.fecha_salida_mantenimiento && (
         <Bloque titulo="Mantenimiento y reparación">
           <Grid2>
-            <Dato label="Fecha de salida de mantenimiento" valor={fmtFecha(form.fecha_salida_mantenimiento)} />
+            <Dato label="Fecha estimada de salida de mantenimiento" valor={fmtFecha(form.fecha_salida_mantenimiento)} />
+            <Dato label="Fecha de salida de mantenimiento" valor={fmtFecha(form.fecha_salida_mantenimiento_real ?? null)} />
+            <Dato label="Nota de mantenimiento" valor={form.nota_mantenimiento} />
           </Grid2>
         </Bloque>
       )}
@@ -158,7 +160,8 @@ export function VistaTerminado({ form, catalogo, codigosSel, asesorSeleccionado 
       ) : (
         <Bloque titulo="Visita">
           <Grid2>
-            <Dato label="Fecha de la visita" valor={fmtFecha(form.fecha_programada_envio ?? null)} />
+            <Dato label="Fecha estimada de la visita" valor={fmtFecha(form.fecha_programada_envio ?? null)} />
+            <Dato label="Fecha de llegada del metrólogo(a)" valor={fmtFecha(form.fecha_llegada_metrologo ?? null)} />
           </Grid2>
         </Bloque>
       )}
@@ -167,8 +170,8 @@ export function VistaTerminado({ form, catalogo, codigosSel, asesorSeleccionado 
         <Grid2>
           <Dato label="Código de recepción" valor={form.codigo_recepcion} />
           <Dato label="Fecha inicio de calibración" valor={fmtFecha(form.certificado_fecha_inicio ?? null)} />
-          <Dato label={esLaboratorio ? 'Fecha estimada de finalización' : 'Fecha fin de calibración'} valor={fmtFecha(form.certificado_fecha_fin ?? null)} />
-          {esLaboratorio && <Dato label="Códigos de certificados" valor={form.codigos_certificados} />}
+          <Dato label="Fecha estimada de finalización" valor={fmtFecha(form.certificado_fecha_fin ?? null)} />
+          <Dato label="Códigos de certificados" valor={form.codigos_certificados} />
         </Grid2>
       </Bloque>
 
@@ -192,7 +195,6 @@ export function VistaTerminado({ form, catalogo, codigosSel, asesorSeleccionado 
       <Bloque titulo="Envío de certificados" abiertoInicial={false}>
         <Grid2>
           <Dato label="Fecha de entrega del certificado" valor={fmtFecha(form.fecha_entrega_certificado ?? null)} />
-          <Dato label="Carta de entrega" valor={form.carta_entrega} />
           <Dato label="Carta del certificado" valor={form.carta_certificado} />
         </Grid2>
       </Bloque>

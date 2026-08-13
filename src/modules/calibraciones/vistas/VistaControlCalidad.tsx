@@ -21,9 +21,16 @@ export function VistaControlCalidad({ form, asesorSeleccionado, puedeEditar, sol
   const [notas, setNotas] = useState(form.notas_control_calidad || '')
   const otstCodigos = parseOtstCodes(form.otst)
 
+  // El flujo de laboratorio pasa directo a "Envío de certificados" — ya
+  // capturó código de recepción y fechas de calibración en "Enviado". El
+  // flujo de sitio nunca los capturó, así que pasa antes por "Carga al
+  // sistema" para hacerlo.
+  const siguienteEstado = form.modalidad === 'laboratorio_externo' ? 'envio_certificados' : 'carga_al_sistema'
+  const siguienteLabel = form.modalidad === 'laboratorio_externo' ? 'Envío de certificados' : 'Carga al sistema'
+
   function confirmar() {
     if (!fechaControlCalidad) { toast.error('Ingresa la fecha de control de calidad'); return }
-    onAvanzar({ estado: 'envio_certificados', fecha_control_calidad: fechaControlCalidad, notas_control_calidad: notas.trim() || null })
+    onAvanzar({ estado: siguienteEstado, fecha_control_calidad: fechaControlCalidad, notas_control_calidad: notas.trim() || null })
   }
 
   function copiarRmvFv() {
@@ -99,7 +106,7 @@ export function VistaControlCalidad({ form, asesorSeleccionado, puedeEditar, sol
 
       {puedeEditar && !soloLectura && (
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
-          <button onClick={confirmar} disabled={saving} style={PRI}>{saving ? 'Guardando…' : '✓ Envío de certificados →'}</button>
+          <button onClick={confirmar} disabled={saving} style={PRI}>{saving ? 'Guardando…' : `✓ ${siguienteLabel} →`}</button>
         </div>
       )}
     </div>

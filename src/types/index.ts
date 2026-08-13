@@ -292,7 +292,7 @@ export type EstadoCalibracion =
   | 'oc_creada' | 'para_enviar' | 'en_mantenimiento_reparacion'
   | 'en_programacion_visita' | 'visita_programada' | 'enviado'
   | 'en_calibracion' | 'en_retorno' | 'novedad'
-  | 'control_calidad' | 'envio_certificados' | 'terminado'
+  | 'control_calidad' | 'carga_al_sistema' | 'envio_certificados' | 'terminado'
 
 export interface RvCalibrItem {
   codigo: string
@@ -326,7 +326,10 @@ export interface OrdenCalibracion {
   enviado_cliente_final: boolean
   cantidad_equipos: number | null
   fecha_salida_mantenimiento: string | null
+  fecha_salida_mantenimiento_real: string | null
+  nota_mantenimiento: string | null
   fecha_programada_envio: string | null
+  fecha_llegada_metrologo: string | null
   fecha_envio: string | null
   nota_envio: string | null
   codigos_certificados: string | null

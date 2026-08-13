@@ -11,19 +11,20 @@ import {
   useOrdenesCalibracion, useOrdenParametros, useCatalogoRvCalibr, useAsesores, useProveedores, useHistorialOrden,
   useInvalidateCalibraciones, grupoEstado, ESTADO_LABEL, MODALIDAD_LABEL, CAMPO_LABEL,
   formatValorHistorial, estaVencido, proximoAVencer, logServiciosChange,
-  flujoPorModalidad, PROVEEDOR_SEDE_HANNA,
+  flujoPorModalidad, PROVEEDOR_SEDE_HANNA, miercolesSiguiente,
 } from './hooks/useCalibraciones'
 import type { EtapaFlujo } from './hooks/useCalibraciones'
 import { FG, Seccion, Grid2, INP, PRI, GHOST, B_INFO, B_VENCIDA, B_PROXIMA, GRUPO_COLOR, fmtFecha } from './ui'
 import { IdentificacionFields, ReferenciasFields, linkOtst, parseOtstCodes } from './vistas/CamposCompartidos'
 import { VistaMantenimiento } from './vistas/VistaMantenimiento'
 import { VistaVisitaProgramada } from './vistas/VistaVisitaProgramada'
-import { VistaEtapaGenerica } from './vistas/VistaEtapaGenerica'
 import { VistaParaEnviar } from './vistas/VistaParaEnviar'
 import { VistaEnviado } from './vistas/VistaEnviado'
 import { VistaEnCalibracion } from './vistas/VistaEnCalibracion'
+import { VistaEnCalibracionSitio } from './vistas/VistaEnCalibracionSitio'
 import { VistaEnRetorno } from './vistas/VistaEnRetorno'
 import { VistaControlCalidad } from './vistas/VistaControlCalidad'
+import { VistaCargaAlSistema } from './vistas/VistaCargaAlSistema'
 import { VistaEnvioCertificados } from './vistas/VistaEnvioCertificados'
 import { VistaTerminado } from './vistas/VistaTerminado'
 import type { EstadoCalibracion, Modalidad, OrdenCalibracion } from '../../types'
@@ -54,7 +55,8 @@ const EMPTY_ORDEN: Partial<OrdenCalibracion> = {
   proveedor: '', estado: 'oc_creada', novedad_detalle: '', enviado_cliente_final: false,
   cantidad_equipos: null,
   fecha_salida_mantenimiento: null,
-  fecha_programada_envio: null, fecha_envio: null, nota_envio: '',
+  fecha_salida_mantenimiento_real: null, nota_mantenimiento: '',
+  fecha_programada_envio: null, fecha_llegada_metrologo: null, fecha_envio: null, nota_envio: '',
   codigos_certificados: '',
   certificado_fecha_inicio: null, certificado_fecha_fin: null,
   fecha_salida_lab: null, fecha_retorno: null, nota_retorno: '',
@@ -134,6 +136,9 @@ export function OrdenCalibracionDetailPage() {
       if (codigosSel.size === 0) { toast.error('Selecciona al menos un servicio en Servicios RV CALIBR'); return }
       if (!datos.cantidad_equipos) { toast.error('Ingresa la cantidad de equipos'); return }
       if (!datos.estado || datos.estado === 'oc_creada') { toast.error('Define el Siguiente paso antes de crear la orden'); return }
+      if (datos.estado === 'en_mantenimiento_reparacion' && !datos.fecha_salida_mantenimiento) {
+        toast.error('Ingresa la fecha de salida de mantenimiento'); return
+      }
     }
 
     if (datos.modalidad) {
@@ -218,15 +223,21 @@ export function OrdenCalibracionDetailPage() {
     }
   }
 
-  async function terminarMantenimiento() {
-    if (!form.fecha_salida_mantenimiento) { toast.error('Ingresa la fecha de salida de mantenimiento'); return }
+  function terminarMantenimiento(overrides: Partial<OrdenCalibracion>) {
     if (!form.modalidad) { toast.error('Define la modalidad antes de continuar'); return }
     const siguienteEstado = form.modalidad === 'laboratorio_externo' ? 'para_enviar' : 'visita_programada'
-    await submit({ estado: siguienteEstado })
+    // Ruta in situ / sede Hanna: sugiere la fecha de la visita como el
+    // miércoles siguiente a la salida de mantenimiento, ya que "Visita
+    // programada" ya no permite editarla directamente.
+    const fechaSalida = (overrides.fecha_salida_mantenimiento_real ?? form.fecha_salida_mantenimiento_real) as string | null
+    const fechaVisitaSugerida = siguienteEstado === 'visita_programada' && !form.fecha_programada_envio && fechaSalida
+      ? { fecha_programada_envio: miercolesSiguiente(fechaSalida) }
+      : {}
+    avanzarEtapa({ ...overrides, ...fechaVisitaSugerida, estado: siguienteEstado })
   }
 
-  // Usado por las vistas dedicadas (BloqueAvanzar) para confirmar el avance
-  // de etapa embebido — reemplaza al antiguo modal "Avanzar a: X".
+  // Usado por las vistas dedicadas de cada etapa para confirmar su avance a
+  // la siguiente — reemplaza al antiguo modal "Avanzar a: X".
   function avanzarEtapa(overrides: Partial<OrdenCalibracion>) {
     setForm(f => ({ ...f, ...overrides }))
     submit(overrides)
@@ -333,14 +344,12 @@ export function OrdenCalibracionDetailPage() {
             importar qué se haya marcado en "Siguiente paso" todavía. */}
         {!esNueva && etapaMostrada?.key === 'en_mantenimiento_reparacion' ? (
           <VistaMantenimiento
-            form={form} set={set} setForm={setForm} puedeEditar={puedeEditar} soloLectura={soloLectura}
-            asesores={asesores} asesorSeleccionado={asesorSeleccionado}
+            form={form} asesorSeleccionado={asesorSeleccionado} puedeEditar={puedeEditar} soloLectura={soloLectura}
             saving={saving} onTerminar={terminarMantenimiento}
           />
         ) : !esNueva && etapaMostrada?.key === 'visita_programada' ? (
           <VistaVisitaProgramada
-            etapa={etapaMostrada} form={form} set={set} setForm={setForm} puedeEditar={puedeEditar}
-            soloLectura={soloLectura} saving={saving} onAvanzar={avanzarEtapa} proveedores={proveedores}
+            form={form} puedeEditar={puedeEditar} soloLectura={soloLectura} saving={saving} onAvanzar={avanzarEtapa}
           />
         ) : !esNueva && etapaMostrada?.key === 'terminado' ? (
           <VistaTerminado form={form} catalogo={catalogo} codigosSel={codigosSel} asesorSeleccionado={asesorSeleccionado} />
@@ -369,14 +378,19 @@ export function OrdenCalibracionDetailPage() {
             form={form} asesorSeleccionado={asesorSeleccionado} puedeEditar={puedeEditar} soloLectura={soloLectura}
             saving={saving} onAvanzar={avanzarEtapa}
           />
+        ) : !esNueva && etapaMostrada?.key === 'carga_al_sistema' ? (
+          <VistaCargaAlSistema
+            form={form} puedeEditar={puedeEditar} soloLectura={soloLectura}
+            saving={saving} onAvanzar={avanzarEtapa}
+          />
         ) : !esNueva && etapaMostrada?.key === 'envio_certificados' ? (
           <VistaEnvioCertificados
             form={form} puedeEditar={puedeEditar} soloLectura={soloLectura}
             saving={saving} onAvanzar={avanzarEtapa}
           />
         ) : !esNueva && etapaMostrada?.key === 'en_calibracion' ? (
-          <VistaEtapaGenerica
-            etapa={etapaMostrada} form={form} puedeEditar={puedeEditar} soloLectura={soloLectura}
+          <VistaEnCalibracionSitio
+            form={form} puedeEditar={puedeEditar} soloLectura={soloLectura}
             saving={saving} onAvanzar={avanzarEtapa}
           />
         ) : (
@@ -482,7 +496,7 @@ export function OrdenCalibracionDetailPage() {
               </div>
             </Seccion>
 
-            {grupoEstado(form.estado as EstadoCalibracion) === 'pendiente' && (
+            {(esNueva || grupoEstado(form.estado as EstadoCalibracion) === 'pendiente') && (
               <Seccion titulo={esNueva ? 'Siguiente paso *' : 'Siguiente paso'}>
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                   <button type="button" onClick={() => set('estado', 'oc_creada')} style={segBtnStyle(form.estado === 'oc_creada')}>
@@ -511,7 +525,7 @@ export function OrdenCalibracionDetailPage() {
                 {form.estado === 'en_mantenimiento_reparacion' && (
                   <div style={{ marginTop: 14, display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'flex-end' }}>
                     <div style={{ maxWidth: 260 }}>
-                      <FG label="Fecha de salida de mantenimiento">
+                      <FG label="Fecha de salida de mantenimiento" required={esNueva}>
                         <input
                           type="date" value={form.fecha_salida_mantenimiento || ''}
                           onChange={e => set('fecha_salida_mantenimiento', e.target.value || null)}

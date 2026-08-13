@@ -1,28 +1,31 @@
-// Vista dedicada para el estado "Visita programada" (sede Hanna Dorado /
-// in situ): muestra un resumen de solo lectura (OTST, RMV/FV, Modalidad,
-// Proveedor, Fecha estimada de la visita) y solo pide la fecha de llegada
-// del metrólogo(a) antes de pasar a "En calibración".
+// Vista dedicada para el estado "En calibración" (flujo de sitio: in situ /
+// sede Hanna Dorado): muestra el mismo resumen que "Visita programada" y
+// solo pide la fecha de fin de calibración antes de pasar a "Control de
+// calidad" — con un cálculo de guía (+10 días) para la fecha estimada de
+// entrega de certificados in situ.
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { CalendarClock } from 'lucide-react'
+import { FlaskConical } from 'lucide-react'
 import { FG, Seccion, Grid2, INP, PRI, fmtFecha } from '../ui'
-import { MODALIDAD_LABEL } from '../hooks/useCalibraciones'
+import { MODALIDAD_LABEL, sumarDias } from '../hooks/useCalibraciones'
 import { linkOtst, parseOtstCodes } from './CamposCompartidos'
 import type { OrdenCalibracion } from '../../../types'
 
-export function VistaVisitaProgramada({ form, puedeEditar, soloLectura, saving, onAvanzar }: {
+export function VistaEnCalibracionSitio({ form, puedeEditar, soloLectura, saving, onAvanzar }: {
   form: Partial<OrdenCalibracion>
   puedeEditar: boolean
   soloLectura: boolean
   saving: boolean
   onAvanzar: (overrides: Partial<OrdenCalibracion>) => void
 }) {
-  const [fechaLlegada, setFechaLlegada] = useState(form.fecha_llegada_metrologo || '')
+  const [fechaFin, setFechaFin] = useState(form.certificado_fecha_fin || '')
   const otstCodigos = parseOtstCodes(form.otst)
+  const fechaFinMostrada = soloLectura ? (form.certificado_fecha_fin || '') : fechaFin
+  const fechaEstimadaCertificados = fechaFinMostrada ? sumarDias(fechaFinMostrada, 10) : null
 
   function confirmar() {
-    if (!fechaLlegada) { toast.error('Ingresa la fecha de llegada del metrólogo(a)'); return }
-    onAvanzar({ estado: 'en_calibracion', fecha_llegada_metrologo: fechaLlegada })
+    if (!fechaFin) { toast.error('Ingresa la fecha de fin de la calibración'); return }
+    onAvanzar({ estado: 'control_calidad', certificado_fecha_fin: fechaFin })
   }
 
   function copiarRmvFv() {
@@ -37,7 +40,7 @@ export function VistaVisitaProgramada({ form, puedeEditar, soloLectura, saving, 
         background: 'var(--accent-bg)', border: '1px solid var(--accent)', color: 'var(--accent)',
         marginBottom: 24, fontSize: 13, fontWeight: 600,
       }}>
-        <CalendarClock size={16} /> {soloLectura ? 'Revisando "Visita programada" (solo lectura)' : 'Visita programada — resumen de la orden'}
+        <FlaskConical size={16} /> {soloLectura ? 'Revisando "En calibración" (solo lectura)' : 'Equipo en calibración — resumen de la orden'}
       </div>
 
       <Seccion titulo="Resumen">
@@ -71,31 +74,36 @@ export function VistaVisitaProgramada({ form, puedeEditar, soloLectura, saving, 
               <div style={{ ...INP, color: 'var(--muted)' }}>Sin OTST</div>
             )}
           </FG>
-          <FG label="Fecha estimada de la visita">
-            <div style={{ ...INP, color: form.fecha_programada_envio ? 'var(--text)' : 'var(--muted)' }}>
-              {form.fecha_programada_envio ? fmtFecha(form.fecha_programada_envio) : '—'}
+          <FG label="Llegada del metrólogo(a)">
+            <div style={{ ...INP, color: form.fecha_llegada_metrologo ? 'var(--text)' : 'var(--muted)' }}>
+              {form.fecha_llegada_metrologo ? fmtFecha(form.fecha_llegada_metrologo) : '—'}
             </div>
           </FG>
         </Grid2>
       </Seccion>
 
-      <Seccion titulo="Llegada del metrólogo(a)">
+      <Seccion titulo="Calibración">
         <Grid2>
-          <FG label="Fecha de llegada del metrólogo(a)" required>
+          <FG label="Fecha de fin de la calibración" required>
             <input
               type="date"
-              value={soloLectura ? (form.fecha_llegada_metrologo || '') : fechaLlegada}
-              onChange={e => setFechaLlegada(e.target.value)}
+              value={fechaFinMostrada}
+              onChange={e => setFechaFin(e.target.value)}
               disabled={soloLectura || !puedeEditar}
               style={INP}
             />
           </FG>
         </Grid2>
+        {fechaEstimadaCertificados && (
+          <div style={{ marginTop: 10, fontSize: 12, color: 'var(--muted)' }}>
+            Fecha estimada de certificados In Situ (guía, +10 días): <strong style={{ color: 'var(--text)' }}>{fmtFecha(fechaEstimadaCertificados)}</strong>
+          </div>
+        )}
       </Seccion>
 
       {puedeEditar && !soloLectura && (
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
-          <button onClick={confirmar} disabled={saving} style={PRI}>{saving ? 'Guardando…' : '✓ En calibración →'}</button>
+          <button onClick={confirmar} disabled={saving} style={PRI}>{saving ? 'Guardando…' : '✓ Control de calidad →'}</button>
         </div>
       )}
     </div>

@@ -1,9 +1,6 @@
 // Bloques de campos reutilizados entre el formulario completo de una orden
 // y las vistas dedicadas por estado (VistaMantenimiento, VistaVisitaProgramada…).
-import { useState } from 'react'
-import { FG, Seccion, Grid2, INP, PRI } from '../ui'
-import { hoyISO } from '../hooks/useCalibraciones'
-import type { EtapaFlujo } from '../hooks/useCalibraciones'
+import { FG, Seccion, Grid2, INP } from '../ui'
 import type { Asesor, OrdenCalibracion } from '../../../types'
 
 // El No. de Orden de Compra siempre tiene el formato ST{número}-{año} — al
@@ -136,64 +133,5 @@ export function ReferenciasFields({ form, setForm, set, esNueva }: {
         <FG label="RMV/FV" required={esNueva}><input value={form.rmv_fv || ''} onChange={e => set('rmv_fv', e.target.value)} style={INP} /></FG>
       </Grid2>
     </Seccion>
-  )
-}
-
-// Campos + botón para avanzar de una etapa a la siguiente, embebidos en la
-// vista de esa etapa (reemplaza el antiguo modal "Avanzar a: X"). En modo
-// solo lectura (navegando a una etapa pasada) muestra los valores ya
-// guardados, deshabilitados, y oculta el botón.
-export function BloqueAvanzar({ siguiente, form, puedeEditar, soloLectura, saving, onAvanzar }: {
-  siguiente: NonNullable<EtapaFlujo['siguiente']>
-  form: Partial<OrdenCalibracion>
-  puedeEditar: boolean
-  soloLectura: boolean
-  saving: boolean
-  onAvanzar: (overrides: Partial<OrdenCalibracion>) => void
-}) {
-  const [valores, setValores] = useState<Record<string, string>>(() => {
-    const init: Record<string, string> = {}
-    if (!soloLectura) {
-      for (const campo of siguiente.campos) {
-        init[campo.key] = (form[campo.key] as string) || (campo.tipo === 'date' ? hoyISO() : '')
-      }
-    }
-    return init
-  })
-
-  function confirmar() {
-    const overrides: Record<string, unknown> = { estado: siguiente.estado }
-    for (const campo of siguiente.campos) {
-      const v = valores[campo.key] || ''
-      overrides[campo.key] = campo.tipo === 'date' ? (v || null) : v
-    }
-    onAvanzar(overrides as Partial<OrdenCalibracion>)
-  }
-
-  return (
-    <>
-      <Seccion titulo={`Para avanzar a: ${siguiente.label}`}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 400 }}>
-          {siguiente.campos.map(campo => (
-            <FG key={campo.key} label={campo.label}>
-              <input
-                type={campo.tipo === 'date' ? 'date' : 'text'}
-                value={soloLectura ? ((form[campo.key] as string) || '') : (valores[campo.key] || '')}
-                onChange={e => setValores(v => ({ ...v, [campo.key]: e.target.value }))}
-                disabled={soloLectura || !puedeEditar}
-                style={INP}
-              />
-            </FG>
-          ))}
-        </div>
-      </Seccion>
-      {puedeEditar && !soloLectura && (
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
-          <button onClick={confirmar} disabled={saving} style={PRI}>
-            {saving ? 'Guardando…' : `✓ ${siguiente.label} →`}
-          </button>
-        </div>
-      )}
-    </>
   )
 }

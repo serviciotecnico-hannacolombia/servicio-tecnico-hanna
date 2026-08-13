@@ -137,6 +137,7 @@ const GRUPO_POR_ESTADO: Record<EstadoCalibracion, GrupoEstado> = {
   en_retorno: 'en_curso',
   novedad: 'en_curso',
   control_calidad: 'en_curso',
+  carga_al_sistema: 'en_curso',
   envio_certificados: 'en_curso',
   terminado: 'completado',
 }
@@ -162,27 +163,22 @@ export const ESTADO_LABEL: Record<EstadoCalibracion, string> = {
   en_retorno: 'En retorno',
   novedad: 'Novedad',
   control_calidad: 'Control de calidad',
+  carga_al_sistema: 'Carga al sistema',
   envio_certificados: 'Envío de certificados',
   terminado: 'Terminado',
 }
 
 // ── Flujo de estados: difiere según modalidad. Laboratorio externo pasa por
 // envío/retorno del equipo; sede Hanna Dorado e in situ programan una visita
-// en vez de enviarlo. Ambos flujos cierran con "Control de calidad" antes de
-// Terminado. Cada etapa declara los campos que pide el asistente al avanzar
-// a la siguiente (ModalAvanzarEtapa en OrdenCalibracionDetailPage). ─────────
-
-export interface CampoTransicion {
-  key: keyof OrdenCalibracion
-  label: string
-  tipo: 'date' | 'text'
-}
+// en vez de enviarlo. Ambos flujos cierran con "Control de calidad" y
+// "Envío de certificados" antes de Terminado. Cada etapa tiene su propia
+// vista dedicada (VistaMantenimiento, VistaParaEnviar, VistaEnviado…) que
+// resuelve el paso a la siguiente. ──────────────────────────────────────────
 
 export interface EtapaFlujo {
   key: string
   label: string
   match: EstadoCalibracion[]
-  siguiente?: { estado: EstadoCalibracion, label: string, campos: CampoTransicion[] }
 }
 
 export const FLUJO_LABORATORIO: EtapaFlujo[] = [
@@ -231,25 +227,25 @@ export const FLUJO_SITIO: EtapaFlujo[] = [
   { key: 'en_mantenimiento_reparacion', label: 'En mantenimiento y reparación', match: ['en_mantenimiento_reparacion'] },
   {
     key: 'visita_programada', label: 'Visita programada', match: ['en_programacion_visita', 'visita_programada'],
-    siguiente: {
-      estado: 'en_calibracion', label: 'En calibración', campos: [
-        { key: 'codigo_recepcion', label: 'Código de recepción', tipo: 'text' },
-        { key: 'certificado_fecha_inicio', label: 'Inicio de calibración', tipo: 'date' },
-      ],
-    },
+    // Sin "siguiente" aquí: VistaVisitaProgramada maneja su propia transición
+    // a "En calibración" con un resumen dedicado en vez del bloque genérico.
   },
   {
     key: 'en_calibracion', label: 'En calibración', match: ['en_calibracion'],
-    siguiente: {
-      estado: 'control_calidad', label: 'Control de calidad', campos: [
-        { key: 'certificado_fecha_fin', label: 'Fin de calibración (emisión de certificado)', tipo: 'date' },
-      ],
-    },
+    // Sin "siguiente" aquí: VistaEnCalibracionSitio maneja su propia
+    // transición a "Control de calidad" con un resumen dedicado.
   },
   {
     key: 'control_calidad', label: 'Control de calidad', match: ['control_calidad'],
     // Sin "siguiente" aquí: VistaControlCalidad maneja su propia transición a
-    // "Envío de certificados" con un resumen dedicado en vez del bloque genérico.
+    // "Carga al sistema" con un resumen dedicado en vez del bloque genérico.
+  },
+  {
+    key: 'carga_al_sistema', label: 'Carga al sistema', match: ['carga_al_sistema'],
+    // Exclusivo del flujo de sitio: aquí se cargan código de recepción,
+    // fechas de calibración y códigos de certificados, que en el flujo de
+    // laboratorio ya se capturan antes (en "Enviado"). Sin "siguiente" aquí:
+    // VistaCargaAlSistema maneja su propia transición a "Envío de certificados".
   },
   {
     key: 'envio_certificados', label: 'Envío de certificados', match: ['envio_certificados'],
@@ -290,6 +286,28 @@ function localISO(d: Date): string {
 
 export function hoyISO(): string { return localISO(new Date()) }
 
+// Ruta in situ / sede Hanna: al terminar mantenimiento se sugiere la fecha
+// de la visita como el primer miércoles DESPUÉS de la salida de
+// mantenimiento (nunca el mismo día, aunque ese día ya sea miércoles).
+export function miercolesSiguiente(fechaISO: string): string {
+  const [y, m, d] = fechaISO.split('-').map(Number)
+  const fecha = new Date(y, m - 1, d)
+  do {
+    fecha.setDate(fecha.getDate() + 1)
+  } while (fecha.getDay() !== 3)
+  return localISO(fecha)
+}
+
+// Ruta in situ / sede Hanna: cálculo de guía (+10 días) que se muestra en
+// "En calibración" y se repite en "Carga al sistema" a partir de la misma
+// fecha de fin de calibración — no se persiste, es solo informativo.
+export function sumarDias(fechaISO: string, dias: number): string {
+  const [y, m, d] = fechaISO.split('-').map(Number)
+  const fecha = new Date(y, m - 1, d)
+  fecha.setDate(fecha.getDate() + dias)
+  return localISO(fecha)
+}
+
 export function estaVencido(orden: Pick<OrdenCalibracion, 'estado' | 'certificado_fecha_fin' | 'fecha_programada_envio'>): boolean {
   if (grupoEstado(orden.estado) === 'completado' || orden.estado === 'novedad') return false
   const f = fechaLimite(orden)
@@ -328,8 +346,11 @@ export const CAMPO_LABEL: Record<string, string> = {
   novedad_detalle: 'Detalle de novedad',
   enviado_cliente_final: 'Enviado a cliente final',
   cantidad_equipos: 'Cantidad de equipos',
-  fecha_salida_mantenimiento: 'Salida de mantenimiento',
+  fecha_salida_mantenimiento: 'Salida estimada de mantenimiento',
+  fecha_salida_mantenimiento_real: 'Salida de mantenimiento',
+  nota_mantenimiento: 'Nota de mantenimiento',
   fecha_programada_envio: 'Programada de envío',
+  fecha_llegada_metrologo: 'Llegada del metrólogo(a)',
   fecha_envio: 'Envío',
   nota_envio: 'Nota de envío',
   codigos_certificados: 'Códigos de certificados',
@@ -349,9 +370,9 @@ export const CAMPO_LABEL: Record<string, string> = {
 }
 
 const CAMPOS_FECHA = new Set([
-  'fecha_programada_envio', 'fecha_envio', 'certificado_fecha_inicio', 'certificado_fecha_fin',
+  'fecha_programada_envio', 'fecha_llegada_metrologo', 'fecha_envio', 'certificado_fecha_inicio', 'certificado_fecha_fin',
   'fecha_salida_lab', 'fecha_retorno', 'fecha_llegada_hanna', 'fecha_entrega_certificado',
-  'fecha_salida_mantenimiento', 'fecha_control_calidad',
+  'fecha_salida_mantenimiento', 'fecha_salida_mantenimiento_real', 'fecha_control_calidad',
 ])
 
 export function formatValorHistorial(campo: string, valor: string | null): string {

@@ -1,7 +1,6 @@
 // Vista dedicada para el estado "Envío de certificados": muestra lo ya
 // capturado en "Control de calidad" y pide la entrega del certificado
-// (fecha, carta de entrega, carta del certificado) antes de cerrar la orden
-// como "Terminado".
+// (fecha y carta del certificado) antes de cerrar la orden como "Terminado".
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { FileCheck2 } from 'lucide-react'
@@ -16,17 +15,14 @@ export function VistaEnvioCertificados({ form, puedeEditar, soloLectura, saving,
   onAvanzar: (overrides: Partial<OrdenCalibracion>) => void
 }) {
   const [fechaEntrega, setFechaEntrega] = useState(form.fecha_entrega_certificado || '')
-  const [cartaEntrega, setCartaEntrega] = useState(form.carta_entrega || '')
   const [cartaCertificado, setCartaCertificado] = useState(form.carta_certificado || '')
 
   function confirmar() {
     if (!fechaEntrega) { toast.error('Ingresa la fecha de entrega del certificado'); return }
-    if (!cartaEntrega.trim()) { toast.error('Ingresa la carta de entrega'); return }
     if (!cartaCertificado.trim()) { toast.error('Ingresa la carta del certificado'); return }
     onAvanzar({
       estado: 'terminado',
       fecha_entrega_certificado: fechaEntrega,
-      carta_entrega: cartaEntrega.trim(),
       carta_certificado: cartaCertificado.trim(),
     })
   }
@@ -99,16 +95,6 @@ export function VistaEnvioCertificados({ form, puedeEditar, soloLectura, saving,
               style={INP}
             />
           </FG>
-          <FG label="Carta de entrega" required>
-            <input
-              value={soloLectura ? (form.carta_entrega || '') : cartaEntrega}
-              onChange={e => setCartaEntrega(e.target.value)}
-              disabled={soloLectura || !puedeEditar}
-              style={INP}
-            />
-          </FG>
-        </Grid2>
-        <div style={{ marginTop: 14 }}>
           <FG label="Carta del certificado" required>
             <input
               value={soloLectura ? (form.carta_certificado || '') : cartaCertificado}
@@ -117,7 +103,7 @@ export function VistaEnvioCertificados({ form, puedeEditar, soloLectura, saving,
               style={INP}
             />
           </FG>
-        </div>
+        </Grid2>
       </Seccion>
 
       {puedeEditar && !soloLectura && (

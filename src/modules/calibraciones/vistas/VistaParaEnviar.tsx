@@ -20,6 +20,10 @@ export function VistaParaEnviar({ form, puedeEditar, soloLectura, saving, onAvan
   const [fechaEnvio, setFechaEnvio] = useState(() => form.fecha_envio || hoyISO())
   const [notaEnvio, setNotaEnvio] = useState(form.nota_envio || '')
   const otstCodigos = parseOtstCodes(form.otst)
+  // Si la orden pasó por mantenimiento, nunca se definió una fecha ideal de
+  // envío en la creación — la referencia más útil pasa a ser la fecha real
+  // en que salió de mantenimiento.
+  const fechaIdealEnvio = form.fecha_programada_envio || form.fecha_salida_mantenimiento_real
 
   function confirmar() {
     if (!fechaEnvio) { toast.error('Ingresa la fecha de envío'); return }
@@ -45,8 +49,8 @@ export function VistaParaEnviar({ form, puedeEditar, soloLectura, saving, onAvan
       <Seccion titulo="Resumen">
         <Grid2>
           <FG label="Fecha ideal de envío">
-            <div style={{ ...INP, color: form.fecha_programada_envio ? 'var(--text)' : 'var(--muted)' }}>
-              {form.fecha_programada_envio ? fmtFecha(form.fecha_programada_envio) : 'No definida en la creación'}
+            <div style={{ ...INP, color: fechaIdealEnvio ? 'var(--text)' : 'var(--muted)' }}>
+              {fechaIdealEnvio ? fmtFecha(fechaIdealEnvio) : 'No definida en la creación'}
             </div>
           </FG>
           <FG label="Proveedor (laboratorio)">
