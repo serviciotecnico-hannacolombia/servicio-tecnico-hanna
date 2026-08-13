@@ -288,6 +288,11 @@ export interface EventoMantenimiento {
 
 export type Modalidad = 'laboratorio_externo' | 'in_situ' | 'sede_hanna_dorado'
 
+// Ubicación física del equipo — solo relevante para la coordinación semanal
+// de Sede Hanna Dorado (a diferencia de in situ, el equipo debe estar en la
+// sede antes de que llegue el metrólogo(a)).
+export type UbicacionEquipo = 'en_sitio' | 'en_bodega' | 'en_mantenimiento'
+
 export type EstadoCalibracion =
   | 'oc_creada' | 'para_enviar' | 'en_mantenimiento_reparacion'
   | 'en_programacion_visita' | 'visita_programada' | 'enviado'
@@ -346,6 +351,7 @@ export interface OrdenCalibracion {
   notas_control_calidad: string | null
   parametros_nota: string | null
   valor_oc_antes_iva: number | null
+  ubicacion_equipo: UbicacionEquipo | null
   creado_por: string | null
   estado_desde: string
   created_at: string

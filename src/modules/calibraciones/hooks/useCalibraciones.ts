@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../../lib/supabase'
 import { useUser } from '../../../hooks/useUser'
 import { businessDaysBetween } from '../../../lib/colombiaCalendar'
-import type { Asesor, CorreoProveedor, EstadoCalibracion, Modalidad, OrdenCalibracion, OrdenCalibracionHistorial, OrdenCalibracionParametro, RvCalibrItem } from '../../../types'
+import type { Asesor, CorreoProveedor, EstadoCalibracion, Modalidad, OrdenCalibracion, OrdenCalibracionHistorial, OrdenCalibracionParametro, RvCalibrItem, UbicacionEquipo } from '../../../types'
 
 export function useOrdenesCalibracion() {
   const { user } = useUser()
@@ -49,6 +49,23 @@ export function useOrdenParametros(ordenId: string | null) {
       return data as OrdenCalibracionParametro[]
     },
     enabled: !!ordenId,
+  })
+}
+
+// Todos los parámetros (servicios RV CALIBR) de todas las órdenes — a
+// diferencia de useOrdenParametros (una orden), esto sirve para agregar por
+// magnitud a través de varias órdenes a la vez (ej. coordinación semanal de
+// Sede Hanna Dorado). Tabla pequeña, se carga completa y se filtra en cliente.
+export function useTodosParametros() {
+  const { user } = useUser()
+  return useQuery({
+    queryKey: ['ordenes_calibracion_parametros_todos'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('ordenes_calibracion_parametros').select('*')
+      if (error) throw error
+      return data as OrdenCalibracionParametro[]
+    },
+    enabled: !!user,
   })
 }
 
@@ -172,6 +189,12 @@ export const MODALIDAD_LABEL: Record<Modalidad, string> = {
   laboratorio_externo: 'Laboratorio externo',
   in_situ: 'In Situ',
   sede_hanna_dorado: 'Sede Hanna Dorado',
+}
+
+export const UBICACION_EQUIPO_LABEL: Record<UbicacionEquipo, string> = {
+  en_sitio: 'En sitio (listo)',
+  en_bodega: 'En bodega — falta traer',
+  en_mantenimiento: 'En mantenimiento',
 }
 
 export const ESTADO_LABEL: Record<EstadoCalibracion, string> = {
@@ -649,7 +672,7 @@ export interface ResumenMes {
   efectividadPromedio: number | null
 }
 
-const MES_CORTO = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+export const MES_CORTO = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
 
 // Órdenes creadas y equipos gestionados se cuentan por mes de created_at.
 // La efectividad se cuenta por mes en que la orden se cerró (updated_at de
@@ -713,6 +736,18 @@ export function sumarDias(fechaISO: string, dias: number): string {
   return localISO(fecha)
 }
 
+// Rango lunes-domingo de una semana relativa a hoy — offset 0 es la semana
+// actual, -1 la anterior, +1 la siguiente. Para coordinación semanal
+// (ej. Sede Hanna Dorado).
+export function rangoSemana(offset: number): { inicio: string, fin: string } {
+  const hoy = new Date()
+  const diaSemana = hoy.getDay()
+  const diffLunes = diaSemana === 0 ? -6 : 1 - diaSemana
+  const lunes = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() + diffLunes + offset * 7)
+  const domingo = new Date(lunes.getFullYear(), lunes.getMonth(), lunes.getDate() + 6)
+  return { inicio: localISO(lunes), fin: localISO(domingo) }
+}
+
 export function estaVencido(orden: OrdenParaSemaforo): boolean {
   return semaforoOrden(orden) === 'vencida'
 }
@@ -765,6 +800,7 @@ export const CAMPO_LABEL: Record<string, string> = {
   notas_control_calidad: 'Notas de control de calidad',
   parametros_nota: 'Notas de parámetros',
   valor_oc_antes_iva: 'Valor OC antes de IVA',
+  ubicacion_equipo: 'Ubicación del equipo',
 }
 
 const CAMPOS_FECHA = new Set([
@@ -781,6 +817,7 @@ export function formatValorHistorial(campo: string, valor: string | null): strin
   }
   if (campo === 'estado') return ESTADO_LABEL[valor as EstadoCalibracion] || valor
   if (campo === 'modalidad') return MODALIDAD_LABEL[valor as Modalidad] || valor
+  if (campo === 'ubicacion_equipo') return UBICACION_EQUIPO_LABEL[valor as UbicacionEquipo] || valor
   if (campo === 'enviado_cliente_final') return valor === 'true' ? 'Sí' : 'No'
   if (campo === 'valor_oc_antes_iva') {
     const n = Number(valor)

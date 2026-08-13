@@ -8,7 +8,7 @@ import { Card } from '../../components/ui/Card'
 import { Modal } from '../../components/ui/Modal'
 import { useUser } from '../../hooks/useUser'
 import {
-  useOrdenesCalibracion, useCatalogoRvCalibr, useAsesores, useProveedores, useInvalidateCalibraciones,
+  useOrdenesCalibracion, useCatalogoRvCalibr, useAsesores, useProveedores, useInvalidateCalibraciones, useTodosParametros,
   grupoEstado, ESTADO_LABEL, MODALIDAD_LABEL, estaVencido, proximoAVencer, fechaObjetivo, infoAntiguedadEstado, descripcionSemaforo,
 } from './hooks/useCalibraciones'
 import {
@@ -16,12 +16,15 @@ import {
   GRUPO_COLOR, EMPTY, fmtFecha, fmtCOP,
 } from './ui'
 import { AnalisisTab } from './AnalisisTab'
+import { CoordinacionSedeHannaTab } from './CoordinacionSedeHannaTab'
 import type { Asesor, CorreoProveedor, EstadoCalibracion, Modalidad, RvCalibrItem } from '../../types'
 
 type VistaFiltro = 'activas' | 'vencidas' | 'completadas' | 'todas'
-type Tab = 'ordenes' | 'analisis' | 'catalogo' | 'asesores'
+type Tab = 'ordenes' | 'analisis' | 'sede_hanna' | 'catalogo' | 'asesores'
 
-const TAB_LABEL: Record<Tab, string> = { ordenes: 'Órdenes', analisis: 'Análisis', catalogo: 'Catálogo RV CALIBR', asesores: 'Asesores' }
+const TAB_LABEL: Record<Tab, string> = {
+  ordenes: 'Órdenes', analisis: 'Análisis', sede_hanna: 'Sede Hanna', catalogo: 'Catálogo RV CALIBR', asesores: 'Asesores',
+}
 
 // Filtros de Estado / Modalidad / Asesor — se recuerdan entre sesiones para
 // no tener que reconfigurarlos cada vez que se entra al módulo.
@@ -56,6 +59,7 @@ export function CalibracionesPage() {
   const { data: catalogo = [] } = useCatalogoRvCalibr()
   const { data: asesores = [] } = useAsesores()
   const { data: proveedores = [] } = useProveedores()
+  const { data: parametros = [] } = useTodosParametros()
   const invalidate = useInvalidateCalibraciones()
 
   const [tab, setTab] = useState<Tab>('ordenes')
@@ -108,8 +112,8 @@ export function CalibracionesPage() {
         actions={puedeEditar ? <button onClick={() => navigate('/calibraciones/nueva')} style={PRI}><Plus size={14} style={{ verticalAlign: -2 }} /> Nueva orden</button> : undefined}
       />
 
-      <div style={{ display: 'flex', gap: 4, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 4, marginBottom: 20, maxWidth: 620 }}>
-        {(['ordenes', 'analisis', ...(puedeEditar ? ['catalogo', 'asesores'] as const : [])] as Tab[]).map(t => (
+      <div style={{ display: 'flex', gap: 4, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 4, marginBottom: 20, maxWidth: 720, flexWrap: 'wrap' }}>
+        {(['ordenes', 'analisis', 'sede_hanna', ...(puedeEditar ? ['catalogo', 'asesores'] as const : [])] as Tab[]).map(t => (
           <button key={t} onClick={() => setTab(t)} style={{
             flex: 1, padding: '9px 14px', border: 'none', borderRadius: 9,
             background: tab === t ? 'var(--accent)' : 'transparent',
@@ -284,6 +288,8 @@ export function CalibracionesPage() {
         </>
       ) : tab === 'analisis' ? (
         <AnalisisTab ordenes={ordenes} />
+      ) : tab === 'sede_hanna' ? (
+        <CoordinacionSedeHannaTab ordenes={ordenes} parametros={parametros} catalogo={catalogo} />
       ) : tab === 'catalogo' ? (
         <CatalogoTab catalogo={catalogo} proveedores={proveedores} onSaved={invalidate.catalogo} />
       ) : (
