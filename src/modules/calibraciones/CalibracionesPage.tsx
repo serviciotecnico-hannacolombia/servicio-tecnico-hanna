@@ -15,12 +15,37 @@ import {
   FG, IconBtn, Stat, INP, PRI, GHOST, B_INFO, B_VENCIDA, B_PROXIMA, B_NOVEDAD,
   GRUPO_COLOR, EMPTY, fmtFecha, fmtCOP,
 } from './ui'
-import type { Asesor, CorreoProveedor, Modalidad, RvCalibrItem } from '../../types'
+import type { Asesor, CorreoProveedor, EstadoCalibracion, Modalidad, RvCalibrItem } from '../../types'
 
 type VistaFiltro = 'activas' | 'vencidas' | 'completadas' | 'todas'
 type Tab = 'ordenes' | 'catalogo' | 'asesores'
 
 const TAB_LABEL: Record<Tab, string> = { ordenes: 'Órdenes', catalogo: 'Catálogo RV CALIBR', asesores: 'Asesores' }
+
+// Filtros de Estado / Modalidad / Asesor — se recuerdan entre sesiones para
+// no tener que reconfigurarlos cada vez que se entra al módulo.
+interface FiltrosOrdenes {
+  estado: EstadoCalibracion | ''
+  modalidad: Modalidad | ''
+  asesorCorreo: string
+}
+const FILTROS_VACIOS: FiltrosOrdenes = { estado: '', modalidad: '', asesorCorreo: '' }
+const FILTROS_KEY = 'calibraciones_filtros_ordenes'
+
+function cargarFiltros(): FiltrosOrdenes {
+  try {
+    const raw = localStorage.getItem(FILTROS_KEY)
+    if (!raw) return FILTROS_VACIOS
+    const parsed = JSON.parse(raw)
+    return {
+      estado: parsed.estado || '',
+      modalidad: parsed.modalidad || '',
+      asesorCorreo: parsed.asesorCorreo || '',
+    }
+  } catch {
+    return FILTROS_VACIOS
+  }
+}
 
 export function CalibracionesPage() {
   const navigate = useNavigate()
@@ -36,8 +61,15 @@ export function CalibracionesPage() {
   const [vista, setVista] = useState<VistaFiltro>('activas')
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(0)
+  const [filtros, setFiltros] = useState<FiltrosOrdenes>(cargarFiltros)
 
   const PAGE_SIZE = 30
+
+  useEffect(() => { localStorage.setItem(FILTROS_KEY, JSON.stringify(filtros)) }, [filtros])
+
+  const hayFiltrosActivos = !!(filtros.estado || filtros.modalidad || filtros.asesorCorreo)
+  const actualizarFiltro = (parcial: Partial<FiltrosOrdenes>) => { setFiltros(f => ({ ...f, ...parcial })); setPage(0) }
+  const limpiarFiltros = () => { setFiltros(FILTROS_VACIOS); setPage(0) }
 
   const filtered = ordenes
     .filter(o => {
@@ -46,6 +78,9 @@ export function CalibracionesPage() {
       if (vista === 'vencidas') return estaVencido(o)
       return grupoEstado(o.estado) !== 'completado'
     })
+    .filter(o => !filtros.estado || o.estado === filtros.estado)
+    .filter(o => !filtros.modalidad || o.modalidad === filtros.modalidad)
+    .filter(o => !filtros.asesorCorreo || (o.correo_asesor || '').toLowerCase() === filtros.asesorCorreo.toLowerCase())
     .filter(o => {
       const q = search.toLowerCase().trim()
       if (!q) return true
@@ -108,6 +143,42 @@ export function CalibracionesPage() {
                 <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)', pointerEvents: 'none' }} />
                 <input value={search} onChange={e => { setSearch(e.target.value); setPage(0) }} placeholder="Buscar por cliente, OC o asesor..." style={{ ...INP, paddingLeft: 34 }} />
               </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', marginBottom: 14 }}>
+              <select
+                value={filtros.estado}
+                onChange={e => actualizarFiltro({ estado: e.target.value as EstadoCalibracion | '' })}
+                style={{ ...INP, width: 'auto', minWidth: 170 }}
+              >
+                <option value="">Estado: todos</option>
+                {(Object.keys(ESTADO_LABEL) as EstadoCalibracion[]).map(e => (
+                  <option key={e} value={e}>{ESTADO_LABEL[e]}</option>
+                ))}
+              </select>
+              <select
+                value={filtros.modalidad}
+                onChange={e => actualizarFiltro({ modalidad: e.target.value as Modalidad | '' })}
+                style={{ ...INP, width: 'auto', minWidth: 170 }}
+              >
+                <option value="">Modalidad: todas</option>
+                {(['laboratorio_externo', 'in_situ', 'sede_hanna_dorado'] as Modalidad[]).map(m => (
+                  <option key={m} value={m}>{MODALIDAD_LABEL[m]}</option>
+                ))}
+              </select>
+              <select
+                value={filtros.asesorCorreo}
+                onChange={e => actualizarFiltro({ asesorCorreo: e.target.value })}
+                style={{ ...INP, width: 'auto', minWidth: 190 }}
+              >
+                <option value="">Asesor(a): todos</option>
+                {asesores.map(a => (
+                  <option key={a.id} value={a.correo}>{a.nombre}{a.plataforma ? ` — ${a.plataforma}` : ''}</option>
+                ))}
+              </select>
+              {hayFiltrosActivos && (
+                <button onClick={limpiarFiltros} style={GHOST}>Limpiar filtros</button>
+              )}
             </div>
 
             {isLoading ? (
