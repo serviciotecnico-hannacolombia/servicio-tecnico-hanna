@@ -296,7 +296,7 @@ export type UbicacionEquipo = 'en_sitio' | 'en_bodega' | 'en_mantenimiento'
 export type EstadoCalibracion =
   | 'oc_creada' | 'para_enviar' | 'en_mantenimiento_reparacion'
   | 'en_programacion_visita' | 'visita_programada' | 'enviado'
-  | 'en_calibracion' | 'en_retorno' | 'novedad'
+  | 'en_calibracion' | 'en_retorno'
   | 'control_calidad' | 'carga_al_sistema' | 'envio_certificados' | 'terminado'
 
 export interface RvCalibrItem {

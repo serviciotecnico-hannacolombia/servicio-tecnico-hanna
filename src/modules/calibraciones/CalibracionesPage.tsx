@@ -239,7 +239,7 @@ export function CalibracionesPage() {
                             background: grupoColor.bg, color: grupoColor.text, border: `1px solid ${grupoColor.border}`,
                           }}>{ESTADO_LABEL[o.estado]}</span>
                           {o.modalidad && <span style={B_INFO}>{MODALIDAD_LABEL[o.modalidad]}</span>}
-                          {o.estado === 'novedad' && <span style={B_NOVEDAD}><AlertTriangle size={11} style={{ verticalAlign: -1, marginRight: 3 }} />Novedad</span>}
+                          {o.novedad_detalle && <span style={B_NOVEDAD}><AlertTriangle size={11} style={{ verticalAlign: -1, marginRight: 3 }} />Novedad</span>}
                           {vencida && <span style={B_VENCIDA}><AlertTriangle size={11} style={{ verticalAlign: -1, marginRight: 3 }} />{descripcion}</span>}
                           {!vencida && proxima && <span style={B_PROXIMA}><AlertTriangle size={11} style={{ verticalAlign: -1, marginRight: 3 }} />{descripcion}</span>}
                         </div>

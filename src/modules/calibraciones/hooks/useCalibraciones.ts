@@ -161,6 +161,36 @@ export async function logServiciosChange(ordenId: string, antes: Set<string>, de
   })
 }
 
+// ── Novedad ──────────────────────────────────────────────────────────────────
+// Bandera independiente del estado real de la orden (novedad_detalle no nulo
+// = activa) — a diferencia del viejo diseño, no reemplaza el estado ni toca
+// fechas/semáforo. "Marcar" y "resolver" cambian esa columna (ya auditada
+// por el trigger de BD); los avances intermedios se registran directo en el
+// historial desde el cliente, igual que logServiciosChange.
+
+export async function marcarNovedad(ordenId: string, detalle: string) {
+  const { error } = await supabase.from('ordenes_calibracion')
+    .update({ novedad_detalle: detalle.trim() }).eq('id', ordenId)
+  if (error) throw error
+}
+
+export async function agregarAvanceNovedad(ordenId: string, mensaje: string) {
+  const { error } = await supabase.from('ordenes_calibracion_historial').insert({
+    orden_id: ordenId, campo: 'novedad_avance', valor_nuevo: mensaje.trim(),
+  })
+  if (error) throw error
+}
+
+export async function resolverNovedad(ordenId: string, resolucion: string) {
+  const { error: e1 } = await supabase.from('ordenes_calibracion_historial').insert({
+    orden_id: ordenId, campo: 'novedad_resuelta', valor_nuevo: resolucion.trim(),
+  })
+  if (e1) throw e1
+  const { error: e2 } = await supabase.from('ordenes_calibracion')
+    .update({ novedad_detalle: null }).eq('id', ordenId)
+  if (e2) throw e2
+}
+
 // ── Estado / grupos ──────────────────────────────────────────────────────────
 
 export type GrupoEstado = 'pendiente' | 'en_curso' | 'completado'
@@ -174,7 +204,6 @@ const GRUPO_POR_ESTADO: Record<EstadoCalibracion, GrupoEstado> = {
   enviado: 'en_curso',
   en_calibracion: 'en_curso',
   en_retorno: 'en_curso',
-  novedad: 'en_curso',
   control_calidad: 'en_curso',
   carga_al_sistema: 'en_curso',
   envio_certificados: 'en_curso',
@@ -206,7 +235,6 @@ export const ESTADO_LABEL: Record<EstadoCalibracion, string> = {
   enviado: 'Enviado',
   en_calibracion: 'En calibración',
   en_retorno: 'En retorno',
-  novedad: 'Novedad',
   control_calidad: 'Control de calidad',
   carga_al_sistema: 'Carga al sistema',
   envio_certificados: 'Envío de certificados',
@@ -457,7 +485,7 @@ function nivelPorHabiles(habiles: number, umbralProxima: number, umbralVencida: 
 }
 
 export function semaforoOrden(orden: OrdenParaSemaforo): NivelSemaforo {
-  if (grupoEstado(orden.estado) === 'completado' || orden.estado === 'novedad') return 'ok'
+  if (grupoEstado(orden.estado) === 'completado') return 'ok'
 
   const regla = REGLA_POR_ESTADO[orden.estado]
   let nivel: NivelSemaforo = 'ok'
@@ -513,7 +541,7 @@ function textoPlazoHabiles(restantes: number): string {
 // (ej. en_retorno: "Vence en 2 días hábiles · Vence en 5 días"). Es la misma
 // fuente que pinta el semáforo, en texto.
 export function descripcionSemaforo(orden: OrdenParaSemaforo): string {
-  if (grupoEstado(orden.estado) === 'completado' || orden.estado === 'novedad') return ''
+  if (grupoEstado(orden.estado) === 'completado') return ''
 
   const regla = REGLA_POR_ESTADO[orden.estado]
   const partes: string[] = []
@@ -538,7 +566,7 @@ export function descripcionSemaforo(orden: OrdenParaSemaforo): string {
 // porque solo tiene fecha objetivo sin SLA de tránsito, o esa fecha ya
 // resume todo lo que hay que saber).
 export function infoAntiguedadEstado(orden: OrdenParaSemaforo): { etiqueta: string, fechaISO: string, habiles: number } | null {
-  if (grupoEstado(orden.estado) === 'completado' || orden.estado === 'novedad') return null
+  if (grupoEstado(orden.estado) === 'completado') return null
 
   const regla = REGLA_POR_ESTADO[orden.estado]
   const habiles = diasHabilesEnEstado(orden)
@@ -777,6 +805,8 @@ export const CAMPO_LABEL: Record<string, string> = {
   proveedor: 'Proveedor',
   estado: 'Estado',
   novedad_detalle: 'Detalle de novedad',
+  novedad_avance: 'Avance de novedad',
+  novedad_resuelta: 'Novedad resuelta',
   enviado_cliente_final: 'Enviado a cliente final',
   cantidad_equipos: 'Cantidad de equipos',
   fecha_salida_mantenimiento: 'Salida estimada de mantenimiento',

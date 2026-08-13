@@ -12,9 +12,10 @@ import {
   useInvalidateCalibraciones, grupoEstado, ESTADO_LABEL, MODALIDAD_LABEL, CAMPO_LABEL,
   formatValorHistorial, estaVencido, proximoAVencer, descripcionSemaforo, logServiciosChange,
   flujoPorModalidad, PROVEEDOR_SEDE_HANNA, miercolesSiguiente,
+  marcarNovedad, agregarAvanceNovedad, resolverNovedad,
 } from './hooks/useCalibraciones'
 import type { EtapaFlujo } from './hooks/useCalibraciones'
-import { FG, Seccion, Grid2, INP, PRI, GHOST, B_INFO, B_VENCIDA, B_PROXIMA, GRUPO_COLOR, fmtFecha, fmtCOP, fechaLocalISO } from './ui'
+import { FG, Seccion, Grid2, INP, PRI, GHOST, B_INFO, B_VENCIDA, B_PROXIMA, B_NOVEDAD, GRUPO_COLOR, fmtFecha, fmtCOP, fechaLocalISO } from './ui'
 import { IdentificacionFields, ReferenciasFields, linkOtst, parseOtstCodes } from './vistas/CamposCompartidos'
 import { generarMailtoOC } from './correo'
 import { VistaMantenimiento } from './vistas/VistaMantenimiento'
@@ -33,6 +34,15 @@ import type { EstadoCalibracion, Modalidad, OrdenCalibracion } from '../../types
 function horaLocal(iso: string): string {
   const d = new Date(iso)
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}
+
+// Los errores de Supabase (PostgrestError) son objetos planos con .message,
+// no instancias de Error — `e instanceof Error` da falso y String(e) termina
+// en "[object Object]" en vez del mensaje real.
+function mensajeError(e: unknown): string {
+  if (e instanceof Error) return e.message
+  if (e && typeof e === 'object' && 'message' in e) return String((e as { message: unknown }).message)
+  return String(e)
 }
 
 function segBtnStyle(activo: boolean, deshabilitado?: boolean): React.CSSProperties {
@@ -83,6 +93,12 @@ export function OrdenCalibracionDetailPage() {
   const [saving, setSaving] = useState(false)
   const [eliminando, setEliminando] = useState(false)
   const [vistaIdx, setVistaIdx] = useState<number | null>(null)
+  const [marcandoNovedad, setMarcandoNovedad] = useState(false)
+  const [detalleNovedadInput, setDetalleNovedadInput] = useState('')
+  const [resolviendoNovedad, setResolviendoNovedad] = useState(false)
+  const [resolucionNovedadInput, setResolucionNovedadInput] = useState('')
+  const [avanceNovedad, setAvanceNovedad] = useState('')
+  const [guardandoNovedad, setGuardandoNovedad] = useState(false)
 
   useEffect(() => { if (orden) setForm(orden) }, [orden])
   useEffect(() => { if (parametrosActuales) setCodigosSel(new Set(parametrosActuales.map(p => p.rv_calibr_codigo))) }, [parametrosActuales])
@@ -205,7 +221,6 @@ export function OrdenCalibracionDetailPage() {
       numero_oc: datos.numero_oc?.trim() || null,
       correo_cliente: datos.correo_cliente?.trim() || null,
       correo_asesor: datos.correo_asesor?.trim() || null,
-      novedad_detalle: datos.estado === 'novedad' ? (datos.novedad_detalle?.trim() || null) : null,
       valor_oc_antes_iva: datos.valor_oc_antes_iva || null,
     }
     delete (payload as Record<string, unknown>).id
@@ -287,6 +302,57 @@ export function OrdenCalibracionDetailPage() {
     navigate('/calibraciones')
   }
 
+  // La novedad es una bandera aparte del estado real de la orden — no toca
+  // fechas ni el semáforo. Se puede marcar/avanzar/resolver sin importar en
+  // qué etapa del flujo esté la orden.
+  async function confirmarMarcarNovedad(detalle: string) {
+    if (!orden || !detalle.trim()) { toast.error('Ingresa el detalle de la novedad'); return }
+    setGuardandoNovedad(true)
+    try {
+      await marcarNovedad(orden.id, detalle)
+      toast.success('Novedad marcada')
+      invalidate.ordenes()
+      setMarcandoNovedad(false)
+      setDetalleNovedadInput('')
+    } catch (e) {
+      toast.error('Error: ' + mensajeError(e))
+    } finally {
+      setGuardandoNovedad(false)
+    }
+  }
+
+  async function confirmarAvanceNovedad() {
+    if (!orden || !avanceNovedad.trim()) { toast.error('Escribe el avance'); return }
+    setGuardandoNovedad(true)
+    try {
+      await agregarAvanceNovedad(orden.id, avanceNovedad)
+      toast.success('Avance agregado')
+      invalidate.historial(orden.id)
+      setAvanceNovedad('')
+    } catch (e) {
+      toast.error('Error: ' + mensajeError(e))
+    } finally {
+      setGuardandoNovedad(false)
+    }
+  }
+
+  async function confirmarResolverNovedad(resolucion: string) {
+    if (!orden || !resolucion.trim()) { toast.error('Ingresa cómo se resolvió la novedad'); return }
+    setGuardandoNovedad(true)
+    try {
+      await resolverNovedad(orden.id, resolucion)
+      toast.success('Novedad resuelta')
+      invalidate.ordenes()
+      invalidate.historial(orden.id)
+      setResolviendoNovedad(false)
+      setResolucionNovedadInput('')
+    } catch (e) {
+      toast.error('Error: ' + mensajeError(e))
+    } finally {
+      setGuardandoNovedad(false)
+    }
+  }
+
   if (!esNueva && cargandoOrdenes) {
     return <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}><Spinner size={32} /></div>
   }
@@ -349,18 +415,55 @@ export function OrdenCalibracionDetailPage() {
                 }}>{ESTADO_LABEL[form.estado as EstadoCalibracion]}</span>
                 {vencida && <span style={B_VENCIDA}><AlertTriangle size={11} style={{ verticalAlign: -1, marginRight: 3 }} />{orden && descripcionSemaforo(orden)}</span>}
                 {!vencida && proxima && <span style={B_PROXIMA}><AlertTriangle size={11} style={{ verticalAlign: -1, marginRight: 3 }} />{orden && descripcionSemaforo(orden)}</span>}
+                {orden?.novedad_detalle && <span style={B_NOVEDAD}><AlertTriangle size={11} style={{ verticalAlign: -1, marginRight: 3 }} />Novedad</span>}
               </div>
             )}
           </div>
         </div>
-        {puedeEditar && orden && (
-          <button onClick={() => setEliminando(true)} title="Eliminar orden" style={{
-            width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            borderRadius: 9, border: '1px solid var(--border)', background: 'var(--surface)',
-            color: 'var(--red)', cursor: 'pointer', flexShrink: 0,
-          }}><Trash2 size={16} /></button>
-        )}
+        <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+          {puedeEditar && orden && !orden.novedad_detalle && (
+            <button onClick={() => setMarcandoNovedad(true)} title="Marcar novedad" style={{
+              width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              borderRadius: 9, border: '1px solid var(--border)', background: 'var(--surface)',
+              color: 'var(--yellow)', cursor: 'pointer', flexShrink: 0,
+            }}><AlertTriangle size={16} /></button>
+          )}
+          {puedeEditar && orden && (
+            <button onClick={() => setEliminando(true)} title="Eliminar orden" style={{
+              width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              borderRadius: 9, border: '1px solid var(--border)', background: 'var(--surface)',
+              color: 'var(--red)', cursor: 'pointer', flexShrink: 0,
+            }}><Trash2 size={16} /></button>
+          )}
+        </div>
       </div>
+
+      {orden?.novedad_detalle && (
+        <div style={{
+          padding: '14px 18px', borderRadius: 'var(--radius)', background: 'var(--yellow-bg)',
+          border: '1px solid var(--yellow-border)', marginBottom: 24,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+            <AlertTriangle size={16} color="var(--yellow)" style={{ flexShrink: 0, marginTop: 2 }} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--yellow)', marginBottom: 4 }}>Novedad activa</div>
+              <div style={{ fontSize: 13, color: 'var(--text)' }}>{orden.novedad_detalle}</div>
+              {puedeEditar && (
+                <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+                  <input
+                    value={avanceNovedad}
+                    onChange={e => setAvanceNovedad(e.target.value)}
+                    placeholder="Agregar un avance..."
+                    style={{ ...INP, flex: 1, minWidth: 220 }}
+                  />
+                  <button onClick={confirmarAvanceNovedad} disabled={guardandoNovedad} style={GHOST}>+ Avance</button>
+                  <button onClick={() => setResolviendoNovedad(true)} disabled={guardandoNovedad} style={PRI}>✓ Dar solución</button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {!esNueva && (
         <Stepper
@@ -483,13 +586,6 @@ export function OrdenCalibracionDetailPage() {
                   </FG>
                 )}
               </Grid2>
-              {form.estado === 'novedad' && (
-                <div style={{ marginTop: 14 }}>
-                  <FG label="Detalle de la novedad">
-                    <textarea value={form.novedad_detalle || ''} onChange={e => set('novedad_detalle', e.target.value)} rows={2} style={{ ...INP, resize: 'vertical' }} />
-                  </FG>
-                </div>
-              )}
             </Seccion>
 
             <Seccion titulo={esNueva ? 'Servicios RV CALIBR *' : 'Servicios RV CALIBR'}>
@@ -653,7 +749,7 @@ export function OrdenCalibracionDetailPage() {
                           <div style={{ color: 'var(--muted)', marginTop: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
                             {grupo.entradas.map(h => (
                               <div key={h.id}>
-                                {h.campo === 'creacion' || h.campo === 'servicios' ? (
+                                {h.campo === 'creacion' || h.campo === 'servicios' || h.campo === 'novedad_avance' || h.campo === 'novedad_resuelta' ? (
                                   <span>{CAMPO_LABEL[h.campo]}{h.valor_nuevo ? `: ${h.valor_nuevo}` : ''}</span>
                                 ) : (
                                   <span>
@@ -683,6 +779,49 @@ export function OrdenCalibracionDetailPage() {
           </div>
         </Modal>
       )}
+
+      {marcandoNovedad && orden && (
+        <Modal open onClose={() => setMarcandoNovedad(false)} title="Marcar novedad">
+          <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 10 }}>
+            No cambia el estado ni las fechas de la orden — solo la marca con una alerta visible hasta que se resuelva.
+          </p>
+          <FG label="Detalle de la novedad">
+            <textarea
+              value={detalleNovedadInput}
+              onChange={e => setDetalleNovedadInput(e.target.value)}
+              rows={3}
+              autoFocus
+              style={{ ...INP, resize: 'vertical' }}
+            />
+          </FG>
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 20 }}>
+            <button onClick={() => setMarcandoNovedad(false)} style={GHOST}>Cancelar</button>
+            <button onClick={() => confirmarMarcarNovedad(detalleNovedadInput)} disabled={guardandoNovedad} style={PRI}>
+              {guardandoNovedad ? 'Guardando…' : '⚠ Marcar novedad'}
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {resolviendoNovedad && orden && (
+        <Modal open onClose={() => setResolviendoNovedad(false)} title="Dar solución a la novedad">
+          <FG label="¿Cómo se resolvió?">
+            <textarea
+              value={resolucionNovedadInput}
+              onChange={e => setResolucionNovedadInput(e.target.value)}
+              rows={3}
+              autoFocus
+              style={{ ...INP, resize: 'vertical' }}
+            />
+          </FG>
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 20 }}>
+            <button onClick={() => setResolviendoNovedad(false)} style={GHOST}>Cancelar</button>
+            <button onClick={() => confirmarResolverNovedad(resolucionNovedadInput)} disabled={guardandoNovedad} style={PRI}>
+              {guardandoNovedad ? 'Guardando…' : '✓ Dar solución'}
+            </button>
+          </div>
+        </Modal>
+      )}
     </div>
   )
 }
@@ -694,18 +833,6 @@ function Stepper({ flujo, estado, idxActual, idxMostrado, onSeleccionar }: {
   idxMostrado: number
   onSeleccionar: (idx: number | null) => void
 }) {
-  if (estado === 'novedad') {
-    return (
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 10, padding: '14px 18px', borderRadius: 'var(--radius)',
-        background: 'var(--yellow-bg)', border: '1px solid var(--yellow-border)', color: 'var(--yellow)',
-        marginBottom: 24, fontSize: 13, fontWeight: 600,
-      }}>
-        <AlertTriangle size={16} /> Esta orden tiene una novedad activa — revisa el detalle en la sección Proceso.
-      </div>
-    )
-  }
-
   return (
     <div style={{ marginBottom: 24 }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', padding: '0 4px' }}>
