@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import { PackageCheck } from 'lucide-react'
 import { FG, Seccion, Grid2, INP, PRI, B_INFO } from '../ui'
 import { linkOtst, parseOtstCodes } from './CamposCompartidos'
+import { semaforoOrden, descripcionSemaforo } from '../hooks/useCalibraciones'
 import type { OrdenCalibracion, RvCalibrItem } from '../../../types'
 
 export function VistaEnviado({ form, catalogo, codigosSel, puedeEditar, soloLectura, saving, onAvanzar }: {
@@ -24,6 +25,19 @@ export function VistaEnviado({ form, catalogo, codigosSel, puedeEditar, soloLect
   const [fechaFinEstimada, setFechaFinEstimada] = useState(form.certificado_fecha_fin || '')
   const otstCodigos = parseOtstCodes(form.otst)
   const serviciosSeleccionados = catalogo.filter(c => codigosSel.has(c.codigo))
+
+  // El transporte (normalmente TCC) tiene un SLA propio de 3 días hábiles
+  // medido desde fecha_envio, independiente de la fecha de calibración
+  // (que todavía no existe mientras el equipo está en tránsito).
+  const semaforoInfo = form.estado === 'enviado' && form.estado_desde ? {
+    estado: form.estado,
+    certificado_fecha_fin: form.certificado_fecha_fin ?? null,
+    fecha_programada_envio: form.fecha_programada_envio ?? null,
+    fecha_envio: form.fecha_envio ?? null,
+    estado_desde: form.estado_desde,
+  } : null
+  const nivelTransporte = semaforoInfo ? semaforoOrden(semaforoInfo) : 'ok'
+  const colorTransporte = nivelTransporte === 'vencida' ? 'var(--red)' : nivelTransporte === 'proxima' ? 'var(--yellow)' : 'var(--text)'
 
   function confirmar() {
     if (!codigoRecepcion.trim()) { toast.error('Ingresa el código de recepción'); return }
@@ -61,6 +75,11 @@ export function VistaEnviado({ form, catalogo, codigosSel, puedeEditar, soloLect
           </FG>
           <FG label="Proveedor (laboratorio)">
             <div style={{ ...INP, color: form.proveedor ? 'var(--text)' : 'var(--muted)' }}>{form.proveedor || '—'}</div>
+          </FG>
+          <FG label="Transporte (SLA 3 días hábiles)">
+            <div style={{ ...INP, color: colorTransporte, fontWeight: nivelTransporte === 'ok' ? 400 : 700 }}>
+              {semaforoInfo ? descripcionSemaforo(semaforoInfo) : '—'}
+            </div>
           </FG>
           <FG label="RMV/FV">
             {form.rmv_fv ? (
@@ -100,6 +119,13 @@ export function VistaEnviado({ form, catalogo, codigosSel, puedeEditar, soloLect
             ) : (
               <div style={{ ...INP, color: 'var(--muted)' }}>Sin servicios seleccionados</div>
             )}
+          </FG>
+        </div>
+        <div style={{ marginTop: 14 }}>
+          <FG label="Nota de envío">
+            <div style={{ ...INP, color: form.nota_envio ? 'var(--text)' : 'var(--muted)' }}>
+              {form.nota_envio || 'Sin nota de envío'}
+            </div>
           </FG>
         </div>
       </Seccion>

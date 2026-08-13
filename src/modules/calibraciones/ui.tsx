@@ -7,6 +7,13 @@ export function fmtFecha(iso: string | null): string {
   return `${d}/${m}/${y}`
 }
 
+// Convierte un timestamp (llega en UTC) a fecha ISO en horario local
+// (Colombia = UTC-5) — cortar el string directo mostraba la hora UTC.
+export function fechaLocalISO(iso: string): string {
+  const d = new Date(iso)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 export function fmtCOP(n: number | null): string {
   if (n === null || n === undefined) return '—'
   return '$' + n.toLocaleString('es-CO', { maximumFractionDigits: 0 })

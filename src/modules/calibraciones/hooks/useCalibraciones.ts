@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../../lib/supabase'
 import { useUser } from '../../../hooks/useUser'
+import { businessDaysBetween } from '../../../lib/colombiaCalendar'
 import type { Asesor, CorreoProveedor, EstadoCalibracion, Modalidad, OrdenCalibracion, OrdenCalibracionHistorial, OrdenCalibracionParametro, RvCalibrItem } from '../../../types'
 
 export function useOrdenesCalibracion() {
@@ -15,6 +16,27 @@ export function useOrdenesCalibracion() {
     },
     enabled: !!user,
   })
+}
+
+// Contador para el badge del Sidebar — cuántas órdenes están vencidas ahora
+// mismo (mismo patrón que useTareasBadgeCount en modules/tareas/hooks/useTareas.ts).
+export function useCalibracionesBadgeCount(): number {
+  const { user, hasModule } = useUser()
+  const { data } = useQuery({
+    queryKey: ['calibraciones_badge', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('ordenes_calibracion')
+        .select('estado, certificado_fecha_fin, fecha_programada_envio, fecha_envio, fecha_retorno, fecha_llegada_hanna, estado_desde')
+        .neq('estado', 'terminado')
+      if (error) throw error
+      return data as OrdenParaSemaforo[]
+    },
+    enabled: !!user && hasModule('calibraciones'),
+    refetchInterval: 60_000,
+  })
+  if (!data) return 0
+  return data.filter(o => semaforoOrden(o) === 'vencida').length
 }
 
 export function useOrdenParametros(ordenId: string | null) {
@@ -270,13 +292,12 @@ export function flujoPorModalidad(modalidad: Modalidad | null, incluirMantenimie
   return incluirMantenimiento ? base : base.filter(s => s.key !== 'en_mantenimiento_reparacion')
 }
 
-// ── Semáforo simplificado (días calendario, no días hábiles exactos) ───────
-// Aproximación para v1 — no replica el cálculo de días hábiles ni el
-// calendario de festivos colombianos del semáforo real de Notion.
-
-export function fechaLimite(orden: Pick<OrdenCalibracion, 'certificado_fecha_fin' | 'fecha_programada_envio'>): string | null {
-  return orden.certificado_fecha_fin || orden.fecha_programada_envio || null
-}
+// ── Semáforo por etapa ───────────────────────────────────────────────────
+// Cada estado tiene, si aplica, un campo de fecha objetivo propio. Mientras
+// esa fecha no exista todavía (OC creada, en mantenimiento, en programación
+// de visita antes de fijar fecha…) el semáforo no se queda "apagado": usa la
+// antigüedad de la orden en su estado actual (estado_desde, ver migración
+// 20260813f) en días hábiles de Colombia para detectar órdenes estancadas.
 
 // Fecha local en formato ISO (no UTC) — con toISOString() el semáforo se
 // adelanta un día durante la noche en Colombia (UTC-5).
@@ -285,6 +306,202 @@ function localISO(d: Date): string {
 }
 
 export function hoyISO(): string { return localISO(new Date()) }
+
+const UMBRAL_PROXIMA_DIAS_HABILES = 2
+const UMBRAL_VENCIDA_DIAS_HABILES = 4
+
+// Regla de semáforo por estado. Un estado puede tener una fecha objetivo
+// propia (campoFecha, comparada contra hoy en días calendario) y/o un SLA de
+// tránsito propio en días hábiles desde un campo de referencia — hoy usado
+// por "enviado" (fecha_envio, normalmente TCC, entrega máx. 3 días hábiles),
+// "en_retorno" (fecha_retorno, mismo SLA de vuelta) y "control_calidad"
+// (fecha_llegada_hanna, 1 día hábil completo para revisar el equipo — llegó
+// hoy, próxima a vencer desde ya; al día hábil siguiente ya está vencida).
+// Cuando un estado tiene ambas, se evalúan las dos y manda la más urgente:
+// certificado_fecha_fin sigue siendo el plazo máximo de todo el servicio,
+// pero cada tramo interno puede tener su propio límite más corto adentro.
+interface ReglaSemaforo {
+  campoFecha?: 'fecha_programada_envio' | 'certificado_fecha_fin'
+  campoReferenciaHabiles?: 'fecha_envio' | 'fecha_retorno' | 'fecha_llegada_hanna'
+  umbralProximaHabiles?: number
+  umbralVencidaHabiles?: number
+}
+
+const REGLA_POR_ESTADO: Partial<Record<EstadoCalibracion, ReglaSemaforo>> = {
+  para_enviar: { campoFecha: 'fecha_programada_envio' },
+  en_programacion_visita: { campoFecha: 'fecha_programada_envio' },
+  visita_programada: { campoFecha: 'fecha_programada_envio' },
+  enviado: { campoReferenciaHabiles: 'fecha_envio', umbralProximaHabiles: 2, umbralVencidaHabiles: 3 },
+  en_calibracion: { campoFecha: 'certificado_fecha_fin' },
+  en_retorno: { campoFecha: 'certificado_fecha_fin', campoReferenciaHabiles: 'fecha_retorno', umbralProximaHabiles: 2, umbralVencidaHabiles: 3 },
+  control_calidad: { campoFecha: 'certificado_fecha_fin', campoReferenciaHabiles: 'fecha_llegada_hanna', umbralProximaHabiles: 0, umbralVencidaHabiles: 1 },
+  carga_al_sistema: { campoFecha: 'certificado_fecha_fin' },
+  envio_certificados: { campoFecha: 'certificado_fecha_fin' },
+}
+
+// Etiqueta para mostrar junto a la fecha de referencia de días hábiles en la
+// UI — solo para los estados con SLA de tránsito propio; el resto usa el
+// genérico "En este estado desde" (ver infoAntiguedadEstado).
+const ETIQUETA_REFERENCIA_HABILES: Partial<Record<EstadoCalibracion, string>> = {
+  enviado: 'Viajando desde',
+  en_retorno: 'En retorno desde',
+  control_calidad: 'Llegó a Hanna',
+}
+
+// Fecha objetivo de la orden según su estado actual — null si el estado no
+// tiene una fecha propia todavía (usar antigüedad en días hábiles en su lugar).
+export function fechaObjetivo(orden: Pick<OrdenCalibracion, 'estado' | 'certificado_fecha_fin' | 'fecha_programada_envio'>): string | null {
+  const campo = REGLA_POR_ESTADO[orden.estado]?.campoFecha
+  return campo ? orden[campo] : null
+}
+
+export type NivelSemaforo = 'ok' | 'proxima' | 'vencida'
+
+type OrdenParaSemaforo = Pick<OrdenCalibracion, 'estado' | 'certificado_fecha_fin' | 'fecha_programada_envio' | 'fecha_envio' | 'fecha_retorno' | 'fecha_llegada_hanna' | 'estado_desde'>
+
+// Convierte una fecha `date` (YYYY-MM-DD, sin hora) a medianoche local —
+// new Date(str) la interpreta en UTC y se corre un día en Colombia (UTC-5).
+// Mismo patrón que sumarDias/miercolesSiguiente más abajo.
+function fechaLocalDesdeISO(fechaISO: string): Date {
+  const [y, m, d] = fechaISO.split('-').map(Number)
+  return new Date(y, m - 1, d)
+}
+
+// Fecha desde la que se cuentan los días hábiles: el campo de referencia
+// propio del estado (ej. fecha_envio para "enviado") si existe, o
+// estado_desde por defecto.
+function fechaReferenciaHabiles(orden: OrdenParaSemaforo): Date {
+  const campo = REGLA_POR_ESTADO[orden.estado]?.campoReferenciaHabiles
+  const valor = campo ? orden[campo] : null
+  return valor ? fechaLocalDesdeISO(valor) : new Date(orden.estado_desde)
+}
+
+// Días hábiles transcurridos desde la referencia del estado actual (0 si
+// arrancó hoy) — para "enviado"/"en_retorno" es "días viajando" desde
+// fecha_envio/fecha_retorno; para el resto, antigüedad desde estado_desde.
+export function diasHabilesEnEstado(orden: OrdenParaSemaforo): number {
+  return businessDaysBetween(fechaReferenciaHabiles(orden), new Date())
+}
+
+const ORDEN_NIVEL: Record<NivelSemaforo, number> = { ok: 0, proxima: 1, vencida: 2 }
+function peorNivel(a: NivelSemaforo, b: NivelSemaforo): NivelSemaforo {
+  return ORDEN_NIVEL[a] >= ORDEN_NIVEL[b] ? a : b
+}
+function nivelPorFecha(objetivo: string): NivelSemaforo {
+  if (objetivo < hoyISO()) return 'vencida'
+  const limite = new Date()
+  limite.setDate(limite.getDate() + 2)
+  if (objetivo <= localISO(limite)) return 'proxima'
+  return 'ok'
+}
+function nivelPorHabiles(habiles: number, umbralProxima: number, umbralVencida: number): NivelSemaforo {
+  if (habiles >= umbralVencida) return 'vencida'
+  if (habiles >= umbralProxima) return 'proxima'
+  return 'ok'
+}
+
+export function semaforoOrden(orden: OrdenParaSemaforo): NivelSemaforo {
+  if (grupoEstado(orden.estado) === 'completado' || orden.estado === 'novedad') return 'ok'
+
+  const regla = REGLA_POR_ESTADO[orden.estado]
+  let nivel: NivelSemaforo = 'ok'
+  let evaluado = false
+
+  if (regla?.campoReferenciaHabiles) {
+    const umbralProxima = regla.umbralProximaHabiles ?? UMBRAL_PROXIMA_DIAS_HABILES
+    const umbralVencida = regla.umbralVencidaHabiles ?? UMBRAL_VENCIDA_DIAS_HABILES
+    nivel = peorNivel(nivel, nivelPorHabiles(diasHabilesEnEstado(orden), umbralProxima, umbralVencida))
+    evaluado = true
+  }
+
+  const objetivo = fechaObjetivo(orden)
+  if (objetivo) {
+    nivel = peorNivel(nivel, nivelPorFecha(objetivo))
+    evaluado = true
+  }
+
+  if (evaluado) return nivel
+
+  // Estado sin regla propia todavía (o con campoFecha configurado pero el
+  // campo aún vacío, ej. carga_al_sistema antes de fijar certificado_fecha_fin):
+  // usar antigüedad genérica desde estado_desde.
+  return nivelPorHabiles(diasHabilesEnEstado(orden), UMBRAL_PROXIMA_DIAS_HABILES, UMBRAL_VENCIDA_DIAS_HABILES)
+}
+
+// Diferencia en días calendario entre hoy y una fecha objetivo (negativa si
+// ya pasó) — a diferencia de diasHabilesEnEstado, esto compara contra una
+// fecha concreta conocida, no mide tiempo transcurrido.
+function diasCalendarioHasta(fechaISO: string): number {
+  const objetivo = fechaLocalDesdeISO(fechaISO)
+  const hoy = new Date()
+  const hoyLocal = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate())
+  return Math.round((objetivo.getTime() - hoyLocal.getTime()) / 86_400_000)
+}
+
+function textoPlazoCalendario(dias: number): string {
+  if (dias < 0) return `Vencida hace ${-dias} día${-dias !== 1 ? 's' : ''}`
+  if (dias === 0) return 'Vence hoy'
+  return `Vence en ${dias} día${dias !== 1 ? 's' : ''}`
+}
+function textoPlazoHabiles(restantes: number): string {
+  if (restantes <= 0) {
+    const exceso = -restantes
+    return exceso === 0 ? 'Vencida hoy' : `Vencida hace ${exceso} día${exceso !== 1 ? 's' : ''} hábil${exceso !== 1 ? 'es' : ''}`
+  }
+  return `Vence en ${restantes} día${restantes !== 1 ? 's' : ''} hábil${restantes !== 1 ? 'es' : ''}`
+}
+
+// Cuenta regresiva en palabras hacia el próximo hito de la orden. Cuando el
+// estado tiene SLA de tránsito propio (enviado/en_retorno) va primero — es
+// lo más urgente/accionable — seguido del plazo general si también aplica
+// (ej. en_retorno: "Vence en 2 días hábiles · Vence en 5 días"). Es la misma
+// fuente que pinta el semáforo, en texto.
+export function descripcionSemaforo(orden: OrdenParaSemaforo): string {
+  if (grupoEstado(orden.estado) === 'completado' || orden.estado === 'novedad') return ''
+
+  const regla = REGLA_POR_ESTADO[orden.estado]
+  const partes: string[] = []
+
+  if (regla?.campoReferenciaHabiles) {
+    const umbralVencida = regla.umbralVencidaHabiles ?? UMBRAL_VENCIDA_DIAS_HABILES
+    partes.push(textoPlazoHabiles(umbralVencida - diasHabilesEnEstado(orden)))
+  }
+
+  const objetivo = fechaObjetivo(orden)
+  if (objetivo) partes.push(textoPlazoCalendario(diasCalendarioHasta(objetivo)))
+
+  if (partes.length === 0) {
+    partes.push(textoPlazoHabiles(UMBRAL_VENCIDA_DIAS_HABILES - diasHabilesEnEstado(orden)))
+  }
+
+  return partes.join(' · ')
+}
+
+// Fecha y antigüedad en días hábiles a mostrar junto a "Fecha límite" en la
+// lista — null cuando el estado no tiene nada propio que agregar (ya sea
+// porque solo tiene fecha objetivo sin SLA de tránsito, o esa fecha ya
+// resume todo lo que hay que saber).
+export function infoAntiguedadEstado(orden: OrdenParaSemaforo): { etiqueta: string, fechaISO: string, habiles: number } | null {
+  if (grupoEstado(orden.estado) === 'completado' || orden.estado === 'novedad') return null
+
+  const regla = REGLA_POR_ESTADO[orden.estado]
+  const habiles = diasHabilesEnEstado(orden)
+
+  if (regla?.campoReferenciaHabiles) {
+    const valor = orden[regla.campoReferenciaHabiles]
+    return {
+      etiqueta: ETIQUETA_REFERENCIA_HABILES[orden.estado] ?? 'En este estado desde',
+      fechaISO: valor || localISO(new Date(orden.estado_desde)),
+      habiles,
+    }
+  }
+
+  if (!fechaObjetivo(orden)) {
+    return { etiqueta: 'En este estado desde', fechaISO: localISO(new Date(orden.estado_desde)), habiles }
+  }
+
+  return null
+}
 
 // Ruta in situ / sede Hanna: al terminar mantenimiento se sugiere la fecha
 // de la visita como el primer miércoles DESPUÉS de la salida de
@@ -308,19 +525,12 @@ export function sumarDias(fechaISO: string, dias: number): string {
   return localISO(fecha)
 }
 
-export function estaVencido(orden: Pick<OrdenCalibracion, 'estado' | 'certificado_fecha_fin' | 'fecha_programada_envio'>): boolean {
-  if (grupoEstado(orden.estado) === 'completado' || orden.estado === 'novedad') return false
-  const f = fechaLimite(orden)
-  return !!f && f < hoyISO()
+export function estaVencido(orden: OrdenParaSemaforo): boolean {
+  return semaforoOrden(orden) === 'vencida'
 }
 
-export function proximoAVencer(orden: Pick<OrdenCalibracion, 'estado' | 'certificado_fecha_fin' | 'fecha_programada_envio'>, dias = 2): boolean {
-  if (grupoEstado(orden.estado) === 'completado' || orden.estado === 'novedad' || estaVencido(orden)) return false
-  const f = fechaLimite(orden)
-  if (!f) return false
-  const limite = new Date()
-  limite.setDate(limite.getDate() + dias)
-  return f <= localISO(limite)
+export function proximoAVencer(orden: OrdenParaSemaforo): boolean {
+  return semaforoOrden(orden) === 'proxima'
 }
 
 // ── Historial: etiquetas y formateo de valores ──────────────────────────────

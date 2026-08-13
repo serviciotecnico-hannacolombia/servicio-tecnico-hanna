@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import { ShieldCheck } from 'lucide-react'
 import { FG, Seccion, Grid2, INP, PRI } from '../ui'
 import { linkOtst, parseOtstCodes } from './CamposCompartidos'
+import { semaforoOrden, descripcionSemaforo } from '../hooks/useCalibraciones'
 import type { Asesor, OrdenCalibracion } from '../../../types'
 
 export function VistaControlCalidad({ form, asesorSeleccionado, puedeEditar, soloLectura, saving, onAvanzar }: {
@@ -20,6 +21,21 @@ export function VistaControlCalidad({ form, asesorSeleccionado, puedeEditar, sol
   const [fechaControlCalidad, setFechaControlCalidad] = useState(form.fecha_control_calidad || '')
   const [notas, setNotas] = useState(form.notas_control_calidad || '')
   const otstCodigos = parseOtstCodes(form.otst)
+
+  // Control de calidad tiene un SLA propio de 1 día hábil completo desde que
+  // el equipo llegó a Hanna — mucho más corto que el plazo general
+  // (certificado_fecha_fin), que sigue vigente como límite de todo el servicio.
+  const semaforoInfo = form.estado === 'control_calidad' && form.estado_desde ? {
+    estado: form.estado,
+    certificado_fecha_fin: form.certificado_fecha_fin ?? null,
+    fecha_programada_envio: form.fecha_programada_envio ?? null,
+    fecha_envio: form.fecha_envio ?? null,
+    fecha_retorno: form.fecha_retorno ?? null,
+    fecha_llegada_hanna: form.fecha_llegada_hanna ?? null,
+    estado_desde: form.estado_desde,
+  } : null
+  const nivelPlazo = semaforoInfo ? semaforoOrden(semaforoInfo) : 'ok'
+  const colorPlazo = nivelPlazo === 'vencida' ? 'var(--red)' : nivelPlazo === 'proxima' ? 'var(--yellow)' : 'var(--text)'
 
   // El flujo de laboratorio pasa directo a "Envío de certificados" — ya
   // capturó código de recepción y fechas de calibración en "Enviado". El
@@ -78,6 +94,11 @@ export function VistaControlCalidad({ form, asesorSeleccionado, puedeEditar, sol
             ) : (
               <div style={{ ...INP, color: 'var(--muted)' }}>Sin OTST</div>
             )}
+          </FG>
+          <FG label="Plazo (SLA 1 día hábil desde la llegada)">
+            <div style={{ ...INP, color: colorPlazo, fontWeight: nivelPlazo === 'ok' ? 400 : 700 }}>
+              {semaforoInfo ? descripcionSemaforo(semaforoInfo) : '—'}
+            </div>
           </FG>
         </Grid2>
       </Seccion>

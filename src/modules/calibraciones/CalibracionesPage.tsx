@@ -9,7 +9,7 @@ import { Modal } from '../../components/ui/Modal'
 import { useUser } from '../../hooks/useUser'
 import {
   useOrdenesCalibracion, useCatalogoRvCalibr, useAsesores, useProveedores, useInvalidateCalibraciones,
-  grupoEstado, ESTADO_LABEL, MODALIDAD_LABEL, estaVencido, proximoAVencer, fechaLimite,
+  grupoEstado, ESTADO_LABEL, MODALIDAD_LABEL, estaVencido, proximoAVencer, fechaObjetivo, infoAntiguedadEstado, descripcionSemaforo,
 } from './hooks/useCalibraciones'
 import {
   FG, IconBtn, Stat, INP, PRI, GHOST, B_INFO, B_VENCIDA, B_PROXIMA, B_NOVEDAD,
@@ -96,6 +96,7 @@ export function CalibracionesPage() {
   const pendientesCount = ordenes.filter(o => grupoEstado(o.estado) === 'pendiente').length
   const enCursoCount = ordenes.filter(o => grupoEstado(o.estado) === 'en_curso').length
   const vencidasCount = ordenes.filter(o => estaVencido(o)).length
+  const proximasCount = ordenes.filter(o => proximoAVencer(o)).length
   const completadasCount = ordenes.filter(o => grupoEstado(o.estado) === 'completado').length
 
   return (
@@ -120,9 +121,29 @@ export function CalibracionesPage() {
 
       {tab === 'ordenes' ? (
         <>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 20 }}>
+          {(vencidasCount > 0 || proximasCount > 0) && (
+            <div
+              onClick={vencidasCount > 0 ? () => { setVista('vencidas'); setPage(0) } : undefined}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', borderRadius: 'var(--radius)',
+                marginBottom: 20, cursor: vencidasCount > 0 ? 'pointer' : 'default', fontSize: 13, fontWeight: 600,
+                background: vencidasCount > 0 ? 'var(--red-bg)' : 'var(--yellow-bg)',
+                border: `1px solid ${vencidasCount > 0 ? 'var(--red-border)' : 'var(--yellow-border)'}`,
+                color: vencidasCount > 0 ? 'var(--red)' : 'var(--yellow)',
+              }}
+            >
+              <AlertTriangle size={16} />
+              {vencidasCount > 0
+                ? `Tienes ${vencidasCount} orden${vencidasCount !== 1 ? 'es' : ''} vencida${vencidasCount !== 1 ? 's' : ''} que requiere${vencidasCount !== 1 ? 'n' : ''} atención`
+                : `Tienes ${proximasCount} orden${proximasCount !== 1 ? 'es' : ''} próxima${proximasCount !== 1 ? 's' : ''} a vencer`}
+              {vencidasCount > 0 && <span style={{ marginLeft: 'auto', textDecoration: 'underline', fontSize: 12 }}>Ver vencidas →</span>}
+            </div>
+          )}
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14, marginBottom: 20 }}>
             <Stat label="Pendientes" value={pendientesCount} color="var(--muted)" />
             <Stat label="En curso" value={enCursoCount} color="var(--accent)" />
+            <Stat label="Próximas a vencer" value={proximasCount} color="var(--yellow, #ca8a04)" />
             <Stat label="Vencidas" value={vencidasCount} color="var(--red)" />
             <Stat label="Completadas" value={completadasCount} color="var(--green, #16a34a)" />
           </div>
@@ -192,6 +213,7 @@ export function CalibracionesPage() {
                   const proxima = proximoAVencer(o)
                   const grupo = grupoEstado(o.estado)
                   const grupoColor = GRUPO_COLOR[grupo]
+                  const descripcion = descripcionSemaforo(o)
                   return (
                     <div key={o.id} onClick={() => navigate(`/calibraciones/${o.id}`)} style={{
                       display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', cursor: 'pointer',
@@ -213,13 +235,28 @@ export function CalibracionesPage() {
                           }}>{ESTADO_LABEL[o.estado]}</span>
                           {o.modalidad && <span style={B_INFO}>{MODALIDAD_LABEL[o.modalidad]}</span>}
                           {o.estado === 'novedad' && <span style={B_NOVEDAD}><AlertTriangle size={11} style={{ verticalAlign: -1, marginRight: 3 }} />Novedad</span>}
-                          {vencida && <span style={B_VENCIDA}><AlertTriangle size={11} style={{ verticalAlign: -1, marginRight: 3 }} />Vencida</span>}
-                          {!vencida && proxima && <span style={B_PROXIMA}><AlertTriangle size={11} style={{ verticalAlign: -1, marginRight: 3 }} />Próxima a vencer</span>}
+                          {vencida && <span style={B_VENCIDA}><AlertTriangle size={11} style={{ verticalAlign: -1, marginRight: 3 }} />{descripcion}</span>}
+                          {!vencida && proxima && <span style={B_PROXIMA}><AlertTriangle size={11} style={{ verticalAlign: -1, marginRight: 3 }} />{descripcion}</span>}
                         </div>
                         <div style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--mono)', marginTop: 6, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                           {o.correo_asesor && <span>Asesor: <strong>{o.correo_asesor}</strong></span>}
                           {o.proveedor && <span>Proveedor: <strong>{o.proveedor}</strong></span>}
-                          <span>Fecha límite: <strong style={{ color: vencida ? 'var(--red)' : undefined }}>{fmtFecha(fechaLimite(o))}</strong></span>
+                          {(() => {
+                            const objetivo = fechaObjetivo(o)
+                            return objetivo ? (
+                              <span>Fecha límite: <strong style={{ color: vencida ? 'var(--red)' : undefined }}>{fmtFecha(objetivo)}</strong></span>
+                            ) : null
+                          })()}
+                          {(() => {
+                            const info = infoAntiguedadEstado(o)
+                            if (!info) return null
+                            return (
+                              <span>{info.etiqueta}: <strong style={{ color: vencida ? 'var(--red)' : proxima ? 'var(--yellow)' : undefined }}>
+                                {fmtFecha(info.fechaISO)} ({info.habiles} día{info.habiles !== 1 ? 's' : ''} hábil{info.habiles !== 1 ? 'es' : ''})
+                              </strong></span>
+                            )
+                          })()}
+                          {!vencida && !proxima && descripcion && <span style={{ color: 'var(--accent)' }}>{descripcion}</span>}
                           {o.valor_oc_antes_iva != null && <span>Valor: <strong>{fmtCOP(o.valor_oc_antes_iva)}</strong></span>}
                           {o.enviado_cliente_final && <span style={{ color: 'var(--accent)' }}>Equipo ya despachado al cliente</span>}
                         </div>

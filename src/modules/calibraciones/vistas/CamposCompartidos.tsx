@@ -1,5 +1,6 @@
 // Bloques de campos reutilizados entre el formulario completo de una orden
 // y las vistas dedicadas por estado (VistaMantenimiento, VistaVisitaProgramada…).
+import { AlertTriangle } from 'lucide-react'
 import { FG, Seccion, Grid2, INP } from '../ui'
 import type { Asesor, OrdenCalibracion } from '../../../types'
 
@@ -9,6 +10,31 @@ export function parseNumeroOC(raw: string | null | undefined): { numero: string,
   const m = (raw || '').match(/^ST(\d+)-(\d{4})$/i)
   if (m) return { numero: m[1], anio: m[2] }
   return { numero: raw || '', anio: String(new Date().getFullYear()) }
+}
+
+// Siguiente consecutivo disponible para un año: el mayor número usado ese
+// año entre las órdenes existentes, más uno (1 si no hay ninguna todavía).
+export function sugerirNumeroOC(ordenes: Pick<OrdenCalibracion, 'numero_oc'>[], anio: string): number {
+  const max = ordenes.reduce((acc, o) => {
+    const p = parseNumeroOC(o.numero_oc)
+    if (p.anio !== anio) return acc
+    const n = parseInt(p.numero, 10)
+    return Number.isFinite(n) && n > acc ? n : acc
+  }, 0)
+  return max + 1
+}
+
+// Orden existente (distinta de excluirId) que ya usa este mismo No. de
+// Orden de Compra — comparación case-insensitive sobre el valor completo
+// (ST{número}-{año}), para detectar duplicados al escribir.
+export function ordenConMismoNumeroOC(
+  ordenes: Pick<OrdenCalibracion, 'id' | 'numero_oc' | 'cliente'>[],
+  numeroOC: string | null | undefined,
+  excluirId?: string,
+): Pick<OrdenCalibracion, 'id' | 'numero_oc' | 'cliente'> | undefined {
+  const norm = (numeroOC || '').trim().toLowerCase()
+  if (!norm) return undefined
+  return ordenes.find(o => o.id !== excluirId && (o.numero_oc || '').trim().toLowerCase() === norm)
 }
 
 // Link solicitud SACI y Link OTST no son campos libres: se arman a partir
@@ -28,13 +54,18 @@ export function parseOtstCodes(raw: string | null | undefined): string[] {
   return (raw || '').split(',').map(v => v.trim()).filter(Boolean)
 }
 
-export function IdentificacionFields({ form, set, esNueva, asesores, asesorSeleccionado }: {
+export function IdentificacionFields({ form, set, esNueva, asesores, asesorSeleccionado, ordenes }: {
   form: Partial<OrdenCalibracion>
   set: <K extends keyof OrdenCalibracion>(key: K, value: OrdenCalibracion[K]) => void
   esNueva: boolean
   asesores: Asesor[]
   asesorSeleccionado: Asesor | undefined
+  ordenes: Pick<OrdenCalibracion, 'id' | 'numero_oc' | 'cliente'>[]
 }) {
+  const { numero, anio } = parseNumeroOC(form.numero_oc)
+  const sugerido = sugerirNumeroOC(ordenes, anio)
+  const duplicada = ordenConMismoNumeroOC(ordenes, form.numero_oc, form.id)
+
   return (
     <Seccion titulo="Identificación">
       <Grid2>
@@ -45,18 +76,34 @@ export function IdentificacionFields({ form, set, esNueva, asesores, asesorSelec
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <span style={{ fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--muted)' }}>ST</span>
             <input
-              value={parseNumeroOC(form.numero_oc).numero}
+              value={numero}
               onChange={e => {
                 const digits = e.target.value.replace(/\D/g, '')
-                const anio = parseNumeroOC(form.numero_oc).anio
                 set('numero_oc', digits ? `ST${digits}-${anio}` : '')
               }}
               inputMode="numeric"
               placeholder="211"
-              style={{ ...INP, flex: 1, minWidth: 0 }}
+              style={{ ...INP, flex: 1, minWidth: 0, ...(duplicada ? { borderColor: 'var(--red-border)' } : {}) }}
             />
-            <span style={{ fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--muted)' }}>-{parseNumeroOC(form.numero_oc).anio}</span>
+            <span style={{ fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--muted)' }}>-{anio}</span>
           </div>
+          {esNueva && !numero && (
+            <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 5 }}>
+              Sugerido: <button
+                type="button"
+                onClick={() => set('numero_oc', `ST${sugerido}-${anio}`)}
+                style={{
+                  background: 'none', border: 'none', padding: 0, color: 'var(--accent)',
+                  fontFamily: 'var(--mono)', fontSize: 11, fontWeight: 700, cursor: 'pointer', textDecoration: 'underline',
+                }}
+              >ST{sugerido}-{anio}</button> (siguiente consecutivo de {anio})
+            </div>
+          )}
+          {duplicada && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: 'var(--red)', marginTop: 5 }}>
+              <AlertTriangle size={12} /> Ya existe una orden con este número — {duplicada.cliente}
+            </div>
+          )}
         </FG>
         <FG label="Correo cliente" required={esNueva}><input value={form.correo_cliente || ''} onChange={e => set('correo_cliente', e.target.value)} style={INP} /></FG>
         <FG label="Correo asesor(a)" required={esNueva}>

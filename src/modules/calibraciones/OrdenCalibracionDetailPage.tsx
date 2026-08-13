@@ -10,11 +10,11 @@ import { useProfiles } from '../../hooks/useProfiles'
 import {
   useOrdenesCalibracion, useOrdenParametros, useCatalogoRvCalibr, useAsesores, useProveedores, useHistorialOrden,
   useInvalidateCalibraciones, grupoEstado, ESTADO_LABEL, MODALIDAD_LABEL, CAMPO_LABEL,
-  formatValorHistorial, estaVencido, proximoAVencer, logServiciosChange,
+  formatValorHistorial, estaVencido, proximoAVencer, descripcionSemaforo, logServiciosChange,
   flujoPorModalidad, PROVEEDOR_SEDE_HANNA, miercolesSiguiente,
 } from './hooks/useCalibraciones'
 import type { EtapaFlujo } from './hooks/useCalibraciones'
-import { FG, Seccion, Grid2, INP, PRI, GHOST, B_INFO, B_VENCIDA, B_PROXIMA, GRUPO_COLOR, fmtFecha } from './ui'
+import { FG, Seccion, Grid2, INP, PRI, GHOST, B_INFO, B_VENCIDA, B_PROXIMA, GRUPO_COLOR, fmtFecha, fechaLocalISO } from './ui'
 import { IdentificacionFields, ReferenciasFields, linkOtst, parseOtstCodes } from './vistas/CamposCompartidos'
 import { generarMailtoOC } from './correo'
 import { VistaMantenimiento } from './vistas/VistaMantenimiento'
@@ -30,12 +30,6 @@ import { VistaEnvioCertificados } from './vistas/VistaEnvioCertificados'
 import { VistaTerminado } from './vistas/VistaTerminado'
 import type { EstadoCalibracion, Modalidad, OrdenCalibracion } from '../../types'
 
-// `created_at` llega en UTC — cortar el string directo mostraba la hora UTC
-// en vez de la hora local (Colombia = UTC-5).
-function fechaLocalISO(iso: string): string {
-  const d = new Date(iso)
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
 function horaLocal(iso: string): string {
   const d = new Date(iso)
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
@@ -340,8 +334,8 @@ export function OrdenCalibracionDetailPage() {
                   fontFamily: 'var(--mono)', fontSize: 11, fontWeight: 700,
                   background: grupoColor.bg, color: grupoColor.text, border: `1px solid ${grupoColor.border}`,
                 }}>{ESTADO_LABEL[form.estado as EstadoCalibracion]}</span>
-                {vencida && <span style={B_VENCIDA}><AlertTriangle size={11} style={{ verticalAlign: -1, marginRight: 3 }} />Vencida</span>}
-                {!vencida && proxima && <span style={B_PROXIMA}><AlertTriangle size={11} style={{ verticalAlign: -1, marginRight: 3 }} />Próxima a vencer</span>}
+                {vencida && <span style={B_VENCIDA}><AlertTriangle size={11} style={{ verticalAlign: -1, marginRight: 3 }} />{orden && descripcionSemaforo(orden)}</span>}
+                {!vencida && proxima && <span style={B_PROXIMA}><AlertTriangle size={11} style={{ verticalAlign: -1, marginRight: 3 }} />{orden && descripcionSemaforo(orden)}</span>}
               </div>
             )}
           </div>
@@ -433,7 +427,7 @@ export function OrdenCalibracionDetailPage() {
             </div>
           )}
           <fieldset disabled={!puedeEditar || soloLectura} style={{ border: 'none', padding: 0, margin: 0 }}>
-            <IdentificacionFields form={form} set={set} esNueva={esNueva} asesores={asesores} asesorSeleccionado={asesorSeleccionado} />
+            <IdentificacionFields form={form} set={set} esNueva={esNueva} asesores={asesores} asesorSeleccionado={asesorSeleccionado} ordenes={ordenes} />
             <ReferenciasFields form={form} setForm={setForm} set={set} esNueva={esNueva} />
 
             <Seccion titulo="Proceso">

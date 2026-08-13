@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import { Truck } from 'lucide-react'
 import { FG, Seccion, Grid2, INP, PRI, fmtFecha } from '../ui'
+import { semaforoOrden, descripcionSemaforo } from '../hooks/useCalibraciones'
 import type { OrdenCalibracion } from '../../../types'
 
 export function VistaEnRetorno({ form, puedeEditar, soloLectura, saving, onAvanzar }: {
@@ -16,6 +17,20 @@ export function VistaEnRetorno({ form, puedeEditar, soloLectura, saving, onAvanz
 }) {
   const [cartaEntrega, setCartaEntrega] = useState(form.carta_entrega || '')
   const [fechaLlegada, setFechaLlegada] = useState(form.fecha_llegada_hanna || '')
+
+  // El transporte de vuelta (mismo proveedor que el envío, normalmente TCC)
+  // tiene el mismo SLA de 3 días hábiles, medido desde fecha_retorno — que
+  // sigue siendo distinto del plazo general (certificado_fecha_fin).
+  const semaforoInfo = form.estado === 'en_retorno' && form.estado_desde ? {
+    estado: form.estado,
+    certificado_fecha_fin: form.certificado_fecha_fin ?? null,
+    fecha_programada_envio: form.fecha_programada_envio ?? null,
+    fecha_envio: form.fecha_envio ?? null,
+    fecha_retorno: form.fecha_retorno ?? null,
+    estado_desde: form.estado_desde,
+  } : null
+  const nivelTransporte = semaforoInfo ? semaforoOrden(semaforoInfo) : 'ok'
+  const colorTransporte = nivelTransporte === 'vencida' ? 'var(--red)' : nivelTransporte === 'proxima' ? 'var(--yellow)' : 'var(--text)'
 
   function confirmar() {
     if (!cartaEntrega.trim()) { toast.error('Ingresa la carta de entrega'); return }
@@ -49,6 +64,11 @@ export function VistaEnRetorno({ form, puedeEditar, soloLectura, saving, onAvanz
           <FG label="Fecha estimada de finalización">
             <div style={{ ...INP, color: form.certificado_fecha_fin ? 'var(--text)' : 'var(--muted)' }}>
               {form.certificado_fecha_fin ? fmtFecha(form.certificado_fecha_fin) : '—'}
+            </div>
+          </FG>
+          <FG label="Transporte de retorno (SLA 3 días hábiles)">
+            <div style={{ ...INP, color: colorTransporte, fontWeight: nivelTransporte === 'ok' ? 400 : 700 }}>
+              {semaforoInfo ? descripcionSemaforo(semaforoInfo) : '—'}
             </div>
           </FG>
         </Grid2>

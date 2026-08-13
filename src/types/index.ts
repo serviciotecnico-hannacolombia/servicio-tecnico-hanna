@@ -347,6 +347,7 @@ export interface OrdenCalibracion {
   parametros_nota: string | null
   valor_oc_antes_iva: number | null
   creado_por: string | null
+  estado_desde: string
   created_at: string
   updated_at: string
 }
