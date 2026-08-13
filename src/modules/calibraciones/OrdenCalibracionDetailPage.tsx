@@ -16,6 +16,7 @@ import {
 import type { EtapaFlujo } from './hooks/useCalibraciones'
 import { FG, Seccion, Grid2, INP, PRI, GHOST, B_INFO, B_VENCIDA, B_PROXIMA, GRUPO_COLOR, fmtFecha } from './ui'
 import { IdentificacionFields, ReferenciasFields, linkOtst, parseOtstCodes } from './vistas/CamposCompartidos'
+import { generarMailtoOC } from './correo'
 import { VistaMantenimiento } from './vistas/VistaMantenimiento'
 import { VistaVisitaProgramada } from './vistas/VistaVisitaProgramada'
 import { VistaParaEnviar } from './vistas/VistaParaEnviar'
@@ -122,6 +123,31 @@ export function OrdenCalibracionDetailPage() {
     })
   }
 
+  // Correo de Orden de Compra al proveedor — se dispara solo al crear una
+  // orden nueva, justo antes de guardarla. Misma lógica que Correos → Orden
+  // de Compra: busca el proveedor por nombre en correos_proveedores y usa
+  // sus destinatarios TO/CC ya configurados ahí. Si no hay match o no hay
+  // destinatarios TO, avisa pero no bloquea la creación de la orden.
+  async function enviarCorreoOC(datos: Partial<OrdenCalibracion>) {
+    const proveedor = proveedores.find(p => p.nombre.trim().toLowerCase() === (datos.proveedor || '').trim().toLowerCase())
+    if (!proveedor) {
+      toast.error(`No se encontró "${datos.proveedor}" en Correos OC — no se abrió el correo de la orden de compra`)
+      return
+    }
+    const { data: destinatarios, error } = await supabase
+      .from('correos_destinatarios').select('*').eq('proveedor_id', proveedor.id).order('orden')
+    if (error || !destinatarios?.length) {
+      toast.error('Este proveedor no tiene destinatarios configurados en Correos OC')
+      return
+    }
+    const url = generarMailtoOC(destinatarios, datos)
+    if (!url) {
+      toast.error('Este proveedor no tiene destinatarios TO configurados en Correos OC')
+      return
+    }
+    window.location.href = url
+  }
+
   async function submit(overrides?: Partial<OrdenCalibracion>) {
     const datos = overrides ? { ...form, ...overrides } : form
     if (!datos.cliente?.trim()) { toast.error('Ingresa el cliente'); return }
@@ -162,6 +188,8 @@ export function OrdenCalibracionDetailPage() {
         return
       }
     }
+
+    if (esNueva) await enviarCorreoOC(datos)
 
     setSaving(true)
     const payload = {

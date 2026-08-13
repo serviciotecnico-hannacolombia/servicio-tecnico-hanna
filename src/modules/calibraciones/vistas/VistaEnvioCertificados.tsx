@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import { FileCheck2 } from 'lucide-react'
 import { FG, Seccion, Grid2, INP, PRI, fmtFecha } from '../ui'
+import { generarMailtoCertificados } from '../correo'
 import type { OrdenCalibracion } from '../../../types'
 
 export function VistaEnvioCertificados({ form, puedeEditar, soloLectura, saving, onAvanzar }: {
@@ -16,10 +17,24 @@ export function VistaEnvioCertificados({ form, puedeEditar, soloLectura, saving,
 }) {
   const [fechaEntrega, setFechaEntrega] = useState(form.fecha_entrega_certificado || '')
   const [cartaCertificado, setCartaCertificado] = useState(form.carta_certificado || '')
+  const [contacto, setContacto] = useState('')
+  const [genero, setGenero] = useState<'M' | 'F'>('M')
 
   function confirmar() {
     if (!fechaEntrega) { toast.error('Ingresa la fecha de entrega del certificado'); return }
     if (!cartaCertificado.trim()) { toast.error('Ingresa la carta del certificado'); return }
+
+    // Antes de cerrar la orden, se abre el correo con los certificados al
+    // cliente — misma plantilla que Correos → Certificados de Calibración.
+    if (form.correo_cliente?.trim()) {
+      const url = generarMailtoCertificados(
+        form.correo_cliente.trim(), form.correo_asesor, form.numero_oc || '', form.cliente || '', contacto, genero,
+      )
+      window.location.href = url
+    } else {
+      toast.error('Esta orden no tiene correo del cliente — no se abrió el correo de certificados')
+    }
+
     onAvanzar({
       estado: 'terminado',
       fecha_entrega_certificado: fechaEntrega,
@@ -82,6 +97,39 @@ export function VistaEnvioCertificados({ form, puedeEditar, soloLectura, saving,
             </FG>
           </Grid2>
         </div>
+      </Seccion>
+
+      <Seccion titulo="Correo al cliente">
+        <Grid2>
+          <FG label="Contacto (opcional)">
+            <input
+              value={contacto}
+              onChange={e => setContacto(e.target.value)}
+              placeholder="Nombre de la persona a quien va dirigido"
+              disabled={soloLectura || !puedeEditar}
+              style={INP}
+            />
+          </FG>
+          <FG label="Género">
+            <div style={{ display: 'flex', border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}>
+              {(['M', 'F'] as const).map(g => (
+                <button
+                  key={g} type="button"
+                  onClick={() => setGenero(g)}
+                  disabled={soloLectura || !puedeEditar}
+                  style={{
+                    flex: 1, padding: '10px 13px', border: 'none', cursor: 'pointer',
+                    fontFamily: 'var(--sans)', fontWeight: 600, fontSize: 13,
+                    background: genero === g ? 'var(--accent)' : 'var(--surface2)',
+                    color: genero === g ? '#fff' : 'var(--muted)',
+                  }}
+                >
+                  {g === 'M' ? 'Estimado' : 'Estimada'}
+                </button>
+              ))}
+            </div>
+          </FG>
+        </Grid2>
       </Seccion>
 
       <Seccion titulo="Entrega del certificado">
