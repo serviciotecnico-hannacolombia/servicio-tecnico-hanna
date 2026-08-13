@@ -50,6 +50,11 @@ export function VistaVisitaProgramada({ form, puedeEditar, soloLectura, saving, 
           <FG label="Proveedor (laboratorio)">
             <div style={{ ...INP, color: form.proveedor ? 'var(--text)' : 'var(--muted)' }}>{form.proveedor || '—'}</div>
           </FG>
+          {form.modalidad === 'in_situ' && (
+            <FG label="Lugar de ejecución">
+              <div style={{ ...INP, color: form.lugar_ejecucion ? 'var(--text)' : 'var(--muted)' }}>{form.lugar_ejecucion || '—'}</div>
+            </FG>
+          )}
           <FG label="RMV/FV">
             {form.rmv_fv ? (
               <div onClick={copiarRmvFv} title="Clic para copiar" style={{ ...INP, cursor: 'copy' }}>{form.rmv_fv}</div>
