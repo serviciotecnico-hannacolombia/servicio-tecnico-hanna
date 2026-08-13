@@ -1,6 +1,9 @@
 // Bloques de campos reutilizados entre el formulario completo de una orden
 // y las vistas dedicadas por estado (VistaMantenimiento, VistaVisitaProgramada…).
-import { FG, Seccion, Grid2, INP } from '../ui'
+import { useState } from 'react'
+import { FG, Seccion, Grid2, INP, PRI } from '../ui'
+import { hoyISO } from '../hooks/useCalibraciones'
+import type { EtapaFlujo } from '../hooks/useCalibraciones'
 import type { Asesor, OrdenCalibracion } from '../../../types'
 
 // El No. de Orden de Compra siempre tiene el formato ST{número}-{año} — al
@@ -22,6 +25,12 @@ export function linkOtst(otst: string): string | null {
   return v ? `https://intranet.hannacolombia.com/stecnico/item/${v}` : null
 }
 
+// Una orden puede tener más de un equipo, cada uno con su propio OTST — el
+// campo admite varios códigos separados por coma y cada uno arma su link.
+export function parseOtstCodes(raw: string | null | undefined): string[] {
+  return (raw || '').split(',').map(v => v.trim()).filter(Boolean)
+}
+
 export function IdentificacionFields({ form, set, esNueva, asesores, asesorSeleccionado }: {
   form: Partial<OrdenCalibracion>
   set: <K extends keyof OrdenCalibracion>(key: K, value: OrdenCalibracion[K]) => void
@@ -32,10 +41,10 @@ export function IdentificacionFields({ form, set, esNueva, asesores, asesorSelec
   return (
     <Seccion titulo="Identificación">
       <Grid2>
-        <FG label="Cliente">
+        <FG label="Cliente" required={esNueva}>
           <input value={form.cliente || ''} onChange={e => set('cliente', e.target.value.toUpperCase())} style={INP} autoFocus={esNueva} />
         </FG>
-        <FG label="No. Orden de Compra">
+        <FG label="No. Orden de Compra" required={esNueva}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <span style={{ fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--muted)' }}>ST</span>
             <input
@@ -52,8 +61,8 @@ export function IdentificacionFields({ form, set, esNueva, asesores, asesorSelec
             <span style={{ fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--muted)' }}>-{parseNumeroOC(form.numero_oc).anio}</span>
           </div>
         </FG>
-        <FG label="Correo cliente"><input value={form.correo_cliente || ''} onChange={e => set('correo_cliente', e.target.value)} style={INP} /></FG>
-        <FG label="Correo asesor(a)">
+        <FG label="Correo cliente" required={esNueva}><input value={form.correo_cliente || ''} onChange={e => set('correo_cliente', e.target.value)} style={INP} /></FG>
+        <FG label="Correo asesor(a)" required={esNueva}>
           <input value={form.correo_asesor || ''} onChange={e => set('correo_asesor', e.target.value)} list="asesores-sugeridos" style={INP} />
           <datalist id="asesores-sugeridos">
             {asesores.filter(a => a.activo).map(a => <option key={a.id} value={a.correo}>{a.nombre}{a.plataforma ? ` — ${a.plataforma}` : ''}</option>)}
@@ -69,10 +78,11 @@ export function IdentificacionFields({ form, set, esNueva, asesores, asesorSelec
   )
 }
 
-export function ReferenciasFields({ form, setForm, set }: {
+export function ReferenciasFields({ form, setForm, set, esNueva }: {
   form: Partial<OrdenCalibracion>
   setForm: React.Dispatch<React.SetStateAction<Partial<OrdenCalibracion>>>
   set: <K extends keyof OrdenCalibracion>(key: K, value: OrdenCalibracion[K]) => void
+  esNueva?: boolean
 }) {
   return (
     <Seccion titulo="Referencias">
@@ -97,22 +107,93 @@ export function ReferenciasFields({ form, setForm, set }: {
         <FG label="OTST">
           <input
             value={form.otst || ''}
-            onChange={e => setForm(f => ({ ...f, otst: e.target.value, link_otst: linkOtst(e.target.value) }))}
+            onChange={e => {
+              const codigos = parseOtstCodes(e.target.value)
+              setForm(f => ({
+                ...f,
+                otst: e.target.value,
+                link_otst: codigos.map(linkOtst).filter(Boolean).join(', ') || null,
+              }))
+            }}
+            placeholder="Separa varios códigos con coma: 1234, 5678"
             style={INP}
           />
         </FG>
         <FG label="Link OTST">
-          {form.link_otst ? (
-            <a href={form.link_otst} target="_blank" rel="noopener noreferrer" style={{
-              ...INP, display: 'block', color: 'var(--accent)', textDecoration: 'none',
-              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-            }}>{form.link_otst}</a>
+          {parseOtstCodes(form.otst).length ? (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {parseOtstCodes(form.otst).map(codigo => (
+                <a key={codigo} href={linkOtst(codigo)!} target="_blank" rel="noopener noreferrer" style={{
+                  padding: '9px 12px', borderRadius: 8, background: 'var(--surface2)', border: '1px solid var(--border)',
+                  color: 'var(--accent)', textDecoration: 'none', fontSize: 13, fontFamily: 'var(--sans)',
+                }}>{codigo} ↗</a>
+              ))}
+            </div>
           ) : (
             <div style={{ ...INP, color: 'var(--muted)' }}>Se genera al ingresar el OTST</div>
           )}
         </FG>
-        <FG label="RMV/FV"><input value={form.rmv_fv || ''} onChange={e => set('rmv_fv', e.target.value)} style={INP} /></FG>
+        <FG label="RMV/FV" required={esNueva}><input value={form.rmv_fv || ''} onChange={e => set('rmv_fv', e.target.value)} style={INP} /></FG>
       </Grid2>
     </Seccion>
+  )
+}
+
+// Campos + botón para avanzar de una etapa a la siguiente, embebidos en la
+// vista de esa etapa (reemplaza el antiguo modal "Avanzar a: X"). En modo
+// solo lectura (navegando a una etapa pasada) muestra los valores ya
+// guardados, deshabilitados, y oculta el botón.
+export function BloqueAvanzar({ siguiente, form, puedeEditar, soloLectura, saving, onAvanzar }: {
+  siguiente: NonNullable<EtapaFlujo['siguiente']>
+  form: Partial<OrdenCalibracion>
+  puedeEditar: boolean
+  soloLectura: boolean
+  saving: boolean
+  onAvanzar: (overrides: Partial<OrdenCalibracion>) => void
+}) {
+  const [valores, setValores] = useState<Record<string, string>>(() => {
+    const init: Record<string, string> = {}
+    if (!soloLectura) {
+      for (const campo of siguiente.campos) {
+        init[campo.key] = (form[campo.key] as string) || (campo.tipo === 'date' ? hoyISO() : '')
+      }
+    }
+    return init
+  })
+
+  function confirmar() {
+    const overrides: Record<string, unknown> = { estado: siguiente.estado }
+    for (const campo of siguiente.campos) {
+      const v = valores[campo.key] || ''
+      overrides[campo.key] = campo.tipo === 'date' ? (v || null) : v
+    }
+    onAvanzar(overrides as Partial<OrdenCalibracion>)
+  }
+
+  return (
+    <>
+      <Seccion titulo={`Para avanzar a: ${siguiente.label}`}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 400 }}>
+          {siguiente.campos.map(campo => (
+            <FG key={campo.key} label={campo.label}>
+              <input
+                type={campo.tipo === 'date' ? 'date' : 'text'}
+                value={soloLectura ? ((form[campo.key] as string) || '') : (valores[campo.key] || '')}
+                onChange={e => setValores(v => ({ ...v, [campo.key]: e.target.value }))}
+                disabled={soloLectura || !puedeEditar}
+                style={INP}
+              />
+            </FG>
+          ))}
+        </div>
+      </Seccion>
+      {puedeEditar && !soloLectura && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
+          <button onClick={confirmar} disabled={saving} style={PRI}>
+            {saving ? 'Guardando…' : `✓ ${siguiente.label} →`}
+          </button>
+        </div>
+      )}
+    </>
   )
 }

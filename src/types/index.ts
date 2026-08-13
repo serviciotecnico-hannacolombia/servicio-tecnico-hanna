@@ -292,13 +292,14 @@ export type EstadoCalibracion =
   | 'oc_creada' | 'para_enviar' | 'en_mantenimiento_reparacion'
   | 'en_programacion_visita' | 'visita_programada' | 'enviado'
   | 'en_calibracion' | 'en_retorno' | 'novedad'
-  | 'control_calidad' | 'terminado'
+  | 'control_calidad' | 'envio_certificados' | 'terminado'
 
 export interface RvCalibrItem {
   codigo: string
   magnitud: string
   descripcion: string
   modalidades_permitidas: Modalidad[]
+  proveedores_permitidos: string[] | null
   solo_laboratorio_externo: boolean
   envio_exclusivo_tcc: boolean
   activo: boolean
@@ -328,6 +329,7 @@ export interface OrdenCalibracion {
   fecha_programada_envio: string | null
   fecha_envio: string | null
   nota_envio: string | null
+  codigos_certificados: string | null
   certificado_fecha_inicio: string | null
   certificado_fecha_fin: string | null
   fecha_salida_lab: string | null
@@ -337,6 +339,8 @@ export interface OrdenCalibracion {
   fecha_entrega_certificado: string | null
   carta_entrega: string | null
   carta_certificado: string | null
+  fecha_control_calidad: string | null
+  notas_control_calidad: string | null
   parametros_nota: string | null
   valor_oc_antes_iva: number | null
   creado_por: string | null

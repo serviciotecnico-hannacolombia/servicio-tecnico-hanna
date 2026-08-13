@@ -8,14 +8,14 @@ import { Card } from '../../components/ui/Card'
 import { Modal } from '../../components/ui/Modal'
 import { useUser } from '../../hooks/useUser'
 import {
-  useOrdenesCalibracion, useCatalogoRvCalibr, useAsesores, useInvalidateCalibraciones,
+  useOrdenesCalibracion, useCatalogoRvCalibr, useAsesores, useProveedores, useInvalidateCalibraciones,
   grupoEstado, ESTADO_LABEL, MODALIDAD_LABEL, estaVencido, proximoAVencer, fechaLimite,
 } from './hooks/useCalibraciones'
 import {
   FG, IconBtn, Stat, INP, PRI, GHOST, B_INFO, B_VENCIDA, B_PROXIMA, B_NOVEDAD,
   GRUPO_COLOR, EMPTY, fmtFecha, fmtCOP,
 } from './ui'
-import type { Asesor, Modalidad, RvCalibrItem } from '../../types'
+import type { Asesor, CorreoProveedor, Modalidad, RvCalibrItem } from '../../types'
 
 type VistaFiltro = 'activas' | 'vencidas' | 'completadas' | 'todas'
 type Tab = 'ordenes' | 'catalogo' | 'asesores'
@@ -29,6 +29,7 @@ export function CalibracionesPage() {
   const { data: ordenes = [], isLoading } = useOrdenesCalibracion()
   const { data: catalogo = [] } = useCatalogoRvCalibr()
   const { data: asesores = [] } = useAsesores()
+  const { data: proveedores = [] } = useProveedores()
   const invalidate = useInvalidateCalibraciones()
 
   const [tab, setTab] = useState<Tab>('ordenes')
@@ -173,7 +174,7 @@ export function CalibracionesPage() {
           </Card>
         </>
       ) : tab === 'catalogo' ? (
-        <CatalogoTab catalogo={catalogo} onSaved={invalidate.catalogo} />
+        <CatalogoTab catalogo={catalogo} proveedores={proveedores} onSaved={invalidate.catalogo} />
       ) : (
         <AsesoresTab asesores={asesores} onSaved={invalidate.asesores} />
       )}
@@ -192,7 +193,7 @@ const FILTRO_MODALIDAD_OPCIONES: [FiltroModalidad, string][] = [
   ['sede_hanna_dorado', 'Sede Hanna Dorado'],
 ]
 
-function CatalogoTab({ catalogo, onSaved }: { catalogo: RvCalibrItem[], onSaved: () => void }) {
+function CatalogoTab({ catalogo, proveedores, onSaved }: { catalogo: RvCalibrItem[], proveedores: CorreoProveedor[], onSaved: () => void }) {
   const [editando, setEditando] = useState<RvCalibrItem | null>(null)
   const [search, setSearch] = useState('')
   const [filtroModalidad, setFiltroModalidad] = useState<FiltroModalidad>('todas')
@@ -241,6 +242,7 @@ function CatalogoTab({ catalogo, onSaved }: { catalogo: RvCalibrItem[], onSaved:
                 <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>{c.descripcion}</div>
                 <div style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--mono)', marginTop: 4, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                   <span>Modalidades: {c.modalidades_permitidas.map(m => MODALIDAD_LABEL[m]).join(', ') || '—'}</span>
+                  <span>Proveedores: {c.proveedores_permitidos?.length ? c.proveedores_permitidos.join(', ') : 'Cualquiera'}</span>
                   {c.solo_laboratorio_externo && <span style={{ color: 'var(--red)' }}>Solo laboratorio externo</span>}
                   {c.envio_exclusivo_tcc && <span style={{ color: 'var(--red)' }}>Envío exclusivo TCC</span>}
                   {!c.activo && <span>Inactivo</span>}
@@ -253,16 +255,17 @@ function CatalogoTab({ catalogo, onSaved }: { catalogo: RvCalibrItem[], onSaved:
       )}
 
       {editando && (
-        <ModalCatalogoItem item={editando} onClose={() => setEditando(null)} onSaved={onSaved} />
+        <ModalCatalogoItem item={editando} proveedores={proveedores} onClose={() => setEditando(null)} onSaved={onSaved} />
       )}
     </Card>
   )
 }
 
-function ModalCatalogoItem({ item, onClose, onSaved }: { item: RvCalibrItem, onClose: () => void, onSaved: () => void }) {
+function ModalCatalogoItem({ item, proveedores, onClose, onSaved }: { item: RvCalibrItem, proveedores: CorreoProveedor[], onClose: () => void, onSaved: () => void }) {
   const [magnitud, setMagnitud] = useState(item.magnitud)
   const [descripcion, setDescripcion] = useState(item.descripcion)
   const [modalidades, setModalidades] = useState<Set<Modalidad>>(new Set(item.modalidades_permitidas))
+  const [proveedoresSel, setProveedoresSel] = useState<Set<string>>(new Set(item.proveedores_permitidos || []))
   const [soloLab, setSoloLab] = useState(item.solo_laboratorio_externo)
   const [tcc, setTcc] = useState(item.envio_exclusivo_tcc)
   const [activo, setActivo] = useState(item.activo)
@@ -276,11 +279,20 @@ function ModalCatalogoItem({ item, onClose, onSaved }: { item: RvCalibrItem, onC
     })
   }
 
+  const toggleProveedor = (nombre: string) => {
+    setProveedoresSel(prev => {
+      const next = new Set(prev)
+      next.has(nombre) ? next.delete(nombre) : next.add(nombre)
+      return next
+    })
+  }
+
   async function submit() {
     setSaving(true)
     const { error } = await supabase.from('rv_calibr_catalogo').update({
       magnitud: magnitud.trim(), descripcion: descripcion.trim(),
       modalidades_permitidas: [...modalidades], solo_laboratorio_externo: soloLab,
+      proveedores_permitidos: proveedoresSel.size ? [...proveedoresSel] : null,
       envio_exclusivo_tcc: tcc, activo,
     }).eq('codigo', item.codigo)
     setSaving(false)
@@ -302,6 +314,18 @@ function ModalCatalogoItem({ item, onClose, onSaved }: { item: RvCalibrItem, onC
           {(['laboratorio_externo', 'in_situ', 'sede_hanna_dorado'] as Modalidad[]).map(m => (
             <label key={m} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
               <input type="checkbox" checked={modalidades.has(m)} onChange={() => toggleModalidad(m)} /> {MODALIDAD_LABEL[m]}
+            </label>
+          ))}
+        </div>
+      </div>
+      <div style={{ marginTop: 14 }}>
+        <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.8px', fontFamily: 'var(--mono)' }}>
+          Proveedores permitidos <span style={{ textTransform: 'none', fontWeight: 400 }}>(vacío = cualquiera)</span>
+        </label>
+        <div style={{ display: 'flex', gap: 10, marginTop: 8, flexWrap: 'wrap' }}>
+          {proveedores.filter(p => p.activo).map(p => (
+            <label key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
+              <input type="checkbox" checked={proveedoresSel.has(p.nombre)} onChange={() => toggleProveedor(p.nombre)} /> {p.nombre}
             </label>
           ))}
         </div>

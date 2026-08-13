@@ -4,13 +4,19 @@
 import { AlertTriangle, CalendarClock } from 'lucide-react'
 import { FG, Seccion, Grid2, INP } from '../ui'
 import { MODALIDAD_LABEL, PROVEEDOR_SEDE_HANNA } from '../hooks/useCalibraciones'
+import type { EtapaFlujo } from '../hooks/useCalibraciones'
+import { BloqueAvanzar } from './CamposCompartidos'
 import type { CorreoProveedor, Modalidad, OrdenCalibracion } from '../../../types'
 
-export function VistaVisitaProgramada({ form, set, setForm, puedeEditar, proveedores }: {
+export function VistaVisitaProgramada({ etapa, form, set, setForm, puedeEditar, soloLectura, saving, onAvanzar, proveedores }: {
+  etapa: EtapaFlujo
   form: Partial<OrdenCalibracion>
   set: <K extends keyof OrdenCalibracion>(key: K, value: OrdenCalibracion[K]) => void
   setForm: React.Dispatch<React.SetStateAction<Partial<OrdenCalibracion>>>
   puedeEditar: boolean
+  soloLectura: boolean
+  saving: boolean
+  onAvanzar: (overrides: Partial<OrdenCalibracion>) => void
   proveedores: CorreoProveedor[]
 }) {
   return (
@@ -20,9 +26,9 @@ export function VistaVisitaProgramada({ form, set, setForm, puedeEditar, proveed
         background: 'var(--accent-bg)', border: '1px solid var(--accent)', color: 'var(--accent)',
         marginBottom: 24, fontSize: 13, fontWeight: 600,
       }}>
-        <CalendarClock size={16} /> Visita programada — solo se muestra el bloque de Proceso para esta etapa.
+        <CalendarClock size={16} /> {soloLectura ? 'Revisando "Visita programada" (solo lectura)' : 'Visita programada — solo se muestra el bloque de Proceso para esta etapa.'}
       </div>
-      <fieldset disabled={!puedeEditar} style={{ border: 'none', padding: 0, margin: 0 }}>
+      <fieldset disabled={!puedeEditar || soloLectura} style={{ border: 'none', padding: 0, margin: 0 }}>
         <Seccion titulo="Proceso">
           <Grid2>
             <FG label="Modalidad">
@@ -82,6 +88,12 @@ export function VistaVisitaProgramada({ form, set, setForm, puedeEditar, proveed
           )}
         </Seccion>
       </fieldset>
+      {etapa.siguiente && (
+        <BloqueAvanzar
+          siguiente={etapa.siguiente} form={form} puedeEditar={puedeEditar} soloLectura={soloLectura}
+          saving={saving} onAvanzar={onAvanzar}
+        />
+      )}
     </div>
   )
 }

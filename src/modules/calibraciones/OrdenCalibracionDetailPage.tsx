@@ -11,13 +11,21 @@ import {
   useOrdenesCalibracion, useOrdenParametros, useCatalogoRvCalibr, useAsesores, useProveedores, useHistorialOrden,
   useInvalidateCalibraciones, grupoEstado, ESTADO_LABEL, MODALIDAD_LABEL, CAMPO_LABEL,
   formatValorHistorial, estaVencido, proximoAVencer, logServiciosChange,
-  flujoPorModalidad, hoyISO, PROVEEDOR_SEDE_HANNA,
+  flujoPorModalidad, PROVEEDOR_SEDE_HANNA,
 } from './hooks/useCalibraciones'
 import type { EtapaFlujo } from './hooks/useCalibraciones'
 import { FG, Seccion, Grid2, INP, PRI, GHOST, B_INFO, B_VENCIDA, B_PROXIMA, GRUPO_COLOR, fmtFecha } from './ui'
-import { IdentificacionFields, ReferenciasFields, linkOtst } from './vistas/CamposCompartidos'
+import { IdentificacionFields, ReferenciasFields, linkOtst, parseOtstCodes } from './vistas/CamposCompartidos'
 import { VistaMantenimiento } from './vistas/VistaMantenimiento'
 import { VistaVisitaProgramada } from './vistas/VistaVisitaProgramada'
+import { VistaEtapaGenerica } from './vistas/VistaEtapaGenerica'
+import { VistaParaEnviar } from './vistas/VistaParaEnviar'
+import { VistaEnviado } from './vistas/VistaEnviado'
+import { VistaEnCalibracion } from './vistas/VistaEnCalibracion'
+import { VistaEnRetorno } from './vistas/VistaEnRetorno'
+import { VistaControlCalidad } from './vistas/VistaControlCalidad'
+import { VistaEnvioCertificados } from './vistas/VistaEnvioCertificados'
+import { VistaTerminado } from './vistas/VistaTerminado'
 import type { EstadoCalibracion, Modalidad, OrdenCalibracion } from '../../types'
 
 // `created_at` llega en UTC — cortar el string directo mostraba la hora UTC
@@ -47,13 +55,14 @@ const EMPTY_ORDEN: Partial<OrdenCalibracion> = {
   cantidad_equipos: null,
   fecha_salida_mantenimiento: null,
   fecha_programada_envio: null, fecha_envio: null, nota_envio: '',
+  codigos_certificados: '',
   certificado_fecha_inicio: null, certificado_fecha_fin: null,
   fecha_salida_lab: null, fecha_retorno: null, nota_retorno: '',
   fecha_llegada_hanna: null, fecha_entrega_certificado: null,
-  carta_entrega: '', carta_certificado: '', parametros_nota: '', valor_oc_antes_iva: null,
+  carta_entrega: '', carta_certificado: '',
+  fecha_control_calidad: null, notas_control_calidad: '',
+  parametros_nota: '', valor_oc_antes_iva: null,
 }
-
-type Siguiente = NonNullable<EtapaFlujo['siguiente']>
 
 export function OrdenCalibracionDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -76,10 +85,13 @@ export function OrdenCalibracionDetailPage() {
   const [codigosSel, setCodigosSel] = useState<Set<string>>(new Set())
   const [saving, setSaving] = useState(false)
   const [eliminando, setEliminando] = useState(false)
-  const [avanzando, setAvanzando] = useState<Siguiente | null>(null)
+  const [vistaIdx, setVistaIdx] = useState<number | null>(null)
 
   useEffect(() => { if (orden) setForm(orden) }, [orden])
   useEffect(() => { if (parametrosActuales) setCodigosSel(new Set(parametrosActuales.map(p => p.rv_calibr_codigo))) }, [parametrosActuales])
+  // Si de verdad se guarda un cambio de estado, se vuelve a mostrar la etapa
+  // actual — no queda "atascado" viendo una etapa pasada tras avanzar.
+  useEffect(() => { setVistaIdx(null) }, [orden?.estado])
 
   const historialPorDia = useMemo(() => {
     const map = new Map<string, typeof historial>()
@@ -112,6 +124,18 @@ export function OrdenCalibracionDetailPage() {
     const datos = overrides ? { ...form, ...overrides } : form
     if (!datos.cliente?.trim()) { toast.error('Ingresa el cliente'); return }
 
+    if (esNueva) {
+      if (!datos.numero_oc?.trim()) { toast.error('Ingresa el No. de Orden de Compra'); return }
+      if (!datos.correo_cliente?.trim()) { toast.error('Ingresa el correo del cliente'); return }
+      if (!datos.correo_asesor?.trim()) { toast.error('Ingresa el correo del asesor(a)'); return }
+      if (!datos.rmv_fv?.trim()) { toast.error('Ingresa el RMV/FV'); return }
+      if (!datos.modalidad) { toast.error('Selecciona la modalidad'); return }
+      if (!datos.proveedor?.trim()) { toast.error('Ingresa el proveedor (laboratorio)'); return }
+      if (codigosSel.size === 0) { toast.error('Selecciona al menos un servicio en Servicios RV CALIBR'); return }
+      if (!datos.cantidad_equipos) { toast.error('Ingresa la cantidad de equipos'); return }
+      if (!datos.estado || datos.estado === 'oc_creada') { toast.error('Define el Siguiente paso antes de crear la orden'); return }
+    }
+
     if (datos.modalidad) {
       const noPermitidos = [...codigosSel].filter(c => {
         const item = catalogo.find(k => k.codigo === c)
@@ -119,6 +143,17 @@ export function OrdenCalibracionDetailPage() {
       })
       if (noPermitidos.length) {
         toast.error(`Estos servicios no aplican en la modalidad seleccionada: ${noPermitidos.join(', ')}`)
+        return
+      }
+    }
+
+    if (datos.proveedor) {
+      const noPermitidosProveedor = [...codigosSel].filter(c => {
+        const item = catalogo.find(k => k.codigo === c)
+        return item && item.proveedores_permitidos?.length && !item.proveedores_permitidos.includes(datos.proveedor!)
+      })
+      if (noPermitidosProveedor.length) {
+        toast.error(`Estos servicios no los hace el proveedor seleccionado: ${noPermitidosProveedor.join(', ')}`)
         return
       }
     }
@@ -190,6 +225,13 @@ export function OrdenCalibracionDetailPage() {
     await submit({ estado: siguienteEstado })
   }
 
+  // Usado por las vistas dedicadas (BloqueAvanzar) para confirmar el avance
+  // de etapa embebido — reemplaza al antiguo modal "Avanzar a: X".
+  function avanzarEtapa(overrides: Partial<OrdenCalibracion>) {
+    setForm(f => ({ ...f, ...overrides }))
+    submit(overrides)
+  }
+
   async function eliminar() {
     if (!orden) return
     const { error } = await supabase.from('ordenes_calibracion').delete().eq('id', orden.id)
@@ -225,11 +267,17 @@ export function OrdenCalibracionDetailPage() {
   const grupoColor = GRUPO_COLOR[grupo]
   const correoAsesorNorm = (form.correo_asesor || '').trim().toLowerCase()
   const asesorSeleccionado = correoAsesorNorm ? asesores.find(a => a.correo.toLowerCase() === correoAsesorNorm) : undefined
-  // El desvío de mantenimiento solo cambia de vista una vez guardado (estado
-  // persistido), no apenas se selecciona en "Siguiente paso" — así no se
-  // pierde de vista el formulario grande mientras aún se está decidiendo.
-  const enMantenimiento = !esNueva && orden?.estado === 'en_mantenimiento_reparacion'
-  const enVisitaProgramada = !esNueva && (orden?.estado === 'en_programacion_visita' || orden?.estado === 'visita_programada')
+
+  // El estado REAL (persistido) manda para decidir qué vista se muestra — no
+  // el `form.estado` en vivo, que puede tener un cambio de "Siguiente paso"
+  // sin guardar todavía. Así nunca se salta de vista antes de confirmar.
+  const estadoReal = (orden?.estado ?? form.estado) as EstadoCalibracion
+  const pasoPorMantenimiento = estadoReal === 'en_mantenimiento_reparacion' || !!(orden?.fecha_salida_mantenimiento)
+  const flujo = flujoPorModalidad(form.modalidad ?? null, pasoPorMantenimiento)
+  const idxActual = flujo.findIndex(s => s.match.includes(estadoReal))
+  const idxMostrado = vistaIdx ?? idxActual
+  const etapaMostrada = idxMostrado >= 0 ? flujo[idxMostrado] : undefined
+  const soloLectura = idxMostrado !== idxActual
 
   return (
     <div style={{ maxWidth: 980, margin: '0 auto' }}>
@@ -270,34 +318,85 @@ export function OrdenCalibracionDetailPage() {
 
       {!esNueva && (
         <Stepper
-          estado={form.estado as EstadoCalibracion}
-          modalidad={form.modalidad ?? null}
-          puedeEditar={puedeEditar}
-          onAvanzar={setAvanzando}
+          flujo={flujo}
+          estado={estadoReal}
+          idxActual={idxActual}
+          idxMostrado={idxMostrado}
+          onSeleccionar={setVistaIdx}
         />
       )}
 
       <div style={{ display: 'grid', gridTemplateColumns: esNueva ? '1fr' : '1fr 340px', gap: 24, alignItems: 'flex-start' }}>
         {/* Formulario */}
-        {enMantenimiento ? (
+        {/* Las vistas dedicadas solo aplican a órdenes que ya existen — una
+            orden nueva siempre se llena en el formulario completo, sin
+            importar qué se haya marcado en "Siguiente paso" todavía. */}
+        {!esNueva && etapaMostrada?.key === 'en_mantenimiento_reparacion' ? (
           <VistaMantenimiento
-            form={form} set={set} setForm={setForm} puedeEditar={puedeEditar}
+            form={form} set={set} setForm={setForm} puedeEditar={puedeEditar} soloLectura={soloLectura}
             asesores={asesores} asesorSeleccionado={asesorSeleccionado}
             saving={saving} onTerminar={terminarMantenimiento}
           />
-        ) : enVisitaProgramada ? (
+        ) : !esNueva && etapaMostrada?.key === 'visita_programada' ? (
           <VistaVisitaProgramada
-            form={form} set={set} setForm={setForm} puedeEditar={puedeEditar} proveedores={proveedores}
+            etapa={etapaMostrada} form={form} set={set} setForm={setForm} puedeEditar={puedeEditar}
+            soloLectura={soloLectura} saving={saving} onAvanzar={avanzarEtapa} proveedores={proveedores}
+          />
+        ) : !esNueva && etapaMostrada?.key === 'terminado' ? (
+          <VistaTerminado form={form} catalogo={catalogo} codigosSel={codigosSel} asesorSeleccionado={asesorSeleccionado} />
+        ) : !esNueva && etapaMostrada?.key === 'para_enviar' ? (
+          <VistaParaEnviar
+            form={form} puedeEditar={puedeEditar} soloLectura={soloLectura}
+            saving={saving} onAvanzar={avanzarEtapa}
+          />
+        ) : !esNueva && etapaMostrada?.key === 'enviado' ? (
+          <VistaEnviado
+            form={form} catalogo={catalogo} codigosSel={codigosSel} puedeEditar={puedeEditar} soloLectura={soloLectura}
+            saving={saving} onAvanzar={avanzarEtapa}
+          />
+        ) : !esNueva && etapaMostrada?.key === 'en_calibracion' && form.modalidad === 'laboratorio_externo' ? (
+          <VistaEnCalibracion
+            form={form} puedeEditar={puedeEditar} soloLectura={soloLectura}
+            saving={saving} onAvanzar={avanzarEtapa}
+          />
+        ) : !esNueva && etapaMostrada?.key === 'en_retorno' ? (
+          <VistaEnRetorno
+            form={form} puedeEditar={puedeEditar} soloLectura={soloLectura}
+            saving={saving} onAvanzar={avanzarEtapa}
+          />
+        ) : !esNueva && etapaMostrada?.key === 'control_calidad' ? (
+          <VistaControlCalidad
+            form={form} asesorSeleccionado={asesorSeleccionado} puedeEditar={puedeEditar} soloLectura={soloLectura}
+            saving={saving} onAvanzar={avanzarEtapa}
+          />
+        ) : !esNueva && etapaMostrada?.key === 'envio_certificados' ? (
+          <VistaEnvioCertificados
+            form={form} puedeEditar={puedeEditar} soloLectura={soloLectura}
+            saving={saving} onAvanzar={avanzarEtapa}
+          />
+        ) : !esNueva && etapaMostrada?.key === 'en_calibracion' ? (
+          <VistaEtapaGenerica
+            etapa={etapaMostrada} form={form} puedeEditar={puedeEditar} soloLectura={soloLectura}
+            saving={saving} onAvanzar={avanzarEtapa}
           />
         ) : (
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: 24 }}>
-          <fieldset disabled={!puedeEditar} style={{ border: 'none', padding: 0, margin: 0 }}>
+          {soloLectura && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', borderRadius: 'var(--radius)',
+              background: 'var(--accent-bg)', border: '1px solid var(--accent)', color: 'var(--accent)',
+              marginBottom: 24, fontSize: 13, fontWeight: 600,
+            }}>
+              Revisando "OC creada" (solo lectura)
+            </div>
+          )}
+          <fieldset disabled={!puedeEditar || soloLectura} style={{ border: 'none', padding: 0, margin: 0 }}>
             <IdentificacionFields form={form} set={set} esNueva={esNueva} asesores={asesores} asesorSeleccionado={asesorSeleccionado} />
-            <ReferenciasFields form={form} setForm={setForm} set={set} />
+            <ReferenciasFields form={form} setForm={setForm} set={set} esNueva={esNueva} />
 
             <Seccion titulo="Proceso">
               <Grid2>
-                <FG label="Modalidad">
+                <FG label="Modalidad" required={esNueva}>
                   <select
                     value={form.modalidad || ''}
                     onChange={e => {
@@ -317,7 +416,7 @@ export function OrdenCalibracionDetailPage() {
                     ))}
                   </select>
                 </FG>
-                <FG label="Proveedor (laboratorio)">
+                <FG label="Proveedor (laboratorio)" required={esNueva}>
                   {form.modalidad === 'sede_hanna_dorado' ? (
                     <div style={{ ...INP, color: 'var(--muted)' }}>{PROVEEDOR_SEDE_HANNA} (único proveedor en esta sede)</div>
                   ) : (
@@ -344,11 +443,13 @@ export function OrdenCalibracionDetailPage() {
               )}
             </Seccion>
 
-            <Seccion titulo="Servicios RV CALIBR">
+            <Seccion titulo={esNueva ? 'Servicios RV CALIBR *' : 'Servicios RV CALIBR'}>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {catalogo.filter(c => c.activo).map(c => {
                   const checked = codigosSel.has(c.codigo)
-                  const permitido = !form.modalidad || c.modalidades_permitidas.includes(form.modalidad)
+                  const permitidoModalidad = !form.modalidad || c.modalidades_permitidas.includes(form.modalidad)
+                  const permitidoProveedor = !form.proveedor || !c.proveedores_permitidos?.length || c.proveedores_permitidos.includes(form.proveedor)
+                  const permitido = permitidoModalidad && permitidoProveedor
                   return (
                     <label key={c.codigo} title={c.descripcion} style={{
                       display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px', borderRadius: 8,
@@ -364,7 +465,7 @@ export function OrdenCalibracionDetailPage() {
               </div>
               <div style={{ marginTop: 14, display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'flex-end' }}>
                 <div style={{ width: 160 }}>
-                  <FG label="Cantidad de equipos">
+                  <FG label="Cantidad de equipos" required={esNueva}>
                     <input
                       type="number" min={1} step={1}
                       value={form.cantidad_equipos ?? ''}
@@ -382,7 +483,7 @@ export function OrdenCalibracionDetailPage() {
             </Seccion>
 
             {grupoEstado(form.estado as EstadoCalibracion) === 'pendiente' && (
-              <Seccion titulo="Siguiente paso">
+              <Seccion titulo={esNueva ? 'Siguiente paso *' : 'Siguiente paso'}>
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                   <button type="button" onClick={() => set('estado', 'oc_creada')} style={segBtnStyle(form.estado === 'oc_creada')}>
                     Aún sin definir
@@ -418,14 +519,15 @@ export function OrdenCalibracionDetailPage() {
                         />
                       </FG>
                     </div>
-                    {linkOtst(form.otst || '') && (
+                    {parseOtstCodes(form.otst).map(codigo => (
                       <a
-                        href={linkOtst(form.otst || '')!} target="_blank" rel="noopener noreferrer"
+                        key={codigo}
+                        href={linkOtst(codigo)!} target="_blank" rel="noopener noreferrer"
                         style={{ ...GHOST, display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}
                       >
-                        Ir a la OTST →
+                        Ir a la OTST {codigo} →
                       </a>
-                    )}
+                    ))}
                   </div>
                 )}
                 {(form.estado === 'para_enviar' || form.estado === 'visita_programada') && (
@@ -443,7 +545,7 @@ export function OrdenCalibracionDetailPage() {
             )}
           </fieldset>
 
-          {puedeEditar && (
+          {puedeEditar && !soloLectura && (
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 24, paddingTop: 20, borderTop: '1px solid var(--border)' }}>
               <button onClick={() => navigate('/calibraciones')} style={GHOST}>Cancelar</button>
               <button onClick={() => submit()} disabled={saving} style={PRI}>{saving ? 'Guardando…' : esNueva ? '+ Crear orden' : '✓ Guardar cambios'}</button>
@@ -507,28 +609,16 @@ export function OrdenCalibracionDetailPage() {
           </div>
         </Modal>
       )}
-
-      {avanzando && (
-        <ModalAvanzarEtapa
-          siguiente={avanzando}
-          form={form}
-          onClose={() => setAvanzando(null)}
-          onConfirm={valores => {
-            setAvanzando(null)
-            setForm(f => ({ ...f, ...valores }))
-            submit(valores)
-          }}
-        />
-      )}
     </div>
   )
 }
 
-function Stepper({ estado, modalidad, puedeEditar, onAvanzar }: {
+function Stepper({ flujo, estado, idxActual, idxMostrado, onSeleccionar }: {
+  flujo: EtapaFlujo[]
   estado: EstadoCalibracion
-  modalidad: Modalidad | null
-  puedeEditar: boolean
-  onAvanzar: (siguiente: Siguiente) => void
+  idxActual: number
+  idxMostrado: number
+  onSeleccionar: (idx: number | null) => void
 }) {
   if (estado === 'novedad') {
     return (
@@ -542,94 +632,46 @@ function Stepper({ estado, modalidad, puedeEditar, onAvanzar }: {
     )
   }
 
-  const flujo = flujoPorModalidad(modalidad, estado)
-  const idx = flujo.findIndex(s => s.match.includes(estado))
-  const etapaActual = idx >= 0 ? flujo[idx] : undefined
-
   return (
     <div style={{ marginBottom: 24 }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', padding: '0 4px' }}>
-        {flujo.map((s, i) => (
-          <Fragment key={s.key}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, flex: '0 0 auto', width: 96 }}>
-              <div style={{
-                width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: i <= idx ? 'var(--accent)' : 'var(--surface2)',
-                color: i <= idx ? '#fff' : 'var(--muted)',
-                border: `1px solid ${i <= idx ? 'var(--accent)' : 'var(--border)'}`,
-                fontSize: 12, fontWeight: 700, flexShrink: 0,
-              }}>
-                {i < idx ? '✓' : i + 1}
+        {flujo.map((s, i) => {
+          const navegable = i <= idxActual
+          const esMostrado = i === idxMostrado
+          return (
+            <Fragment key={s.key}>
+              <div
+                onClick={() => navegable && onSeleccionar(i === idxActual ? null : i)}
+                onMouseEnter={e => { if (navegable) (e.currentTarget as HTMLElement).style.opacity = '0.65' }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '1' }}
+                style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, flex: '0 0 auto', width: 96,
+                  cursor: navegable ? 'pointer' : 'default', opacity: 1, transition: 'opacity .12s',
+                }}
+              >
+                <div style={{
+                  width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: i <= idxActual ? 'var(--accent)' : 'var(--surface2)',
+                  color: i <= idxActual ? '#fff' : 'var(--muted)',
+                  border: esMostrado ? '2px solid var(--text)' : `1px solid ${i <= idxActual ? 'var(--accent)' : 'var(--border)'}`,
+                  fontSize: 12, fontWeight: 700, flexShrink: 0,
+                }}>
+                  {i < idxActual ? '✓' : i + 1}
+                </div>
+                <span style={{
+                  fontSize: 10, color: i <= idxActual ? 'var(--text)' : 'var(--muted)', fontFamily: 'var(--mono)',
+                  textAlign: 'center', fontWeight: esMostrado ? 700 : 400,
+                }}>
+                  {i === idxActual ? ESTADO_LABEL[estado] : s.label}
+                </span>
               </div>
-              <span style={{ fontSize: 10, color: i <= idx ? 'var(--text)' : 'var(--muted)', fontFamily: 'var(--mono)', textAlign: 'center' }}>
-                {i === idx ? ESTADO_LABEL[estado] : s.label}
-              </span>
-            </div>
-            {i < flujo.length - 1 && (
-              <div style={{ flex: 1, height: 2, background: i < idx ? 'var(--accent)' : 'var(--border)', marginTop: 13 }} />
-            )}
-          </Fragment>
-        ))}
+              {i < flujo.length - 1 && (
+                <div style={{ flex: 1, height: 2, background: i < idxActual ? 'var(--accent)' : 'var(--border)', marginTop: 13 }} />
+              )}
+            </Fragment>
+          )
+        })}
       </div>
-
-      {puedeEditar && etapaActual?.siguiente && (
-        <div style={{ display: 'flex', justifyContent: 'center', marginTop: 16 }}>
-          <button
-            onClick={() => onAvanzar(etapaActual.siguiente!)}
-            disabled={!modalidad}
-            title={!modalidad ? 'Define la modalidad antes de avanzar de etapa' : undefined}
-            style={{ ...PRI, opacity: modalidad ? 1 : 0.5, cursor: modalidad ? 'pointer' : 'not-allowed' }}
-          >
-            Avanzar a: {etapaActual.siguiente.label} →
-          </button>
-        </div>
-      )}
     </div>
-  )
-}
-
-function ModalAvanzarEtapa({ siguiente, form, onClose, onConfirm }: {
-  siguiente: Siguiente
-  form: Partial<OrdenCalibracion>
-  onClose: () => void
-  onConfirm: (valores: Partial<OrdenCalibracion>) => void
-}) {
-  const [valores, setValores] = useState<Record<string, string>>(() => {
-    const init: Record<string, string> = {}
-    for (const campo of siguiente.campos) {
-      const actual = form[campo.key]
-      init[campo.key] = (actual as string) || (campo.tipo === 'date' ? hoyISO() : '')
-    }
-    return init
-  })
-
-  function confirmar() {
-    const overrides: Record<string, unknown> = { estado: siguiente.estado }
-    for (const campo of siguiente.campos) {
-      const v = valores[campo.key] || ''
-      overrides[campo.key] = campo.tipo === 'date' ? (v || null) : v
-    }
-    onConfirm(overrides as Partial<OrdenCalibracion>)
-  }
-
-  return (
-    <Modal open onClose={onClose} title={`Avanzar a: ${siguiente.label}`} width={420}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-        {siguiente.campos.map(campo => (
-          <FG key={campo.key} label={campo.label}>
-            <input
-              type={campo.tipo === 'date' ? 'date' : 'text'}
-              value={valores[campo.key] || ''}
-              onChange={e => setValores(v => ({ ...v, [campo.key]: e.target.value }))}
-              style={INP}
-            />
-          </FG>
-        ))}
-      </div>
-      <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 20 }}>
-        <button onClick={onClose} style={GHOST}>Cancelar</button>
-        <button onClick={confirmar} style={PRI}>✓ Confirmar y avanzar</button>
-      </div>
-    </Modal>
   )
 }
