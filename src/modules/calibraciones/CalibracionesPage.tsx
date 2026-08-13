@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Plus, Pencil, FlaskConical, Users, AlertTriangle, Search, ChevronRight } from 'lucide-react'
+import { Plus, Pencil, FlaskConical, Users, AlertTriangle, Search, ChevronRight, Workflow } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { Header } from '../../components/layout/Header'
 import { Card } from '../../components/ui/Card'
@@ -67,6 +67,7 @@ export function CalibracionesPage() {
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(0)
   const [filtros, setFiltros] = useState<FiltrosOrdenes>(cargarFiltros)
+  const [verFlujo, setVerFlujo] = useState(false)
 
   const PAGE_SIZE = 30
 
@@ -109,8 +110,21 @@ export function CalibracionesPage() {
       <Header
         title="Calibraciones"
         subtitle="Gestión de calibración acreditada ONAC — reemplaza el seguimiento en Notion"
-        actions={puedeEditar ? <button onClick={() => navigate('/calibraciones/nueva')} style={PRI}><Plus size={14} style={{ verticalAlign: -2 }} /> Nueva orden</button> : undefined}
+        actions={
+          <>
+            <button onClick={() => setVerFlujo(true)} style={GHOST}><Workflow size={14} style={{ verticalAlign: -2 }} /> Ver flujo</button>
+            {puedeEditar && <button onClick={() => navigate('/calibraciones/nueva')} style={PRI}><Plus size={14} style={{ verticalAlign: -2 }} /> Nueva orden</button>}
+          </>
+        }
       />
+
+      {verFlujo && (
+        <Modal open onClose={() => setVerFlujo(false)} title="Flujo de una calibración" width="min(1100px, 95vw)">
+          <div style={{ background: '#fff', borderRadius: 10, padding: 16, overflow: 'auto' }}>
+            <img src="/calibraciones-flujo.svg" alt="Diagrama de flujo de una orden de calibración" style={{ width: '100%', height: 'auto', display: 'block' }} />
+          </div>
+        </Modal>
+      )}
 
       <div style={{ display: 'flex', gap: 4, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 4, marginBottom: 20, maxWidth: 720, flexWrap: 'wrap' }}>
         {(['ordenes', 'analisis', 'sede_hanna', ...(puedeEditar ? ['catalogo', 'asesores'] as const : [])] as Tab[]).map(t => (
