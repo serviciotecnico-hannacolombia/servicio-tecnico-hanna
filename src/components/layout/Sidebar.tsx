@@ -3,7 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import logo from '../../assets/logo.svg'
 import {
   Phone, Package, DollarSign, Wrench, FileText, Warehouse,
-  LogOut, Pencil, ShieldCheck, BarChart2, Mail, KeyRound, ChevronDown, Timer, ListTodo, CalendarClock,
+  LogOut, Pencil, ShieldCheck, BarChart2, Mail, KeyRound, ChevronDown, Timer, ListTodo, CalendarClock, QrCode
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useSidebar } from './SidebarContext'
@@ -17,7 +17,6 @@ import { useTareasBadgeCount } from '../../modules/tareas/hooks/useTareas'
 import type { ModuleKey } from '../../types'
 
 // ── Hamburger animado ────────────────────────────────────────────────────────
-// open=false → 3 líneas (hamburguesa)   open=true → X (cerrar)
 function HamburgerIcon({ open }: { open: boolean }) {
   const T = 'transform 0.24s cubic-bezier(.4,0,.2,1), opacity 0.18s ease'
   const bar = (extra: React.CSSProperties): React.CSSProperties => ({
@@ -51,16 +50,18 @@ function HamburgerIcon({ open }: { open: boolean }) {
 }
 
 const NAV_ITEMS: { to: string; label: string; icon: typeof Phone; moduleKey: ModuleKey }[] = [
-  { to: '/llamadas',    label: 'Control Llamadas',   icon: Phone,      moduleKey: 'llamadas'    },
-  { to: '/bodega',      label: 'Bodega',              icon: Warehouse,  moduleKey: 'bodega'      },
-  { to: '/consumibles', label: 'Consumibles',         icon: Package,    moduleKey: 'consumibles' },
-  { to: '/tarifas',     label: 'Tarifas de Envío',   icon: DollarSign, moduleKey: 'tarifas'     },
-  { to: '/codigos',     label: 'Códigos y Partes',   icon: Wrench,     moduleKey: 'codigos'     },
-  { to: '/editor',       label: 'Editor de Informes', icon: FileText,   moduleKey: 'editor'      },
-  { to: '/indicadores',  label: 'Indicadores',        icon: BarChart2,  moduleKey: 'indicadores' },
-  { to: '/correos',      label: 'Correos',             icon: Mail,       moduleKey: 'correos'     },
-  { to: '/reporte-st',   label: 'Reporte ST',          icon: Timer,      moduleKey: 'reporte_st'  },
-  { to: '/tareas',       label: 'Tareas',               icon: ListTodo,   moduleKey: 'tareas'      },
+  { to: '/void',                     label: 'Control VOIDs',         icon: QrCode,        moduleKey: 'void' as ModuleKey },
+  { to: '/bodega-st', label: 'Bodega ST (Restauración)', icon: Wrench, moduleKey: 'bodega_st' as ModuleKey },
+  { to: '/llamadas',                label: 'Control Llamadas',     icon: Phone,         moduleKey: 'llamadas'    },
+  { to: '/bodega',                  label: 'Bodega',               icon: Warehouse,     moduleKey: 'bodega'      },
+  { to: '/consumibles',             label: 'Consumibles',          icon: Package,       moduleKey: 'consumibles' },
+  { to: '/tarifas',                 label: 'Tarifas de Envío',     icon: DollarSign,    moduleKey: 'tarifas'     },
+  { to: '/codigos',                 label: 'Códigos y Partes',     icon: Wrench,        moduleKey: 'codigos'     },
+  { to: '/editor',                  label: 'Editor de Informes',   icon: FileText,      moduleKey: 'editor'      },
+  { to: '/indicadores',             label: 'Indicadores',          icon: BarChart2,     moduleKey: 'indicadores' },
+  { to: '/correos',                 label: 'Correos',              icon: Mail,          moduleKey: 'correos'     },
+  { to: '/reporte-st',              label: 'Reporte ST',            icon: Timer,         moduleKey: 'reporte_st'  },
+  { to: '/tareas',                  label: 'Tareas',               icon: ListTodo,      moduleKey: 'tareas'      },
   { to: '/mantenimiento-programado', label: 'Mantenimiento Programado', icon: CalendarClock, moduleKey: 'mantenimiento_programado' },
 ]
 
@@ -225,7 +226,7 @@ export function Sidebar() {
 
       {/* Nav */}
       <nav style={{ flex: 1, padding: '10px 0', overflowY: 'auto', overflowX: 'hidden' }}>
-        {NAV_ITEMS.filter(item => hasModule(item.moduleKey)).map(({ to, label, icon: Icon, moduleKey }) => {
+        {NAV_ITEMS.filter(item => (item.moduleKey as string) === 'void' || hasModule(item.moduleKey)).map(({ to, label, icon: Icon, moduleKey }) => {
           const badge = moduleKey === 'tareas' ? tareasBadge : 0
           return (
             <NavLink
@@ -443,7 +444,6 @@ export function Sidebar() {
               Elige un animal
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: 6 }}>
-              {/* Opción "sin animal" */}
               <button
                 type="button"
                 onClick={() => setSelectedEmoji(null)}
@@ -486,7 +486,6 @@ export function Sidebar() {
               Color de fondo
             </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {/* Opción "sin color" (gradient por defecto) */}
               <button
                 type="button"
                 onClick={() => setSelectedColor(null)}

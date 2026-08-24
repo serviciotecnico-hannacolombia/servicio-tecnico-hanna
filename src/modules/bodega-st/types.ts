@@ -1,0 +1,23 @@
+export type EstadoRestauracion = 'en_diagnostico' | 'en_reparacion' | 'incompleto_espera_partes' | 'restaurado_listo';
+
+export const UBICACIONES_BODEGA_ST: string[] = [
+  'Bodega CC 1',
+  'Bodega CC 2',
+  'Rack CC 1',
+  'Rack CC 2',
+];
+
+export interface RegistroBodegaST {
+  id?: string;
+  created_at?: string;
+  qr_equipo: string;
+  referencia: string;
+  numero_serie: string;
+  nombre_equipo: string;
+  estado: EstadoRestauracion;
+  partes_requeridas?: string;
+  reparaciones_realizadas?: string;
+  tecnico_responsable?: string;
+  ubicacion_estante?: string;
+  observaciones?: string;
+}

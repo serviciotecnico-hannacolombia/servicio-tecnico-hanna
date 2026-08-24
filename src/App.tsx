@@ -21,10 +21,36 @@ import { FormatosPage } from './modules/formatos/FormatosPage'
 import { ReporteSTPage } from './modules/reporte-st/ReporteSTPage'
 import { TareasPage } from './modules/tareas/TareasPage'
 import { MantenimientoProgramadoPage } from './modules/mantenimiento-programado/MantenimientoProgramadoPage'
+import { VoidControlPage } from './modules/void/pages/VoidControlPage'
+import { BodegaSTPage } from './modules/bodega-st/pages/BodegaSTPage'
+import { Sidebar } from './components/layout/Sidebar'
+import { SidebarProvider } from './components/layout/SidebarContext'
 
 function DefaultRedirect() {
   const { hasModule } = useUser()
   return <Navigate to={getDefaultRoute(hasModule)} replace />
+}
+
+// Layout de prueba local con estilos completos sin depender de Supabase Auth
+function LocalLayoutPreview({ children }: { children: React.ReactNode }) {
+  return (
+    <SidebarProvider>
+      <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg, #f8fafc)' }}>
+        <Sidebar />
+        <main 
+          style={{ 
+            flex: 1, 
+            marginLeft: 240, // Espacio para no tapar con el Sidebar
+            padding: '32px 40px', 
+            minWidth: 0, 
+            transition: 'margin-left 0.22s cubic-bezier(.4,0,.2,1)' 
+          }}
+        >
+          {children}
+        </main>
+      </div>
+    </SidebarProvider>
+  )
 }
 
 export default function App() {
@@ -34,6 +60,24 @@ export default function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
+
+            {/* Ruta directa con diseño e integración completa de Sidebar */}
+            <Route
+              path="/void"
+              element={
+                <LocalLayoutPreview>
+                  <VoidControlPage />
+                </LocalLayoutPreview>
+              }
+            />
+            <Route
+              path="/bodega-st"
+              element={
+                <LocalLayoutPreview>
+                  <BodegaSTPage />
+                </LocalLayoutPreview>
+              }
+            />
             <Route
               element={
                 <AuthGuard>
@@ -47,7 +91,7 @@ export default function App() {
               <Route path="/consumibles" element={<ModuleGuard moduleKey="consumibles"><ConsumiblesPage /></ModuleGuard>} />
               <Route path="/tarifas"     element={<ModuleGuard moduleKey="tarifas"><TarifasPage /></ModuleGuard>} />
               <Route path="/codigos"     element={<ModuleGuard moduleKey="codigos"><CodigosPage /></ModuleGuard>} />
-              <Route path="/editor"       element={<ModuleGuard moduleKey="editor"><EditorPage /></ModuleGuard>} />
+              <Route path="/editor"      element={<ModuleGuard moduleKey="editor"><EditorPage /></ModuleGuard>} />
               <Route path="/indicadores" element={<ModuleGuard moduleKey="indicadores"><IndicadoresPage /></ModuleGuard>} />
               <Route path="/correos"     element={<ModuleGuard moduleKey="correos"><FormatosPage /></ModuleGuard>} />
               <Route path="/reporte-st"  element={<ModuleGuard moduleKey="reporte_st"><ReporteSTPage /></ModuleGuard>} />
