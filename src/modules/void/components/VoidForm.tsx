@@ -204,12 +204,12 @@ export const VoidForm: React.FC<VoidFormProps> = ({ onSave }) => {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
           <div>
             <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text, #334155)', marginBottom: 6, textTransform: 'uppercase' }}>Factura / Remisión / OTST</label>
-            <input ref={inputDocRef} type="text" value={documentoRef} onChange={(e) => setDocumentoRef(e.target.value)} placeholder="Ej: FE-10452 / OTST-8940" style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: '0.875rem' }} />
+            <input ref={inputDocRef} type="text" value={documentoRef} onChange={(e) => setDocumentoRef(e.target.value)} placeholder="Ej: FV 123456 / OTST 41000" style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: '0.875rem' }} />
           </div>
 
           <div>
             <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text, #334155)', marginBottom: 6, textTransform: 'uppercase' }}>Observaciones (Opcional)</label>
-            <input type="text" value={observaciones} onChange={(e) => setObservaciones(e.target.value)} placeholder="Notas sobre el estado del sello..." style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: '0.875rem' }} />
+            <input type="text" value={observaciones} onChange={(e) => setObservaciones(e.target.value)} placeholder="Notas sobre el estado del equipo..." style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: '0.875rem' }} />
           </div>
         </div>
 

@@ -21,3 +21,13 @@ export interface RegistroBodegaST {
   ubicacion_estante?: string;
   observaciones?: string;
 }
+
+export interface BodegaSTAudit {
+  id: string;
+  bodega_st_id: string | null;
+  accion: 'INSERT' | 'UPDATE' | 'DELETE';
+  datos_anteriores: RegistroBodegaST | null;
+  datos_nuevos: RegistroBodegaST | null;
+  usuario_id: string | null;
+  created_at: string;
+}

@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import type { RegistroBodegaST, EstadoRestauracion } from '../types';
-import { Search, Wrench, AlertTriangle, CheckCircle, Clock, Edit } from 'lucide-react';
+import { Search, Wrench, AlertTriangle, CheckCircle, Clock, Edit, Trash2 } from 'lucide-react';
 
 interface BodegaSTTableProps {
   records: RegistroBodegaST[];
   onEdit: (record: RegistroBodegaST) => void;
+  onDelete: (record: RegistroBodegaST) => void;
 }
 
-export const BodegaSTTable: React.FC<BodegaSTTableProps> = ({ records, onEdit }) => {
+export const BodegaSTTable: React.FC<BodegaSTTableProps> = ({ records, onEdit, onDelete }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredRecords = records.filter((rec) => {
@@ -70,9 +71,10 @@ export const BodegaSTTable: React.FC<BodegaSTTableProps> = ({ records, onEdit })
                   <td style={{ padding: '12px 16px', color: '#64748b' }}>{rec.reparaciones_realizadas || '—'}</td>
                   <td style={{ padding: '12px 16px', fontWeight: 500 }}>{rec.ubicacion_estante || '—'}</td>
                   <td style={{ padding: '12px 16px', textAlign: 'center' }}>
-                    <button onClick={() => onEdit(rec)} style={{ background: '#eff6ff', border: '1px solid #bfdbfe', color: '#005eb8', padding: '4px 8px', borderRadius: 6, cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <button title="Editar" onClick={() => onEdit(rec)} style={{ background: '#eff6ff', border: '1px solid #bfdbfe', color: '#005eb8', padding: 7, borderRadius: 6, cursor: 'pointer', display: 'inline-flex', alignItems: 'center' }}>
                       <Edit size={12} /> Editar
                     </button>
+                    <button title="Eliminar" onClick={() => onDelete(rec)} style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#c0392b', padding: 7, borderRadius: 6, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', marginLeft: 5 }}><Trash2 size={12} /></button>
                   </td>
                 </tr>
               ))

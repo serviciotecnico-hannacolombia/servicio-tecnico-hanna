@@ -1,38 +1,50 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { BodegaSTForm } from '../components/BodegaSTForm';
 import { BodegaSTTable } from '../components/BodegaSTTable';
 import { EditBodegaSTModal } from '../components/EditBodegaSTModal';
 import {exportToExcel } from '../../void/utils/exportToExcel';
-import type { RegistroBodegaST } from '../types';
+import type { BodegaSTAudit, RegistroBodegaST } from '../types';
 import { Clock, Wrench, AlertTriangle, CheckCircle2, Download } from 'lucide-react';
 
 export function BodegaSTPage() {
-  const [records, setRecords] = useState<RegistroBodegaST[]>([
-    {
-      qr_equipo: 'HI98194Ñ1847120ÑMAURITIUSÑMultiparametro Portatil',
-      referencia: 'HI98194',
-      numero_serie: '1847120',
-      nombre_equipo: 'Multiparametro Portatil',
-      estado: 'incompleto_espera_partes',
-      partes_requeridas: 'Electrodo pH HI7698194-1',
-      reparaciones_realizadas: 'Limpieza de conector DIN y cambio de sellos',
-      ubicacion_estante: 'Estante A1 - Incompletos',
-      observaciones: 'Equipo en perfecto estado electrónico',
-      created_at: new Date().toISOString()
-    }
-  ]);
+  const [visibleRecords, setVisibleRecords] = useState<RegistroBodegaST[]>([]);
+  const [audits, setAudits] = useState<BodegaSTAudit[]>([]);
 
   const [selectedRecord, setSelectedRecord] = useState<RegistroBodegaST | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Métricas / KPIs
-  const totalDiagnostico = records.filter(r => r.estado === 'en_diagnostico').length;
-  const totalReparacion = records.filter(r => r.estado === 'en_reparacion').length;
-  const totalIncompletos = records.filter(r => r.estado === 'incompleto_espera_partes').length;
-  const totalListos = records.filter(r => r.estado === 'restaurado_listo').length;
+  const totalDiagnostico = visibleRecords.filter(r => r.estado === 'en_diagnostico').length;
+  const totalReparacion = visibleRecords.filter(r => r.estado === 'en_reparacion').length;
+  const totalIncompletos = visibleRecords.filter(r => r.estado === 'incompleto_espera_partes').length;
+  const totalListos = visibleRecords.filter(r => r.estado === 'restaurado_listo').length;
+
+  const addAudit = (record: RegistroBodegaST, accion: BodegaSTAudit['accion'], previous: RegistroBodegaST | null, next: RegistroBodegaST | null) => {
+    setAudits(previousAudits => [{ id: crypto.randomUUID(), bodega_st_id: record.id ?? null, accion, datos_anteriores: previous, datos_nuevos: next, usuario_id: null, created_at: new Date().toISOString() }, ...previousAudits]);
+  };
 
   const handleSaveRecord = (newRecord: RegistroBodegaST) => {
-    setRecords([newRecord, ...records]);
+    const record = { ...newRecord, id: crypto.randomUUID(), created_at: new Date().toISOString() };
+    setVisibleRecords(previous => [record, ...previous]);
+    addAudit(record, 'INSERT', null, record);
+    toast.success('Registro de Bodega ST guardado');
+  };
+
+  const handleUpdate = (updated: RegistroBodegaST) => {
+    const previous = visibleRecords.find(item => item.id === updated.id);
+    if (!previous) return;
+    const record = { ...updated, updated_at: new Date().toISOString() };
+    setVisibleRecords(items => items.map(item => item.id === updated.id ? record : item));
+    addAudit(record, 'UPDATE', previous, record);
+    toast.success('Registro de Bodega ST actualizado'); setIsModalOpen(false);
+  };
+
+  const handleDelete = (record: RegistroBodegaST) => {
+    if (!window.confirm(`¿Eliminar el registro de ${record.numero_serie}? Esta acción quedará en el historial.`)) return;
+    setVisibleRecords(items => items.filter(item => item.id !== record.id));
+    addAudit(record, 'DELETE', record, null);
+    toast.success('Registro de Bodega ST eliminado');
   };
 
   const handleExport = () => {
@@ -48,7 +60,7 @@ export function BodegaSTPage() {
         created_at: 'Fecha de Ingreso'
     };
 
-    exportToExcel(records, headersMap, 'Reporte_Bodega_ST', 'Restauración Bodega ST');
+    exportToExcel(visibleRecords, headersMap, 'Reporte_Bodega_ST', 'Restauración Bodega ST');
   }
 
   return (
@@ -119,14 +131,19 @@ export function BodegaSTPage() {
       </div>
 
       <BodegaSTForm onSave={handleSaveRecord} />
-      <BodegaSTTable records={records} onEdit={(rec) => { setSelectedRecord(rec); setIsModalOpen(true); }} />
+      <BodegaSTTable records={visibleRecords} onEdit={(rec) => { setSelectedRecord(rec); setIsModalOpen(true); }} onDelete={handleDelete} />
 
       <EditBodegaSTModal
         isOpen={isModalOpen}
         record={selectedRecord}
         onClose={() => setIsModalOpen(false)}
-        onUpdate={(updated) => setRecords(records.map(r => r.numero_serie === updated.numero_serie ? updated : r))}
+        onUpdate={handleUpdate}
       />
+      <section style={{ marginTop: 24, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: 20 }}>
+        <h3 style={{ margin: '0 0 14px', fontSize: '0.95rem' }}>Historial de cambios ({audits.length})</h3>
+        {audits.slice(0, 30).map(a => <div key={a.id} style={{ borderTop: '1px solid #e2e8f0', padding: '9px 0', fontSize: 12 }}><strong>{a.accion}</strong> · {new Date(a.created_at).toLocaleString('es-CO')} · {a.datos_nuevos?.numero_serie || a.datos_anteriores?.numero_serie || 'Registro'}</div>)}
+        {!audits.length && <span style={{ color: '#64748b', fontSize: 12 }}>Aún no hay cambios registrados.</span>}
+      </section>
     </div>
   );
 }

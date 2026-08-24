@@ -226,7 +226,7 @@ export function Sidebar() {
 
       {/* Nav */}
       <nav style={{ flex: 1, padding: '10px 0', overflowY: 'auto', overflowX: 'hidden' }}>
-        {NAV_ITEMS.filter(item => (item.moduleKey as string) === 'void' || hasModule(item.moduleKey)).map(({ to, label, icon: Icon, moduleKey }) => {
+        {NAV_ITEMS.filter(item => ['void', 'bodega_st'].includes(item.moduleKey as string) || hasModule(item.moduleKey)).map(({ to, label, icon: Icon, moduleKey }) => {
           const badge = moduleKey === 'tareas' ? tareasBadge : 0
           return (
             <NavLink

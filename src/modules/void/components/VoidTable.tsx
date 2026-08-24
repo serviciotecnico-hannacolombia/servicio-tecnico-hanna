@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import type { VoidRecord } from '../types';
-import { Search, FileText, Shield } from 'lucide-react';
+import { Search, FileText, Shield, Pencil, Trash2 } from 'lucide-react';
 
 interface VoidTableProps {
   records: VoidRecord[];
+  onEdit: (record: VoidRecord) => void;
+  onDelete: (record: VoidRecord) => void;
 }
 
-export const VoidTable: React.FC<VoidTableProps> = ({ records }) => {
+export const VoidTable: React.FC<VoidTableProps> = ({ records, onEdit, onDelete }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredRecords = records.filter((rec) => {
@@ -78,24 +80,27 @@ export const VoidTable: React.FC<VoidTableProps> = ({ records }) => {
               letterSpacing: '0.05em',
               borderBottom: '1px solid var(--border, #e2e8f0)'
             }}>
+              <th style={{ padding: '12px 16px' }}>ID</th>
               <th style={{ padding: '12px 16px' }}>Equipo / Ref</th>
               <th style={{ padding: '12px 16px' }}>Serie</th>
               <th style={{ padding: '12px 16px' }}>Factura / OTST</th>
               <th style={{ padding: '12px 16px' }}>VOID Blanco</th>
               <th style={{ padding: '12px 16px' }}>VOID Gris</th>
               <th style={{ padding: '12px 16px' }}>Observaciones</th>
+              <th style={{ padding: '12px 16px' }}>Acciones</th>
             </tr>
           </thead>
           <tbody>
             {filteredRecords.length === 0 ? (
               <tr>
-                <td colSpan={6} style={{ padding: 24, textAlign: 'center', color: 'var(--muted, #94a3b8)' }}>
+                <td colSpan={8} style={{ padding: 24, textAlign: 'center', color: 'var(--muted, #94a3b8)' }}>
                   {searchTerm ? 'No hay registros que coincidan con la búsqueda.' : 'No hay registros guardados aún.'}
                 </td>
               </tr>
             ) : (
               filteredRecords.map((rec, index) => (
                 <tr key={index} style={{ borderBottom: '1px solid var(--border, #f1f5f9)' }}>
+                  <td style={{ padding: '12px 16px', fontFamily: 'var(--mono, monospace)', fontSize: '0.72rem', color: 'var(--muted, #64748b)' }}>{rec.registro_id || rec.id || '—'}</td>
                   <td style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text, #0f172a)' }}>
                     {rec.nombre_equipo || 'Equipo'}
                     <span style={{ display: 'block', fontSize: '0.725rem', color: 'var(--muted, #64748b)', fontWeight: 400, fontFamily: 'var(--mono, monospace)' }}>
@@ -126,6 +131,10 @@ export const VoidTable: React.FC<VoidTableProps> = ({ records }) => {
                   </td>
                   <td style={{ padding: '12px 16px', color: 'var(--muted, #64748b)' }}>
                     {rec.observaciones || '—'}
+                  </td>
+                  <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>
+                    <button title="Editar" onClick={() => onEdit(rec)} style={{ border: 'none', background: 'var(--accent-bg, #eff6ff)', color: 'var(--accent, #005eb8)', padding: 7, borderRadius: 6, cursor: 'pointer', marginRight: 5 }}><Pencil size={14} /></button>
+                    <button title="Eliminar" onClick={() => onDelete(rec)} style={{ border: 'none', background: '#fef2f2', color: '#c0392b', padding: 7, borderRadius: 6, cursor: 'pointer' }}><Trash2 size={14} /></button>
                   </td>
                 </tr>
               ))
