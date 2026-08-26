@@ -21,6 +21,8 @@ import { FormatosPage } from './modules/formatos/FormatosPage'
 import { ReporteSTPage } from './modules/reporte-st/ReporteSTPage'
 import { TareasPage } from './modules/tareas/TareasPage'
 import { MantenimientoProgramadoPage } from './modules/mantenimiento-programado/MantenimientoProgramadoPage'
+import { CalibracionesPage } from './modules/calibraciones/CalibracionesPage'
+import { OrdenCalibracionDetailPage } from './modules/calibraciones/OrdenCalibracionDetailPage'
 
 function DefaultRedirect() {
   const { hasModule } = useUser()
@@ -53,6 +55,8 @@ export default function App() {
               <Route path="/reporte-st"  element={<ModuleGuard moduleKey="reporte_st"><ReporteSTPage /></ModuleGuard>} />
               <Route path="/tareas"     element={<ModuleGuard moduleKey="tareas"><TareasPage /></ModuleGuard>} />
               <Route path="/mantenimiento-programado" element={<ModuleGuard moduleKey="mantenimiento_programado"><MantenimientoProgramadoPage /></ModuleGuard>} />
+              <Route path="/calibraciones" element={<ModuleGuard moduleKey="calibraciones"><CalibracionesPage /></ModuleGuard>} />
+              <Route path="/calibraciones/:id" element={<ModuleGuard moduleKey="calibraciones"><OrdenCalibracionDetailPage /></ModuleGuard>} />
               <Route
                 path="/admin"
                 element={

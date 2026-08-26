@@ -19,6 +19,7 @@ const MODULE_LABELS: Record<ModuleKey, string> = {
   reporte_st: 'Reporte ST',
   tareas: 'Tareas',
   mantenimiento_programado: 'Mantenimiento Programado',
+  calibraciones: 'Calibraciones',
   admin: 'Administración',
 }
 
@@ -30,6 +31,7 @@ const CAPABILITY_LABELS: Record<CapabilityKey, string> = {
   editar_codigos: 'Editar código/precio inline (Códigos y Partes)',
   gestion_codigos: 'Pestaña "Gestión" en Códigos y Partes',
   bodega_eliminar: 'Eliminar ítems de Bodega',
+  calibraciones_editar: 'Crear/editar órdenes y catálogo (Calibraciones)',
 }
 
 const MODULE_KEYS = Object.keys(MODULE_LABELS) as ModuleKey[]

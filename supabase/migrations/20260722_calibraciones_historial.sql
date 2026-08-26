@@ -1,0 +1,202 @@
+-- ============================================================
+-- Historial de auditoría de órdenes de calibración: registra quién
+-- cambió qué campo y cuándo, vía trigger en la base de datos (no
+-- depende del frontend, cubre cualquier vía de edición).
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS ordenes_calibracion_historial (
+  id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  orden_id      uuid NOT NULL REFERENCES ordenes_calibracion(id) ON DELETE CASCADE,
+  usuario_id    uuid REFERENCES profiles(id) ON DELETE SET NULL,
+  campo         text NOT NULL,
+  valor_anterior text,
+  valor_nuevo   text,
+  created_at    timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_ordenes_calibracion_historial_orden_id
+  ON ordenes_calibracion_historial (orden_id, created_at DESC);
+
+ALTER TABLE ordenes_calibracion_historial ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "ordenes_calibracion_historial select"
+  ON ordenes_calibracion_historial FOR SELECT TO authenticated
+  USING (
+    has_module('calibraciones') AND (
+      has_capability('calibraciones_editar')
+      OR EXISTS (
+        SELECT 1 FROM ordenes_calibracion oc
+        JOIN profiles p ON p.id = auth.uid()
+        WHERE oc.id = ordenes_calibracion_historial.orden_id AND p.email = oc.correo_asesor
+      )
+    )
+  );
+
+-- Único INSERT permitido desde el cliente: el resumen de cambios de
+-- servicios RV CALIBR (tabla aparte, el trigger no la ve). Todo lo demás
+-- lo escribe el trigger SECURITY DEFINER más abajo, sin pasar por RLS.
+CREATE POLICY "ordenes_calibracion_historial insert manual"
+  ON ordenes_calibracion_historial FOR INSERT TO authenticated
+  WITH CHECK (
+    has_module('calibraciones') AND has_capability('calibraciones_editar') AND campo = 'servicios'
+  );
+
+-- ── Trigger de auditoría ─────────────────────────────────────────────────────
+
+CREATE OR REPLACE FUNCTION log_ordenes_calibracion() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+  IF TG_OP = 'INSERT' THEN
+    INSERT INTO ordenes_calibracion_historial (orden_id, usuario_id, campo, valor_nuevo)
+    VALUES (NEW.id, auth.uid(), 'creacion', 'Orden creada');
+    RETURN NEW;
+  END IF;
+
+  IF TG_OP = 'UPDATE' THEN
+    IF NEW.numero_oc IS DISTINCT FROM OLD.numero_oc THEN
+      INSERT INTO ordenes_calibracion_historial (orden_id, usuario_id, campo, valor_anterior, valor_nuevo)
+      VALUES (NEW.id, auth.uid(), 'numero_oc', OLD.numero_oc, NEW.numero_oc);
+    END IF;
+    IF NEW.cliente IS DISTINCT FROM OLD.cliente THEN
+      INSERT INTO ordenes_calibracion_historial (orden_id, usuario_id, campo, valor_anterior, valor_nuevo)
+      VALUES (NEW.id, auth.uid(), 'cliente', OLD.cliente, NEW.cliente);
+    END IF;
+    IF NEW.correo_cliente IS DISTINCT FROM OLD.correo_cliente THEN
+      INSERT INTO ordenes_calibracion_historial (orden_id, usuario_id, campo, valor_anterior, valor_nuevo)
+      VALUES (NEW.id, auth.uid(), 'correo_cliente', OLD.correo_cliente, NEW.correo_cliente);
+    END IF;
+    IF NEW.asesor_id IS DISTINCT FROM OLD.asesor_id THEN
+      INSERT INTO ordenes_calibracion_historial (orden_id, usuario_id, campo, valor_anterior, valor_nuevo)
+      VALUES (NEW.id, auth.uid(), 'asesor_id', OLD.asesor_id::text, NEW.asesor_id::text);
+    END IF;
+    IF NEW.correo_asesor IS DISTINCT FROM OLD.correo_asesor THEN
+      INSERT INTO ordenes_calibracion_historial (orden_id, usuario_id, campo, valor_anterior, valor_nuevo)
+      VALUES (NEW.id, auth.uid(), 'correo_asesor', OLD.correo_asesor, NEW.correo_asesor);
+    END IF;
+    IF NEW.saci IS DISTINCT FROM OLD.saci THEN
+      INSERT INTO ordenes_calibracion_historial (orden_id, usuario_id, campo, valor_anterior, valor_nuevo)
+      VALUES (NEW.id, auth.uid(), 'saci', OLD.saci, NEW.saci);
+    END IF;
+    IF NEW.link_solicitud IS DISTINCT FROM OLD.link_solicitud THEN
+      INSERT INTO ordenes_calibracion_historial (orden_id, usuario_id, campo, valor_anterior, valor_nuevo)
+      VALUES (NEW.id, auth.uid(), 'link_solicitud', OLD.link_solicitud, NEW.link_solicitud);
+    END IF;
+    IF NEW.otst IS DISTINCT FROM OLD.otst THEN
+      INSERT INTO ordenes_calibracion_historial (orden_id, usuario_id, campo, valor_anterior, valor_nuevo)
+      VALUES (NEW.id, auth.uid(), 'otst', OLD.otst, NEW.otst);
+    END IF;
+    IF NEW.link_otst IS DISTINCT FROM OLD.link_otst THEN
+      INSERT INTO ordenes_calibracion_historial (orden_id, usuario_id, campo, valor_anterior, valor_nuevo)
+      VALUES (NEW.id, auth.uid(), 'link_otst', OLD.link_otst, NEW.link_otst);
+    END IF;
+    IF NEW.codigo_recepcion IS DISTINCT FROM OLD.codigo_recepcion THEN
+      INSERT INTO ordenes_calibracion_historial (orden_id, usuario_id, campo, valor_anterior, valor_nuevo)
+      VALUES (NEW.id, auth.uid(), 'codigo_recepcion', OLD.codigo_recepcion, NEW.codigo_recepcion);
+    END IF;
+    IF NEW.rmv_fv IS DISTINCT FROM OLD.rmv_fv THEN
+      INSERT INTO ordenes_calibracion_historial (orden_id, usuario_id, campo, valor_anterior, valor_nuevo)
+      VALUES (NEW.id, auth.uid(), 'rmv_fv', OLD.rmv_fv, NEW.rmv_fv);
+    END IF;
+    IF NEW.modalidad IS DISTINCT FROM OLD.modalidad THEN
+      INSERT INTO ordenes_calibracion_historial (orden_id, usuario_id, campo, valor_anterior, valor_nuevo)
+      VALUES (NEW.id, auth.uid(), 'modalidad', OLD.modalidad, NEW.modalidad);
+    END IF;
+    IF NEW.lugar_ejecucion IS DISTINCT FROM OLD.lugar_ejecucion THEN
+      INSERT INTO ordenes_calibracion_historial (orden_id, usuario_id, campo, valor_anterior, valor_nuevo)
+      VALUES (NEW.id, auth.uid(), 'lugar_ejecucion', OLD.lugar_ejecucion, NEW.lugar_ejecucion);
+    END IF;
+    IF NEW.proveedor IS DISTINCT FROM OLD.proveedor THEN
+      INSERT INTO ordenes_calibracion_historial (orden_id, usuario_id, campo, valor_anterior, valor_nuevo)
+      VALUES (NEW.id, auth.uid(), 'proveedor', OLD.proveedor, NEW.proveedor);
+    END IF;
+    IF NEW.estado IS DISTINCT FROM OLD.estado THEN
+      INSERT INTO ordenes_calibracion_historial (orden_id, usuario_id, campo, valor_anterior, valor_nuevo)
+      VALUES (NEW.id, auth.uid(), 'estado', OLD.estado, NEW.estado);
+    END IF;
+    IF NEW.novedad_detalle IS DISTINCT FROM OLD.novedad_detalle THEN
+      INSERT INTO ordenes_calibracion_historial (orden_id, usuario_id, campo, valor_anterior, valor_nuevo)
+      VALUES (NEW.id, auth.uid(), 'novedad_detalle', OLD.novedad_detalle, NEW.novedad_detalle);
+    END IF;
+    IF NEW.enviado_cliente_final IS DISTINCT FROM OLD.enviado_cliente_final THEN
+      INSERT INTO ordenes_calibracion_historial (orden_id, usuario_id, campo, valor_anterior, valor_nuevo)
+      VALUES (NEW.id, auth.uid(), 'enviado_cliente_final', OLD.enviado_cliente_final::text, NEW.enviado_cliente_final::text);
+    END IF;
+    IF NEW.fecha_programada_envio IS DISTINCT FROM OLD.fecha_programada_envio THEN
+      INSERT INTO ordenes_calibracion_historial (orden_id, usuario_id, campo, valor_anterior, valor_nuevo)
+      VALUES (NEW.id, auth.uid(), 'fecha_programada_envio', OLD.fecha_programada_envio::text, NEW.fecha_programada_envio::text);
+    END IF;
+    IF NEW.fecha_envio IS DISTINCT FROM OLD.fecha_envio THEN
+      INSERT INTO ordenes_calibracion_historial (orden_id, usuario_id, campo, valor_anterior, valor_nuevo)
+      VALUES (NEW.id, auth.uid(), 'fecha_envio', OLD.fecha_envio::text, NEW.fecha_envio::text);
+    END IF;
+    IF NEW.nota_envio IS DISTINCT FROM OLD.nota_envio THEN
+      INSERT INTO ordenes_calibracion_historial (orden_id, usuario_id, campo, valor_anterior, valor_nuevo)
+      VALUES (NEW.id, auth.uid(), 'nota_envio', OLD.nota_envio, NEW.nota_envio);
+    END IF;
+    IF NEW.certificado_fecha_inicio IS DISTINCT FROM OLD.certificado_fecha_inicio THEN
+      INSERT INTO ordenes_calibracion_historial (orden_id, usuario_id, campo, valor_anterior, valor_nuevo)
+      VALUES (NEW.id, auth.uid(), 'certificado_fecha_inicio', OLD.certificado_fecha_inicio::text, NEW.certificado_fecha_inicio::text);
+    END IF;
+    IF NEW.certificado_fecha_fin IS DISTINCT FROM OLD.certificado_fecha_fin THEN
+      INSERT INTO ordenes_calibracion_historial (orden_id, usuario_id, campo, valor_anterior, valor_nuevo)
+      VALUES (NEW.id, auth.uid(), 'certificado_fecha_fin', OLD.certificado_fecha_fin::text, NEW.certificado_fecha_fin::text);
+    END IF;
+    IF NEW.fecha_salida_lab IS DISTINCT FROM OLD.fecha_salida_lab THEN
+      INSERT INTO ordenes_calibracion_historial (orden_id, usuario_id, campo, valor_anterior, valor_nuevo)
+      VALUES (NEW.id, auth.uid(), 'fecha_salida_lab', OLD.fecha_salida_lab::text, NEW.fecha_salida_lab::text);
+    END IF;
+    IF NEW.fecha_retorno IS DISTINCT FROM OLD.fecha_retorno THEN
+      INSERT INTO ordenes_calibracion_historial (orden_id, usuario_id, campo, valor_anterior, valor_nuevo)
+      VALUES (NEW.id, auth.uid(), 'fecha_retorno', OLD.fecha_retorno::text, NEW.fecha_retorno::text);
+    END IF;
+    IF NEW.nota_retorno IS DISTINCT FROM OLD.nota_retorno THEN
+      INSERT INTO ordenes_calibracion_historial (orden_id, usuario_id, campo, valor_anterior, valor_nuevo)
+      VALUES (NEW.id, auth.uid(), 'nota_retorno', OLD.nota_retorno, NEW.nota_retorno);
+    END IF;
+    IF NEW.fecha_llegada_hanna IS DISTINCT FROM OLD.fecha_llegada_hanna THEN
+      INSERT INTO ordenes_calibracion_historial (orden_id, usuario_id, campo, valor_anterior, valor_nuevo)
+      VALUES (NEW.id, auth.uid(), 'fecha_llegada_hanna', OLD.fecha_llegada_hanna::text, NEW.fecha_llegada_hanna::text);
+    END IF;
+    IF NEW.fecha_entrega_certificado IS DISTINCT FROM OLD.fecha_entrega_certificado THEN
+      INSERT INTO ordenes_calibracion_historial (orden_id, usuario_id, campo, valor_anterior, valor_nuevo)
+      VALUES (NEW.id, auth.uid(), 'fecha_entrega_certificado', OLD.fecha_entrega_certificado::text, NEW.fecha_entrega_certificado::text);
+    END IF;
+    IF NEW.carta_entrega IS DISTINCT FROM OLD.carta_entrega THEN
+      INSERT INTO ordenes_calibracion_historial (orden_id, usuario_id, campo, valor_anterior, valor_nuevo)
+      VALUES (NEW.id, auth.uid(), 'carta_entrega', OLD.carta_entrega, NEW.carta_entrega);
+    END IF;
+    IF NEW.carta_certificado IS DISTINCT FROM OLD.carta_certificado THEN
+      INSERT INTO ordenes_calibracion_historial (orden_id, usuario_id, campo, valor_anterior, valor_nuevo)
+      VALUES (NEW.id, auth.uid(), 'carta_certificado', OLD.carta_certificado, NEW.carta_certificado);
+    END IF;
+    IF NEW.parametros_nota IS DISTINCT FROM OLD.parametros_nota THEN
+      INSERT INTO ordenes_calibracion_historial (orden_id, usuario_id, campo, valor_anterior, valor_nuevo)
+      VALUES (NEW.id, auth.uid(), 'parametros_nota', OLD.parametros_nota, NEW.parametros_nota);
+    END IF;
+    IF NEW.valor_oc_antes_iva IS DISTINCT FROM OLD.valor_oc_antes_iva THEN
+      INSERT INTO ordenes_calibracion_historial (orden_id, usuario_id, campo, valor_anterior, valor_nuevo)
+      VALUES (NEW.id, auth.uid(), 'valor_oc_antes_iva', OLD.valor_oc_antes_iva::text, NEW.valor_oc_antes_iva::text);
+    END IF;
+
+    RETURN NEW;
+  END IF;
+
+  RETURN NULL;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_log_ordenes_calibracion_insert ON ordenes_calibracion;
+CREATE TRIGGER trg_log_ordenes_calibracion_insert
+  AFTER INSERT ON ordenes_calibracion
+  FOR EACH ROW EXECUTE FUNCTION log_ordenes_calibracion();
+
+DROP TRIGGER IF EXISTS trg_log_ordenes_calibracion_update ON ordenes_calibracion;
+CREATE TRIGGER trg_log_ordenes_calibracion_update
+  AFTER UPDATE ON ordenes_calibracion
+  FOR EACH ROW EXECUTE FUNCTION log_ordenes_calibracion();
+
+-- Nota: la migración histórica (20260721b) inserta 724 filas directamente sin
+-- pasar por INSERT normal desde el cliente en el momento en que corras este
+-- archivo — si ambas migraciones se aplican en el mismo despliegue después de
+-- que este trigger ya exista, cada una de esas 724 filas también generará su
+-- entrada 'creacion' en el historial. Es el comportamiento esperado y correcto.
