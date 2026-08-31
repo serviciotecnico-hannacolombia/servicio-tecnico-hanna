@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { parseEquipoQR } from '../../modules/void/utils/qrParser';
-import { Search, X, Shield, Wrench } from 'lucide-react';
+import { Search, X, Shield, Wrench, Box } from 'lucide-react';
 
 interface ParsedResult {
   referencia: string;
@@ -62,7 +62,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({ isOpen, on
                 <Shield size={12} /> VOID Verificado
               </span>
               <span style={{ background: '#fef3c7', color: '#b45309', padding: '4px 8px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                <Wrench size={12} /> Bodega ST
+                <Box size={12} /> Bodega ST
               </span>
             </div>
           </div>

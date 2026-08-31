@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import type { RegistroBodegaST, EstadoRestauracion } from '../types';
-import { UBICACIONES_BODEGA_ST } from '../types';
-import { X, Save } from 'lucide-react';
+import { UBICACIONES_BODEGA_ST, BODEGAS_DESTINO } from '../types';
+import { X, Save, Wrench } from 'lucide-react';
 
 interface EditBodegaSTModalProps {
   record: RegistroBodegaST | null;
@@ -16,6 +16,7 @@ export const EditBodegaSTModal: React.FC<EditBodegaSTModalProps> = ({ record, is
   const [partesRequeridas, setPartesRequeridas] = useState('');
   const [reparaciones, setReparaciones] = useState('');
   const [ubicacion, setUbicacion] = useState(UBICACIONES_BODEGA_ST[0]);
+  const [bodegaDestino, setBodegaDestino] = useState(BODEGAS_DESTINO[0]);
   const [observaciones, setObservaciones] = useState('');
 
   if (record && record.numero_serie !== prevRecordId) {
@@ -24,6 +25,7 @@ export const EditBodegaSTModal: React.FC<EditBodegaSTModalProps> = ({ record, is
     setPartesRequeridas(record.partes_requeridas || '');
     setReparaciones(record.reparaciones_realizadas || '');
     setUbicacion(record.ubicacion_estante || UBICACIONES_BODEGA_ST[0]);
+    setBodegaDestino(record.bodega_destino || BODEGAS_DESTINO[0]);
     setObservaciones(record.observaciones || '');
   }
 
@@ -37,6 +39,7 @@ export const EditBodegaSTModal: React.FC<EditBodegaSTModalProps> = ({ record, is
       partes_requeridas: partesRequeridas,
       reparaciones_realizadas: reparaciones,
       ubicacion_estante: ubicacion,
+      bodega_destino: estado === 'restaurado_listo' ? bodegaDestino : undefined,
       observaciones
     });
     onClose();
@@ -47,7 +50,7 @@ export const EditBodegaSTModal: React.FC<EditBodegaSTModalProps> = ({ record, is
       <div style={{ background: '#ffffff', borderRadius: 12, width: '100%', maxWidth: 550, padding: 24, boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid #e2e8f0' }}>
           <div>
-            <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#0f172a' }}>Actualizar Estado de Restauración</h3>
+            <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 8 }}><Wrench size={20} /> Actualizar Estado de Restauración</h3>
             <span style={{ fontSize: '0.8rem', color: '#64748b' }}>{record.nombre_equipo} ({record.numero_serie})</span>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}><X size={20} /></button>
@@ -82,6 +85,17 @@ export const EditBodegaSTModal: React.FC<EditBodegaSTModalProps> = ({ record, is
               ))}
             </select>
           </div>
+
+          {estado === 'restaurado_listo' && (
+            <div>
+              <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#334155', marginBottom: 4 }}>📦 Bodega Destino</label>
+              <select value={bodegaDestino} onChange={(e) => setBodegaDestino(e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #10b981', fontSize: '0.875rem', background: '#ecfdf5' }}>
+                {BODEGAS_DESTINO.map((bodega) => (
+                  <option key={bodega} value={bodega}>{bodega}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div>
             <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#334155', marginBottom: 4 }}>Observaciones</label>

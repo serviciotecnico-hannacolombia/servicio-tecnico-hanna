@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { VoidForm } from '../components/VoidForm';
 import { VoidTable } from '../components/VoidTable';
+import { VoidSearchPanel } from '../components/VoidSearchPanel';
 import { EditVoidModal } from '../components/EditVoidModal';
 import { exportToExcel } from '../utils/exportToExcel';
+import { AuditHistory } from '../../../components/ui/AuditHistory';
 import type { VoidAudit, VoidRecord } from '../types';
 import { Download } from 'lucide-react';
 
@@ -62,7 +64,7 @@ export function VoidControlPage() {
   };
 
   return (
-    <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+    <div style={{ maxWidth: 1300, margin: '0 auto' }}>
       <header style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
           <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text, #0f172a)', margin: 0 }}>
@@ -96,13 +98,27 @@ export function VoidControlPage() {
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
         {LIBROS_VOID.map(libro => <button key={libro} onClick={() => setLibroActivo(libro)} style={{ padding: '9px 14px', borderRadius: 8, border: '1px solid var(--border)', background: libroActivo === libro ? 'var(--accent)' : 'var(--surface)', color: libroActivo === libro ? '#fff' : 'var(--text)', cursor: 'pointer', fontWeight: 600 }}>{libro}</button>)}
       </div>
+      <VoidSearchPanel records={records} onSelectRecord={setSelected} />
       <VoidForm onSave={record => handleSaveRecord(record)} />
       <VoidTable records={records.filter(record => record.libro === libroActivo)} onEdit={setSelected} onDelete={handleDelete} />
-      <section style={{ marginTop: 24, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: 20 }}>
-        <h3 style={{ margin: '0 0 14px', fontSize: '0.95rem' }}>Historial de cambios ({audits.length})</h3>
-        {audits.slice(0, 30).map(a => <div key={a.id} style={{ borderTop: '1px solid #e2e8f0', padding: '9px 0', fontSize: 12, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}><strong>{a.accion}</strong> · <span style={{ fontFamily: 'var(--mono)' }}>{a.datos_nuevos?.registro_id || a.datos_anteriores?.registro_id || a.void_id || 'Sin ID'}</span> · {new Date(a.created_at).toLocaleString('es-CO')} · {a.datos_nuevos?.numero_serie || a.datos_anteriores?.numero_serie || 'Registro'} {a.accion === 'DELETE' && a.datos_anteriores && <button onClick={() => setDeletedSnapshot(a.datos_anteriores)} style={{ marginLeft: 'auto', border: '1px solid #cbd5e1', borderRadius: 6, background: '#f8fafc', padding: '5px 8px', cursor: 'pointer', fontSize: 11 }}>Ver registro eliminado</button>}</div>)}
-        {!audits.length && <span style={{ color: '#64748b', fontSize: 12 }}>Aún no hay cambios registrados.</span>}
-      </section>
+      <AuditHistory
+        audits={audits.map(a => ({
+          id: a.id,
+          accion: a.accion,
+          registro_id: a.datos_nuevos?.registro_id || a.datos_anteriores?.registro_id,
+          nombre_serie: a.datos_nuevos?.numero_serie || a.datos_anteriores?.numero_serie,
+          referencia: a.datos_nuevos?.referencia || a.datos_anteriores?.referencia,
+          nombre_equipo: a.datos_nuevos?.nombre_equipo || a.datos_anteriores?.nombre_equipo,
+          created_at: a.created_at
+        }))}
+        onViewDeleted={(audit) => {
+          const fullAudit = audits.find(a => a.id === audit.id);
+          if (fullAudit?.datos_anteriores) {
+            setDeletedSnapshot(fullAudit.datos_anteriores);
+          }
+        }}
+        title="Historial de cambios"
+      />
       <EditVoidModal record={selected} onClose={() => setSelected(null)} onSave={handleUpdate} />
       {deletedSnapshot && <div style={{ position: 'fixed', inset: 0, zIndex: 1100, background: 'rgba(15,23,42,.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div style={{ background: '#fff', borderRadius: 12, padding: 24, width: 'min(600px, calc(100% - 32px))' }}><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}><h3 style={{ margin: 0 }}>Registro eliminado · {deletedSnapshot.registro_id || deletedSnapshot.id}</h3><button onClick={() => setDeletedSnapshot(null)} style={{ border: 0, background: 'none', cursor: 'pointer', fontSize: 20 }}>×</button></div><pre style={{ whiteSpace: 'pre-wrap', background: '#f8fafc', padding: 14, borderRadius: 8, fontSize: 12, marginTop: 16 }}>{JSON.stringify(deletedSnapshot, null, 2)}</pre></div></div>}
     </div>

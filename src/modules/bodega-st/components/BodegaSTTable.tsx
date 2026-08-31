@@ -49,27 +49,39 @@ export const BodegaSTTable: React.FC<BodegaSTTableProps> = ({ records, onEdit, o
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.825rem' }}>
           <thead>
             <tr style={{ background: 'var(--surface2, #f8fafc)', color: 'var(--muted, #64748b)', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0' }}>
+              <th style={{ padding: '12px 16px' }}>ID</th>
               <th style={{ padding: '12px 16px' }}>Equipo / Ref</th>
               <th style={{ padding: '12px 16px' }}>Serie</th>
               <th style={{ padding: '12px 16px' }}>Estado</th>
               <th style={{ padding: '12px 16px' }}>Accesorios Faltantes</th>
               <th style={{ padding: '12px 16px' }}>Reparaciones</th>
               <th style={{ padding: '12px 16px' }}>Ubicación</th>
+              <th style={{ padding: '12px 16px' }}>Bodega Destino</th>
               <th style={{ padding: '12px 16px', textAlign: 'center' }}>Acción</th>
             </tr>
           </thead>
           <tbody>
             {filteredRecords.length === 0 ? (
-              <tr><td colSpan={7} style={{ padding: 24, textAlign: 'center', color: '#94a3b8' }}>Bodega ST sin equipos registrados.</td></tr>
+              <tr><td colSpan={9} style={{ padding: 24, textAlign: 'center', color: '#94a3b8' }}>Bodega ST sin equipos registrados.</td></tr>
             ) : (
               filteredRecords.map((rec, index) => (
                 <tr key={index} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                  <td style={{ padding: '12px 16px', fontFamily: 'var(--mono, monospace)', fontSize: '0.72rem', color: 'var(--muted, #64748b)' }}>{rec.registro_id || rec.id || '—'}</td>
                   <td style={{ padding: '12px 16px', fontWeight: 600, color: '#0f172a' }}>{rec.nombre_equipo}<span style={{ display: 'block', fontSize: '0.725rem', color: '#64748b', fontFamily: 'monospace' }}>{rec.referencia}</span></td>
                   <td style={{ padding: '12px 16px', fontFamily: 'monospace', fontWeight: 600 }}>{rec.numero_serie}</td>
                   <td style={{ padding: '12px 16px' }}>{renderEstadoBadge(rec.estado)}</td>
                   <td style={{ padding: '12px 16px', color: '#c2410c', fontWeight: 500 }}>{rec.partes_requeridas || '—'}</td>
                   <td style={{ padding: '12px 16px', color: '#64748b' }}>{rec.reparaciones_realizadas || '—'}</td>
                   <td style={{ padding: '12px 16px', fontWeight: 500 }}>{rec.ubicacion_estante || '—'}</td>
+                  <td style={{ padding: '12px 16px' }}>
+                    {rec.estado === 'restaurado_listo' ? (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: '#ecfdf5', color: '#10b981', padding: '3px 8px', borderRadius: 6, fontWeight: 600, fontSize: '0.75rem', border: '1px solid #a7f3d0' }}>
+                        📦 {rec.bodega_destino || 'Bodega Principal'}
+                      </span>
+                    ) : (
+                      <span style={{ color: '#cbd5e1' }}>—</span>
+                    )}
+                  </td>
                   <td style={{ padding: '12px 16px', textAlign: 'center' }}>
                     <button title="Editar" onClick={() => onEdit(rec)} style={{ background: '#eff6ff', border: '1px solid #bfdbfe', color: '#005eb8', padding: 7, borderRadius: 6, cursor: 'pointer', display: 'inline-flex', alignItems: 'center' }}>
                       <Edit size={12} /> Editar

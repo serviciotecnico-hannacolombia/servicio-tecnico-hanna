@@ -23,17 +23,26 @@ export const BodegaSTForm: React.FC<BodegaSTFormProps> = ({ onSave }) => {
   const inputQrRef = useRef<HTMLInputElement>(null);
 
   const handleQrKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    console.log('KEY DOWN EVENT FIRED:', e.key);
     if (e.key === 'Enter') {
       e.preventDefault();
+      console.log('🔥 ENTER PRESSED - QR input:', qrEquipo);
       const parsed = parseEquipoQR(qrEquipo);
+      console.log('✅ Resultado del parse:', parsed);
       setReferencia(parsed.referencia);
       setNumeroSerie(parsed.serie);
       setNombreEquipo(parsed.nombre);
     }
   };
 
+  const handleQrChange = (value: string) => {
+    console.log('QR CAMBIO:', value);
+    setQrEquipo(value);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('📤 FORM SUBMIT:', { qrEquipo, referencia, numeroSerie, nombreEquipo });
     if (!modoManual && !qrEquipo) return;
     if (modoManual && (!referencia || !numeroSerie)) return;
 
@@ -113,7 +122,7 @@ export const BodegaSTForm: React.FC<BodegaSTFormProps> = ({ onSave }) => {
               ref={inputQrRef}
               type="text"
               value={qrEquipo}
-              onChange={(e) => setQrEquipo(e.target.value)}
+              onChange={(e) => handleQrChange(e.target.value)}
               onKeyDown={handleQrKeyDown}
               placeholder="HI76312Ñ121417CMÑMAURITIUSÑConductivity Probe"
               style={{
@@ -147,10 +156,19 @@ export const BodegaSTForm: React.FC<BodegaSTFormProps> = ({ onSave }) => {
         )}
 
         {referencia && !modoManual && (
-          <div style={{ background: 'var(--accent-bg, #eff6ff)', border: '1px solid var(--accent, #93c5fd)', borderRadius: 8, padding: 12, display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, fontSize: '0.8rem' }}>
-            <div><strong style={{ color: 'var(--accent, #1d4ed8)' }}>Ref:</strong> {referencia}</div>
-            <div><strong style={{ color: 'var(--accent, #1d4ed8)' }}>Serie:</strong> {numeroSerie}</div>
-            <div><strong style={{ color: 'var(--accent, #1d4ed8)' }}>Equipo:</strong> {nombreEquipo}</div>
+          <div style={{ background: 'var(--accent-bg, #eff6ff)', border: '2px solid var(--accent, #1d4ed8)', borderRadius: 8, padding: 16, display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, fontSize: '0.85rem' }}>
+            <div>
+              <strong style={{ color: 'var(--accent, #1d4ed8)', display: 'block', marginBottom: 4 }}>Referencia</strong>
+              <span style={{ fontSize: '1rem', fontWeight: 600, color: '#0f172a' }}>{referencia || '(vacío)'}</span>
+            </div>
+            <div>
+              <strong style={{ color: 'var(--accent, #1d4ed8)', display: 'block', marginBottom: 4 }}>Serie</strong>
+              <span style={{ fontSize: '1rem', fontWeight: 600, color: '#0f172a' }}>{numeroSerie || '(vacío)'}</span>
+            </div>
+            <div>
+              <strong style={{ color: 'var(--accent, #1d4ed8)', display: 'block', marginBottom: 4 }}>Equipo</strong>
+              <span style={{ fontSize: '1rem', fontWeight: 600, color: '#0f172a' }}>{nombreEquipo || '(vacío)'}</span>
+            </div>
           </div>
         )}
 
@@ -175,7 +193,6 @@ export const BodegaSTForm: React.FC<BodegaSTFormProps> = ({ onSave }) => {
               <option value="en_diagnostico">🔍 En Diagnóstico</option>
               <option value="en_reparacion">⚙️ En Reparación</option>
               <option value="incompleto_espera_partes">🧩 Incompleto (Espera Accesorios/Partes)</option>
-              <option value="restaurado_listo">✅ Restaurado (Listo para Bodega Principal)</option>
             </select>
           </div>
 

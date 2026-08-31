@@ -3,7 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import logo from '../../assets/logo.svg'
 import {
   Phone, Package, DollarSign, Wrench, FileText, Warehouse,
-  LogOut, Pencil, ShieldCheck, BarChart2, Mail, KeyRound, ChevronDown, Timer, ListTodo, CalendarClock, QrCode
+  LogOut, Pencil, ShieldCheck, BarChart2, Mail, KeyRound, ChevronDown, Timer, ListTodo, CalendarClock, QrCode, Box
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useSidebar } from './SidebarContext'
@@ -51,7 +51,7 @@ function HamburgerIcon({ open }: { open: boolean }) {
 
 const NAV_ITEMS: { to: string; label: string; icon: typeof Phone; moduleKey: ModuleKey }[] = [
   { to: '/void',                     label: 'Control VOIDs',         icon: QrCode,        moduleKey: 'void' as ModuleKey },
-  { to: '/bodega-st', label: 'Bodega ST (Restauración)', icon: Wrench, moduleKey: 'bodega_st' as ModuleKey },
+  { to: '/bodega-st', label: 'Bodega ST (Restauración)', icon: Box, moduleKey: 'bodega_st' as ModuleKey },
   { to: '/llamadas',                label: 'Control Llamadas',     icon: Phone,         moduleKey: 'llamadas'    },
   { to: '/bodega',                  label: 'Bodega',               icon: Warehouse,     moduleKey: 'bodega'      },
   { to: '/consumibles',             label: 'Consumibles',          icon: Package,       moduleKey: 'consumibles' },

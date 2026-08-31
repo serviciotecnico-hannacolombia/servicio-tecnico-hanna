@@ -7,8 +7,14 @@ export const UBICACIONES_BODEGA_ST: string[] = [
   'Rack CC 2',
 ];
 
+export const BODEGAS_DESTINO: string[] = [
+  'Bodega Principal',
+  'Bodega Incompletos',
+];
+
 export interface RegistroBodegaST {
   id?: string;
+  registro_id?: string;
   created_at?: string;
   qr_equipo: string;
   referencia: string;
@@ -19,6 +25,7 @@ export interface RegistroBodegaST {
   reparaciones_realizadas?: string;
   tecnico_responsable?: string;
   ubicacion_estante?: string;
+  bodega_destino?: string;
   observaciones?: string;
 }
 

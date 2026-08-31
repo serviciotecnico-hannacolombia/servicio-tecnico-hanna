@@ -24,14 +24,22 @@ export const VoidForm: React.FC<VoidFormProps> = ({ onSave }) => {
   const inputQrRef = useRef<HTMLInputElement>(null);
 
   const handleQrKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
+    console.log('KEY DOWN EVENT FIRED:', e.key);
+    if (e.key === 'Enter' || e.key === 'Tab') {
       e.preventDefault();
+      console.log('🔥 TRIGGER DETECTED - QR input:', qrEquipo);
       const parsed = parseEquipoQR(qrEquipo);
+      console.log('✅ Resultado del parse:', parsed);
       setReferencia(parsed.referencia);
       setNumeroSerie(parsed.serie);
       setNombreEquipo(parsed.nombre);
       inputVoidBlancoRef.current?.focus();
     }
+  };
+
+  const handleQrChange = (value: string) => {
+    console.log('QR CAMBIO:', value);
+    setQrEquipo(value);
   };
 
   const handleVoidBlancoKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -50,6 +58,7 @@ export const VoidForm: React.FC<VoidFormProps> = ({ onSave }) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('📤 FORM SUBMIT VOID:', { qrEquipo, referencia, numeroSerie, nombreEquipo });
     if (!voidBlanco || !voidGris) return;
 
     onSave({
@@ -128,7 +137,7 @@ export const VoidForm: React.FC<VoidFormProps> = ({ onSave }) => {
               ref={inputQrRef}
               type="text"
               value={qrEquipo}
-              onChange={(e) => setQrEquipo(e.target.value)}
+              onChange={(e) => handleQrChange(e.target.value)}
               onKeyDown={handleQrKeyDown}
               placeholder="HI76312Ñ121417CMÑMAURITIUSÑConductivity Probe"
               style={{
@@ -148,15 +157,15 @@ export const VoidForm: React.FC<VoidFormProps> = ({ onSave }) => {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 2fr', gap: 12 }}>
             <div>
               <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text, #334155)', marginBottom: 6 }}>Referencia</label>
-              <input type="text" value={referencia} onChange={(e) => setReferencia(e.target.value)} placeholder="Ej: HI98194" style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: '0.875rem' }} />
+              <input required type="text" value={referencia} onChange={(e) => setReferencia(e.target.value)} placeholder="Ej: HI98194" style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: '0.875rem' }} />
             </div>
             <div>
               <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text, #334155)', marginBottom: 6 }}>Número de Serie</label>
-              <input type="text" value={numeroSerie} onChange={(e) => setNumeroSerie(e.target.value)} placeholder="Ej: 1847120" style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: '0.875rem' }} />
+              <input required type="text" value={numeroSerie} onChange={(e) => setNumeroSerie(e.target.value)} placeholder="Ej: 1847120" style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: '0.875rem' }} />
             </div>
             <div>
               <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text, #334155)', marginBottom: 6 }}>Nombre del Equipo</label>
-              <input type="text" value={nombreEquipo} onChange={(e) => setNombreEquipo(e.target.value)} placeholder="Ej: Multiparámetro Portátil" style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: '0.875rem' }} />
+              <input required type="text" value={nombreEquipo} onChange={(e) => setNombreEquipo(e.target.value)} placeholder="Ej: Multiparámetro Portátil" style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: '0.875rem' }} />
             </div>
           </div>
         )}
@@ -175,6 +184,7 @@ export const VoidForm: React.FC<VoidFormProps> = ({ onSave }) => {
               2. VOID Blanco (Pistolear)
             </label>
             <input
+              required
               ref={inputVoidBlancoRef}
               type="text"
               value={voidBlanco}
@@ -190,6 +200,7 @@ export const VoidForm: React.FC<VoidFormProps> = ({ onSave }) => {
               3. VOID Gris (Pistolear)
             </label>
             <input
+              required
               ref={inputVoidGrisRef}
               type="text"
               value={voidGris}
@@ -204,7 +215,7 @@ export const VoidForm: React.FC<VoidFormProps> = ({ onSave }) => {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
           <div>
             <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text, #334155)', marginBottom: 6, textTransform: 'uppercase' }}>Factura / Remisión / OTST</label>
-            <input ref={inputDocRef} type="text" value={documentoRef} onChange={(e) => setDocumentoRef(e.target.value)} placeholder="Ej: FV 123456 / OTST 41000" style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: '0.875rem' }} />
+            <input required ref={inputDocRef} type="text" value={documentoRef} onChange={(e) => setDocumentoRef(e.target.value)} placeholder="Ej: FV 123456 / OTST 41000" style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: '0.875rem' }} />
           </div>
 
           <div>

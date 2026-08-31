@@ -4,6 +4,7 @@ import { BodegaSTForm } from '../components/BodegaSTForm';
 import { BodegaSTTable } from '../components/BodegaSTTable';
 import { EditBodegaSTModal } from '../components/EditBodegaSTModal';
 import {exportToExcel } from '../../void/utils/exportToExcel';
+import { AuditHistory } from '../../../components/ui/AuditHistory';
 import type { BodegaSTAudit, RegistroBodegaST } from '../types';
 import { Clock, Wrench, AlertTriangle, CheckCircle2, Download } from 'lucide-react';
 
@@ -13,6 +14,7 @@ export function BodegaSTPage() {
 
   const [selectedRecord, setSelectedRecord] = useState<RegistroBodegaST | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [deletedSnapshot, setDeletedSnapshot] = useState<RegistroBodegaST | null>(null);
 
   // Métricas / KPIs
   const totalDiagnostico = visibleRecords.filter(r => r.estado === 'en_diagnostico').length;
@@ -25,7 +27,7 @@ export function BodegaSTPage() {
   };
 
   const handleSaveRecord = (newRecord: RegistroBodegaST) => {
-    const record = { ...newRecord, id: crypto.randomUUID(), created_at: new Date().toISOString() };
+    const record = { ...newRecord, id: crypto.randomUUID(), registro_id: `BST-${Date.now().toString(36).toUpperCase()}`, created_at: new Date().toISOString() };
     setVisibleRecords(previous => [record, ...previous]);
     addAudit(record, 'INSERT', null, record);
     toast.success('Registro de Bodega ST guardado');
@@ -64,7 +66,7 @@ export function BodegaSTPage() {
   }
 
   return (
-    <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+    <div style={{ maxWidth: 1300, margin: '0 auto' }}>
       <header style={{ marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
           <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text, #0f172a)', margin: 0 }}>
@@ -140,10 +142,26 @@ export function BodegaSTPage() {
         onUpdate={handleUpdate}
       />
       <section style={{ marginTop: 24, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: 20 }}>
-        <h3 style={{ margin: '0 0 14px', fontSize: '0.95rem' }}>Historial de cambios ({audits.length})</h3>
-        {audits.slice(0, 30).map(a => <div key={a.id} style={{ borderTop: '1px solid #e2e8f0', padding: '9px 0', fontSize: 12 }}><strong>{a.accion}</strong> · {new Date(a.created_at).toLocaleString('es-CO')} · {a.datos_nuevos?.numero_serie || a.datos_anteriores?.numero_serie || 'Registro'}</div>)}
-        {!audits.length && <span style={{ color: '#64748b', fontSize: 12 }}>Aún no hay cambios registrados.</span>}
+        <AuditHistory
+          audits={audits.map(a => ({
+            id: a.id,
+            accion: a.accion,
+            registro_id: a.datos_nuevos?.registro_id || a.datos_anteriores?.registro_id,
+            nombre_serie: a.datos_nuevos?.numero_serie || a.datos_anteriores?.numero_serie,
+            referencia: a.datos_nuevos?.referencia || a.datos_anteriores?.referencia,
+            nombre_equipo: a.datos_nuevos?.nombre_equipo || a.datos_anteriores?.nombre_equipo,
+            created_at: a.created_at
+          }))}
+          onViewDeleted={(audit) => {
+            const fullAudit = audits.find(a => a.id === audit.id);
+            if (fullAudit?.datos_anteriores) {
+              setDeletedSnapshot(fullAudit.datos_anteriores);
+            }
+          }}
+          title="Historial de cambios"
+        />
       </section>
+      {deletedSnapshot && <div style={{ position: 'fixed', inset: 0, zIndex: 1100, background: 'rgba(15,23,42,.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div style={{ background: '#fff', borderRadius: 12, padding: 24, width: 'min(600px, calc(100% - 32px))' }}><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}><h3 style={{ margin: 0 }}>Registro eliminado · {deletedSnapshot.registro_id || deletedSnapshot.id}</h3><button onClick={() => setDeletedSnapshot(null)} style={{ border: 0, background: 'none', cursor: 'pointer', fontSize: 20 }}>×</button></div><pre style={{ whiteSpace: 'pre-wrap', background: '#f8fafc', padding: 14, borderRadius: 8, fontSize: 12, marginTop: 16 }}>{JSON.stringify(deletedSnapshot, null, 2)}</pre></div></div>}
     </div>
   );
 }
