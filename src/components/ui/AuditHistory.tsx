@@ -14,6 +14,7 @@ interface AuditEntry {
 interface AuditHistoryProps {
   audits: AuditEntry[];
   onViewDeleted?: (audit: any) => void;
+  onViewChanges?: (audit: any) => void;
   title?: string;
   isEmpty?: boolean;
 }
@@ -58,6 +59,7 @@ const getActionInfo = (accion: 'INSERT' | 'UPDATE' | 'DELETE') => {
 export const AuditHistory: React.FC<AuditHistoryProps> = ({
   audits,
   onViewDeleted,
+  onViewChanges,
   title = 'Historial de cambios',
   isEmpty = false
 }) => {
@@ -67,7 +69,7 @@ export const AuditHistory: React.FC<AuditHistoryProps> = ({
         <Clock size={18} /> {title} ({audits.length})
       </h3>
 
-      {audits.length === 0 ? (
+      {audits.length === 0 || isEmpty ? (
         <div style={{ padding: '24px', textAlign: 'center', color: '#64748b', background: '#f8fafc', borderRadius: 8 }}>
           <p style={{ margin: 0, fontSize: '0.875rem' }}>Aún no hay cambios registrados</p>
         </div>
@@ -160,7 +162,33 @@ export const AuditHistory: React.FC<AuditHistoryProps> = ({
                       e.currentTarget.style.background = '#ffffff';
                     }}
                   >
-                    Ver registro
+                    Ver eliminado
+                  </button>
+                )}
+
+                {audit.accion === 'UPDATE' && onViewChanges && (
+                  <button
+                    onClick={() => onViewChanges(audit)}
+                    style={{
+                      border: `1px solid ${actionInfo.borderColor}`,
+                      borderRadius: 6,
+                      background: '#ffffff',
+                      padding: '5px 10px',
+                      cursor: 'pointer',
+                      fontSize: '0.75rem',
+                      fontWeight: 600,
+                      color: actionInfo.color,
+                      transition: 'all 0.2s',
+                      whiteSpace: 'nowrap'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = actionInfo.background;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = '#ffffff';
+                    }}
+                  >
+                    Ver cambios
                   </button>
                 )}
               </div>
