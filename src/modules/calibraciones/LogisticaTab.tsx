@@ -111,7 +111,7 @@ export function LogisticaTab({ ordenes }: { ordenes: OrdenCalibracion[] }) {
   const pendientesMostrados = verEnlazadas ? pendientesEnlazados : pendientesPorProcesar
 
   const ordenesLogistica = ordenes
-    .filter(o => ESTADOS_LOGISTICA.includes(o.estado))
+    .filter(o => ESTADOS_LOGISTICA.includes(o.estado) && !o.anulada)
     .sort(porNumeroOCDesc)
 
   const ordenesFiltradas = filtroEstado === 'todas'

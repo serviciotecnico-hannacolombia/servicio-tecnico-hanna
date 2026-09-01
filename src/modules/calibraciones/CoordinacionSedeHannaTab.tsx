@@ -142,13 +142,13 @@ export function CoordinacionSedeHannaTab({ ordenes, parametros, catalogo }: {
   const enSemana = (fecha: string | null) => !!fecha && fecha >= inicio && fecha <= fin
 
   const ordenesVisita = ordenes
-    .filter(o => o.modalidad === 'sede_hanna_dorado'
+    .filter(o => !o.anulada && o.modalidad === 'sede_hanna_dorado'
       && (o.estado === 'en_programacion_visita' || o.estado === 'visita_programada')
       && enSemana(o.fecha_programada_envio))
     .sort(porNumeroOCDesc)
 
   const ordenesMantenimiento = ordenes
-    .filter(o => o.modalidad === 'sede_hanna_dorado'
+    .filter(o => !o.anulada && o.modalidad === 'sede_hanna_dorado'
       && o.estado === 'en_mantenimiento_reparacion'
       && enSemana(o.fecha_salida_mantenimiento))
     .sort(porNumeroOCDesc)
@@ -157,7 +157,7 @@ export function CoordinacionSedeHannaTab({ ordenes, parametros, catalogo }: {
   // fecha propia), "en calibración" es un estado en curso: se muestran todas
   // las que están activas ahora mismo, sin importar cuándo llegó el metrólogo.
   const ordenesEnCalibracion = ordenes
-    .filter(o => o.modalidad === 'sede_hanna_dorado' && o.estado === 'en_calibracion')
+    .filter(o => !o.anulada && o.modalidad === 'sede_hanna_dorado' && o.estado === 'en_calibracion')
     .sort(porNumeroOCDesc)
 
   const conteoMagnitudes = new Map<string, number>()

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, Fragment } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { ArrowLeft, Trash2, AlertTriangle, Clock } from 'lucide-react'
+import { ArrowLeft, Trash2, Ban, RotateCcw, AlertTriangle, Clock } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { Spinner } from '../../components/ui/Spinner'
 import { Modal } from '../../components/ui/Modal'
@@ -12,7 +12,7 @@ import {
   useInvalidateCalibraciones, grupoEstado, ESTADO_LABEL, MODALIDAD_LABEL, CAMPO_LABEL,
   formatValorHistorial, estaVencido, proximoAVencer, descripcionSemaforo, logServiciosChange,
   flujoPorModalidad, PROVEEDOR_SEDE_HANNA, miercolesSiguiente,
-  marcarNovedad, agregarAvanceNovedad, resolverNovedad,
+  marcarNovedad, agregarAvanceNovedad, resolverNovedad, anularOrden, reactivarOrden,
 } from './hooks/useCalibraciones'
 import type { EtapaFlujo } from './hooks/useCalibraciones'
 import { FG, Seccion, Grid2, INP, PRI, GHOST, B_INFO, B_VENCIDA, B_PROXIMA, B_NOVEDAD, GRUPO_COLOR, fmtFecha, fmtCOP, fechaLocalISO } from './ui'
@@ -59,6 +59,7 @@ const EMPTY_ORDEN: Partial<OrdenCalibracion> = {
   cliente: '', numero_oc: '', correo_cliente: '', correo_asesor: '', saci: '', link_solicitud: '',
   otst: '', link_otst: '', codigo_recepcion: '', rmv_fv: '', modalidad: null, lugar_ejecucion: '',
   proveedor: '', estado: 'oc_creada', novedad_detalle: '', enviado_cliente_final: false,
+  anulada: false, motivo_anulacion: '',
   cantidad_equipos: null,
   fecha_salida_mantenimiento: null,
   fecha_salida_mantenimiento_real: null, nota_mantenimiento: '',
@@ -75,7 +76,7 @@ const EMPTY_ORDEN: Partial<OrdenCalibracion> = {
 export function OrdenCalibracionDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { user, hasCapability } = useUser()
+  const { user, hasCapability, isAdmin } = useUser()
   const puedeEditar = hasCapability('calibraciones_editar')
   const esNueva = id === 'nueva'
 
@@ -100,6 +101,9 @@ export function OrdenCalibracionDetailPage() {
   const [resolucionNovedadInput, setResolucionNovedadInput] = useState('')
   const [avanceNovedad, setAvanceNovedad] = useState('')
   const [guardandoNovedad, setGuardandoNovedad] = useState(false)
+  const [anulando, setAnulando] = useState(false)
+  const [motivoAnulacionInput, setMotivoAnulacionInput] = useState('')
+  const [guardandoAnulacion, setGuardandoAnulacion] = useState(false)
 
   useEffect(() => { if (orden) setForm(orden) }, [orden])
   useEffect(() => { if (parametrosActuales) setCodigosSel(new Set(parametrosActuales.map(p => p.rv_calibr_codigo))) }, [parametrosActuales])
@@ -367,6 +371,42 @@ export function OrdenCalibracionDetailPage() {
     }
   }
 
+  // Anular reemplaza al borrado para el flujo normal — la orden y su
+  // historial quedan intactos, así que no hace falta confirmación extra
+  // aparte de escribir el motivo.
+  async function confirmarAnular(motivo: string) {
+    if (!orden || !motivo.trim()) { toast.error('Ingresa el motivo de la anulación'); return }
+    setGuardandoAnulacion(true)
+    try {
+      await anularOrden(orden.id, motivo)
+      toast.success('Orden anulada')
+      invalidate.ordenes()
+      invalidate.historial(orden.id)
+      setAnulando(false)
+      setMotivoAnulacionInput('')
+    } catch (e) {
+      toast.error('Error: ' + mensajeError(e))
+    } finally {
+      setGuardandoAnulacion(false)
+    }
+  }
+
+  async function confirmarReactivar() {
+    if (!orden) return
+    if (!confirm('¿Reactivar esta orden? Vuelve a las vistas activas y al semáforo de vencimiento.')) return
+    setGuardandoAnulacion(true)
+    try {
+      await reactivarOrden(orden.id)
+      toast.success('Orden reactivada')
+      invalidate.ordenes()
+      invalidate.historial(orden.id)
+    } catch (e) {
+      toast.error('Error: ' + mensajeError(e))
+    } finally {
+      setGuardandoAnulacion(false)
+    }
+  }
+
   if (!esNueva && cargandoOrdenes) {
     return <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}><Spinner size={32} /></div>
   }
@@ -404,6 +444,9 @@ export function OrdenCalibracionDetailPage() {
   const idxMostrado = vistaIdx ?? idxActual
   const etapaMostrada = idxMostrado >= 0 ? flujo[idxMostrado] : undefined
   const soloLectura = idxMostrado !== idxActual
+  // Una orden anulada no avanza más en el flujo — se puede seguir viendo y
+  // reactivar, pero no guardar cambios de estado/fechas mientras lo esté.
+  const puedeEditarFlujo = puedeEditar && !form.anulada
 
   return (
     <div style={{ maxWidth: 980, margin: '0 auto' }}>
@@ -431,23 +474,38 @@ export function OrdenCalibracionDetailPage() {
                   fontFamily: 'var(--mono)', fontSize: 11, fontWeight: 700,
                   background: grupoColor.bg, color: grupoColor.text, border: `1px solid ${grupoColor.border}`,
                 }}>{ESTADO_LABEL[form.estado as EstadoCalibracion]}</span>
-                {vencida && <span style={B_VENCIDA}><AlertTriangle size={11} style={{ verticalAlign: -1, marginRight: 3 }} />{orden && descripcionSemaforo(orden)}</span>}
-                {!vencida && proxima && <span style={B_PROXIMA}><AlertTriangle size={11} style={{ verticalAlign: -1, marginRight: 3 }} />{orden && descripcionSemaforo(orden)}</span>}
+                {form.anulada && <span style={B_VENCIDA}><Ban size={11} style={{ verticalAlign: -1, marginRight: 3 }} />Anulada</span>}
+                {!form.anulada && vencida && <span style={B_VENCIDA}><AlertTriangle size={11} style={{ verticalAlign: -1, marginRight: 3 }} />{orden && descripcionSemaforo(orden)}</span>}
+                {!form.anulada && !vencida && proxima && <span style={B_PROXIMA}><AlertTriangle size={11} style={{ verticalAlign: -1, marginRight: 3 }} />{orden && descripcionSemaforo(orden)}</span>}
                 {orden?.novedad_detalle && <span style={B_NOVEDAD}><AlertTriangle size={11} style={{ verticalAlign: -1, marginRight: 3 }} />Novedad</span>}
               </div>
             )}
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-          {puedeEditar && orden && !orden.novedad_detalle && (
+          {puedeEditar && orden && !orden.novedad_detalle && !orden.anulada && (
             <button onClick={() => setMarcandoNovedad(true)} title="Marcar novedad" style={{
               width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center',
               borderRadius: 9, border: '1px solid var(--border)', background: 'var(--surface)',
               color: 'var(--yellow)', cursor: 'pointer', flexShrink: 0,
             }}><AlertTriangle size={16} /></button>
           )}
-          {puedeEditar && orden && (
-            <button onClick={() => setEliminando(true)} title="Eliminar orden" style={{
+          {puedeEditar && orden && !orden.anulada && (
+            <button onClick={() => setAnulando(true)} title="Anular orden" style={{
+              width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              borderRadius: 9, border: '1px solid var(--border)', background: 'var(--surface)',
+              color: 'var(--red)', cursor: 'pointer', flexShrink: 0,
+            }}><Ban size={16} /></button>
+          )}
+          {puedeEditar && orden && orden.anulada && (
+            <button onClick={confirmarReactivar} disabled={guardandoAnulacion} title="Reactivar orden" style={{
+              width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              borderRadius: 9, border: '1px solid var(--border)', background: 'var(--surface)',
+              color: 'var(--accent)', cursor: 'pointer', flexShrink: 0,
+            }}><RotateCcw size={16} /></button>
+          )}
+          {isAdmin && orden && (
+            <button onClick={() => setEliminando(true)} title="Eliminar orden permanentemente (solo Admin)" style={{
               width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center',
               borderRadius: 9, border: '1px solid var(--border)', background: 'var(--surface)',
               color: 'var(--red)', cursor: 'pointer', flexShrink: 0,
@@ -455,6 +513,21 @@ export function OrdenCalibracionDetailPage() {
           )}
         </div>
       </div>
+
+      {orden?.anulada && (
+        <div style={{
+          padding: '14px 18px', borderRadius: 'var(--radius)', background: 'var(--red-bg)',
+          border: '1px solid var(--red-border)', marginBottom: 24,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+            <Ban size={16} color="var(--red)" style={{ flexShrink: 0, marginTop: 2 }} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--red)', marginBottom: 4 }}>Orden anulada</div>
+              <div style={{ fontSize: 13, color: 'var(--text)' }}>{orden.motivo_anulacion}</div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {orden?.novedad_detalle && (
         <div style={{
@@ -500,53 +573,53 @@ export function OrdenCalibracionDetailPage() {
             importar qué se haya marcado en "Siguiente paso" todavía. */}
         {!esNueva && etapaMostrada?.key === 'en_mantenimiento_reparacion' ? (
           <VistaMantenimiento
-            form={form} asesorSeleccionado={asesorSeleccionado} puedeEditar={puedeEditar} soloLectura={soloLectura}
+            form={form} asesorSeleccionado={asesorSeleccionado} puedeEditar={puedeEditarFlujo} soloLectura={soloLectura}
             saving={saving} onTerminar={terminarMantenimiento}
           />
         ) : !esNueva && etapaMostrada?.key === 'visita_programada' ? (
           <VistaVisitaProgramada
-            form={form} puedeEditar={puedeEditar} soloLectura={soloLectura} saving={saving} onAvanzar={avanzarEtapa}
+            form={form} puedeEditar={puedeEditarFlujo} soloLectura={soloLectura} saving={saving} onAvanzar={avanzarEtapa}
           />
         ) : !esNueva && etapaMostrada?.key === 'terminado' ? (
           <VistaTerminado form={form} catalogo={catalogo} codigosSel={codigosSel} asesorSeleccionado={asesorSeleccionado} />
         ) : !esNueva && etapaMostrada?.key === 'para_enviar' ? (
           <VistaParaEnviar
-            form={form} puedeEditar={puedeEditar} soloLectura={soloLectura}
+            form={form} puedeEditar={puedeEditarFlujo} soloLectura={soloLectura}
             saving={saving} onAvanzar={avanzarEtapa}
           />
         ) : !esNueva && etapaMostrada?.key === 'enviado' ? (
           <VistaEnviado
-            form={form} catalogo={catalogo} codigosSel={codigosSel} puedeEditar={puedeEditar} soloLectura={soloLectura}
+            form={form} catalogo={catalogo} codigosSel={codigosSel} puedeEditar={puedeEditarFlujo} soloLectura={soloLectura}
             saving={saving} onAvanzar={avanzarEtapa}
           />
         ) : !esNueva && etapaMostrada?.key === 'en_calibracion' && form.modalidad === 'laboratorio_externo' ? (
           <VistaEnCalibracion
-            form={form} puedeEditar={puedeEditar} soloLectura={soloLectura}
+            form={form} puedeEditar={puedeEditarFlujo} soloLectura={soloLectura}
             saving={saving} onAvanzar={avanzarEtapa}
           />
         ) : !esNueva && etapaMostrada?.key === 'en_retorno' ? (
           <VistaEnRetorno
-            form={form} puedeEditar={puedeEditar} soloLectura={soloLectura}
+            form={form} puedeEditar={puedeEditarFlujo} soloLectura={soloLectura}
             saving={saving} onAvanzar={avanzarEtapa}
           />
         ) : !esNueva && etapaMostrada?.key === 'control_calidad' ? (
           <VistaControlCalidad
-            form={form} asesorSeleccionado={asesorSeleccionado} puedeEditar={puedeEditar} soloLectura={soloLectura}
+            form={form} asesorSeleccionado={asesorSeleccionado} puedeEditar={puedeEditarFlujo} soloLectura={soloLectura}
             saving={saving} onAvanzar={avanzarEtapa}
           />
         ) : !esNueva && etapaMostrada?.key === 'carga_al_sistema' ? (
           <VistaCargaAlSistema
-            form={form} puedeEditar={puedeEditar} soloLectura={soloLectura}
+            form={form} puedeEditar={puedeEditarFlujo} soloLectura={soloLectura}
             saving={saving} onAvanzar={avanzarEtapa}
           />
         ) : !esNueva && etapaMostrada?.key === 'envio_certificados' ? (
           <VistaEnvioCertificados
-            form={form} puedeEditar={puedeEditar} soloLectura={soloLectura}
+            form={form} puedeEditar={puedeEditarFlujo} soloLectura={soloLectura}
             saving={saving} onAvanzar={avanzarEtapa}
           />
         ) : !esNueva && etapaMostrada?.key === 'en_calibracion' ? (
           <VistaEnCalibracionSitio
-            form={form} puedeEditar={puedeEditar} soloLectura={soloLectura}
+            form={form} puedeEditar={puedeEditarFlujo} soloLectura={soloLectura}
             saving={saving} onAvanzar={avanzarEtapa}
           />
         ) : (
@@ -560,7 +633,7 @@ export function OrdenCalibracionDetailPage() {
               Revisando "OC creada" (solo lectura)
             </div>
           )}
-          <fieldset disabled={!puedeEditar || soloLectura} style={{ border: 'none', padding: 0, margin: 0 }}>
+          <fieldset disabled={!puedeEditarFlujo || soloLectura} style={{ border: 'none', padding: 0, margin: 0 }}>
             <IdentificacionFields form={form} set={set} esNueva={esNueva} asesores={asesores} asesorSeleccionado={asesorSeleccionado} ordenes={ordenes} />
             <ReferenciasFields form={form} setForm={setForm} set={set} esNueva={esNueva} />
 
@@ -729,7 +802,7 @@ export function OrdenCalibracionDetailPage() {
             )}
           </fieldset>
 
-          {puedeEditar && !soloLectura && (
+          {puedeEditarFlujo && !soloLectura && (
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 24, paddingTop: 20, borderTop: '1px solid var(--border)' }}>
               <button onClick={() => navigate('/calibraciones')} style={GHOST}>Cancelar</button>
               <button onClick={() => submit()} disabled={saving} style={PRI}>{saving ? 'Guardando…' : esNueva ? '+ Crear orden' : '✓ Guardar cambios'}</button>
@@ -789,11 +862,41 @@ export function OrdenCalibracionDetailPage() {
       </div>
 
       {eliminando && orden && (
-        <Modal open onClose={() => setEliminando(false)} title="Eliminar orden">
-          <p style={{ fontSize: 13 }}>¿Eliminar la orden de <strong>{orden.cliente}</strong>{orden.numero_oc ? ` (${orden.numero_oc})` : ''}? Esta acción no se puede deshacer.</p>
+        <Modal open onClose={() => setEliminando(false)} title="Eliminar orden permanentemente">
+          <p style={{ fontSize: 13 }}>
+            ¿Eliminar la orden de <strong>{orden.cliente}</strong>{orden.numero_oc ? ` (${orden.numero_oc})` : ''}? Esto borra también su historial y sus enlaces con pendientes de logística — no se puede deshacer.
+          </p>
+          <p style={{ fontSize: 12, color: 'var(--muted)', marginTop: 8 }}>
+            Para el uso normal, usa "Anular" en vez de esto — conserva el historial y se puede reactivar.
+          </p>
           <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 20 }}>
             <button onClick={() => setEliminando(false)} style={GHOST}>Cancelar</button>
             <button onClick={eliminar} style={{ ...PRI, background: 'var(--red)' }}>🗑 Eliminar</button>
+          </div>
+        </Modal>
+      )}
+
+      {anulando && orden && (
+        <Modal open onClose={() => setAnulando(false)} title="Anular orden">
+          <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 10 }}>
+            La orden queda marcada como anulada, sale de las vistas activas y deja de generar alertas de vencimiento —
+            no se borra ni pierde su historial, y se puede reactivar en cualquier momento.
+            El No. de OC no se libera para reutilizarse.
+          </p>
+          <FG label="Motivo de la anulación" required>
+            <textarea
+              value={motivoAnulacionInput}
+              onChange={e => setMotivoAnulacionInput(e.target.value)}
+              rows={3}
+              autoFocus
+              style={{ ...INP, resize: 'vertical' }}
+            />
+          </FG>
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 20 }}>
+            <button onClick={() => setAnulando(false)} style={GHOST}>Cancelar</button>
+            <button onClick={() => confirmarAnular(motivoAnulacionInput)} disabled={guardandoAnulacion} style={{ ...PRI, background: 'var(--red)' }}>
+              {guardandoAnulacion ? 'Guardando…' : '⊘ Anular orden'}
+            </button>
           </div>
         </Modal>
       )}

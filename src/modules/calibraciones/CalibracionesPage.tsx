@@ -22,7 +22,7 @@ import { LogisticaTab } from './LogisticaTab'
 import { parseNumeroOC } from './vistas/CamposCompartidos'
 import type { Asesor, CorreoProveedor, EstadoCalibracion, Modalidad, OrdenCalibracion, RvCalibrItem } from '../../types'
 
-type VistaFiltro = 'activas' | 'vencidas' | 'completadas' | 'todas'
+type VistaFiltro = 'activas' | 'vencidas' | 'completadas' | 'anuladas' | 'todas'
 type Tab = 'ordenes' | 'analisis' | 'sede_hanna' | 'logistica' | 'catalogo' | 'asesores'
 
 const TAB_LABEL: Record<Tab, string> = {
@@ -106,9 +106,10 @@ export function CalibracionesPage() {
   const filtered = ordenes
     .filter(o => {
       if (vista === 'todas') return true
-      if (vista === 'completadas') return grupoEstado(o.estado) === 'completado'
+      if (vista === 'anuladas') return o.anulada
+      if (vista === 'completadas') return grupoEstado(o.estado) === 'completado' && !o.anulada
       if (vista === 'vencidas') return estaVencido(o)
-      return grupoEstado(o.estado) !== 'completado'
+      return grupoEstado(o.estado) !== 'completado' && !o.anulada
     })
     .filter(o => !filtros.estado || o.estado === filtros.estado)
     .filter(o => !filtros.modalidad || o.modalidad === filtros.modalidad)
@@ -134,11 +135,11 @@ export function CalibracionesPage() {
   useEffect(() => { if (page >= totalPages) setPage(0) }, [totalPages, page])
   const pageItems = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
 
-  const pendientesCount = ordenes.filter(o => grupoEstado(o.estado) === 'pendiente').length
-  const enCursoCount = ordenes.filter(o => grupoEstado(o.estado) === 'en_curso').length
+  const pendientesCount = ordenes.filter(o => !o.anulada && grupoEstado(o.estado) === 'pendiente').length
+  const enCursoCount = ordenes.filter(o => !o.anulada && grupoEstado(o.estado) === 'en_curso').length
   const vencidasCount = ordenes.filter(o => estaVencido(o)).length
   const proximasCount = ordenes.filter(o => proximoAVencer(o) || visitaSinProgramar(o)).length
-  const completadasCount = ordenes.filter(o => grupoEstado(o.estado) === 'completado').length
+  const completadasCount = ordenes.filter(o => !o.anulada && grupoEstado(o.estado) === 'completado').length
 
   const ordenesColumns: Column<OrdenCalibracion>[] = [
     {
@@ -158,11 +159,20 @@ export function CalibracionesPage() {
       render: o => {
         const c = GRUPO_COLOR[grupoEstado(o.estado)]
         return (
-          <span style={{
-            display: 'inline-flex', alignItems: 'center', padding: '2px 9px', borderRadius: 20,
-            fontFamily: 'var(--mono)', fontSize: 10, fontWeight: 700,
-            background: c.bg, color: c.text, border: `1px solid ${c.border}`,
-          }}>{ESTADO_LABEL[o.estado]}</span>
+          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', padding: '2px 9px', borderRadius: 20,
+              fontFamily: 'var(--mono)', fontSize: 10, fontWeight: 700,
+              background: c.bg, color: c.text, border: `1px solid ${c.border}`,
+            }}>{ESTADO_LABEL[o.estado]}</span>
+            {o.anulada && (
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', padding: '2px 9px', borderRadius: 20,
+                fontFamily: 'var(--mono)', fontSize: 10, fontWeight: 700,
+                background: 'var(--red-bg)', color: 'var(--red)', border: '1px solid var(--red-border)',
+              }}>Anulada</span>
+            )}
+          </div>
         )
       },
     },
@@ -274,7 +284,7 @@ export function CalibracionesPage() {
           <Card>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', marginBottom: 14 }}>
               <div style={{ display: 'flex', gap: 4, background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 9, padding: 3, flexWrap: 'wrap' }}>
-                {([['activas', 'Activas'], ['vencidas', 'Vencidas'], ['completadas', 'Completadas'], ['todas', 'Todas']] as [VistaFiltro, string][]).map(([v, label]) => (
+                {([['activas', 'Activas'], ['vencidas', 'Vencidas'], ['completadas', 'Completadas'], ['anuladas', 'Anuladas'], ['todas', 'Todas']] as [VistaFiltro, string][]).map(([v, label]) => (
                   <button key={v} onClick={() => { setVista(v); setPage(0) }} style={{
                     padding: '6px 12px', border: 'none', borderRadius: 7, cursor: 'pointer', fontSize: 12,
                     fontWeight: vista === v ? 600 : 500, fontFamily: 'var(--sans)',
@@ -335,7 +345,7 @@ export function CalibracionesPage() {
                 data={pageItems}
                 keyExtractor={o => o.id}
                 onRowClick={o => navigate(`/calibraciones/${o.id}`)}
-                rowStyle={o => estaVencido(o) ? { background: 'var(--red-bg)' } : (proximoAVencer(o) || visitaSinProgramar(o)) ? { background: 'var(--yellow-bg)' } : grupoEstado(o.estado) === 'completado' ? { opacity: 0.65 } : undefined}
+                rowStyle={o => o.anulada ? { opacity: 0.55 } : estaVencido(o) ? { background: 'var(--red-bg)' } : (proximoAVencer(o) || visitaSinProgramar(o)) ? { background: 'var(--yellow-bg)' } : grupoEstado(o.estado) === 'completado' ? { opacity: 0.65 } : undefined}
               />
             )}
 

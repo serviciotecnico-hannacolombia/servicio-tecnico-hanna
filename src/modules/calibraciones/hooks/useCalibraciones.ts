@@ -27,8 +27,9 @@ export function useCalibracionesBadgeCount(): number {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('ordenes_calibracion')
-        .select('estado, modalidad, certificado_fecha_fin, fecha_programada_envio, fecha_llegada_metrologo, fecha_envio, fecha_retorno, fecha_llegada_hanna, estado_desde')
+        .select('estado, modalidad, certificado_fecha_fin, fecha_programada_envio, fecha_llegada_metrologo, fecha_envio, fecha_retorno, fecha_llegada_hanna, estado_desde, anulada')
         .neq('estado', 'terminado')
+        .eq('anulada', false)
       if (error) throw error
       return data as OrdenParaSemaforo[]
     },
@@ -224,6 +225,21 @@ export async function resolverNovedad(ordenId: string, resolucion: string) {
   const { error: e2 } = await supabase.from('ordenes_calibracion')
     .update({ novedad_detalle: null }).eq('id', ordenId)
   if (e2) throw e2
+}
+
+// Anular reemplaza al DELETE para el flujo normal — la orden y su historial
+// quedan intactos, solo sale de las vistas activas y del semáforo. El No.
+// de OC no se libera: sugerirNumeroOC sigue contando desde el máximo usado.
+export async function anularOrden(ordenId: string, motivo: string) {
+  const { error } = await supabase.from('ordenes_calibracion')
+    .update({ anulada: true, motivo_anulacion: motivo.trim() }).eq('id', ordenId)
+  if (error) throw error
+}
+
+export async function reactivarOrden(ordenId: string) {
+  const { error } = await supabase.from('ordenes_calibracion')
+    .update({ anulada: false, motivo_anulacion: null }).eq('id', ordenId)
+  if (error) throw error
 }
 
 // ── Estado / grupos ──────────────────────────────────────────────────────────
@@ -476,7 +492,7 @@ export function fechaObjetivo(orden: Pick<OrdenCalibracion, 'estado' | 'modalida
 
 export type NivelSemaforo = 'ok' | 'proxima' | 'vencida'
 
-type OrdenParaSemaforo = Pick<OrdenCalibracion, 'estado' | 'modalidad' | 'certificado_fecha_fin' | 'fecha_programada_envio' | 'fecha_llegada_metrologo' | 'fecha_envio' | 'fecha_retorno' | 'fecha_llegada_hanna' | 'estado_desde'>
+type OrdenParaSemaforo = Pick<OrdenCalibracion, 'estado' | 'modalidad' | 'certificado_fecha_fin' | 'fecha_programada_envio' | 'fecha_llegada_metrologo' | 'fecha_envio' | 'fecha_retorno' | 'fecha_llegada_hanna' | 'estado_desde' | 'anulada'>
 
 // Convierte una fecha `date` (YYYY-MM-DD, sin hora) a medianoche local —
 // new Date(str) la interpreta en UTC y se corre un día en Colombia (UTC-5).
@@ -520,6 +536,7 @@ function nivelPorHabiles(habiles: number, umbralProxima: number, umbralVencida: 
 }
 
 export function semaforoOrden(orden: OrdenParaSemaforo): NivelSemaforo {
+  if (orden.anulada) return 'ok'
   if (grupoEstado(orden.estado) === 'completado') return 'ok'
 
   const regla = REGLA_POR_ESTADO[orden.estado]
@@ -825,7 +842,8 @@ export function proximoAVencer(orden: OrdenParaSemaforo): boolean {
 // (no hay fecha objetivo contra la cual medir) — sin este chequeo aparte,
 // el semáforo solo la marca días después (por antigüedad en el estado), así
 // que una orden recién creada sin fecha no se veía como pendiente de nada.
-export function visitaSinProgramar(orden: Pick<OrdenCalibracion, 'estado' | 'fecha_programada_envio'>): boolean {
+export function visitaSinProgramar(orden: Pick<OrdenCalibracion, 'estado' | 'fecha_programada_envio' | 'anulada'>): boolean {
+  if (orden.anulada) return false
   return (orden.estado === 'visita_programada' || orden.estado === 'en_programacion_visita') && !orden.fecha_programada_envio
 }
 
@@ -876,6 +894,8 @@ export const CAMPO_LABEL: Record<string, string> = {
   parametros_nota: 'Notas de parámetros',
   valor_oc_antes_iva: 'Valor OC antes de IVA',
   ubicacion_equipo: 'Ubicación del equipo',
+  anulada: 'Anulada',
+  motivo_anulacion: 'Motivo de anulación',
 }
 
 const CAMPOS_FECHA = new Set([
@@ -894,6 +914,7 @@ export function formatValorHistorial(campo: string, valor: string | null): strin
   if (campo === 'modalidad') return MODALIDAD_LABEL[valor as Modalidad] || valor
   if (campo === 'ubicacion_equipo') return UBICACION_EQUIPO_LABEL[valor as UbicacionEquipo] || valor
   if (campo === 'enviado_cliente_final') return valor === 'true' ? 'Sí' : 'No'
+  if (campo === 'anulada') return valor === 'true' ? 'Sí' : 'No'
   if (campo === 'valor_oc_antes_iva') {
     const n = Number(valor)
     return Number.isFinite(n) ? '$' + n.toLocaleString('es-CO', { maximumFractionDigits: 0 }) : valor

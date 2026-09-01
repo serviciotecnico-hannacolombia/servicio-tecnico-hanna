@@ -352,6 +352,8 @@ export interface OrdenCalibracion {
   parametros_nota: string | null
   valor_oc_antes_iva: number | null
   ubicacion_equipo: UbicacionEquipo | null
+  anulada: boolean
+  motivo_anulacion: string | null
   creado_por: string | null
   estado_desde: string
   created_at: string
