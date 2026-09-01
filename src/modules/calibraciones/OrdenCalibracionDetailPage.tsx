@@ -298,6 +298,15 @@ export function OrdenCalibracionDetailPage() {
     submit(overrides)
   }
 
+  // Copia "No. OC Razón social" (ej. "ST001-2026 BRAYAN SAS") al portapapeles
+  // al hacer clic en el nombre del cliente — formato listo para pegar donde
+  // se necesite identificar la orden rápidamente.
+  function copiarClienteOC() {
+    const texto = [form.numero_oc, form.cliente].filter(Boolean).join(' ')
+    if (!texto) return
+    navigator.clipboard.writeText(texto).then(() => toast.success(`"${texto}" copiado`))
+  }
+
   async function eliminar() {
     if (!orden) return
     const { error } = await supabase.from('ordenes_calibracion').delete().eq('id', orden.id)
@@ -407,7 +416,11 @@ export function OrdenCalibracionDetailPage() {
             color: 'var(--muted)', cursor: 'pointer', flexShrink: 0, marginTop: 2,
           }}><ArrowLeft size={16} /></button>
           <div>
-            <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text)', lineHeight: 1.2 }}>
+            <h1
+              onClick={esNueva ? undefined : copiarClienteOC}
+              title={esNueva ? undefined : 'Clic para copiar "No. OC Razón social"'}
+              style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text)', lineHeight: 1.2, cursor: esNueva ? 'default' : 'copy' }}
+            >
               {esNueva ? 'Nueva orden de calibración' : form.cliente}
             </h1>
             {!esNueva && (
