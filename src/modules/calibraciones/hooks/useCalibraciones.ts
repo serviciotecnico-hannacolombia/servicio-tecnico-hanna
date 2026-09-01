@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../../lib/supabase'
 import { useUser } from '../../../hooks/useUser'
 import { businessDaysBetween } from '../../../lib/colombiaCalendar'
-import type { Asesor, CorreoProveedor, EstadoCalibracion, Modalidad, OrdenCalibracion, OrdenCalibracionHistorial, OrdenCalibracionParametro, RvCalibrItem, UbicacionEquipo } from '../../../types'
+import type { Asesor, CorreoProveedor, EstadoCalibracion, LogisticaPendiente, LogisticaPendienteOrden, Modalidad, OrdenCalibracion, OrdenCalibracionHistorial, OrdenCalibracionParametro, RvCalibrItem, UbicacionEquipo } from '../../../types'
 
 export function useOrdenesCalibracion() {
   const { user } = useUser()
@@ -116,6 +116,39 @@ export function useProveedores() {
   })
 }
 
+// Logística → Pendientes: remisiones/facturas recibidas que todavía no se
+// han procesado en el sistema — bandeja de trabajo, no historial.
+export function usePendientesLogistica() {
+  const { user } = useUser()
+  return useQuery({
+    queryKey: ['calibraciones_logistica_pendientes'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('calibraciones_logistica_pendientes').select('*').order('created_at', { ascending: false })
+      if (error) throw error
+      return data as LogisticaPendiente[]
+    },
+    enabled: !!user,
+  })
+}
+
+// Enlaces pendiente↔orden — se traen todos de una vez (tabla pequeña) para
+// poder calcular en el cliente qué pendientes ya tienen al menos una orden
+// enlazada, sin una consulta por fila.
+export function usePendientesLogisticaOrdenes() {
+  const { user } = useUser()
+  return useQuery({
+    queryKey: ['calibraciones_logistica_pendientes_ordenes'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('calibraciones_logistica_pendientes_ordenes').select('*')
+      if (error) throw error
+      return data as LogisticaPendienteOrden[]
+    },
+    enabled: !!user,
+  })
+}
+
 // Sede Hanna Dorado solo calibra con este laboratorio.
 export const PROVEEDOR_SEDE_HANNA = 'METROLOGICAL CENTER SAS'
 
@@ -142,6 +175,8 @@ export function useInvalidateCalibraciones() {
     catalogo: () => qc.invalidateQueries({ queryKey: ['rv_calibr_catalogo'] }),
     asesores: () => qc.invalidateQueries({ queryKey: ['calibraciones_asesores'] }),
     historial: (ordenId: string) => qc.invalidateQueries({ queryKey: ['ordenes_calibracion_historial', ordenId] }),
+    pendientesLogistica: () => qc.invalidateQueries({ queryKey: ['calibraciones_logistica_pendientes'] }),
+    pendientesLogisticaOrdenes: () => qc.invalidateQueries({ queryKey: ['calibraciones_logistica_pendientes_ordenes'] }),
   }
 }
 

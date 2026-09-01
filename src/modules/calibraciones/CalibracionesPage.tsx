@@ -18,14 +18,15 @@ import {
 } from './ui'
 import { AnalisisTab } from './AnalisisTab'
 import { CoordinacionSedeHannaTab } from './CoordinacionSedeHannaTab'
+import { LogisticaTab } from './LogisticaTab'
 import { parseNumeroOC } from './vistas/CamposCompartidos'
 import type { Asesor, CorreoProveedor, EstadoCalibracion, Modalidad, OrdenCalibracion, RvCalibrItem } from '../../types'
 
 type VistaFiltro = 'activas' | 'vencidas' | 'completadas' | 'todas'
-type Tab = 'ordenes' | 'analisis' | 'sede_hanna' | 'catalogo' | 'asesores'
+type Tab = 'ordenes' | 'analisis' | 'sede_hanna' | 'logistica' | 'catalogo' | 'asesores'
 
 const TAB_LABEL: Record<Tab, string> = {
-  ordenes: 'Órdenes', analisis: 'Análisis', sede_hanna: 'Sede Hanna', catalogo: 'Catálogo RV CALIBR', asesores: 'Asesores',
+  ordenes: 'Órdenes', analisis: 'Análisis', sede_hanna: 'Sede Hanna', logistica: 'Logística', catalogo: 'Catálogo RV CALIBR', asesores: 'Asesores',
 }
 
 // Filtros de Estado / Modalidad / Asesor — se recuerdan entre sesiones para
@@ -53,9 +54,23 @@ function cargarFiltros(): FiltrosOrdenes {
   }
 }
 
+// Pestaña activa — se recuerda entre sesiones para que un refresh no te
+// devuelva siempre a "Órdenes".
+const TAB_VALIDAS: Tab[] = ['ordenes', 'analisis', 'sede_hanna', 'logistica', 'catalogo', 'asesores']
+const TAB_KEY = 'calibraciones_tab'
+
+function cargarTab(): Tab {
+  try {
+    const raw = localStorage.getItem(TAB_KEY)
+    return raw && (TAB_VALIDAS as string[]).includes(raw) ? raw as Tab : 'ordenes'
+  } catch {
+    return 'ordenes'
+  }
+}
+
 export function CalibracionesPage() {
   const navigate = useNavigate()
-  const { hasCapability } = useUser()
+  const { hasCapability, loading: userLoading } = useUser()
   const puedeEditar = hasCapability('calibraciones_editar')
   const { data: ordenes = [], isLoading } = useOrdenesCalibracion()
   const { data: catalogo = [] } = useCatalogoRvCalibr()
@@ -64,7 +79,7 @@ export function CalibracionesPage() {
   const { data: parametros = [] } = useTodosParametros()
   const invalidate = useInvalidateCalibraciones()
 
-  const [tab, setTab] = useState<Tab>('ordenes')
+  const [tab, setTab] = useState<Tab>(cargarTab)
   const [vista, setVista] = useState<VistaFiltro>('activas')
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(0)
@@ -72,6 +87,15 @@ export function CalibracionesPage() {
   const [verFlujo, setVerFlujo] = useState(false)
 
   const PAGE_SIZE = 30
+
+  useEffect(() => { localStorage.setItem(TAB_KEY, tab) }, [tab])
+  // Si el reload cae en "Catálogo"/"Asesores" pero el usuario ya no tiene (o
+  // todavía no cargó) el permiso de edición, no se queda en una pestaña que
+  // ni siquiera aparece en la barra — espera a que el permiso resuelva antes
+  // de decidir, para no expulsar de golpe a un editor real mientras carga.
+  useEffect(() => {
+    if (!userLoading && (tab === 'catalogo' || tab === 'asesores') && !puedeEditar) setTab('ordenes')
+  }, [tab, puedeEditar, userLoading])
 
   useEffect(() => { localStorage.setItem(FILTROS_KEY, JSON.stringify(filtros)) }, [filtros])
 
@@ -206,8 +230,8 @@ export function CalibracionesPage() {
         </Modal>
       )}
 
-      <div style={{ display: 'flex', gap: 4, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 4, marginBottom: 20, maxWidth: 720, flexWrap: 'wrap' }}>
-        {(['ordenes', 'analisis', 'sede_hanna', ...(puedeEditar ? ['catalogo', 'asesores'] as const : [])] as Tab[]).map(t => (
+      <div style={{ display: 'flex', gap: 4, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 4, marginBottom: 20, maxWidth: 820, flexWrap: 'wrap' }}>
+        {(['ordenes', 'analisis', 'sede_hanna', 'logistica', ...(puedeEditar ? ['catalogo', 'asesores'] as const : [])] as Tab[]).map(t => (
           <button key={t} onClick={() => setTab(t)} style={{
             flex: 1, padding: '9px 14px', border: 'none', borderRadius: 9,
             background: tab === t ? 'var(--accent)' : 'transparent',
@@ -332,6 +356,8 @@ export function CalibracionesPage() {
         <AnalisisTab ordenes={ordenes} />
       ) : tab === 'sede_hanna' ? (
         <CoordinacionSedeHannaTab ordenes={ordenes} parametros={parametros} catalogo={catalogo} />
+      ) : tab === 'logistica' ? (
+        <LogisticaTab ordenes={ordenes} />
       ) : tab === 'catalogo' ? (
         <CatalogoTab catalogo={catalogo} proveedores={proveedores} onSaved={invalidate.catalogo} />
       ) : (

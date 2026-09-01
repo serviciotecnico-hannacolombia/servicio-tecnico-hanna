@@ -382,3 +382,27 @@ export interface Asesor {
   created_at: string
   updated_at: string
 }
+
+// Logística → Pendientes: remisiones/facturas recibidas pero todavía sin
+// procesar en el sistema. factura/remision son opcionales individualmente
+// pero al menos una debe existir (validado en el formulario y en la BD).
+export interface LogisticaPendiente {
+  id: string
+  cliente: string
+  factura: string | null
+  remision: string | null
+  otst: string | null
+  correo_asesor: string | null
+  observaciones: string | null
+  creado_por: string | null
+  created_at: string
+}
+
+// Enlace entre un pendiente y una orden de calibración ya existente — un
+// pendiente puede enlazarse a varias órdenes; en cuanto tiene al menos una,
+// deja de contar como pendiente por procesar.
+export interface LogisticaPendienteOrden {
+  pendiente_id: string
+  orden_id: string
+  created_at: string
+}
