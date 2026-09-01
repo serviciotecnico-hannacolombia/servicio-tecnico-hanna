@@ -784,6 +784,16 @@ export function proximoAVencer(orden: OrdenParaSemaforo): boolean {
   return semaforoOrden(orden) === 'proxima'
 }
 
+// Alerta propia del flujo in situ / Sede Hanna Dorado: la orden ya llegó a
+// "visita programada" pero nadie definió todavía la fecha estimada de la
+// visita. No es "vencida" ni "próxima" en el sentido del semáforo normal
+// (no hay fecha objetivo contra la cual medir) — sin este chequeo aparte,
+// el semáforo solo la marca días después (por antigüedad en el estado), así
+// que una orden recién creada sin fecha no se veía como pendiente de nada.
+export function visitaSinProgramar(orden: Pick<OrdenCalibracion, 'estado' | 'fecha_programada_envio'>): boolean {
+  return (orden.estado === 'visita_programada' || orden.estado === 'en_programacion_visita') && !orden.fecha_programada_envio
+}
+
 // ── Historial: etiquetas y formateo de valores ──────────────────────────────
 
 export const CAMPO_LABEL: Record<string, string> = {

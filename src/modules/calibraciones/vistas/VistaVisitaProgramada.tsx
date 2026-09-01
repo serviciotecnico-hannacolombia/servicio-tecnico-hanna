@@ -4,8 +4,8 @@
 // del metrólogo(a) antes de pasar a "En calibración".
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { CalendarClock } from 'lucide-react'
-import { FG, Seccion, Grid2, INP, PRI, fmtFecha } from '../ui'
+import { CalendarClock, AlertTriangle } from 'lucide-react'
+import { FG, Seccion, Grid2, INP, PRI, GHOST, fmtFecha } from '../ui'
 import { MODALIDAD_LABEL } from '../hooks/useCalibraciones'
 import { linkOtst, parseOtstCodes } from './CamposCompartidos'
 import type { OrdenCalibracion } from '../../../types'
@@ -18,11 +18,20 @@ export function VistaVisitaProgramada({ form, puedeEditar, soloLectura, saving, 
   onAvanzar: (overrides: Partial<OrdenCalibracion>) => void
 }) {
   const [fechaLlegada, setFechaLlegada] = useState(form.fecha_llegada_metrologo || '')
+  const [fechaVisita, setFechaVisita] = useState(form.fecha_programada_envio || '')
   const otstCodigos = parseOtstCodes(form.otst)
 
   function confirmar() {
     if (!fechaLlegada) { toast.error('Ingresa la fecha de llegada del metrólogo(a)'); return }
     onAvanzar({ estado: 'en_calibracion', fecha_llegada_metrologo: fechaLlegada })
+  }
+
+  // Guarda solo la fecha de la visita, sin avanzar de etapa — la orden
+  // puede llegar aquí sin esa fecha definida en la creación (se agenda
+  // después) o necesitar reprogramarse. Vacía también es un valor válido:
+  // permite volver a "sin programar" para reactivar la alerta.
+  function guardarFechaVisita() {
+    onAvanzar({ fecha_programada_envio: fechaVisita || null })
   }
 
   function copiarRmvFv() {
@@ -39,6 +48,16 @@ export function VistaVisitaProgramada({ form, puedeEditar, soloLectura, saving, 
       }}>
         <CalendarClock size={16} /> {soloLectura ? 'Revisando "Visita programada" (solo lectura)' : 'Visita programada — resumen de la orden'}
       </div>
+
+      {!form.fecha_programada_envio && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', borderRadius: 'var(--radius)',
+          background: 'var(--yellow-bg)', border: '1px solid var(--yellow-border)', color: 'var(--yellow)',
+          marginBottom: 24, fontSize: 13, fontWeight: 600,
+        }}>
+          <AlertTriangle size={16} /> Visita aún no programada — define abajo la fecha estimada de la visita.
+        </div>
+      )}
 
       <Seccion titulo="Resumen">
         <Grid2>
@@ -77,9 +96,26 @@ export function VistaVisitaProgramada({ form, puedeEditar, soloLectura, saving, 
             )}
           </FG>
           <FG label="Fecha estimada de la visita">
-            <div style={{ ...INP, color: form.fecha_programada_envio ? 'var(--text)' : 'var(--muted)' }}>
-              {form.fecha_programada_envio ? fmtFecha(form.fecha_programada_envio) : '—'}
-            </div>
+            {soloLectura ? (
+              <div style={{ ...INP, color: form.fecha_programada_envio ? 'var(--text)' : 'var(--muted)' }}>
+                {form.fecha_programada_envio ? fmtFecha(form.fecha_programada_envio) : '—'}
+              </div>
+            ) : (
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input
+                  type="date"
+                  value={fechaVisita}
+                  onChange={e => setFechaVisita(e.target.value)}
+                  disabled={!puedeEditar}
+                  style={INP}
+                />
+                {puedeEditar && fechaVisita !== (form.fecha_programada_envio || '') && (
+                  <button onClick={guardarFechaVisita} disabled={saving} style={{ ...GHOST, whiteSpace: 'nowrap' }}>
+                    {saving ? 'Guardando…' : 'Guardar'}
+                  </button>
+                )}
+              </div>
+            )}
           </FG>
         </Grid2>
       </Seccion>

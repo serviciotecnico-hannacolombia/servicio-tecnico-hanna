@@ -282,8 +282,8 @@ export function OrdenCalibracionDetailPage() {
     if (!form.modalidad) { toast.error('Define la modalidad antes de continuar'); return }
     const siguienteEstado = form.modalidad === 'laboratorio_externo' ? 'para_enviar' : 'visita_programada'
     // Ruta in situ / sede Hanna: sugiere la fecha de la visita como el
-    // miércoles siguiente a la salida de mantenimiento, ya que "Visita
-    // programada" ya no permite editarla directamente.
+    // miércoles siguiente a la salida de mantenimiento — sigue siendo
+    // editable después desde "Visita programada".
     const fechaSalida = (overrides.fecha_salida_mantenimiento_real ?? form.fecha_salida_mantenimiento_real) as string | null
     const fechaVisitaSugerida = siguienteEstado === 'visita_programada' && !form.fecha_programada_envio && fechaSalida
       ? { fecha_programada_envio: miercolesSiguiente(fechaSalida) }
