@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
-import { Upload, PlusCircle, Archive, Trash2, SkipForward, Eraser } from 'lucide-react'
+import { Upload, PlusCircle, Archive, Trash2, SkipForward, Eraser, Star } from 'lucide-react'
 import { toast } from 'sonner'
 import { Header } from '../../components/layout/Header'
 import { Card } from '../../components/ui/Card'
@@ -98,7 +98,7 @@ export function LlamadasPage() {
   const { displayName, hasCapability } = useUser()
   const canImportarCSV = hasCapability('importar_csv_llamadas')
   const { data: profiles = [] } = useProfiles()
-  const { data: llamadas = [], isLoading, importCSV, addLlamada, updateEstado, marcarVaciosNoLlamado, deleteLlamada, archivarDia, limpiarDia } = useLlamadasDiario()
+  const { data: llamadas = [], isLoading, importCSV, addLlamada, updateEstado, togglePrioridad, marcarVaciosNoLlamado, deleteLlamada, archivarDia, limpiarDia } = useLlamadasDiario()
 
   // Stats
   const cierre      = llamadas.filter(l => l.estado === 'CIERRE').length
@@ -128,6 +128,11 @@ export function LlamadasPage() {
 
   const garantiaCount = llamadas.filter(l => l.garantia === 'SI').length
 
+  // Llamadas marcadas como prioritarias — orden de llegada
+  const prioritarias = useMemo(() =>
+    llamadas.filter(l => l.prioridad).sort((a, b) => a.created_at.localeCompare(b.created_at))
+  , [llamadas])
+
   // Clientes con múltiples OTSTs — ordenados por total desc
   const clientesMultiples = useMemo(() => {
     const map: Record<string, { total: number; pendientes: number }> = {}
@@ -145,19 +150,24 @@ export function LlamadasPage() {
 
   // Filtros combinados
   const filtradas = useMemo(() => {
-    return llamadas.filter(l => {
-      const tieneEstado = !!l.estado
-      if (filtroEstado === 'pending' && tieneEstado)  return false
-      if (filtroEstado === 'done'    && !tieneEstado) return false
-      if (filtroGarantia && l.garantia !== 'SI')      return false
-      if (filtroIngeniero && l.ingeniero !== filtroIngeniero) return false
-      if (busqueda.trim()) {
-        const q = busqueda.toLowerCase()
-        const hay = `${l.otst} ${l.cliente ?? ''} ${l.ingeniero ?? ''}`.toLowerCase()
-        if (!hay.includes(q)) return false
-      }
-      return true
-    })
+    return llamadas
+      .filter(l => {
+        const tieneEstado = !!l.estado
+        if (filtroEstado === 'pending' && tieneEstado)  return false
+        if (filtroEstado === 'done'    && !tieneEstado) return false
+        if (filtroGarantia && l.garantia !== 'SI')      return false
+        if (filtroIngeniero && l.ingeniero !== filtroIngeniero) return false
+        if (busqueda.trim()) {
+          const q = busqueda.toLowerCase()
+          const hay = `${l.otst} ${l.cliente ?? ''} ${l.ingeniero ?? ''}`.toLowerCase()
+          if (!hay.includes(q)) return false
+        }
+        return true
+      })
+      .sort((a, b) => {
+        if (a.prioridad !== b.prioridad) return a.prioridad ? -1 : 1
+        return a.created_at.localeCompare(b.created_at)
+      })
   }, [llamadas, busqueda, filtroEstado, filtroGarantia, filtroIngeniero])
 
   useEffect(() => {
@@ -188,6 +198,11 @@ export function LlamadasPage() {
     } catch {
       toast.error('Error al actualizar estado')
     }
+  }
+
+  const handleTogglePrioridad = async (id: string, prioridad: boolean) => {
+    try { await togglePrioridad.mutateAsync({ id, prioridad: !prioridad }) }
+    catch { toast.error('Error al actualizar prioridad') }
   }
 
   const handleDelete = async (id: string) => {
@@ -222,6 +237,18 @@ export function LlamadasPage() {
   }
 
   const diarioColumns: Column<LlamadaDiario>[] = [
+    {
+      key: 'prioridad', header: '', width: '34px', align: 'center',
+      render: r => (
+        <button
+          onClick={() => handleTogglePrioridad(r.id, r.prioridad)}
+          title={r.prioridad ? 'Quitar prioridad' : 'Marcar como prioritaria'}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, borderRadius: 6, display: 'inline-flex', color: r.prioridad ? 'var(--yellow)' : 'var(--muted)' }}
+        >
+          <Star size={15} fill={r.prioridad ? 'var(--yellow)' : 'none'} />
+        </button>
+      ),
+    },
     { key: 'otst',    header: 'OTST',     width: '120px', render: r => <OtstLink otst={r.otst} /> },
     { key: 'cliente', header: 'Cliente',  render: r => r.cliente
         ? <span onClick={() => navigator.clipboard.writeText(r.cliente!).then(() => toast.success(`"${r.cliente}" copiado`))} title="Clic para copiar" style={{ fontWeight: 500, cursor: 'copy' }}>{r.cliente}</span>
@@ -427,6 +454,37 @@ export function LlamadasPage() {
                 </Card>
               )}
             </div>
+          )}
+
+          {/* Llamadas prioritarias */}
+          {prioritarias.length > 0 && (
+            <Card style={{ marginBottom: 18 }} bodyStyle={{ padding: '14px 18px' }}>
+              <div style={{ fontSize: '0.68rem', fontFamily: 'var(--mono)', fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Star size={13} fill="var(--yellow)" color="var(--yellow)" /> Prioritarias
+                <span style={{ background: 'var(--surface2)', color: 'var(--muted)', padding: '1px 7px', borderRadius: 10, fontSize: '0.68rem' }}>{prioritarias.length}</span>
+              </div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {prioritarias.map(l => (
+                  <button
+                    key={l.id}
+                    onClick={() => setBusqueda(busqueda === l.otst ? '' : l.otst)}
+                    title={`Filtrar tabla por OTST ${l.otst}`}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 8,
+                      padding: '7px 12px', borderRadius: 8, border: '1.5px solid',
+                      borderColor: busqueda === l.otst ? 'var(--yellow)' : 'var(--yellow-border)',
+                      background: busqueda === l.otst ? 'var(--yellow-bg)' : 'var(--surface2)',
+                      cursor: 'pointer', textAlign: 'left', transition: 'all .12s',
+                    }}
+                  >
+                    <Star size={13} fill="var(--yellow)" color="var(--yellow)" />
+                    <span style={{ fontFamily: 'var(--mono)', fontWeight: 700, fontSize: '0.78rem', color: 'var(--text)' }}>{l.otst}</span>
+                    {l.cliente && <span style={{ fontSize: '0.78rem', color: 'var(--muted)', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.cliente}</span>}
+                    <EstadoBadge estado={l.estado} />
+                  </button>
+                ))}
+              </div>
+            </Card>
           )}
 
           {/* Filtros + tabla */}
