@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, forwardRef } from 'react'
+import { useState, useRef, useEffect, useLayoutEffect, forwardRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import Papa from 'papaparse'
@@ -229,7 +229,7 @@ export function OtstBodegaPage() {
       {tab === 'ingreso'    && <TabIngreso    zonas={zonas} bodega={bodega} columnas={columnas} />}
       {tab === 'bodega'     && <TabBodega     bodega={bodega} umbral={umbral} columnas={columnas} pendientes={pendientes} />}
       {tab === 'rotacion'   && <TabRotacion   bodega={bodega} zonas={zonas} columnas={columnas} />}
-      {tab === 'pendientes' && <TabPendientes bodega={bodega} pendientes={pendientes} umbral={umbral} />}
+      {tab === 'pendientes' && <TabPendientes bodega={bodega} pendientes={pendientes} umbral={umbral} columnas={columnas} />}
       {tab === 'historial'  && <TabHistorial  bodega={bodega} movimientos={movimientos} />}
       {tab === 'config'     && <TabConfig     zonas={zonas} config={config} bodega={bodega} />}
     </div>
@@ -434,7 +434,9 @@ function TabBodega({ bodega, umbral, columnas, pendientes }: { bodega: OtstBodeg
   const [estadoF, setEstadoF] = useState<'all' | EstadoOtstBodega>('all')
   const [soloAbandonadas, setSoloAbandonadas] = useState(false)
   const [ordenAntig, setOrdenAntig] = useState<'desc' | 'asc' | null>(null)
-  const [accionItem, setAccionItem] = useState<{ item: OtstBodega, tipo: 'mover' | 'contactar' | 'retirar' | 'eliminar' | 'pendiente' | 'editar' } | null>(null)
+  const [accionItem, setAccionItem] = useState<{ item: OtstBodega, tipo: AccionTipo } | null>(null)
+  const [page, setPage] = useState(0)
+  const PAGE_SIZE = 25
 
   const otstPendientes = new Set(pendientes.filter(p => p.estado === 'pendiente').map(p => p.otst.trim().toLowerCase()))
 
@@ -459,6 +461,7 @@ function TabBodega({ bodega, umbral, columnas, pendientes }: { bodega: OtstBodeg
   function filtrarPorCliente(nit: string) {
     setSearch(nit)
     setSoloAbandonadas(true)
+    setPage(0)
   }
 
   let rows = activos.filter(r => {
@@ -482,8 +485,12 @@ function TabBodega({ bodega, umbral, columnas, pendientes }: { bodega: OtstBodeg
   }
 
   function clearFilters() {
-    setSearch(''); setColF(''); setEstadoF('all'); setSoloAbandonadas(false); setOrdenAntig(null)
+    setSearch(''); setColF(''); setEstadoF('all'); setSoloAbandonadas(false); setOrdenAntig(null); setPage(0)
   }
+
+  const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE))
+  const pageActual = Math.min(page, totalPages - 1)
+  const pageRows   = rows.slice(pageActual * PAGE_SIZE, (pageActual + 1) * PAGE_SIZE)
 
   function exportarCSV() {
     if (!rows.length) { toast.error('No hay registros para exportar'); return }
@@ -558,18 +565,18 @@ function TabBodega({ bodega, umbral, columnas, pendientes }: { bodega: OtstBodeg
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 14, padding: 14, background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 10 }}>
           <div style={{ flex: 1, minWidth: 180 }}>
             <FL>Buscar</FL>
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="OTST, NIT, correo..." style={INP} />
+            <input value={search} onChange={e => { setSearch(e.target.value); setPage(0) }} placeholder="OTST, NIT, correo..." style={INP} />
           </div>
           <div>
             <FL>Columna</FL>
-            <select value={colF} onChange={e => setColF(e.target.value)} style={INP}>
+            <select value={colF} onChange={e => { setColF(e.target.value); setPage(0) }} style={INP}>
               <option value="">Todas</option>
               {columnas.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
           <div>
             <FL>Estado</FL>
-            <select value={estadoF} onChange={e => setEstadoF(e.target.value as typeof estadoF)} style={INP}>
+            <select value={estadoF} onChange={e => { setEstadoF(e.target.value as typeof estadoF); setPage(0) }} style={INP}>
               <option value="all">Todos</option>
               <option value="en_bodega">En bodega</option>
               <option value="contactado">Contactado</option>
@@ -577,7 +584,7 @@ function TabBodega({ bodega, umbral, columnas, pendientes }: { bodega: OtstBodeg
             </select>
           </div>
           <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--muted)', paddingBottom: 10 }}>
-            <input type="checkbox" checked={soloAbandonadas} onChange={e => setSoloAbandonadas(e.target.checked)} />
+            <input type="checkbox" checked={soloAbandonadas} onChange={e => { setSoloAbandonadas(e.target.checked); setPage(0) }} />
             Solo abandonadas
           </label>
           <button onClick={clearFilters} style={GHOST}>✕ Limpiar</button>
@@ -585,7 +592,7 @@ function TabBodega({ bodega, umbral, columnas, pendientes }: { bodega: OtstBodeg
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
           <div style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--mono)' }}>
-            {rows.length} registro{rows.length !== 1 ? 's' : ''}
+            {rows.length} registro{rows.length !== 1 ? 's' : ''}{totalPages > 1 ? ` · página ${pageActual + 1} de ${totalPages}` : ''}
           </div>
           <button onClick={exportarCSV} style={{ ...GHOST, display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px' }}>
             <Download size={13} /> Exportar CSV
@@ -608,9 +615,9 @@ function TabBodega({ bodega, umbral, columnas, pendientes }: { bodega: OtstBodeg
               </tr>
             </thead>
             <tbody>
-              {rows.length === 0 ? (
+              {pageRows.length === 0 ? (
                 <tr><td colSpan={8}><div style={EMPTY_TD}><Warehouse size={30} strokeWidth={1.5} /><p>Sin registros</p></div></td></tr>
-              ) : rows.map(r => {
+              ) : pageRows.map(r => {
                 const antig = mesesTranscurridos(r.mes_ingreso, r.anio_ingreso)
                 const fueraDeRotacion = !esColumnaRotativa(r.columna)
                 const abandonada = esAbandonada(r, umbral)
@@ -648,6 +655,7 @@ function TabBodega({ bodega, umbral, columnas, pendientes }: { bodega: OtstBodeg
                       <RowActionsMenu
                         isPendiente={otstPendientes.has(r.otst.trim().toLowerCase())}
                         canEliminar={canEliminar}
+                        abandonada={abandonada}
                         onAction={tipo => setAccionItem({ item: r, tipo })}
                       />
                     </td>
@@ -657,11 +665,24 @@ function TabBodega({ bodega, umbral, columnas, pendientes }: { bodega: OtstBodeg
             </tbody>
           </table>
         </div>
+
+        {totalPages > 1 && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8, marginTop: 14 }}>
+            <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={pageActual === 0} style={{ ...GHOST, padding: '6px 14px', opacity: pageActual === 0 ? .5 : 1 }}>
+              ← Anterior
+            </button>
+            <span style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--mono)' }}>{pageActual + 1} / {totalPages}</span>
+            <button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={pageActual >= totalPages - 1} style={{ ...GHOST, padding: '6px 14px', opacity: pageActual >= totalPages - 1 ? .5 : 1 }}>
+              Siguiente →
+            </button>
+          </div>
+        )}
       </Card>
 
       {accionItem?.tipo === 'editar'    && <ModalEditarContacto item={accionItem.item} onClose={() => setAccionItem(null)} />}
       {accionItem?.tipo === 'mover'     && <ModalMover     item={accionItem.item} columnas={columnas} onClose={() => setAccionItem(null)} />}
       {accionItem?.tipo === 'contactar' && <ModalContactar item={accionItem.item} onClose={() => setAccionItem(null)} />}
+      {accionItem?.tipo === 'correo_abandono' && <ModalCorreoAbandono item={accionItem.item} onClose={() => setAccionItem(null)} />}
       {accionItem?.tipo === 'retirar'   && <ModalRetirar   item={accionItem.item} onClose={() => setAccionItem(null)} />}
       {accionItem?.tipo === 'eliminar'  && <ModalEliminar  item={accionItem.item} onClose={() => setAccionItem(null)} />}
       {accionItem?.tipo === 'pendiente' && <ModalAgregarPendiente item={accionItem.item} onClose={() => setAccionItem(null)} />}
@@ -858,6 +879,74 @@ function ModalContactar({ item, onClose }: { item: OtstBodega, onClose: () => vo
   )
 }
 
+function ModalCorreoAbandono({ item, onClose }: { item: OtstBodega, onClose: () => void }) {
+  const qc              = useQueryClient()
+  const { displayName } = useUser()
+  const [correo, setCorreo] = useState(item.correo_cliente || '')
+  const [saving, setSaving] = useState(false)
+  const antig = mesesTranscurridos(item.mes_ingreso, item.anio_ingreso)
+
+  function generarMailto(): string {
+    const subject = `Notificación formal de Equipos abandonados – Retiro de equipo OTST ${item.otst}`
+    const body = [
+      `Estimado(a) cliente,`,
+      ``,
+      `Le escribimos respecto del equipo con orden de servicio OTST ${item.otst}, recibido en ${nombreMesAnio(item.mes_ingreso, item.anio_ingreso)}.`,
+      ``,
+      `Pese a nuestros intentos de contacto, no ha sido posible ubicarle. A la fecha, el equipo cumple ${antig} mes${antig !== 1 ? 'es' : ''} en nuestras instalaciones.`,
+      ``,
+      `De manera formal, y conforme al artículo 18 de la Ley 1480 de 2011 y al Decreto 1413 de 2018, le requerimos retirar el bien dentro de los dos (2) meses siguientes a la remisión de este mensaje. Transcurrido ese plazo sin retiro, la normativa presume el abandono del bien, caso en el cual deberemos disponer de él según el procedimiento legal aplicable.`,
+      ``,
+      `Para coordinar el retiro, por favor contáctenos vía telefónica, correo electrónico, o acérquese a nuestras instalaciones. Si requiere una fecha alternativa, indíquenosla por este medio.`,
+      ``,
+      `Atentamente,`,
+    ].join('\n')
+    const params = [`subject=${encodeURIComponent(subject)}`, `body=${encodeURIComponent(body)}`]
+    return `mailto:${correo.trim()}?${params.join('&')}`
+  }
+
+  async function submit() {
+    if (!correo.trim()) { toast.error('Ingresa el correo del cliente'); return }
+    setSaving(true)
+    window.location.href = generarMailto()
+    const { error } = await supabase.from('otst_bodega')
+      .update({ estado: 'contactado', correo_cliente: correo.trim(), updated_at: new Date().toISOString() })
+      .eq('id', item.id)
+    const { error: movError } = await supabase.from('otst_bodega_movimientos').insert({
+      otst_id: item.id, tipo: 'contacto', usuario: displayName,
+      ubicacion_origen: codigoUbicacion(item.columna, item.fila, item.subcolumna),
+      ubicacion_destino: codigoUbicacion(item.columna, item.fila, item.subcolumna),
+      motivo: `Notificación formal de abandono (Art. 18 Ley 1480/2011, Decreto 1413/2018) enviada a ${correo.trim()}`,
+    })
+    setSaving(false)
+    if (error) toast.error('Error: ' + error.message)
+    else if (movError) toast.error('Se marcó contactado, pero falló el historial: ' + movError.message)
+    else toast.success('Correo de abandono abierto y OTST marcada como contactada')
+    qc.invalidateQueries({ queryKey: ['otst_bodega'] })
+    qc.invalidateQueries({ queryKey: ['otst_bodega_movimientos'] })
+    onClose()
+  }
+
+  return (
+    <Modal open onClose={onClose} title={`Correo de abandonados — OTST ${item.otst}`}>
+      <p style={{ fontSize: 12, color: 'var(--muted)' }}>
+        Notificación formal de retiro conforme al artículo 18 de la Ley 1480 de 2011 y al Decreto 1413 de 2018.
+        Este equipo lleva <strong>{antig} mes{antig !== 1 ? 'es' : ''}</strong> en bodega.
+      </p>
+      <FG label="Correo del cliente">
+        <input value={correo} onChange={e => setCorreo(e.target.value)} placeholder="correo@cliente.com" style={INP} autoFocus />
+      </FG>
+      <p style={{ fontSize: 12, color: 'var(--muted)', marginTop: 10 }}>
+        Se abrirá tu cliente de correo con la notificación formal prellenada y la OTST quedará marcada como "Contactado".
+      </p>
+      <Actions>
+        <button onClick={onClose} style={GHOST}>Cancelar</button>
+        <button onClick={submit} disabled={saving} style={PRI}>{saving ? 'Procesando…' : '✉ Abrir correo y marcar'}</button>
+      </Actions>
+    </Modal>
+  )
+}
+
 function ModalRetirar({ item, onClose }: { item: OtstBodega, onClose: () => void }) {
   const qc              = useQueryClient()
   const { displayName } = useUser()
@@ -1031,24 +1120,57 @@ function ModalNovedad({ item, onClose }: { item: OtstBodega, onClose: () => void
   )
 }
 
-function ModalResolverNovedad({ item, onClose }: { item: OtstBodega, onClose: () => void }) {
+function ModalResolverNovedad({ item, columnas, onClose }: { item: OtstBodega, columnas: string[], onClose: () => void }) {
   const qc              = useQueryClient()
   const { displayName } = useUser()
-  const [nota, setNota] = useState('')
-  const [saving, setSaving] = useState(false)
+  const [accion,     setAccion]     = useState<'encontrada' | 'retirar'>('encontrada')
+  // Misma regla que ModalMover: si ya estaba en parqueo (fuera de A-H), no puede
+  // volver a una columna rotativa.
+  const enParqueo = !esColumnaRotativa(item.columna)
+  const opcionesColumna = enParqueo ? columnas.filter(c => !esColumnaRotativa(c)) : columnas
+  const [columna,    setColumna]    = useState(item.columna)
+  const [fila,       setFila]       = useState<number>(item.fila)
+  const [subcolumna, setSubcolumna] = useState<number>(item.subcolumna)
+  const [nota,       setNota]       = useState('')
+  const [saving,     setSaving]     = useState(false)
 
   async function submit() {
+    if (accion === 'encontrada' && enParqueo && esColumnaRotativa(columna)) {
+      toast.error('Esta OTST ya salió de rotación: no puede volver a una columna A-H'); return
+    }
     setSaving(true)
-    const codigo = codigoUbicacion(item.columna, item.fila, item.subcolumna)
+    const origenCodigo = codigoUbicacion(item.columna, item.fila, item.subcolumna)
+
+    if (accion === 'retirar') {
+      const { error } = await supabase.from('otst_bodega')
+        .update({ estado: 'retirado', responsable_novedad: null, updated_at: new Date().toISOString() })
+        .eq('id', item.id)
+      if (error) { toast.error('Error: ' + error.message); setSaving(false); return }
+
+      const { error: movError } = await supabase.from('otst_bodega_movimientos').insert({
+        otst_id: item.id, tipo: 'retiro', usuario: displayName,
+        ubicacion_origen: origenCodigo, ubicacion_destino: origenCodigo,
+        motivo: `Novedad resuelta con salida de bodega${nota.trim() ? ': ' + nota.trim() : ''}`,
+      })
+      setSaving(false)
+      if (movError) toast.error('Se retiró, pero falló el historial: ' + movError.message)
+      else toast.success('OTST resuelta y retirada de bodega')
+      qc.invalidateQueries({ queryKey: ['otst_bodega'] })
+      qc.invalidateQueries({ queryKey: ['otst_bodega_movimientos'] })
+      onClose()
+      return
+    }
+
+    const destinoCodigo = codigoUbicacion(columna, fila, subcolumna)
     const { error } = await supabase.from('otst_bodega')
-      .update({ estado: 'en_bodega', responsable_novedad: null, updated_at: new Date().toISOString() })
+      .update({ estado: 'en_bodega', responsable_novedad: null, columna, fila, subcolumna, updated_at: new Date().toISOString() })
       .eq('id', item.id)
     if (error) { toast.error('Error: ' + error.message); setSaving(false); return }
 
     const { error: movError } = await supabase.from('otst_bodega_movimientos').insert({
       otst_id: item.id, tipo: 'novedad', usuario: displayName,
-      ubicacion_origen: codigo, ubicacion_destino: codigo,
-      motivo: `Novedad resuelta${nota.trim() ? ': ' + nota.trim() : ''}`,
+      ubicacion_origen: origenCodigo, ubicacion_destino: destinoCodigo,
+      motivo: `Novedad resuelta: encontrada en ${destinoCodigo}${nota.trim() ? ' — ' + nota.trim() : ''}`,
     })
     setSaving(false)
     if (movError) toast.error('Se resolvió, pero falló el historial: ' + movError.message)
@@ -1061,14 +1183,68 @@ function ModalResolverNovedad({ item, onClose }: { item: OtstBodega, onClose: ()
   return (
     <Modal open onClose={onClose} title={`Resolver novedad — OTST ${item.otst}`}>
       <p style={{ fontSize: 13, color: 'var(--muted)' }}>
-        Responsable actual: <strong>{item.responsable_novedad || '—'}</strong>
+        Responsable actual: <strong>{item.responsable_novedad || '—'}</strong> · Ubicación registrada: <strong>{codigoUbicacion(item.columna, item.fila, item.subcolumna)}</strong>
       </p>
-      <FG label="¿Cómo se resolvió?">
-        <textarea value={nota} onChange={e => setNota(e.target.value)} placeholder="Ej. Se encontró en la misma ubicación, estaba mal registrada la fila..." rows={2} style={{ ...INP, resize: 'vertical' }} autoFocus />
+
+      <FG label="¿Qué pasó con esta OTST?">
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button type="button" onClick={() => setAccion('encontrada')} style={{
+            ...GHOST, flex: 1, padding: '10px 12px',
+            ...(accion === 'encontrada' ? { background: 'var(--accent)', color: '#fff', borderColor: 'var(--accent)' } : {}),
+          }}>
+            📍 Se encontró — reubicar
+          </button>
+          <button type="button" onClick={() => setAccion('retirar')} style={{
+            ...GHOST, flex: 1, padding: '10px 12px',
+            ...(accion === 'retirar' ? { background: '#c0392b', color: '#fff', borderColor: '#c0392b' } : {}),
+          }}>
+            ✅ Dar salida — retirar
+          </button>
+        </div>
       </FG>
+
+      {accion === 'encontrada' ? (
+        <div style={{ marginTop: 14 }}>
+          {enParqueo && (
+            <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 10 }}>
+              Esta OTST ya está fuera de rotación (columna {item.columna}). Solo puede reubicarse en otra columna de parqueo, no de vuelta a A-H.
+            </p>
+          )}
+          <div style={G3}>
+            <FG label="Columna">
+              <select value={columna} onChange={e => setColumna(e.target.value)} style={INP}>
+                {opcionesColumna.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </FG>
+            <FG label="Fila">
+              <select value={fila} onChange={e => setFila(Number(e.target.value))} style={INP}>
+                {FILAS.map(f => <option key={f} value={f}>{f}</option>)}
+              </select>
+            </FG>
+            <FG label="Subcolumna">
+              <select value={subcolumna} onChange={e => setSubcolumna(Number(e.target.value))} style={INP}>
+                {SUBCOLUMNAS.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </FG>
+          </div>
+        </div>
+      ) : (
+        <p style={{ fontSize: 12, color: 'var(--muted)', marginTop: 10 }}>
+          La OTST dejará de aparecer en la lista de bodega, pero se conserva su historial.
+        </p>
+      )}
+
+      <div style={{ marginTop: 14 }}>
+        <FG label="¿Cómo se resolvió?">
+          <textarea value={nota} onChange={e => setNota(e.target.value)} placeholder="Ej. Se encontró en la misma ubicación, estaba mal registrada la fila / Cliente pasó a recogerlo..." rows={2} style={{ ...INP, resize: 'vertical' }} autoFocus />
+        </FG>
+      </div>
+
       <Actions>
         <button onClick={onClose} style={GHOST}>Cancelar</button>
-        <button onClick={submit} disabled={saving} style={PRI}>{saving ? 'Guardando…' : '✓ Resolver novedad'}</button>
+        <button onClick={submit} disabled={saving} style={{ ...PRI, ...(accion === 'retirar' ? { background: '#c0392b' } : {}) }}>
+          {saving ? 'Guardando…' : accion === 'retirar' ? '✓ Retirar de bodega' : '✓ Resolver y reubicar'}
+        </button>
       </Actions>
     </Modal>
   )
@@ -1095,6 +1271,10 @@ function TabRotacion({ bodega, zonas, columnas }: { bodega: OtstBodega[], zonas:
   const [escaneos,   setEscaneos]   = useState<Map<string, EscaneoRotacion>>(new Map())
   const [responsableFaltantes, setResponsableFaltantes] = useState('')
   const [saving,     setSaving]     = useState(false)
+
+  const novedades = bodega
+    .filter(r => r.estado === 'novedad')
+    .sort((a, b) => mesesTranscurridos(b.mes_ingreso, b.anio_ingreso) - mesesTranscurridos(a.mes_ingreso, a.anio_ingreso))
 
   const ahora = new Date()
   const claveAhora = claveMesAnio(ahora.getMonth() + 1, ahora.getFullYear())
@@ -1203,6 +1383,7 @@ function TabRotacion({ bodega, zonas, columnas }: { bodega: OtstBodega[], zonas:
 
   if (!iniciada) {
     return (
+      <>
       <Card>
         <SecTitle>Iniciar rotación de bodega</SecTitle>
         <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 16 }}>
@@ -1266,6 +1447,8 @@ function TabRotacion({ bodega, zonas, columnas }: { bodega: OtstBodega[], zonas:
           <button onClick={iniciar} style={PRI}>▶ Iniciar rotación</button>
         </Actions>
       </Card>
+      <TablaNovedades novedades={novedades} columnas={columnas} />
+      </>
     )
   }
 
@@ -1365,6 +1548,57 @@ function TabRotacion({ bodega, zonas, columnas }: { bodega: OtstBodega[], zonas:
           </button>
         </Actions>
       </Card>
+      <TablaNovedades novedades={novedades} columnas={columnas} />
+    </div>
+  )
+}
+
+// Lista de OTST marcadas como "novedad" (no encontradas en una rotación anterior u
+// otro reporte) para dar seguimiento a su resolución sin salir de la pestaña Rotación.
+function TablaNovedades({ novedades, columnas }: { novedades: OtstBodega[], columnas: string[] }) {
+  const [resolviendo, setResolviendo] = useState<OtstBodega | null>(null)
+
+  return (
+    <div style={{ marginTop: 24 }}>
+      <SecTitle>Novedades por resolver ({novedades.length})</SecTitle>
+      {novedades.length === 0 ? (
+        <Card><div style={EMPTY}><MapPinOff size={30} strokeWidth={1.5} /><p>No hay novedades pendientes</p></div></Card>
+      ) : (
+        <Card bodyStyle={{ padding: 0 }}>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+              <thead>
+                <tr>
+                  {['OTST', 'Última ubicación registrada', 'Antigüedad', 'Responsable', 'Acciones'].map(h => (
+                    <th key={h} style={TH}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {novedades.map(r => {
+                  const antig = mesesTranscurridos(r.mes_ingreso, r.anio_ingreso)
+                  return (
+                    <tr key={r.id} style={{ borderBottom: '1px solid rgba(221,227,237,.5)' }}>
+                      <td style={{ padding: '10px 14px', fontWeight: 600 }}><OtstLink otst={r.otst} /></td>
+                      <td style={{ padding: '10px 14px' }}><span style={B_LOC}>{codigoUbicacion(r.columna, r.fila, r.subcolumna)}</span></td>
+                      <td style={{ padding: '10px 14px' }}>
+                        <span style={B_ABANDONADA}>{antig} mes{antig !== 1 ? 'es' : ''}</span>
+                      </td>
+                      <td style={{ padding: '10px 14px' }}>{r.responsable_novedad || '—'}</td>
+                      <td style={{ padding: '8px 14px', whiteSpace: 'nowrap' }}>
+                        <IconBtn title="Resolver novedad" onClick={() => setResolviendo(r)}>
+                          <CheckCircle2 size={14} color="#7c3aed" />
+                        </IconBtn>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+      {resolviendo && <ModalResolverNovedad item={resolviendo} columnas={columnas} onClose={() => setResolviendo(null)} />}
     </div>
   )
 }
@@ -1375,7 +1609,7 @@ function diasTranscurridos(fecha: string): number {
   return Math.max(0, Math.floor((Date.now() - new Date(fecha).getTime()) / 86400000))
 }
 
-function TabPendientes({ bodega, pendientes, umbral }: { bodega: OtstBodega[], pendientes: OtstBodegaPendiente[], umbral: number }) {
+function TabPendientes({ bodega, pendientes, umbral, columnas }: { bodega: OtstBodega[], pendientes: OtstBodegaPendiente[], umbral: number, columnas: string[] }) {
   const qc              = useQueryClient()
   const { displayName } = useUser()
   const otstRef          = useRef<HTMLInputElement>(null)
@@ -1548,7 +1782,7 @@ function TabPendientes({ bodega, pendientes, umbral }: { bodega: OtstBodega[], p
         <ModalNovedad item={marcandoNovedad} onClose={() => setMarcandoNovedad(null)} />
       )}
       {resolviendoNovedad && (
-        <ModalResolverNovedad item={resolviendoNovedad} onClose={() => setResolviendoNovedad(null)} />
+        <ModalResolverNovedad item={resolviendoNovedad} columnas={columnas} onClose={() => setResolviendoNovedad(null)} />
       )}
     </div>
   )
@@ -2036,19 +2270,23 @@ function CopyableText({ value, label = 'Correo' }: { value: string, label?: stri
   )
 }
 
-type AccionTipo = 'editar' | 'mover' | 'contactar' | 'retirar' | 'eliminar' | 'pendiente'
+type AccionTipo = 'editar' | 'mover' | 'contactar' | 'correo_abandono' | 'retirar' | 'eliminar' | 'pendiente'
 
-function RowActionsMenu({ isPendiente, canEliminar, onAction }: {
-  isPendiente: boolean, canEliminar: boolean, onAction: (tipo: AccionTipo) => void,
+function RowActionsMenu({ isPendiente, canEliminar, abandonada, onAction }: {
+  isPendiente: boolean, canEliminar: boolean, abandonada: boolean, onAction: (tipo: AccionTipo) => void,
 }) {
   const [open, setOpen] = useState(false)
   const [coords, setCoords] = useState<{ top: number, right: number } | null>(null)
+  const anchorRef = useRef<{ top: number, bottom: number, right: number } | null>(null)
   const btnRef = useRef<HTMLButtonElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
 
   function openMenu() {
     const rect = btnRef.current?.getBoundingClientRect()
-    if (rect) setCoords({ top: rect.bottom + 4, right: window.innerWidth - rect.right })
+    if (rect) {
+      anchorRef.current = { top: rect.top, bottom: rect.bottom, right: rect.right }
+      setCoords({ top: rect.bottom + 4, right: window.innerWidth - rect.right })
+    }
     setOpen(true)
   }
 
@@ -2058,6 +2296,23 @@ function RowActionsMenu({ isPendiente, canEliminar, onAction }: {
   // también (regla CSS: si un eje no es "visible" el otro deja de serlo), lo
   // que recortaba el menú al abrirlo cerca del borde inferior de la tabla
   // (siempre visible con pocas filas, ej. al filtrar a una sola OTST).
+  //
+  // Además, si el botón que lo abre está cerca del borde inferior de la
+  // ventana (última fila visible, o una sola fila tras filtrar), el menú
+  // desplegado hacia abajo se corta contra el viewport. useLayoutEffect mide
+  // la altura real ya renderizada y, si no cabe, lo reposiciona hacia arriba
+  // antes de que el navegador pinte el frame (sin parpadeo visible).
+  useLayoutEffect(() => {
+    if (!open || !menuRef.current || !anchorRef.current) return
+    const menuHeight = menuRef.current.getBoundingClientRect().height
+    const anchor = anchorRef.current
+    const cabeAbajo = anchor.bottom + 4 + menuHeight <= window.innerHeight - 8
+    if (!cabeAbajo) {
+      const top = Math.max(8, anchor.top - menuHeight - 4)
+      setCoords(prev => (prev && prev.top === top ? prev : { top, right: window.innerWidth - anchor.right }))
+    }
+  }, [open])
+
   useEffect(() => {
     if (!open) return
     function onDocClick(e: MouseEvent) {
@@ -2088,6 +2343,7 @@ function RowActionsMenu({ isPendiente, canEliminar, onAction }: {
     { tipo: 'editar',     label: 'Editar correo / NIT',   icon: <Pencil size={13} /> },
     { tipo: 'mover',      label: 'Mover ubicación',       icon: <ArrowRightLeft size={13} /> },
     { tipo: 'contactar',  label: 'Contactar cliente',     icon: <Mail size={13} /> },
+    ...(abandonada ? [{ tipo: 'correo_abandono' as const, label: 'Correo de abandonados', icon: <AlertTriangle size={13} /> }] : []),
     { tipo: 'retirar',    label: 'Retirar',               icon: <CheckCircle2 size={13} /> },
     ...(!isPendiente ? [{ tipo: 'pendiente' as const, label: 'Agregar a pendientes', icon: <ListTodo size={13} /> }] : []),
     ...(canEliminar ? [{ tipo: 'eliminar' as const, label: 'Eliminar', icon: <Trash2 size={13} />, danger: true }] : []),
@@ -2105,6 +2361,7 @@ function RowActionsMenu({ isPendiente, canEliminar, onAction }: {
       {open && coords && createPortal(
         <div ref={menuRef} style={{
           position: 'fixed', top: coords.top, right: coords.right, zIndex: 1000, minWidth: 200,
+          maxHeight: 'calc(100vh - 16px)', overflowY: 'auto',
           background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10,
           boxShadow: '0 8px 24px rgba(0,0,0,.14)', padding: 6, display: 'flex', flexDirection: 'column', gap: 1,
         }}>
