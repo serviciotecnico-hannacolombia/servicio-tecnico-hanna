@@ -50,6 +50,7 @@ export interface LlamadaDiario {
   ingeniero: string | null
   garantia: 'SI' | 'NO'
   estado: EstadoLlamada
+  prioridad: boolean
   hora: string
   usuario: string
   fecha_dia: string

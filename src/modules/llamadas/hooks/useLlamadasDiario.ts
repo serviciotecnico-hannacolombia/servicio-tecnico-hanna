@@ -15,6 +15,7 @@ export function useLlamadasDiario() {
         .from('llamadas_diario')
         .select('*')
         .eq('fecha_dia', fecha)
+        .order('prioridad', { ascending: false })
         .order('created_at', { ascending: true })
       if (error) throw error
       return data as LlamadaDiario[]
@@ -83,6 +84,23 @@ export function useLlamadasDiario() {
     },
   })
 
+  const togglePrioridad = useMutation({
+    mutationFn: async ({ id, prioridad }: { id: string; prioridad: boolean }) => {
+      const { error } = await supabase
+        .from('llamadas_diario')
+        .update({ prioridad, updated_at: new Date().toISOString() })
+        .eq('id', id)
+      if (error) throw error
+      return { id, prioridad }
+    },
+    onSuccess: ({ id, prioridad }) => {
+      qc.setQueryData(['llamadas-diario', fecha], (old: LlamadaDiario[] | undefined) => {
+        if (!old) return old
+        return old.map(l => l.id === id ? { ...l, prioridad } : l)
+      })
+    },
+  })
+
   const marcarVaciosNoLlamado = useMutation({
     mutationFn: async (usuario: string) => {
       const hora = new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: false })
@@ -114,7 +132,7 @@ export function useLlamadasDiario() {
 
   const archivarDia = useMutation({
     mutationFn: async (llamadas: LlamadaDiario[]) => {
-      const historico = llamadas.map(({ id: _i, created_at: _c, updated_at: _u, ...rest }) => ({
+      const historico = llamadas.map(({ id: _i, created_at: _c, updated_at: _u, prioridad: _p, ...rest }) => ({
         ...rest,
         archivado_at: new Date().toISOString(),
       }))
@@ -126,5 +144,5 @@ export function useLlamadasDiario() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['llamadas-diario', fecha] }),
   })
 
-  return { ...query, importCSV, addLlamada, updateEstado, marcarVaciosNoLlamado, deleteLlamada, archivarDia, limpiarDia }
+  return { ...query, importCSV, addLlamada, updateEstado, togglePrioridad, marcarVaciosNoLlamado, deleteLlamada, archivarDia, limpiarDia }
 }
