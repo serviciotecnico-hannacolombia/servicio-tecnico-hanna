@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import type { ReactNode, CSSProperties } from 'react'
 
 export interface Column<T> {
   key: string
@@ -13,6 +13,8 @@ interface TableProps<T extends object> {
   data: T[]
   emptyMessage?: string
   keyExtractor?: (row: T, i: number) => string | number
+  onRowClick?: (row: T) => void
+  rowStyle?: (row: T) => CSSProperties | undefined
 }
 
 export function Table<T extends object>({
@@ -20,6 +22,8 @@ export function Table<T extends object>({
   data,
   emptyMessage = 'Sin datos',
   keyExtractor,
+  onRowClick,
+  rowStyle,
 }: TableProps<T>) {
   return (
     <div style={{ overflowX: 'auto' }}>
@@ -61,12 +65,14 @@ export function Table<T extends object>({
           ) : (
             data.map((row, i) => {
               const k = keyExtractor ? keyExtractor(row, i) : i
+              const base = rowStyle?.(row)
               return (
                 <tr
                   key={k}
-                  style={{ borderBottom: '1px solid var(--border)', transition: 'background .1s' }}
+                  onClick={onRowClick ? () => onRowClick(row) : undefined}
+                  style={{ borderBottom: '1px solid var(--border)', transition: 'background .1s', cursor: onRowClick ? 'pointer' : undefined, ...base }}
                   onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface2)' }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = base?.background as string ?? 'transparent' }}
                 >
                   {columns.map(col => (
                     <td

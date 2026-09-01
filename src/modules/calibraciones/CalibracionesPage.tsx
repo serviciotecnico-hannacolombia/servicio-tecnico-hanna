@@ -1,29 +1,32 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Plus, Pencil, FlaskConical, Users, AlertTriangle, Search, ChevronRight, Workflow } from 'lucide-react'
+import { Plus, Pencil, FlaskConical, Users, AlertTriangle, Search, Workflow } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { Header } from '../../components/layout/Header'
 import { Card } from '../../components/ui/Card'
 import { Modal } from '../../components/ui/Modal'
+import { Table, type Column } from '../../components/ui/Table'
 import { useUser } from '../../hooks/useUser'
 import {
   useOrdenesCalibracion, useCatalogoRvCalibr, useAsesores, useProveedores, useInvalidateCalibraciones, useTodosParametros,
-  grupoEstado, ESTADO_LABEL, MODALIDAD_LABEL, estaVencido, proximoAVencer, fechaObjetivo, infoAntiguedadEstado, descripcionSemaforo,
+  grupoEstado, ESTADO_LABEL, MODALIDAD_LABEL, estaVencido, proximoAVencer, visitaSinProgramar, fechaObjetivo, descripcionSemaforo,
 } from './hooks/useCalibraciones'
 import {
   FG, IconBtn, Stat, INP, PRI, GHOST, B_INFO, B_VENCIDA, B_PROXIMA, B_NOVEDAD,
-  GRUPO_COLOR, EMPTY, fmtFecha, fmtCOP,
+  GRUPO_COLOR, EMPTY, fmtFecha,
 } from './ui'
 import { AnalisisTab } from './AnalisisTab'
 import { CoordinacionSedeHannaTab } from './CoordinacionSedeHannaTab'
-import type { Asesor, CorreoProveedor, EstadoCalibracion, Modalidad, RvCalibrItem } from '../../types'
+import { LogisticaTab } from './LogisticaTab'
+import { parseNumeroOC } from './vistas/CamposCompartidos'
+import type { Asesor, CorreoProveedor, EstadoCalibracion, Modalidad, OrdenCalibracion, RvCalibrItem } from '../../types'
 
-type VistaFiltro = 'activas' | 'vencidas' | 'completadas' | 'todas'
-type Tab = 'ordenes' | 'analisis' | 'sede_hanna' | 'catalogo' | 'asesores'
+type VistaFiltro = 'activas' | 'vencidas' | 'completadas' | 'anuladas' | 'todas'
+type Tab = 'ordenes' | 'analisis' | 'sede_hanna' | 'logistica' | 'catalogo' | 'asesores'
 
 const TAB_LABEL: Record<Tab, string> = {
-  ordenes: 'Órdenes', analisis: 'Análisis', sede_hanna: 'Sede Hanna', catalogo: 'Catálogo RV CALIBR', asesores: 'Asesores',
+  ordenes: 'Órdenes', analisis: 'Análisis', sede_hanna: 'Sede Hanna', logistica: 'Logística', catalogo: 'Catálogo RV CALIBR', asesores: 'Asesores',
 }
 
 // Filtros de Estado / Modalidad / Asesor — se recuerdan entre sesiones para
@@ -51,9 +54,23 @@ function cargarFiltros(): FiltrosOrdenes {
   }
 }
 
+// Pestaña activa — se recuerda entre sesiones para que un refresh no te
+// devuelva siempre a "Órdenes".
+const TAB_VALIDAS: Tab[] = ['ordenes', 'analisis', 'sede_hanna', 'logistica', 'catalogo', 'asesores']
+const TAB_KEY = 'calibraciones_tab'
+
+function cargarTab(): Tab {
+  try {
+    const raw = localStorage.getItem(TAB_KEY)
+    return raw && (TAB_VALIDAS as string[]).includes(raw) ? raw as Tab : 'ordenes'
+  } catch {
+    return 'ordenes'
+  }
+}
+
 export function CalibracionesPage() {
   const navigate = useNavigate()
-  const { hasCapability } = useUser()
+  const { hasCapability, loading: userLoading } = useUser()
   const puedeEditar = hasCapability('calibraciones_editar')
   const { data: ordenes = [], isLoading } = useOrdenesCalibracion()
   const { data: catalogo = [] } = useCatalogoRvCalibr()
@@ -62,7 +79,7 @@ export function CalibracionesPage() {
   const { data: parametros = [] } = useTodosParametros()
   const invalidate = useInvalidateCalibraciones()
 
-  const [tab, setTab] = useState<Tab>('ordenes')
+  const [tab, setTab] = useState<Tab>(cargarTab)
   const [vista, setVista] = useState<VistaFiltro>('activas')
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(0)
@@ -70,6 +87,15 @@ export function CalibracionesPage() {
   const [verFlujo, setVerFlujo] = useState(false)
 
   const PAGE_SIZE = 30
+
+  useEffect(() => { localStorage.setItem(TAB_KEY, tab) }, [tab])
+  // Si el reload cae en "Catálogo"/"Asesores" pero el usuario ya no tiene (o
+  // todavía no cargó) el permiso de edición, no se queda en una pestaña que
+  // ni siquiera aparece en la barra — espera a que el permiso resuelva antes
+  // de decidir, para no expulsar de golpe a un editor real mientras carga.
+  useEffect(() => {
+    if (!userLoading && (tab === 'catalogo' || tab === 'asesores') && !puedeEditar) setTab('ordenes')
+  }, [tab, puedeEditar, userLoading])
 
   useEffect(() => { localStorage.setItem(FILTROS_KEY, JSON.stringify(filtros)) }, [filtros])
 
@@ -80,9 +106,10 @@ export function CalibracionesPage() {
   const filtered = ordenes
     .filter(o => {
       if (vista === 'todas') return true
-      if (vista === 'completadas') return grupoEstado(o.estado) === 'completado'
+      if (vista === 'anuladas') return o.anulada
+      if (vista === 'completadas') return grupoEstado(o.estado) === 'completado' && !o.anulada
       if (vista === 'vencidas') return estaVencido(o)
-      return grupoEstado(o.estado) !== 'completado'
+      return grupoEstado(o.estado) !== 'completado' && !o.anulada
     })
     .filter(o => !filtros.estado || o.estado === filtros.estado)
     .filter(o => !filtros.modalidad || o.modalidad === filtros.modalidad)
@@ -94,16 +121,103 @@ export function CalibracionesPage() {
         || (o.numero_oc || '').toLowerCase().includes(q)
         || (o.correo_asesor || '').toLowerCase().includes(q)
     })
+    .sort((a, b) => {
+      // El No. de OC es el identificador de la orden (ST{número}-{año}) —
+      // se ordena de mayor a menor: año descendente y, dentro del mismo
+      // año, número descendente.
+      const pa = parseNumeroOC(a.numero_oc)
+      const pb = parseNumeroOC(b.numero_oc)
+      if (pa.anio !== pb.anio) return pb.anio.localeCompare(pa.anio)
+      return (parseInt(pb.numero, 10) || 0) - (parseInt(pa.numero, 10) || 0)
+    })
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   useEffect(() => { if (page >= totalPages) setPage(0) }, [totalPages, page])
   const pageItems = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
 
-  const pendientesCount = ordenes.filter(o => grupoEstado(o.estado) === 'pendiente').length
-  const enCursoCount = ordenes.filter(o => grupoEstado(o.estado) === 'en_curso').length
+  const pendientesCount = ordenes.filter(o => !o.anulada && grupoEstado(o.estado) === 'pendiente').length
+  const enCursoCount = ordenes.filter(o => !o.anulada && grupoEstado(o.estado) === 'en_curso').length
   const vencidasCount = ordenes.filter(o => estaVencido(o)).length
-  const proximasCount = ordenes.filter(o => proximoAVencer(o)).length
-  const completadasCount = ordenes.filter(o => grupoEstado(o.estado) === 'completado').length
+  const proximasCount = ordenes.filter(o => proximoAVencer(o) || visitaSinProgramar(o)).length
+  const completadasCount = ordenes.filter(o => !o.anulada && grupoEstado(o.estado) === 'completado').length
+
+  const ordenesColumns: Column<OrdenCalibracion>[] = [
+    {
+      key: 'cliente', header: 'Cliente',
+      render: o => (
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--text)' }}>{o.cliente}</div>
+          <div style={{ display: 'flex', gap: 6, marginTop: 3, flexWrap: 'wrap' }}>
+            {o.numero_oc && <span style={B_INFO}>{o.numero_oc}</span>}
+            {o.modalidad && <span style={B_INFO}>{MODALIDAD_LABEL[o.modalidad]}</span>}
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'estado', header: 'Estado', width: '150px',
+      render: o => {
+        const c = GRUPO_COLOR[grupoEstado(o.estado)]
+        return (
+          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', padding: '2px 9px', borderRadius: 20,
+              fontFamily: 'var(--mono)', fontSize: 10, fontWeight: 700,
+              background: c.bg, color: c.text, border: `1px solid ${c.border}`,
+            }}>{ESTADO_LABEL[o.estado]}</span>
+            {o.anulada && (
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', padding: '2px 9px', borderRadius: 20,
+                fontFamily: 'var(--mono)', fontSize: 10, fontWeight: 700,
+                background: 'var(--red-bg)', color: 'var(--red)', border: '1px solid var(--red-border)',
+              }}>Anulada</span>
+            )}
+          </div>
+        )
+      },
+    },
+    {
+      key: 'asesor', header: 'Asesor', width: '190px',
+      render: o => o.correo_asesor
+        ? <span style={{ fontSize: 12 }}>{o.correo_asesor}</span>
+        : <span style={{ color: 'var(--muted)' }}>—</span>,
+    },
+    {
+      key: 'proveedor', header: 'Proveedor', width: '150px',
+      render: o => o.proveedor
+        ? <span style={{ fontSize: 12 }}>{o.proveedor}</span>
+        : <span style={{ color: 'var(--muted)' }}>—</span>,
+    },
+    {
+      key: 'vencimiento', header: 'Vencimiento', width: '210px',
+      render: o => {
+        const vencida = estaVencido(o)
+        const proxima = proximoAVencer(o)
+        const descripcion = descripcionSemaforo(o)
+        const objetivo = fechaObjetivo(o)
+        const sinVisita = visitaSinProgramar(o)
+        const hayAlerta = o.novedad_detalle || vencida || proxima || sinVisita
+        return (
+          <div>
+            {hayAlerta && (
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: objetivo ? 3 : 0 }}>
+                {o.novedad_detalle && <span style={B_NOVEDAD}><AlertTriangle size={11} style={{ verticalAlign: -1, marginRight: 3 }} />Novedad</span>}
+                {sinVisita && <span style={B_PROXIMA}><AlertTriangle size={11} style={{ verticalAlign: -1, marginRight: 3 }} />Visita no programada</span>}
+                {vencida && <span style={B_VENCIDA}><AlertTriangle size={11} style={{ verticalAlign: -1, marginRight: 3 }} />{descripcion}</span>}
+                {!vencida && proxima && <span style={B_PROXIMA}><AlertTriangle size={11} style={{ verticalAlign: -1, marginRight: 3 }} />{descripcion}</span>}
+              </div>
+            )}
+            {objetivo && (
+              <span style={{ fontSize: 11, fontFamily: 'var(--mono)', color: vencida ? 'var(--red)' : 'var(--muted)' }}>
+                {fmtFecha(objetivo)}
+              </span>
+            )}
+            {!hayAlerta && !objetivo && <span style={{ color: 'var(--muted)' }}>—</span>}
+          </div>
+        )
+      },
+    },
+  ]
 
   return (
     <div>
@@ -126,8 +240,8 @@ export function CalibracionesPage() {
         </Modal>
       )}
 
-      <div style={{ display: 'flex', gap: 4, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 4, marginBottom: 20, maxWidth: 720, flexWrap: 'wrap' }}>
-        {(['ordenes', 'analisis', 'sede_hanna', ...(puedeEditar ? ['catalogo', 'asesores'] as const : [])] as Tab[]).map(t => (
+      <div style={{ display: 'flex', gap: 4, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 4, marginBottom: 20, maxWidth: 820, flexWrap: 'wrap' }}>
+        {(['ordenes', 'analisis', 'sede_hanna', 'logistica', ...(puedeEditar ? ['catalogo', 'asesores'] as const : [])] as Tab[]).map(t => (
           <button key={t} onClick={() => setTab(t)} style={{
             flex: 1, padding: '9px 14px', border: 'none', borderRadius: 9,
             background: tab === t ? 'var(--accent)' : 'transparent',
@@ -170,7 +284,7 @@ export function CalibracionesPage() {
           <Card>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', marginBottom: 14 }}>
               <div style={{ display: 'flex', gap: 4, background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 9, padding: 3, flexWrap: 'wrap' }}>
-                {([['activas', 'Activas'], ['vencidas', 'Vencidas'], ['completadas', 'Completadas'], ['todas', 'Todas']] as [VistaFiltro, string][]).map(([v, label]) => (
+                {([['activas', 'Activas'], ['vencidas', 'Vencidas'], ['completadas', 'Completadas'], ['anuladas', 'Anuladas'], ['todas', 'Todas']] as [VistaFiltro, string][]).map(([v, label]) => (
                   <button key={v} onClick={() => { setVista(v); setPage(0) }} style={{
                     padding: '6px 12px', border: 'none', borderRadius: 7, cursor: 'pointer', fontSize: 12,
                     fontWeight: vista === v ? 600 : 500, fontFamily: 'var(--sans)',
@@ -226,65 +340,13 @@ export function CalibracionesPage() {
             ) : pageItems.length === 0 ? (
               <div style={EMPTY}><FlaskConical size={32} strokeWidth={1.5} /><p>No hay órdenes para este filtro</p></div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {pageItems.map(o => {
-                  const vencida = estaVencido(o)
-                  const proxima = proximoAVencer(o)
-                  const grupo = grupoEstado(o.estado)
-                  const grupoColor = GRUPO_COLOR[grupo]
-                  const descripcion = descripcionSemaforo(o)
-                  return (
-                    <div key={o.id} onClick={() => navigate(`/calibraciones/${o.id}`)} style={{
-                      display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', cursor: 'pointer',
-                      border: `1px solid ${vencida ? 'var(--red-border)' : proxima ? 'var(--yellow-border)' : 'var(--border)'}`,
-                      background: vencida ? 'var(--red-bg)' : proxima ? 'var(--yellow-bg)' : 'var(--surface2)',
-                      borderRadius: 10, opacity: grupo === 'completado' ? 0.75 : 1, transition: 'transform .1s',
-                    }}
-                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--accent)' }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = vencida ? 'var(--red-border)' : proxima ? 'var(--yellow-border)' : 'var(--border)' }}
-                    >
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                          <span style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--text)' }}>{o.cliente}</span>
-                          {o.numero_oc && <span style={B_INFO}>{o.numero_oc}</span>}
-                          <span style={{
-                            display: 'inline-flex', alignItems: 'center', padding: '2px 9px', borderRadius: 20,
-                            fontFamily: 'var(--mono)', fontSize: 10, fontWeight: 700,
-                            background: grupoColor.bg, color: grupoColor.text, border: `1px solid ${grupoColor.border}`,
-                          }}>{ESTADO_LABEL[o.estado]}</span>
-                          {o.modalidad && <span style={B_INFO}>{MODALIDAD_LABEL[o.modalidad]}</span>}
-                          {o.novedad_detalle && <span style={B_NOVEDAD}><AlertTriangle size={11} style={{ verticalAlign: -1, marginRight: 3 }} />Novedad</span>}
-                          {vencida && <span style={B_VENCIDA}><AlertTriangle size={11} style={{ verticalAlign: -1, marginRight: 3 }} />{descripcion}</span>}
-                          {!vencida && proxima && <span style={B_PROXIMA}><AlertTriangle size={11} style={{ verticalAlign: -1, marginRight: 3 }} />{descripcion}</span>}
-                        </div>
-                        <div style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--mono)', marginTop: 6, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                          {o.correo_asesor && <span>Asesor: <strong>{o.correo_asesor}</strong></span>}
-                          {o.proveedor && <span>Proveedor: <strong>{o.proveedor}</strong></span>}
-                          {(() => {
-                            const objetivo = fechaObjetivo(o)
-                            return objetivo ? (
-                              <span>Fecha límite: <strong style={{ color: vencida ? 'var(--red)' : undefined }}>{fmtFecha(objetivo)}</strong></span>
-                            ) : null
-                          })()}
-                          {(() => {
-                            const info = infoAntiguedadEstado(o)
-                            if (!info) return null
-                            return (
-                              <span>{info.etiqueta}: <strong style={{ color: vencida ? 'var(--red)' : proxima ? 'var(--yellow)' : undefined }}>
-                                {fmtFecha(info.fechaISO)} ({info.habiles} día{info.habiles !== 1 ? 's' : ''} hábil{info.habiles !== 1 ? 'es' : ''})
-                              </strong></span>
-                            )
-                          })()}
-                          {!vencida && !proxima && descripcion && <span style={{ color: 'var(--accent)' }}>{descripcion}</span>}
-                          {o.valor_oc_antes_iva != null && <span>Valor: <strong>{fmtCOP(o.valor_oc_antes_iva)}</strong></span>}
-                          {o.enviado_cliente_final && <span style={{ color: 'var(--accent)' }}>Equipo ya despachado al cliente</span>}
-                        </div>
-                      </div>
-                      <ChevronRight size={16} color="var(--muted)" style={{ flexShrink: 0 }} />
-                    </div>
-                  )
-                })}
-              </div>
+              <Table
+                columns={ordenesColumns}
+                data={pageItems}
+                keyExtractor={o => o.id}
+                onRowClick={o => navigate(`/calibraciones/${o.id}`)}
+                rowStyle={o => o.anulada ? { opacity: 0.55 } : estaVencido(o) ? { background: 'var(--red-bg)' } : (proximoAVencer(o) || visitaSinProgramar(o)) ? { background: 'var(--yellow-bg)' } : grupoEstado(o.estado) === 'completado' ? { opacity: 0.65 } : undefined}
+              />
             )}
 
             {totalPages > 1 && (
@@ -304,6 +366,8 @@ export function CalibracionesPage() {
         <AnalisisTab ordenes={ordenes} />
       ) : tab === 'sede_hanna' ? (
         <CoordinacionSedeHannaTab ordenes={ordenes} parametros={parametros} catalogo={catalogo} />
+      ) : tab === 'logistica' ? (
+        <LogisticaTab ordenes={ordenes} />
       ) : tab === 'catalogo' ? (
         <CatalogoTab catalogo={catalogo} proveedores={proveedores} onSaved={invalidate.catalogo} />
       ) : (

@@ -37,6 +37,7 @@ export function VistaControlCalidad({ form, asesorSeleccionado, puedeEditar, sol
     fecha_retorno: form.fecha_retorno ?? null,
     fecha_llegada_hanna: form.fecha_llegada_hanna ?? null,
     estado_desde: form.estado_desde,
+    anulada: form.anulada ?? false,
   } : null
   const nivelPlazo = semaforoInfo ? semaforoOrden(semaforoInfo) : 'ok'
   const colorPlazo = nivelPlazo === 'vencida' ? 'var(--red)' : nivelPlazo === 'proxima' ? 'var(--yellow)' : 'var(--text)'

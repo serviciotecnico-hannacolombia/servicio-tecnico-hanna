@@ -4,8 +4,8 @@
 // envío y nota de envío — antes de pasar a "Enviado".
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { Send } from 'lucide-react'
-import { FG, Seccion, Grid2, INP, PRI, fmtFecha } from '../ui'
+import { Send, AlertTriangle } from 'lucide-react'
+import { FG, Seccion, Grid2, INP, PRI, GHOST, fmtFecha } from '../ui'
 import { hoyISO } from '../hooks/useCalibraciones'
 import { linkOtst, parseOtstCodes } from './CamposCompartidos'
 import type { OrdenCalibracion } from '../../../types'
@@ -19,16 +19,24 @@ export function VistaParaEnviar({ form, puedeEditar, soloLectura, saving, onAvan
 }) {
   const [fechaEnvio, setFechaEnvio] = useState(() => form.fecha_envio || hoyISO())
   const [notaEnvio, setNotaEnvio] = useState(form.nota_envio || '')
+  const [fechaIdeal, setFechaIdeal] = useState(form.fecha_programada_envio || '')
   const otstCodigos = parseOtstCodes(form.otst)
   // Si la orden pasó por mantenimiento, nunca se definió una fecha ideal de
   // envío en la creación — la referencia más útil pasa a ser la fecha real
-  // en que salió de mantenimiento.
-  const fechaIdealEnvio = form.fecha_programada_envio || form.fecha_salida_mantenimiento_real
+  // en que salió de mantenimiento. Solo se usa para el resumen en solo
+  // lectura: el campo editable sigue siendo fecha_programada_envio.
+  const fechaIdealMostrada = form.fecha_programada_envio || form.fecha_salida_mantenimiento_real
 
   function confirmar() {
     if (!fechaEnvio) { toast.error('Ingresa la fecha de envío'); return }
     if (!notaEnvio.trim()) { toast.error('Ingresa la nota de envío'); return }
     onAvanzar({ estado: 'enviado', fecha_envio: fechaEnvio, nota_envio: notaEnvio.trim() })
+  }
+
+  // Guarda solo la fecha ideal de envío, sin avanzar de etapa — vacía
+  // también es válida, para volver a "sin programar" si hace falta.
+  function guardarFechaIdeal() {
+    onAvanzar({ fecha_programada_envio: fechaIdeal || null })
   }
 
   function copiarRmvFv() {
@@ -46,12 +54,39 @@ export function VistaParaEnviar({ form, puedeEditar, soloLectura, saving, onAvan
         <Send size={16} /> {soloLectura ? 'Revisando "Para enviar" (solo lectura)' : `Se enviará al proveedor: ${form.proveedor || 'sin definir'}`}
       </div>
 
+      {!form.fecha_programada_envio && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', borderRadius: 'var(--radius)',
+          background: 'var(--yellow-bg)', border: '1px solid var(--yellow-border)', color: 'var(--yellow)',
+          marginBottom: 24, fontSize: 13, fontWeight: 600,
+        }}>
+          <AlertTriangle size={16} /> Envío aún no programado — define abajo la fecha ideal de envío.
+        </div>
+      )}
+
       <Seccion titulo="Resumen">
         <Grid2>
           <FG label="Fecha ideal de envío">
-            <div style={{ ...INP, color: fechaIdealEnvio ? 'var(--text)' : 'var(--muted)' }}>
-              {fechaIdealEnvio ? fmtFecha(fechaIdealEnvio) : 'No definida en la creación'}
-            </div>
+            {soloLectura ? (
+              <div style={{ ...INP, color: fechaIdealMostrada ? 'var(--text)' : 'var(--muted)' }}>
+                {fechaIdealMostrada ? fmtFecha(fechaIdealMostrada) : 'No definida en la creación'}
+              </div>
+            ) : (
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input
+                  type="date"
+                  value={fechaIdeal}
+                  onChange={e => setFechaIdeal(e.target.value)}
+                  disabled={!puedeEditar}
+                  style={INP}
+                />
+                {puedeEditar && fechaIdeal !== (form.fecha_programada_envio || '') && (
+                  <button onClick={guardarFechaIdeal} disabled={saving} style={{ ...GHOST, whiteSpace: 'nowrap' }}>
+                    {saving ? 'Guardando…' : 'Guardar'}
+                  </button>
+                )}
+              </div>
+            )}
           </FG>
           <FG label="Proveedor (laboratorio)">
             <div style={{ ...INP, color: form.proveedor ? 'var(--text)' : 'var(--muted)' }}>{form.proveedor || '—'}</div>
