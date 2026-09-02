@@ -4,9 +4,13 @@ import { BodegaSTForm } from '../components/BodegaSTForm';
 import { BodegaSTTable } from '../components/BodegaSTTable';
 import { EditBodegaSTModal } from '../components/EditBodegaSTModal';
 import {exportToExcel } from '../../void/utils/exportToExcel';
+import { Header } from '../../../components/layout/Header';
+import { Button } from '../../../components/ui/Button';
+import { StatCard } from '../../../components/ui/StatCard';
+import { Modal } from '../../../components/ui/Modal';
 import { AuditHistory } from '../../../components/ui/AuditHistory';
 import type { BodegaSTAudit, RegistroBodegaST } from '../types';
-import { Clock, Wrench, AlertTriangle, CheckCircle2, Download } from 'lucide-react';
+import { Download } from 'lucide-react';
 
 export function BodegaSTPage() {
   const [visibleRecords, setVisibleRecords] = useState<RegistroBodegaST[]>([]);
@@ -66,74 +70,45 @@ export function BodegaSTPage() {
   }
 
   return (
-    <div style={{ maxWidth: 1300, margin: '0 auto' }}>
-      <header style={{ marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text, #0f172a)', margin: 0 }}>
-            Bodega ST · Restauración y Equipos Incompletos
-          </h1>
-          <p style={{ fontSize: '0.875rem', color: 'var(--muted, #64748b)', margin: '4px 0 0 0' }}>
-            Gestión de diagnósticos, repuestos requeridos y preparación de equipos para retorno a bodega principal.
-          </p>
-        </div>
+    <div>
+      <Header
+        title="Bodega ST · Restauración y Equipos Incompletos"
+        subtitle="Gestión de diagnósticos, repuestos requeridos y preparación de equipos para retorno a bodega principal."
+        actions={
+          <Button variant="ghost" size="sm" onClick={handleExport}>
+            <Download size={14} /> Exportar Excel/CSV
+          </Button>
+        }
+      />
 
-        <button
-          onClick={handleExport}
-          style={{
-            background: '#ffffff',
-            border: '1px solid #cbd5e1',
-            padding: '8px 14px',
-            borderRadius: 8,
-            fontSize: '0.8rem',
-            fontWeight: 600,
-            color: '#334155',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6
-          }}
-        >
-          <Download size={15} /> Exportar Excel/CSV
-        </button>
-      </header>
-
-      {/* Tarjetas de Métricas / KPIs */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
-        <div style={{ background: '#ffffff', padding: 16, borderRadius: 12, border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ background: '#fef3c7', padding: 10, borderRadius: 8, color: '#b45309' }}><Clock size={20} /></div>
-          <div>
-            <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>DIAGNÓSTICO</span>
-            <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a' }}>{totalDiagnostico}</div>
-          </div>
-        </div>
-
-        <div style={{ background: '#ffffff', padding: 16, borderRadius: 12, border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ background: '#e0f2fe', padding: 10, borderRadius: 8, color: '#0369a1' }}><Wrench size={20} /></div>
-          <div>
-            <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>REPARACIÓN</span>
-            <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a' }}>{totalReparacion}</div>
-          </div>
-        </div>
-
-        <div style={{ background: '#ffffff', padding: 16, borderRadius: 12, border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ background: '#ffedd5', padding: 10, borderRadius: 8, color: '#c2410c' }}><AlertTriangle size={20} /></div>
-          <div>
-            <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>INCOMPLETOS</span>
-            <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a' }}>{totalIncompletos}</div>
-          </div>
-        </div>
-
-        <div style={{ background: '#ffffff', padding: 16, borderRadius: 12, border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ background: '#dcfce7', padding: 10, borderRadius: 8, color: '#15803d' }}><CheckCircle2 size={20} /></div>
-          <div>
-            <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>REST. LISTOS</span>
-            <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a' }}>{totalListos}</div>
-          </div>
-        </div>
+      <div style={{ display: 'flex', gap: 12, marginBottom: 18, flexWrap: 'wrap' }}>
+        <StatCard value={totalDiagnostico} label="Diagnóstico" sublabel="pendiente de revisar" color="yellow" />
+        <StatCard value={totalReparacion} label="Reparación" sublabel="en proceso" color="accent" />
+        <StatCard value={totalIncompletos} label="Incompletos" sublabel="esperando accesorios" color="red" />
+        <StatCard value={totalListos} label="Rest. Listos" sublabel="listos para bodega" color="green" />
       </div>
 
       <BodegaSTForm onSave={handleSaveRecord} />
       <BodegaSTTable records={visibleRecords} onEdit={(rec) => { setSelectedRecord(rec); setIsModalOpen(true); }} onDelete={handleDelete} />
+
+      <AuditHistory
+        audits={audits.map(a => ({
+          id: a.id,
+          accion: a.accion,
+          registro_id: a.datos_nuevos?.registro_id || a.datos_anteriores?.registro_id,
+          nombre_serie: a.datos_nuevos?.numero_serie || a.datos_anteriores?.numero_serie,
+          referencia: a.datos_nuevos?.referencia || a.datos_anteriores?.referencia,
+          nombre_equipo: a.datos_nuevos?.nombre_equipo || a.datos_anteriores?.nombre_equipo,
+          created_at: a.created_at
+        }))}
+        onViewDeleted={(audit) => {
+          const fullAudit = audits.find(a => a.id === audit.id);
+          if (fullAudit?.datos_anteriores) {
+            setDeletedSnapshot(fullAudit.datos_anteriores);
+          }
+        }}
+        title="Historial de cambios"
+      />
 
       <EditBodegaSTModal
         isOpen={isModalOpen}
@@ -141,27 +116,12 @@ export function BodegaSTPage() {
         onClose={() => setIsModalOpen(false)}
         onUpdate={handleUpdate}
       />
-      <section style={{ marginTop: 24, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: 20 }}>
-        <AuditHistory
-          audits={audits.map(a => ({
-            id: a.id,
-            accion: a.accion,
-            registro_id: a.datos_nuevos?.registro_id || a.datos_anteriores?.registro_id,
-            nombre_serie: a.datos_nuevos?.numero_serie || a.datos_anteriores?.numero_serie,
-            referencia: a.datos_nuevos?.referencia || a.datos_anteriores?.referencia,
-            nombre_equipo: a.datos_nuevos?.nombre_equipo || a.datos_anteriores?.nombre_equipo,
-            created_at: a.created_at
-          }))}
-          onViewDeleted={(audit) => {
-            const fullAudit = audits.find(a => a.id === audit.id);
-            if (fullAudit?.datos_anteriores) {
-              setDeletedSnapshot(fullAudit.datos_anteriores);
-            }
-          }}
-          title="Historial de cambios"
-        />
-      </section>
-      {deletedSnapshot && <div style={{ position: 'fixed', inset: 0, zIndex: 1100, background: 'rgba(15,23,42,.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div style={{ background: '#fff', borderRadius: 12, padding: 24, width: 'min(600px, calc(100% - 32px))' }}><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}><h3 style={{ margin: 0 }}>Registro eliminado · {deletedSnapshot.registro_id || deletedSnapshot.id}</h3><button onClick={() => setDeletedSnapshot(null)} style={{ border: 0, background: 'none', cursor: 'pointer', fontSize: 20 }}>×</button></div><pre style={{ whiteSpace: 'pre-wrap', background: '#f8fafc', padding: 14, borderRadius: 8, fontSize: 12, marginTop: 16 }}>{JSON.stringify(deletedSnapshot, null, 2)}</pre></div></div>}
+
+      <Modal open={!!deletedSnapshot} onClose={() => setDeletedSnapshot(null)} title={`Registro eliminado · ${deletedSnapshot?.registro_id || deletedSnapshot?.id || ''}`} width={600}>
+        <pre style={{ whiteSpace: 'pre-wrap', background: 'var(--surface2)', padding: 14, borderRadius: 'var(--radius-sm)', fontSize: 12, fontFamily: 'var(--mono)', color: 'var(--text)' }}>
+          {JSON.stringify(deletedSnapshot, null, 2)}
+        </pre>
+      </Modal>
     </div>
   );
 }

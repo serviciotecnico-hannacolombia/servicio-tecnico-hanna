@@ -1,7 +1,8 @@
 -- Módulos Control VOID y Bodega ST con auditoría completa.
 
 CREATE TABLE IF NOT EXISTS void_registros (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(), qr_equipo text NOT NULL,
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(), registro_id text UNIQUE,
+  qr_equipo text NOT NULL, libro text,
   referencia text, numero_serie text, nombre_equipo text,
   void_blanco text NOT NULL, void_gris text NOT NULL, documento_referencia text,
   observaciones text, created_at timestamptz NOT NULL DEFAULT now(),
@@ -17,11 +18,12 @@ CREATE TABLE IF NOT EXISTS void_registros_auditoria (
 );
 
 CREATE TABLE IF NOT EXISTS bodega_st_registros (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(), qr_equipo text NOT NULL,
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(), registro_id text UNIQUE,
+  qr_equipo text NOT NULL,
   referencia text NOT NULL, numero_serie text NOT NULL, nombre_equipo text NOT NULL,
   estado text NOT NULL CHECK (estado IN ('en_diagnostico', 'en_reparacion', 'incompleto_espera_partes', 'restaurado_listo')),
   partes_requeridas text, reparaciones_realizadas text, tecnico_responsable text,
-  ubicacion_estante text, observaciones text,
+  ubicacion_estante text, bodega_destino text, observaciones text,
   created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now()
 );
 

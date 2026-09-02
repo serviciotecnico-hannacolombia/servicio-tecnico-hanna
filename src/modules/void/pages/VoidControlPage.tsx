@@ -5,6 +5,9 @@ import { VoidTable } from '../components/VoidTable';
 import { VoidSearchPanel } from '../components/VoidSearchPanel';
 import { EditVoidModal } from '../components/EditVoidModal';
 import { exportToExcel } from '../utils/exportToExcel';
+import { Header } from '../../../components/layout/Header';
+import { Button } from '../../../components/ui/Button';
+import { Modal } from '../../../components/ui/Modal';
 import { AuditHistory } from '../../../components/ui/AuditHistory';
 import type { VoidAudit, VoidRecord } from '../types';
 import { Download } from 'lucide-react';
@@ -64,43 +67,40 @@ export function VoidControlPage() {
   };
 
   return (
-    <div style={{ maxWidth: 1300, margin: '0 auto' }}>
-      <header style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text, #0f172a)', margin: 0 }}>
-            Módulo de Control VOID 2.0
-          </h1>
-          <p style={{ fontSize: '0.875rem', color: 'var(--muted, #64748b)', margin: '4px 0 0 0' }}>
-            Escaneo rápido de equipos y asignación de sellos de seguridad.
-          </p>
-        </div>
+    <div>
+      <Header
+        title="Módulo de Control VOID 2.0"
+        subtitle="Escaneo rápido de equipos y asignación de sellos de seguridad."
+        actions={
+          <Button variant="ghost" size="sm" onClick={handleExport}>
+            <Download size={14} /> Exportar Excel/CSV
+          </Button>
+        }
+      />
 
-        <button
-          onClick={handleExport}
-          style={{
-            background: '#ffffff',
-            border: '1px solid #cbd5e1',
-            padding: '8px 14px',
-            borderRadius: 8,
-            fontSize: '0.8rem',
-            fontWeight: 600,
-            color: '#334155',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6
-          }}
-        >
-          <Download size={15} /> Exportar Excel/CSV
-        </button>
-      </header>
-
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-        {LIBROS_VOID.map(libro => <button key={libro} onClick={() => setLibroActivo(libro)} style={{ padding: '9px 14px', borderRadius: 8, border: '1px solid var(--border)', background: libroActivo === libro ? 'var(--accent)' : 'var(--surface)', color: libroActivo === libro ? '#fff' : 'var(--text)', cursor: 'pointer', fontWeight: 600 }}>{libro}</button>)}
+      <div style={{ display: 'flex', gap: 6, marginBottom: 18, flexWrap: 'wrap' }}>
+        {LIBROS_VOID.map(libro => (
+          <button
+            key={libro}
+            onClick={() => setLibroActivo(libro)}
+            style={{
+              padding: '6px 14px', borderRadius: 20, fontSize: '0.78rem', cursor: 'pointer',
+              fontFamily: 'var(--sans)', fontWeight: libroActivo === libro ? 700 : 500,
+              border: `1px solid ${libroActivo === libro ? 'var(--accent)' : 'var(--border)'}`,
+              background: libroActivo === libro ? 'var(--accent)' : 'var(--surface)',
+              color: libroActivo === libro ? '#fff' : 'var(--muted)',
+              transition: 'all .15s',
+            }}
+          >
+            {libro}
+          </button>
+        ))}
       </div>
+
       <VoidSearchPanel records={records} onSelectRecord={setSelected} />
       <VoidForm onSave={record => handleSaveRecord(record)} />
       <VoidTable records={records.filter(record => record.libro === libroActivo)} onEdit={setSelected} onDelete={handleDelete} />
+
       <AuditHistory
         audits={audits.map(a => ({
           id: a.id,
@@ -119,8 +119,14 @@ export function VoidControlPage() {
         }}
         title="Historial de cambios"
       />
+
       <EditVoidModal record={selected} onClose={() => setSelected(null)} onSave={handleUpdate} />
-      {deletedSnapshot && <div style={{ position: 'fixed', inset: 0, zIndex: 1100, background: 'rgba(15,23,42,.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div style={{ background: '#fff', borderRadius: 12, padding: 24, width: 'min(600px, calc(100% - 32px))' }}><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}><h3 style={{ margin: 0 }}>Registro eliminado · {deletedSnapshot.registro_id || deletedSnapshot.id}</h3><button onClick={() => setDeletedSnapshot(null)} style={{ border: 0, background: 'none', cursor: 'pointer', fontSize: 20 }}>×</button></div><pre style={{ whiteSpace: 'pre-wrap', background: '#f8fafc', padding: 14, borderRadius: 8, fontSize: 12, marginTop: 16 }}>{JSON.stringify(deletedSnapshot, null, 2)}</pre></div></div>}
+
+      <Modal open={!!deletedSnapshot} onClose={() => setDeletedSnapshot(null)} title={`Registro eliminado · ${deletedSnapshot?.registro_id || deletedSnapshot?.id || ''}`} width={600}>
+        <pre style={{ whiteSpace: 'pre-wrap', background: 'var(--surface2)', padding: 14, borderRadius: 'var(--radius-sm)', fontSize: 12, fontFamily: 'var(--mono)', color: 'var(--text)' }}>
+          {JSON.stringify(deletedSnapshot, null, 2)}
+        </pre>
+      </Modal>
     </div>
   );
 }

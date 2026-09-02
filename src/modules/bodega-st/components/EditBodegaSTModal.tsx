@@ -1,7 +1,11 @@
-import React, { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import type { RegistroBodegaST, EstadoRestauracion } from '../types';
 import { UBICACIONES_BODEGA_ST, BODEGAS_DESTINO } from '../types';
-import { X, Save, Wrench } from 'lucide-react';
+import { Save } from 'lucide-react';
+import { Modal } from '../../../components/ui/Modal';
+import { Input } from '../../../components/ui/Input';
+import { Select } from '../../../components/ui/Select';
+import { Button } from '../../../components/ui/Button';
 
 interface EditBodegaSTModalProps {
   record: RegistroBodegaST | null;
@@ -10,7 +14,14 @@ interface EditBodegaSTModalProps {
   onUpdate: (updatedRecord: RegistroBodegaST) => void;
 }
 
-export const EditBodegaSTModal: React.FC<EditBodegaSTModalProps> = ({ record, isOpen, onClose, onUpdate }) => {
+const ESTADO_OPTIONS = [
+  { value: 'en_diagnostico', label: '🔍 En Diagnóstico' },
+  { value: 'en_reparacion', label: '⚙️ En Reparación' },
+  { value: 'incompleto_espera_partes', label: '🧩 Incompleto (Espera Accesorios/Partes)' },
+  { value: 'restaurado_listo', label: '✅ Restaurado (Listo para Bodega Principal)' },
+];
+
+export function EditBodegaSTModal({ record, isOpen, onClose, onUpdate }: EditBodegaSTModalProps) {
   const [prevRecordId, setPrevRecordId] = useState<string | null>(null);
   const [estado, setEstado] = useState<EstadoRestauracion>('en_diagnostico');
   const [partesRequeridas, setPartesRequeridas] = useState('');
@@ -29,9 +40,9 @@ export const EditBodegaSTModal: React.FC<EditBodegaSTModalProps> = ({ record, is
     setObservaciones(record.observaciones || '');
   }
 
-  if (!isOpen || !record) return null;
+  if (!record) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     onUpdate({
       ...record,
@@ -46,68 +57,30 @@ export const EditBodegaSTModal: React.FC<EditBodegaSTModalProps> = ({ record, is
   };
 
   return (
-    <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-      <div style={{ background: '#ffffff', borderRadius: 12, width: '100%', maxWidth: 550, padding: 24, boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid #e2e8f0' }}>
-          <div>
-            <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 8 }}><Wrench size={20} /> Actualizar Estado de Restauración</h3>
-            <span style={{ fontSize: '0.8rem', color: '#64748b' }}>{record.nombre_equipo} ({record.numero_serie})</span>
-          </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}><X size={20} /></button>
+    <Modal open={isOpen} onClose={onClose} title={`Actualizar Restauración · ${record.nombre_equipo} (${record.numero_serie})`} width={560}>
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <Select label="Estado Actual" value={estado} onChange={e => setEstado(e.target.value as EstadoRestauracion)} options={ESTADO_OPTIONS} />
+        <Input label="Partes / Accesorios Faltantes" value={partesRequeridas} onChange={e => setPartesRequeridas(e.target.value)} />
+        <Input label="Reparaciones Realizadas" value={reparaciones} onChange={e => setReparaciones(e.target.value)} />
+        <Select label="Ubicación en Bodega ST" value={ubicacion} onChange={e => setUbicacion(e.target.value)} options={UBICACIONES_BODEGA_ST.map(loc => ({ value: loc, label: loc }))} />
+
+        {estado === 'restaurado_listo' && (
+          <Select
+            label="📦 Bodega Destino"
+            value={bodegaDestino}
+            onChange={e => setBodegaDestino(e.target.value)}
+            options={BODEGAS_DESTINO.map(b => ({ value: b, label: b }))}
+            style={{ border: '1px solid var(--green)', background: 'var(--green-bg)' }}
+          />
+        )}
+
+        <Input label="Observaciones" value={observaciones} onChange={e => setObservaciones(e.target.value)} />
+
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 6 }}>
+          <Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button>
+          <Button type="submit"><Save size={15} /> Guardar Cambios</Button>
         </div>
-
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <div>
-            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#334155', marginBottom: 4 }}>Estado Actual</label>
-            <select value={estado} onChange={(e) => setEstado(e.target.value as EstadoRestauracion)} style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: '0.875rem' }}>
-              <option value="en_diagnostico">🔍 En Diagnóstico</option>
-              <option value="en_reparacion">⚙️ En Reparación</option>
-              <option value="incompleto_espera_partes">🧩 Incompleto (Espera Accesorios/Partes)</option>
-              <option value="restaurado_listo">✅ Restaurado (Listo para Bodega Principal)</option>
-            </select>
-          </div>
-
-          <div>
-            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#334155', marginBottom: 4 }}>Partes / Accesorios Faltantes</label>
-            <input type="text" value={partesRequeridas} onChange={(e) => setPartesRequeridas(e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: '0.875rem' }} />
-          </div>
-
-          <div>
-            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#334155', marginBottom: 4 }}>Reparaciones Realizadas</label>
-            <input type="text" value={reparaciones} onChange={(e) => setReparaciones(e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: '0.875rem' }} />
-          </div>
-
-          <div>
-            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#334155', marginBottom: 4 }}>Ubicación en Bodega ST</label>
-            <select value={ubicacion} onChange={(e) => setUbicacion(e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: '0.875rem' }}>
-              {UBICACIONES_BODEGA_ST.map((loc) => (
-                <option key={loc} value={loc}>{loc}</option>
-              ))}
-            </select>
-          </div>
-
-          {estado === 'restaurado_listo' && (
-            <div>
-              <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#334155', marginBottom: 4 }}>📦 Bodega Destino</label>
-              <select value={bodegaDestino} onChange={(e) => setBodegaDestino(e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #10b981', fontSize: '0.875rem', background: '#ecfdf5' }}>
-                {BODEGAS_DESTINO.map((bodega) => (
-                  <option key={bodega} value={bodega}>{bodega}</option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          <div>
-            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#334155', marginBottom: 4 }}>Observaciones</label>
-            <input type="text" value={observaciones} onChange={(e) => setObservaciones(e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: '0.875rem' }} />
-          </div>
-
-          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 10 }}>
-            <button type="button" onClick={onClose} style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#f8fafc', color: '#475569', fontWeight: 600, cursor: 'pointer' }}>Cancelar</button>
-            <button type="submit" style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#005eb8', color: '#ffffff', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}><Save size={16} /> Guardar Cambios</button>
-          </div>
-        </form>
-      </div>
-    </div>
+      </form>
+    </Modal>
   );
-};
+}
