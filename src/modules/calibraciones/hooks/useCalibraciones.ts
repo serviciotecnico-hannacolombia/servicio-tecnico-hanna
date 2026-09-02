@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { supabase } from '../../../lib/supabase'
+import { supabase, fetchAllRows } from '../../../lib/supabase'
 import { useUser } from '../../../hooks/useUser'
 import { businessDaysBetween } from '../../../lib/colombiaCalendar'
 import type { Asesor, CorreoProveedor, EstadoCalibracion, LogisticaPendiente, LogisticaPendienteOrden, Modalidad, OrdenCalibracion, OrdenCalibracionHistorial, OrdenCalibracionParametro, RvCalibrItem, UbicacionEquipo } from '../../../types'
@@ -8,12 +8,7 @@ export function useOrdenesCalibracion() {
   const { user } = useUser()
   return useQuery({
     queryKey: ['ordenes_calibracion', user?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('ordenes_calibracion').select('*').order('created_at', { ascending: false })
-      if (error) throw error
-      return data as OrdenCalibracion[]
-    },
+    queryFn: () => fetchAllRows<OrdenCalibracion>('ordenes_calibracion', q => q.order('created_at', { ascending: false })),
     enabled: !!user,
   })
 }
@@ -61,11 +56,7 @@ export function useTodosParametros() {
   const { user } = useUser()
   return useQuery({
     queryKey: ['ordenes_calibracion_parametros_todos'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('ordenes_calibracion_parametros').select('*')
-      if (error) throw error
-      return data as OrdenCalibracionParametro[]
-    },
+    queryFn: () => fetchAllRows<OrdenCalibracionParametro>('ordenes_calibracion_parametros'),
     enabled: !!user,
   })
 }
@@ -123,12 +114,7 @@ export function usePendientesLogistica() {
   const { user } = useUser()
   return useQuery({
     queryKey: ['calibraciones_logistica_pendientes'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('calibraciones_logistica_pendientes').select('*').order('created_at', { ascending: false })
-      if (error) throw error
-      return data as LogisticaPendiente[]
-    },
+    queryFn: () => fetchAllRows<LogisticaPendiente>('calibraciones_logistica_pendientes', q => q.order('created_at', { ascending: false })),
     enabled: !!user,
   })
 }
@@ -140,12 +126,7 @@ export function usePendientesLogisticaOrdenes() {
   const { user } = useUser()
   return useQuery({
     queryKey: ['calibraciones_logistica_pendientes_ordenes'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('calibraciones_logistica_pendientes_ordenes').select('*')
-      if (error) throw error
-      return data as LogisticaPendienteOrden[]
-    },
+    queryFn: () => fetchAllRows<LogisticaPendienteOrden>('calibraciones_logistica_pendientes_ordenes'),
     enabled: !!user,
   })
 }

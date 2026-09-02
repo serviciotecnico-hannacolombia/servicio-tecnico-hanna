@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import Papa from 'papaparse'
 import { Search, Warehouse, AlertTriangle, ArrowRightLeft, Mail, CheckCircle2, Download, Upload, Trash2, X, ListTodo, MapPinOff, Pencil, MoreVertical } from 'lucide-react'
 import { toast } from 'sonner'
-import { supabase } from '../../lib/supabase'
+import { supabase, fetchAllRows } from '../../lib/supabase'
 import { Header } from '../../components/layout/Header'
 import { Card } from '../../components/ui/Card'
 import { Modal } from '../../components/ui/Modal'
@@ -115,20 +115,6 @@ function esZonaRotativa(z: OtstBodegaZona): boolean {
 }
 
 // ── Supabase queries ───────────────────────────────────────────────────────────
-
-async function fetchAllRows<T>(table: string, orderBy: (q: any) => any): Promise<T[]> {
-  const PAGE = 1000
-  let all: T[] = []
-  let from = 0
-  while (true) {
-    const { data, error } = await orderBy(supabase.from(table).select('*')).range(from, from + PAGE - 1)
-    if (error) throw error
-    all = all.concat(data as T[])
-    if (!data || data.length < PAGE) break
-    from += PAGE
-  }
-  return all
-}
 
 function useBodega() {
   return useQuery({
