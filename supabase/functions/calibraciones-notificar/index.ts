@@ -5,6 +5,8 @@ const CORS = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+const CC_SERVICIO_TECNICO = 'serviciotecnico@hannacolombia.com'
+
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
@@ -12,9 +14,18 @@ function json(data: unknown, status = 200) {
   })
 }
 
-// Recibe un cambio de estado de una orden de calibración y lo reenvía al
-// trigger HTTP de Power Automate — la URL del webhook nunca se expone al
-// navegador, vive solo como secret de esta función (POWER_AUTOMATE_WEBHOOK_URL).
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
+// Recibe un cambio de estado de una orden de calibración y envía el correo
+// directamente vía Resend — al asesor de la orden, con copia a Servicio
+// Técnico. La API key y el remitente viven como secrets de esta función
+// (RESEND_API_KEY, RESEND_FROM_EMAIL), nunca expuestos al navegador.
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
 
@@ -41,21 +52,46 @@ Deno.serve(async (req) => {
       throw new Error('ordenId, correoAsesor y estadoNuevo son requeridos')
     }
 
-    const webhookUrl = Deno.env.get('POWER_AUTOMATE_WEBHOOK_URL')
-    if (!webhookUrl) throw new Error('POWER_AUTOMATE_WEBHOOK_URL no está configurado')
+    const resendApiKey = Deno.env.get('RESEND_API_KEY')
+    if (!resendApiKey) throw new Error('RESEND_API_KEY no está configurado')
+    const fromEmail = Deno.env.get('RESEND_FROM_EMAIL')
+    if (!fromEmail) throw new Error('RESEND_FROM_EMAIL no está configurado')
 
-    const resp = await fetch(webhookUrl, {
+    const clienteTxt = cliente ? escapeHtml(String(cliente)) : ''
+    const numeroOcTxt = numeroOc ? escapeHtml(String(numeroOc)) : ''
+    const usuarioTxt = usuario ? escapeHtml(String(usuario)) : ''
+    const estadoAnteriorTxt = estadoAnterior ? escapeHtml(String(estadoAnterior)) : ''
+    const estadoNuevoTxt = escapeHtml(String(estadoNuevo))
+
+    const subject = `${numeroOcTxt || 'Orden de calibración'}${clienteTxt ? ' · ' + clienteTxt : ''} — ${estadoNuevoTxt}`
+
+    const html = `
+      <p>La orden de calibración <strong>${numeroOcTxt || ordenId}</strong>${clienteTxt ? ` de <strong>${clienteTxt}</strong>` : ''} cambió de estado.</p>
+      <p style="font-size:16px">
+        ${estadoAnteriorTxt ? `${estadoAnteriorTxt} &rarr; ` : ''}<strong>${estadoNuevoTxt}</strong>
+      </p>
+      ${usuarioTxt ? `<p>Actualizado por: ${usuarioTxt}</p>` : ''}
+      ${ordenUrl ? `<p><a href="${escapeHtml(String(ordenUrl))}">Ver orden</a></p>` : ''}
+    `.trim()
+
+    const resp = await fetch('https://api.resend.com/emails', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        Authorization: `Bearer ${resendApiKey}`,
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify({
-        ordenId, cliente, numeroOc, correoAsesor, estadoAnterior, estadoNuevo, ordenUrl, usuario,
-        fecha: new Date().toISOString(),
+        from: fromEmail,
+        to: [correoAsesor],
+        cc: [CC_SERVICIO_TECNICO],
+        subject,
+        html,
       }),
     })
 
     if (!resp.ok) {
       const text = await resp.text().catch(() => '')
-      throw new Error(`Power Automate respondió ${resp.status}: ${text}`)
+      throw new Error(`Resend respondió ${resp.status}: ${text}`)
     }
 
     return json({ success: true })

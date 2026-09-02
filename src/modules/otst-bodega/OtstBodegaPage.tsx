@@ -116,27 +116,31 @@ function esZonaRotativa(z: OtstBodegaZona): boolean {
 
 // ── Supabase queries ───────────────────────────────────────────────────────────
 
+async function fetchAllRows<T>(table: string, orderBy: (q: any) => any): Promise<T[]> {
+  const PAGE = 1000
+  let all: T[] = []
+  let from = 0
+  while (true) {
+    const { data, error } = await orderBy(supabase.from(table).select('*')).range(from, from + PAGE - 1)
+    if (error) throw error
+    all = all.concat(data as T[])
+    if (!data || data.length < PAGE) break
+    from += PAGE
+  }
+  return all
+}
+
 function useBodega() {
   return useQuery({
     queryKey: ['otst_bodega'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('otst_bodega').select('*').order('created_at', { ascending: false })
-      if (error) throw error
-      return data as OtstBodega[]
-    },
+    queryFn: () => fetchAllRows<OtstBodega>('otst_bodega', q => q.order('created_at', { ascending: false })),
   })
 }
 
 function useMovimientos() {
   return useQuery({
     queryKey: ['otst_bodega_movimientos'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('otst_bodega_movimientos').select('*').order('created_at', { ascending: false })
-      if (error) throw error
-      return data as OtstBodegaMovimiento[]
-    },
+    queryFn: () => fetchAllRows<OtstBodegaMovimiento>('otst_bodega_movimientos', q => q.order('created_at', { ascending: false })),
   })
 }
 
@@ -167,12 +171,7 @@ function useConfig() {
 function usePendientes() {
   return useQuery({
     queryKey: ['otst_bodega_pendientes'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('otst_bodega_pendientes').select('*').order('created_at', { ascending: false })
-      if (error) throw error
-      return data as OtstBodegaPendiente[]
-    },
+    queryFn: () => fetchAllRows<OtstBodegaPendiente>('otst_bodega_pendientes', q => q.order('created_at', { ascending: false })),
   })
 }
 
