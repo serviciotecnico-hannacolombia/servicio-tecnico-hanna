@@ -3,7 +3,8 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import logo from '../../assets/logo.svg'
 import {
   Phone, Package, DollarSign, Wrench, FileText, Warehouse,
-  LogOut, Pencil, ShieldCheck, BarChart2, Mail, KeyRound, ChevronDown, Timer, ListTodo, CalendarClock, QrCode, Box
+  LogOut, Pencil, ShieldCheck, BarChart2, Mail, KeyRound, ChevronDown, Timer, ListTodo, CalendarClock, QrCode, Box,
+  FlaskConical
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useSidebar } from './SidebarContext'
@@ -14,6 +15,7 @@ import { Input } from '../ui/Input'
 import { Button } from '../ui/Button'
 import { Avatar } from '../ui/Avatar'
 import { useTareasBadgeCount } from '../../modules/tareas/hooks/useTareas'
+import { useCalibracionesBadgeCount } from '../../modules/calibraciones/hooks/useCalibraciones'
 import type { ModuleKey } from '../../types'
 
 // ── Hamburger animado ────────────────────────────────────────────────────────
@@ -63,6 +65,7 @@ const NAV_ITEMS: { to: string; label: string; icon: typeof Phone; moduleKey: Mod
   { to: '/reporte-st',              label: 'Reporte ST',            icon: Timer,         moduleKey: 'reporte_st'  },
   { to: '/tareas',                  label: 'Tareas',               icon: ListTodo,      moduleKey: 'tareas'      },
   { to: '/mantenimiento-programado', label: 'Mantenimiento Programado', icon: CalendarClock, moduleKey: 'mantenimiento_programado' },
+  { to: '/calibraciones', label: 'Calibraciones', icon: FlaskConical, moduleKey: 'calibraciones' },
 ]
 
 const ANIMALS = [
@@ -87,6 +90,7 @@ export function Sidebar() {
   const { user, displayName, profile, isAdmin, hasModule, signOut, updateDisplayName, updateAvatar } = useUser()
   const navigate = useNavigate()
   const tareasBadge = useTareasBadgeCount()
+  const calibracionesBadge = useCalibracionesBadgeCount()
   const [profileOpen, setProfileOpen] = useState(false)
   const [nombre, setNombre] = useState('')
   const [selectedEmoji, setSelectedEmoji] = useState<string | null>(null)
@@ -227,7 +231,7 @@ export function Sidebar() {
       {/* Nav */}
       <nav style={{ flex: 1, padding: '10px 0', overflowY: 'auto', overflowX: 'hidden' }}>
         {NAV_ITEMS.filter(item => ['void', 'bodega_st'].includes(item.moduleKey as string) || hasModule(item.moduleKey)).map(({ to, label, icon: Icon, moduleKey }) => {
-          const badge = moduleKey === 'tareas' ? tareasBadge : 0
+          const badge = moduleKey === 'tareas' ? tareasBadge : moduleKey === 'calibraciones' ? calibracionesBadge : 0
           return (
             <NavLink
               key={to}

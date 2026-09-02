@@ -25,6 +25,8 @@ import { VoidControlPage } from './modules/void/pages/VoidControlPage'
 import { BodegaSTPage } from './modules/bodega-st/pages/BodegaSTPage'
 import { Sidebar } from './components/layout/Sidebar'
 import { SidebarProvider } from './components/layout/SidebarContext'
+import { CalibracionesPage } from './modules/calibraciones/CalibracionesPage'
+import { OrdenCalibracionDetailPage } from './modules/calibraciones/OrdenCalibracionDetailPage'
 
 function DefaultRedirect() {
   const { hasModule } = useUser()
@@ -97,6 +99,8 @@ export default function App() {
               <Route path="/reporte-st"  element={<ModuleGuard moduleKey="reporte_st"><ReporteSTPage /></ModuleGuard>} />
               <Route path="/tareas"     element={<ModuleGuard moduleKey="tareas"><TareasPage /></ModuleGuard>} />
               <Route path="/mantenimiento-programado" element={<ModuleGuard moduleKey="mantenimiento_programado"><MantenimientoProgramadoPage /></ModuleGuard>} />
+              <Route path="/calibraciones" element={<ModuleGuard moduleKey="calibraciones"><CalibracionesPage /></ModuleGuard>} />
+              <Route path="/calibraciones/:id" element={<ModuleGuard moduleKey="calibraciones"><OrdenCalibracionDetailPage /></ModuleGuard>} />
               <Route
                 path="/admin"
                 element={

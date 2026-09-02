@@ -19,11 +19,12 @@ export interface CorreoDestinatario {
 export type ModuleKey =
   | 'llamadas' | 'bodega' | 'consumibles' | 'tarifas' | 'codigos'
   | 'editor' | 'indicadores' | 'correos' | 'reporte_st' | 'tareas'
-  | 'mantenimiento_programado' | 'admin'
+  | 'mantenimiento_programado' | 'calibraciones' | 'admin'
 
 export type CapabilityKey =
   | 'importar_csv_tarifas' | 'importar_csv_codigos' | 'importar_csv_llamadas'
   | 'bodega_registrar_ingreso' | 'editar_codigos' | 'gestion_codigos' | 'bodega_eliminar'
+  | 'calibraciones_editar'
 
 export interface Role {
   id: string
@@ -49,6 +50,7 @@ export interface LlamadaDiario {
   ingeniero: string | null
   garantia: 'SI' | 'NO'
   estado: EstadoLlamada
+  prioridad: boolean
   hora: string
   usuario: string
   fecha_dia: string
@@ -280,5 +282,130 @@ export interface EventoMantenimiento {
   fecha_entrega: string | null
   observaciones: string | null
   responsable: string | null
+  created_at: string
+}
+
+// ── Calibraciones ──────────────────────────────────────────────────────────────
+
+export type Modalidad = 'laboratorio_externo' | 'in_situ' | 'sede_hanna_dorado'
+
+// Ubicación física del equipo — solo relevante para la coordinación semanal
+// de Sede Hanna Dorado (a diferencia de in situ, el equipo debe estar en la
+// sede antes de que llegue el metrólogo(a)).
+export type UbicacionEquipo = 'en_sitio' | 'en_bodega' | 'en_mantenimiento'
+
+export type EstadoCalibracion =
+  | 'oc_creada' | 'para_enviar' | 'en_mantenimiento_reparacion'
+  | 'en_programacion_visita' | 'visita_programada' | 'enviado'
+  | 'en_calibracion' | 'en_retorno'
+  | 'control_calidad' | 'carga_al_sistema' | 'envio_certificados' | 'terminado'
+
+export interface RvCalibrItem {
+  codigo: string
+  magnitud: string
+  descripcion: string
+  modalidades_permitidas: Modalidad[]
+  proveedores_permitidos: string[] | null
+  solo_laboratorio_externo: boolean
+  envio_exclusivo_tcc: boolean
+  activo: boolean
+}
+
+export interface OrdenCalibracion {
+  id: string
+  numero_oc: string | null
+  cliente: string
+  correo_cliente: string | null
+  asesor_id: string | null
+  correo_asesor: string | null
+  saci: string | null
+  link_solicitud: string | null
+  otst: string | null
+  link_otst: string | null
+  codigo_recepcion: string | null
+  rmv_fv: string | null
+  modalidad: Modalidad | null
+  lugar_ejecucion: string | null
+  proveedor: string | null
+  estado: EstadoCalibracion
+  novedad_detalle: string | null
+  enviado_cliente_final: boolean
+  cantidad_equipos: number | null
+  fecha_salida_mantenimiento: string | null
+  fecha_salida_mantenimiento_real: string | null
+  nota_mantenimiento: string | null
+  fecha_programada_envio: string | null
+  fecha_llegada_metrologo: string | null
+  fecha_envio: string | null
+  nota_envio: string | null
+  codigos_certificados: string | null
+  certificado_fecha_inicio: string | null
+  certificado_fecha_fin: string | null
+  fecha_salida_lab: string | null
+  fecha_retorno: string | null
+  nota_retorno: string | null
+  fecha_llegada_hanna: string | null
+  fecha_entrega_certificado: string | null
+  carta_entrega: string | null
+  carta_certificado: string | null
+  fecha_control_calidad: string | null
+  notas_control_calidad: string | null
+  parametros_nota: string | null
+  valor_oc_antes_iva: number | null
+  ubicacion_equipo: UbicacionEquipo | null
+  anulada: boolean
+  motivo_anulacion: string | null
+  creado_por: string | null
+  estado_desde: string
+  created_at: string
+  updated_at: string
+}
+
+export interface OrdenCalibracionParametro {
+  orden_id: string
+  rv_calibr_codigo: string
+}
+
+export interface OrdenCalibracionHistorial {
+  id: string
+  orden_id: string
+  usuario_id: string | null
+  campo: string
+  valor_anterior: string | null
+  valor_nuevo: string | null
+  created_at: string
+}
+
+export interface Asesor {
+  id: string
+  nombre: string
+  correo: string
+  plataforma: string | null
+  activo: boolean
+  created_at: string
+  updated_at: string
+}
+
+// Logística → Pendientes: remisiones/facturas recibidas pero todavía sin
+// procesar en el sistema. factura/remision son opcionales individualmente
+// pero al menos una debe existir (validado en el formulario y en la BD).
+export interface LogisticaPendiente {
+  id: string
+  cliente: string
+  factura: string | null
+  remision: string | null
+  otst: string | null
+  correo_asesor: string | null
+  observaciones: string | null
+  creado_por: string | null
+  created_at: string
+}
+
+// Enlace entre un pendiente y una orden de calibración ya existente — un
+// pendiente puede enlazarse a varias órdenes; en cuanto tiene al menos una,
+// deja de contar como pendiente por procesar.
+export interface LogisticaPendienteOrden {
+  pendiente_id: string
+  orden_id: string
   created_at: string
 }
