@@ -1,4 +1,4 @@
-import { createClient, type PostgrestFilterBuilder } from '@supabase/supabase-js'
+import { createClient } from '@supabase/supabase-js'
 
 export const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL as string,
@@ -11,7 +11,7 @@ export const supabase = createClient(
 // quietly lose the oldest/newest rows depending on the ordering used.
 export async function fetchAllRows<T>(
   table: string,
-  build: (q: PostgrestFilterBuilder<any, any, any>) => PostgrestFilterBuilder<any, any, any> = q => q
+  build: (q: any) => any = q => q
 ): Promise<T[]> {
   const PAGE = 1000
   let all: T[] = []
