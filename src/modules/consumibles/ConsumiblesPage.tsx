@@ -2,7 +2,7 @@ import { useState, useRef, forwardRef } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Search, Package } from 'lucide-react'
 import { toast } from 'sonner'
-import { supabase } from '../../lib/supabase'
+import { supabase, fetchAllRows } from '../../lib/supabase'
 import { Header } from '../../components/layout/Header'
 import { Card } from '../../components/ui/Card'
 import { useUser } from '../../hooks/useUser'
@@ -56,24 +56,14 @@ function todayStr() {
 function useLlegadas() {
   return useQuery({
     queryKey: ['consumibles_llegada'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('consumibles_llegada').select('*').order('created_at', { ascending: false })
-      if (error) throw error
-      return data as ConsumibleLlegada[]
-    },
+    queryFn: () => fetchAllRows<ConsumibleLlegada>('consumibles_llegada', q => q.order('created_at', { ascending: false })),
   })
 }
 
 function useDestapes() {
   return useQuery({
     queryKey: ['consumibles_destape'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('consumibles_destape').select('*').order('created_at', { ascending: false })
-      if (error) throw error
-      return data as ConsumibleDestape[]
-    },
+    queryFn: () => fetchAllRows<ConsumibleDestape>('consumibles_destape', q => q.order('created_at', { ascending: false })),
   })
 }
 

@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { supabase } from '../../../lib/supabase'
+import { supabase, fetchAllRows } from '../../../lib/supabase'
 import { useUser } from '../../../hooks/useUser'
 import type { Tarea } from '../../../types'
 
@@ -9,12 +9,7 @@ export function useTareas() {
   const { user } = useUser()
   return useQuery({
     queryKey: ['tareas', user?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('tareas').select('*').order('fecha_vencimiento', { ascending: true, nullsFirst: false })
-      if (error) throw error
-      return data as Tarea[]
-    },
+    queryFn: () => fetchAllRows<Tarea>('tareas', q => q.order('fecha_vencimiento', { ascending: true, nullsFirst: false })),
     enabled: !!user,
     refetchInterval: 60_000,
   })
