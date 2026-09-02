@@ -52,8 +52,8 @@ function HamburgerIcon({ open }: { open: boolean }) {
 }
 
 const NAV_ITEMS: { to: string; label: string; icon: typeof Phone; moduleKey: ModuleKey }[] = [
-  { to: '/void',                     label: 'Control VOIDs',         icon: QrCode,        moduleKey: 'void' as ModuleKey },
-  { to: '/bodega-st', label: 'Bodega ST (Restauración)', icon: Box, moduleKey: 'bodega_st' as ModuleKey },
+  { to: '/void',                     label: 'Control VOIDs',         icon: QrCode,        moduleKey: 'void' },
+  { to: '/bodega-st', label: 'Bodega ST (Restauración)', icon: Box, moduleKey: 'bodega_st' },
   { to: '/llamadas',                label: 'Control Llamadas',     icon: Phone,         moduleKey: 'llamadas'    },
   { to: '/bodega',                  label: 'Bodega',               icon: Warehouse,     moduleKey: 'bodega'      },
   { to: '/consumibles',             label: 'Consumibles',          icon: Package,       moduleKey: 'consumibles' },
@@ -230,7 +230,7 @@ export function Sidebar() {
 
       {/* Nav */}
       <nav style={{ flex: 1, padding: '10px 0', overflowY: 'auto', overflowX: 'hidden' }}>
-        {NAV_ITEMS.filter(item => ['void', 'bodega_st'].includes(item.moduleKey as string) || hasModule(item.moduleKey)).map(({ to, label, icon: Icon, moduleKey }) => {
+        {NAV_ITEMS.filter(item => hasModule(item.moduleKey)).map(({ to, label, icon: Icon, moduleKey }) => {
           const badge = moduleKey === 'tareas' ? tareasBadge : moduleKey === 'calibraciones' ? calibracionesBadge : 0
           return (
             <NavLink
