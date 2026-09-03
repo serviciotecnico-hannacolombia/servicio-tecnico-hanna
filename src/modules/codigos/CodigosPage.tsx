@@ -33,6 +33,9 @@ interface AccesorioItem {
   accesorio_codigo: string
   descripcion: string | null
   descripcion_es: string | null
+  origen: 'catalogo' | 'manual'
+  usuario: string | null
+  created_at: string
 }
 
 interface CatalogoItem {
@@ -74,7 +77,7 @@ function useCodigosData() {
 
   const accQuery = useQuery<AccesorioItem[]>({
     queryKey: ['codigos-accesorios'],
-    queryFn: () => fetchAllRows<AccesorioItem>('codigos_accesorios', 'id, equipo_codigo, accesorio_codigo, descripcion, descripcion_es', 'equipo_codigo'),
+    queryFn: () => fetchAllRows<AccesorioItem>('codigos_accesorios', 'id, equipo_codigo, accesorio_codigo, descripcion, descripcion_es, origen, usuario, created_at', 'equipo_codigo'),
     staleTime: 10 * 60 * 1000,
   })
 
@@ -756,16 +759,23 @@ function TabPrecios({ items }: { items: SpPriceItem[] }) {
 
 // ─── Tab Accesorios ───────────────────────────────────────────────────────────
 
-type AccesoriosResultado =
-  | { tipo: 'equipo', codigo: string, filas: AccesorioItem[] }
-  | { tipo: 'accesorio', codigo: string, filas: AccesorioItem[] }
+type AccesoriosResultado = { tipo: 'equipo' | 'accesorio', codigo: string }
 
 function TabAccesorios({ items, catalogo, spItems }: { items: AccesorioItem[], catalogo: CatalogoItem[], spItems: SpPriceItem[] }) {
+  const { hasCapability, displayName } = useUser()
+  const canEditar = hasCapability('editar_codigos')
+  const qc = useQueryClient()
+
   const [query, setQuery]         = useState('')
   const [open, setOpen]           = useState(false)
   const [focused, setFocused]     = useState(-1)
   const [resultado, setResultado] = useState<AccesoriosResultado | null>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
+
+  const [showAddAcc, setShowAddAcc]   = useState(false)
+  const [addAccCodigo, setAddAccCodigo] = useState('')
+  const [addAccDesc, setAddAccDesc]     = useState('')
+  const [addAccSaving, setAddAccSaving] = useState(false)
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -793,11 +803,15 @@ function TabAccesorios({ items, catalogo, spItems }: { items: AccesorioItem[], c
     setQuery(codigo)
     setOpen(false)
     setFocused(-1)
-    setResultado({
-      tipo, codigo,
-      filas: items.filter(r => tipo === 'equipo' ? r.equipo_codigo === codigo : r.accesorio_codigo === codigo),
-    })
+    setResultado({ tipo, codigo })
   }
+
+  // Derivado de `items` en cada render (no guardado en el resultado) para que
+  // una fila agregada por saveAddAcc aparezca de inmediato sin tener que
+  // rebuscar — el estado solo recuerda qué se buscó, no la lista congelada.
+  const filas = resultado
+    ? items.filter(r => resultado.tipo === 'equipo' ? r.equipo_codigo === resultado.codigo : r.accesorio_codigo === resultado.codigo)
+    : []
 
   const select = (i: number) => {
     const s = suggestions[i]
@@ -823,12 +837,36 @@ function TabAccesorios({ items, catalogo, spItems }: { items: AccesorioItem[], c
 
   const copiarLista = () => {
     if (!resultado) return
-    const lines = resultado.filas.map(f => {
+    const lines = filas.map(f => {
       const codigo = resultado.tipo === 'equipo' ? f.accesorio_codigo : f.equipo_codigo
       const desc = f.descripcion || ''
       return `- ${codigo}${desc ? ` — ${desc}` : ''}`
     })
     copy(lines.join('\n'), 'Lista')
+  }
+
+  const saveAddAcc = async () => {
+    if (!resultado || resultado.tipo !== 'equipo') return
+    const codigo = addAccCodigo.trim()
+    if (!codigo) { toast.error('El código del accesorio es obligatorio'); return }
+    setAddAccSaving(true)
+    const { data, error } = await supabase.from('codigos_accesorios')
+      .upsert(
+        { equipo_codigo: resultado.codigo, accesorio_codigo: codigo, descripcion: addAccDesc.trim() || null, origen: 'manual', usuario: displayName || null },
+        { onConflict: 'equipo_codigo,accesorio_codigo' }
+      )
+      .select('id, equipo_codigo, accesorio_codigo, descripcion, descripcion_es, origen, usuario, created_at')
+      .single()
+    setAddAccSaving(false)
+    if (error || !data) { toast.error('Error al guardar'); return }
+    qc.setQueryData<AccesorioItem[]>(['codigos-accesorios'], old => {
+      if (!old) return old
+      const i = old.findIndex(r => r.equipo_codigo === data.equipo_codigo && r.accesorio_codigo === data.accesorio_codigo)
+      return i >= 0 ? old.map((r, idx) => idx === i ? data : r) : [...old, data]
+    })
+    toast.success(`Accesorio "${codigo}" agregado a ${resultado.codigo}`)
+    setShowAddAcc(false)
+    setAddAccCodigo(''); setAddAccDesc('')
   }
 
   return (
@@ -897,31 +935,46 @@ function TabAccesorios({ items, catalogo, spItems }: { items: AccesorioItem[], c
                 </span>
               )}
               <span style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>
-                {resultado.filas.length} {resultado.tipo === 'equipo' ? 'accesorio' : 'equipo'}{resultado.filas.length !== 1 ? 's' : ''}
+                {filas.length} {resultado.tipo === 'equipo' ? 'accesorio' : 'equipo'}{filas.length !== 1 ? 's' : ''}
               </span>
             </div>
-            <button
-              onClick={copiarLista}
-              disabled={resultado.filas.length === 0}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                padding: '6px 12px', borderRadius: 7, border: '1px solid var(--border)',
-                background: 'var(--surface2)', color: 'var(--muted)',
-                fontFamily: 'var(--mono)', fontSize: '0.72rem',
-                cursor: resultado.filas.length === 0 ? 'not-allowed' : 'pointer',
-                opacity: resultado.filas.length === 0 ? 0.5 : 1,
-              }}
-            >
-              <Copy size={12} /> Copiar lista
-            </button>
+            <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+              {resultado.tipo === 'equipo' && canEditar && (
+                <button
+                  onClick={() => { setAddAccCodigo(''); setAddAccDesc(''); setShowAddAcc(true) }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 6,
+                    padding: '6px 12px', borderRadius: 7, border: '1px solid var(--accent)',
+                    background: 'var(--accent-bg)', color: 'var(--accent)',
+                    fontFamily: 'var(--mono)', fontSize: '0.72rem', cursor: 'pointer',
+                  }}
+                >
+                  <Plus size={12} /> Agregar accesorio
+                </button>
+              )}
+              <button
+                onClick={copiarLista}
+                disabled={filas.length === 0}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  padding: '6px 12px', borderRadius: 7, border: '1px solid var(--border)',
+                  background: 'var(--surface2)', color: 'var(--muted)',
+                  fontFamily: 'var(--mono)', fontSize: '0.72rem',
+                  cursor: filas.length === 0 ? 'not-allowed' : 'pointer',
+                  opacity: filas.length === 0 ? 0.5 : 1,
+                }}
+              >
+                <Copy size={12} /> Copiar lista
+              </button>
+            </div>
           </div>
 
-          {resultado.filas.length === 0 ? (
+          {filas.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '32px 20px', color: 'var(--muted)', fontSize: '0.875rem' }}>
               {resultado.tipo === 'equipo' ? 'Este equipo no tiene accesorios listados en el catálogo.' : 'No se encontraron equipos para este accesorio.'}
             </div>
           ) : (
-            resultado.filas.map((f, i) => {
+            filas.map((f, i) => {
               const codigoFila = resultado.tipo === 'equipo' ? f.accesorio_codigo : f.equipo_codigo
               const familia = catalogoPorCodigo.get(codigoFila.toLowerCase())?.familia
               const precio = precioPorCodigo.get(codigoFila.toLowerCase())
@@ -931,7 +984,7 @@ function TabAccesorios({ items, catalogo, spItems }: { items: AccesorioItem[], c
                   style={{
                     display: 'flex', alignItems: 'center', gap: 12,
                     padding: '11px 18px',
-                    borderBottom: i < resultado.filas.length - 1 ? '1px solid var(--border)' : 'none',
+                    borderBottom: i < filas.length - 1 ? '1px solid var(--border)' : 'none',
                     cursor: 'pointer', transition: 'background .12s',
                   }}
                   title={resultado.tipo === 'equipo' ? `Ver equipos que usan ${codigoFila}` : `Ver accesorios de ${codigoFila}`}
@@ -947,6 +1000,19 @@ function TabAccesorios({ items, catalogo, spItems }: { items: AccesorioItem[], c
                       {familia && (
                         <span style={{ fontSize: '0.66rem', color: 'var(--muted)', fontFamily: 'var(--mono)' }}>
                           {familia}
+                        </span>
+                      )}
+                      {f.origen === 'manual' && (
+                        <span
+                          onClick={e => e.stopPropagation()}
+                          title={`Agregado manualmente${f.usuario ? ` por ${f.usuario}` : ''} — ${new Date(f.created_at).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })}`}
+                          style={{
+                            fontSize: '0.62rem', fontFamily: 'var(--mono)', fontWeight: 600,
+                            color: '#92400e', background: '#fef3c7', border: '1px solid #fbbf24',
+                            padding: '1px 8px', borderRadius: 8, cursor: 'help', flexShrink: 0,
+                          }}
+                        >
+                          🧪 Agregado manualmente
                         </span>
                       )}
                     </div>
@@ -973,6 +1039,57 @@ function TabAccesorios({ items, catalogo, spItems }: { items: AccesorioItem[], c
             })
           )}
         </div>
+      )}
+
+      {showAddAcc && resultado && resultado.tipo === 'equipo' && (
+        <Modal title={`Agregar accesorio a ${resultado.codigo}`} onClose={() => { if (!addAccSaving) setShowAddAcc(false) }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <label style={{ fontSize: '0.72rem', fontFamily: 'var(--mono)', textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--muted)' }}>
+                Código del accesorio<span style={{ color: 'var(--red)', marginLeft: 3 }}>*</span>
+              </label>
+              <input
+                autoFocus
+                value={addAccCodigo}
+                onChange={e => setAddAccCodigo(e.target.value)}
+                placeholder="ej: HI720032"
+                style={{
+                  width: '100%', boxSizing: 'border-box', padding: '9px 12px',
+                  border: '1.5px solid var(--border)', borderRadius: 'var(--radius-sm)',
+                  background: 'var(--surface2)', color: 'var(--text)',
+                  fontFamily: 'var(--mono)', fontSize: '0.875rem', outline: 'none',
+                }}
+              />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <label style={{ fontSize: '0.72rem', fontFamily: 'var(--mono)', textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--muted)' }}>
+                Descripción
+              </label>
+              <input
+                value={addAccDesc}
+                onChange={e => setAddAccDesc(e.target.value)}
+                placeholder="Opcional"
+                onKeyDown={e => { if (e.key === 'Enter') saveAddAcc() }}
+                style={{
+                  width: '100%', boxSizing: 'border-box', padding: '9px 12px',
+                  border: '1.5px solid var(--border)', borderRadius: 'var(--radius-sm)',
+                  background: 'var(--surface2)', color: 'var(--text)',
+                  fontFamily: 'var(--sans)', fontSize: '0.875rem', outline: 'none',
+                }}
+              />
+            </div>
+            <p style={{ fontSize: '0.72rem', color: 'var(--muted)', margin: 0 }}>
+              Se marcará con el tag 🧪 "Agregado manualmente" para distinguirlo del catálogo oficial de Hanna.
+              Si el código ya está registrado como compatible con {resultado.codigo}, esto solo actualiza su descripción.
+            </p>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 8 }}>
+              <Button variant="ghost" onClick={() => setShowAddAcc(false)} disabled={addAccSaving}>Cancelar</Button>
+              <Button onClick={saveAddAcc} disabled={addAccSaving || !addAccCodigo.trim()}>
+                {addAccSaving ? <Spinner size={14} /> : 'Guardar'}
+              </Button>
+            </div>
+          </div>
+        </Modal>
       )}
     </div>
   )
