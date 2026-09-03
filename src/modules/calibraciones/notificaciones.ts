@@ -1,16 +1,10 @@
-// Dispara la notificación a Power Automate ante un cambio de estado de una
-// orden — vía la Edge Function calibraciones-notificar, que reenvía al
-// webhook (guardado como secret, nunca expuesto aquí). No bloquea el guardado
+// Dispara la notificación por correo ante un cambio de estado de una orden
+// — vía la Edge Function calibraciones-notificar, que envía directamente con
+// Resend (al asesor, con copia a Servicio Técnico). No bloquea el guardado
 // de la orden: los errores solo quedan en consola.
 import { supabase } from '../../lib/supabase'
-import type { OrdenCalibracion } from '../../types'
-
-// Apagado a propósito: el flujo de Power Automate requiere OAuth de Entra ID
-// (URL "Direct API") que todavía no está resuelto del lado de IT — hasta que
-// eso se defina, la función y el secret quedan listos pero sin dispararse,
-// para no llenar la consola de errores 401 en cada cambio de estado. Cuando
-// IT confirme cómo autenticar la llamada, poner esto en `true`.
-const NOTIFICACIONES_HABILITADAS = false
+import { ESTADO_LABEL } from './hooks/useCalibraciones'
+import type { EstadoCalibracion, OrdenCalibracion } from '../../types'
 
 export function notificarCambioEstado(
   ordenId: string,
@@ -19,8 +13,9 @@ export function notificarCambioEstado(
   orden: Pick<OrdenCalibracion, 'cliente' | 'numero_oc' | 'correo_asesor'>,
   usuario: string | null,
 ) {
-  if (!NOTIFICACIONES_HABILITADAS) return
   if (!orden.correo_asesor) return
+
+  const label = (estado: string) => ESTADO_LABEL[estado as EstadoCalibracion] || estado
 
   supabase.functions.invoke('calibraciones-notificar', {
     body: {
@@ -28,8 +23,8 @@ export function notificarCambioEstado(
       cliente: orden.cliente,
       numeroOc: orden.numero_oc,
       correoAsesor: orden.correo_asesor,
-      estadoAnterior: estadoAnterior || null,
-      estadoNuevo,
+      estadoAnterior: estadoAnterior ? label(estadoAnterior) : null,
+      estadoNuevo: label(estadoNuevo),
       ordenUrl: `${window.location.origin}/calibraciones/${ordenId}`,
       usuario,
     },
@@ -42,6 +37,6 @@ export function notificarCambioEstado(
     if (context) {
       try { motivo = (await context.clone().json()).error ?? motivo } catch { /* no era JSON */ }
     }
-    console.error('No se pudo notificar el cambio de estado a Power Automate:', motivo)
+    console.error('No se pudo notificar el cambio de estado:', motivo)
   })
 }

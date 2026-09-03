@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import Papa from 'papaparse'
 import { Search, Warehouse, AlertTriangle, ArrowRightLeft, Mail, CheckCircle2, Download, Upload, Trash2, X, ListTodo, MapPinOff, Pencil, MoreVertical } from 'lucide-react'
 import { toast } from 'sonner'
-import { supabase } from '../../lib/supabase'
+import { supabase, fetchAllRows } from '../../lib/supabase'
 import { Header } from '../../components/layout/Header'
 import { Card } from '../../components/ui/Card'
 import { Modal } from '../../components/ui/Modal'
@@ -119,24 +119,14 @@ function esZonaRotativa(z: OtstBodegaZona): boolean {
 function useBodega() {
   return useQuery({
     queryKey: ['otst_bodega'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('otst_bodega').select('*').order('created_at', { ascending: false })
-      if (error) throw error
-      return data as OtstBodega[]
-    },
+    queryFn: () => fetchAllRows<OtstBodega>('otst_bodega', q => q.order('created_at', { ascending: false })),
   })
 }
 
 function useMovimientos() {
   return useQuery({
     queryKey: ['otst_bodega_movimientos'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('otst_bodega_movimientos').select('*').order('created_at', { ascending: false })
-      if (error) throw error
-      return data as OtstBodegaMovimiento[]
-    },
+    queryFn: () => fetchAllRows<OtstBodegaMovimiento>('otst_bodega_movimientos', q => q.order('created_at', { ascending: false })),
   })
 }
 
@@ -167,12 +157,7 @@ function useConfig() {
 function usePendientes() {
   return useQuery({
     queryKey: ['otst_bodega_pendientes'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('otst_bodega_pendientes').select('*').order('created_at', { ascending: false })
-      if (error) throw error
-      return data as OtstBodegaPendiente[]
-    },
+    queryFn: () => fetchAllRows<OtstBodegaPendiente>('otst_bodega_pendientes', q => q.order('created_at', { ascending: false })),
   })
 }
 

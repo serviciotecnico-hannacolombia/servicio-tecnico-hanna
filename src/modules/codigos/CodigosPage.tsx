@@ -27,6 +27,23 @@ interface CodInetItem {
   codigo_calibracion: string | null
 }
 
+interface AccesorioItem {
+  id: string
+  equipo_codigo: string
+  accesorio_codigo: string
+  descripcion: string | null
+  descripcion_es: string | null
+  origen: 'catalogo' | 'manual'
+  usuario: string | null
+  created_at: string
+}
+
+interface CatalogoItem {
+  codigo: string
+  familia: string | null
+  descripcion: string | null
+}
+
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
 // PostgREST limita cada respuesta a 1000 filas por defecto — sin paginar, cualquier
@@ -58,14 +75,31 @@ function useCodigosData() {
     staleTime: 10 * 60 * 1000,
   })
 
+  const accQuery = useQuery<AccesorioItem[]>({
+    queryKey: ['codigos-accesorios'],
+    queryFn: () => fetchAllRows<AccesorioItem>('codigos_accesorios', 'id, equipo_codigo, accesorio_codigo, descripcion, descripcion_es, origen, usuario, created_at', 'equipo_codigo'),
+    staleTime: 10 * 60 * 1000,
+  })
+
+  const catalogoQuery = useQuery<CatalogoItem[]>({
+    queryKey: ['codigos-catalogo'],
+    queryFn: () => fetchAllRows<CatalogoItem>('codigos_catalogo', 'codigo, familia, descripcion', 'codigo'),
+    staleTime: 10 * 60 * 1000,
+  })
+
   return {
-    data: spQuery.data && inetQuery.data
-      ? { spPrice: { items: spQuery.data }, codInet: { items: inetQuery.data } }
+    data: spQuery.data && inetQuery.data && accQuery.data && catalogoQuery.data
+      ? {
+          spPrice: { items: spQuery.data },
+          codInet: { items: inetQuery.data },
+          accesorios: { items: accQuery.data },
+          catalogo: { items: catalogoQuery.data },
+        }
       : undefined,
-    isLoading: spQuery.isLoading || inetQuery.isLoading,
-    error: spQuery.error || inetQuery.error,
-    refetch: () => { spQuery.refetch(); inetQuery.refetch() },
-    isFetching: spQuery.isFetching || inetQuery.isFetching,
+    isLoading: spQuery.isLoading || inetQuery.isLoading || accQuery.isLoading || catalogoQuery.isLoading,
+    error: spQuery.error || inetQuery.error || accQuery.error || catalogoQuery.error,
+    refetch: () => { spQuery.refetch(); inetQuery.refetch(); accQuery.refetch(); catalogoQuery.refetch() },
+    isFetching: spQuery.isFetching || inetQuery.isFetching || accQuery.isFetching || catalogoQuery.isFetching,
   }
 }
 
@@ -723,6 +757,344 @@ function TabPrecios({ items }: { items: SpPriceItem[] }) {
   )
 }
 
+// ─── Tab Accesorios ───────────────────────────────────────────────────────────
+
+type AccesoriosResultado = { tipo: 'equipo' | 'accesorio', codigo: string }
+
+function TabAccesorios({ items, catalogo, spItems }: { items: AccesorioItem[], catalogo: CatalogoItem[], spItems: SpPriceItem[] }) {
+  const { hasCapability, displayName } = useUser()
+  const canEditar = hasCapability('editar_codigos')
+  const qc = useQueryClient()
+
+  const [query, setQuery]         = useState('')
+  const [open, setOpen]           = useState(false)
+  const [focused, setFocused]     = useState(-1)
+  const [resultado, setResultado] = useState<AccesoriosResultado | null>(null)
+  const wrapRef = useRef<HTMLDivElement>(null)
+
+  const [showAddAcc, setShowAddAcc]   = useState(false)
+  const [addAccCodigo, setAddAccCodigo] = useState('')
+  const [addAccDesc, setAddAccDesc]     = useState('')
+  const [addAccSaving, setAddAccSaving] = useState(false)
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  const catalogoPorCodigo = new Map(catalogo.map(c => [c.codigo.toLowerCase(), c]))
+  const precioPorCodigo = new Map<string, number>()
+  spItems.forEach(r => { if (!precioPorCodigo.has(r.code.toLowerCase())) precioPorCodigo.set(r.code.toLowerCase(), Number(r.precio_a_cobrar) || 0) })
+
+  const equipoCodigos    = [...new Set(items.map(r => r.equipo_codigo))]
+  const accesorioCodigos = [...new Set(items.map(r => r.accesorio_codigo))]
+
+  const suggestions = query.trim()
+    ? [
+        ...equipoCodigos.filter(c => c.toLowerCase().includes(query.toLowerCase())).slice(0, 12).map(c => ({ tipo: 'equipo' as const, codigo: c })),
+        ...accesorioCodigos.filter(c => c.toLowerCase().includes(query.toLowerCase())).slice(0, 12).map(c => ({ tipo: 'accesorio' as const, codigo: c })),
+      ].slice(0, 20)
+    : []
+
+  const buscar = (tipo: 'equipo' | 'accesorio', codigo: string) => {
+    setQuery(codigo)
+    setOpen(false)
+    setFocused(-1)
+    setResultado({ tipo, codigo })
+  }
+
+  // Derivado de `items` en cada render (no guardado en el resultado) para que
+  // una fila agregada por saveAddAcc aparezca de inmediato sin tener que
+  // rebuscar — el estado solo recuerda qué se buscó, no la lista congelada.
+  const filas = resultado
+    ? items.filter(r => resultado.tipo === 'equipo' ? r.equipo_codigo === resultado.codigo : r.accesorio_codigo === resultado.codigo)
+    : []
+
+  const select = (i: number) => {
+    const s = suggestions[i]
+    buscar(s.tipo, s.codigo)
+  }
+
+  const clear = () => { setQuery(''); setResultado(null); setOpen(false); setFocused(-1) }
+
+  const handleChange = (v: string) => {
+    setQuery(v)
+    setResultado(null)
+    setFocused(-1)
+    setOpen(!!v.trim())
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!open || !suggestions.length) return
+    if (e.key === 'ArrowDown') { e.preventDefault(); setFocused(f => Math.min(f + 1, suggestions.length - 1)) }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setFocused(f => Math.max(f - 1, 0)) }
+    else if (e.key === 'Enter' && focused >= 0) select(focused)
+    else if (e.key === 'Escape') setOpen(false)
+  }
+
+  const copiarLista = () => {
+    if (!resultado) return
+    const lines = filas.map(f => {
+      const codigo = resultado.tipo === 'equipo' ? f.accesorio_codigo : f.equipo_codigo
+      const desc = f.descripcion || ''
+      return `- ${codigo}${desc ? ` — ${desc}` : ''}`
+    })
+    copy(lines.join('\n'), 'Lista')
+  }
+
+  const saveAddAcc = async () => {
+    if (!resultado || resultado.tipo !== 'equipo') return
+    const codigo = addAccCodigo.trim()
+    if (!codigo) { toast.error('El código del accesorio es obligatorio'); return }
+    setAddAccSaving(true)
+    const { data, error } = await supabase.from('codigos_accesorios')
+      .upsert(
+        { equipo_codigo: resultado.codigo, accesorio_codigo: codigo, descripcion: addAccDesc.trim() || null, origen: 'manual', usuario: displayName || null },
+        { onConflict: 'equipo_codigo,accesorio_codigo' }
+      )
+      .select('id, equipo_codigo, accesorio_codigo, descripcion, descripcion_es, origen, usuario, created_at')
+      .single()
+    setAddAccSaving(false)
+    if (error || !data) { toast.error('Error al guardar'); return }
+    qc.setQueryData<AccesorioItem[]>(['codigos-accesorios'], old => {
+      if (!old) return old
+      const i = old.findIndex(r => r.equipo_codigo === data.equipo_codigo && r.accesorio_codigo === data.accesorio_codigo)
+      return i >= 0 ? old.map((r, idx) => idx === i ? data : r) : [...old, data]
+    })
+    toast.success(`Accesorio "${codigo}" agregado a ${resultado.codigo}`)
+    setShowAddAcc(false)
+    setAddAccCodigo(''); setAddAccDesc('')
+  }
+
+  return (
+    <div>
+      <Card title="Buscar por equipo o accesorio" style={{ overflow: 'visible' }}>
+        <div style={{ position: 'relative' }} ref={wrapRef as React.RefObject<HTMLDivElement>}>
+          <SearchInput
+            id="accesorios-input"
+            value={query}
+            onChange={handleChange}
+            onKeyDown={handleKeyDown}
+            onClear={clear}
+            placeholder="Código de equipo o de accesorio (ej: BL1.5, HI720032…)"
+          />
+          <SuggestDropdown
+            open={open && suggestions.length > 0}
+            focusedIdx={focused}
+            items={suggestions.map(s => ({
+              key: `${s.tipo}-${s.codigo}`,
+              label: s.codigo,
+              sub: s.tipo === 'equipo' ? 'Equipo' : 'Accesorio',
+            }))}
+            onSelect={select}
+          />
+        </div>
+        <p style={{ fontSize: '0.72rem', color: 'var(--muted)', fontFamily: 'var(--mono)', marginTop: 8, paddingLeft: 2 }}>
+          Escribe al menos 1 carácter — {equipoCodigos.length} equipos, {accesorioCodigos.length} accesorios en el catálogo
+        </p>
+      </Card>
+
+      {!resultado && !query && (
+        <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--muted)' }}>
+          <span style={{ fontSize: 36, display: 'block', marginBottom: 12, opacity: 0.5 }}>🧩</span>
+          <p style={{ fontSize: '0.875rem' }}>Busca un equipo para ver sus accesorios compatibles, o un código de accesorio para ver en qué equipos se usa.</p>
+        </div>
+      )}
+
+      {query && !resultado && (
+        <div style={{ textAlign: 'center', padding: '32px 20px', color: 'var(--muted)' }}>
+          <p style={{ fontSize: '0.875rem' }}>
+            No se encontró ningún equipo o accesorio con <strong style={{ color: 'var(--text)' }}>"{query}"</strong>
+          </p>
+        </div>
+      )}
+
+      {resultado && (
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
+          <div style={{
+            padding: '14px 18px', borderBottom: '1px solid var(--border)',
+            display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'space-between',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              <span style={{ fontFamily: 'var(--mono)', fontSize: '1.05rem', fontWeight: 700, color: 'var(--accent)' }}>
+                {resultado.codigo}
+              </span>
+              <span style={{
+                fontSize: '0.68rem', color: 'var(--muted)', padding: '2px 10px',
+                borderRadius: 10, background: 'var(--surface2)', border: '1px solid var(--border)',
+                fontFamily: 'var(--mono)', textTransform: 'uppercase', letterSpacing: '0.06em',
+              }}>
+                {resultado.tipo === 'equipo' ? 'Equipo' : 'Accesorio'}
+              </span>
+              {catalogoPorCodigo.get(resultado.codigo.toLowerCase())?.familia && (
+                <span style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>
+                  {catalogoPorCodigo.get(resultado.codigo.toLowerCase())?.familia}
+                </span>
+              )}
+              <span style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>
+                {filas.length} {resultado.tipo === 'equipo' ? 'accesorio' : 'equipo'}{filas.length !== 1 ? 's' : ''}
+              </span>
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+              {resultado.tipo === 'equipo' && canEditar && (
+                <button
+                  onClick={() => { setAddAccCodigo(''); setAddAccDesc(''); setShowAddAcc(true) }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 6,
+                    padding: '6px 12px', borderRadius: 7, border: '1px solid var(--accent)',
+                    background: 'var(--accent-bg)', color: 'var(--accent)',
+                    fontFamily: 'var(--mono)', fontSize: '0.72rem', cursor: 'pointer',
+                  }}
+                >
+                  <Plus size={12} /> Agregar accesorio
+                </button>
+              )}
+              <button
+                onClick={copiarLista}
+                disabled={filas.length === 0}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  padding: '6px 12px', borderRadius: 7, border: '1px solid var(--border)',
+                  background: 'var(--surface2)', color: 'var(--muted)',
+                  fontFamily: 'var(--mono)', fontSize: '0.72rem',
+                  cursor: filas.length === 0 ? 'not-allowed' : 'pointer',
+                  opacity: filas.length === 0 ? 0.5 : 1,
+                }}
+              >
+                <Copy size={12} /> Copiar lista
+              </button>
+            </div>
+          </div>
+
+          {filas.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '32px 20px', color: 'var(--muted)', fontSize: '0.875rem' }}>
+              {resultado.tipo === 'equipo' ? 'Este equipo no tiene accesorios listados en el catálogo.' : 'No se encontraron equipos para este accesorio.'}
+            </div>
+          ) : (
+            filas.map((f, i) => {
+              const codigoFila = resultado.tipo === 'equipo' ? f.accesorio_codigo : f.equipo_codigo
+              const familia = catalogoPorCodigo.get(codigoFila.toLowerCase())?.familia
+              const precio = precioPorCodigo.get(codigoFila.toLowerCase())
+              return (
+                <div
+                  key={f.id}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 12,
+                    padding: '11px 18px',
+                    borderBottom: i < filas.length - 1 ? '1px solid var(--border)' : 'none',
+                    cursor: 'pointer', transition: 'background .12s',
+                  }}
+                  title={resultado.tipo === 'equipo' ? `Ver equipos que usan ${codigoFila}` : `Ver accesorios de ${codigoFila}`}
+                  onClick={() => buscar(resultado.tipo === 'equipo' ? 'accesorio' : 'equipo', codigoFila)}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--surface2)' }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
+                >
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                      <span style={{ fontFamily: 'var(--mono)', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text)' }}>
+                        {codigoFila}
+                      </span>
+                      {familia && (
+                        <span style={{ fontSize: '0.66rem', color: 'var(--muted)', fontFamily: 'var(--mono)' }}>
+                          {familia}
+                        </span>
+                      )}
+                      {f.origen === 'manual' && (
+                        <span
+                          onClick={e => e.stopPropagation()}
+                          title={`Agregado manualmente${f.usuario ? ` por ${f.usuario}` : ''} — ${new Date(f.created_at).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })}`}
+                          style={{
+                            fontSize: '0.62rem', fontFamily: 'var(--mono)', fontWeight: 600,
+                            color: '#92400e', background: '#fef3c7', border: '1px solid #fbbf24',
+                            padding: '1px 8px', borderRadius: 8, cursor: 'help', flexShrink: 0,
+                          }}
+                        >
+                          🧪 Agregado manualmente
+                        </span>
+                      )}
+                    </div>
+                    {f.descripcion && (
+                      <div style={{ fontSize: '0.76rem', color: 'var(--muted)', marginTop: 2 }}>
+                        {f.descripcion}
+                      </div>
+                    )}
+                  </div>
+                  {precio != null && (
+                    <span style={{
+                      fontFamily: 'var(--mono)', fontSize: '0.78rem', fontWeight: 700,
+                      color: 'var(--accent)', padding: '3px 10px', borderRadius: 8,
+                      background: 'var(--accent-bg)', flexShrink: 0,
+                    }}>
+                      {fmtCOP(precio)}
+                    </span>
+                  )}
+                  <div onClick={e => e.stopPropagation()}>
+                    <CopyBtn value={codigoFila} label="Código" />
+                  </div>
+                </div>
+              )
+            })
+          )}
+        </div>
+      )}
+
+      {showAddAcc && resultado && resultado.tipo === 'equipo' && (
+        <Modal title={`Agregar accesorio a ${resultado.codigo}`} onClose={() => { if (!addAccSaving) setShowAddAcc(false) }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <label style={{ fontSize: '0.72rem', fontFamily: 'var(--mono)', textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--muted)' }}>
+                Código del accesorio<span style={{ color: 'var(--red)', marginLeft: 3 }}>*</span>
+              </label>
+              <input
+                autoFocus
+                value={addAccCodigo}
+                onChange={e => setAddAccCodigo(e.target.value)}
+                placeholder="ej: HI720032"
+                style={{
+                  width: '100%', boxSizing: 'border-box', padding: '9px 12px',
+                  border: '1.5px solid var(--border)', borderRadius: 'var(--radius-sm)',
+                  background: 'var(--surface2)', color: 'var(--text)',
+                  fontFamily: 'var(--mono)', fontSize: '0.875rem', outline: 'none',
+                }}
+              />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <label style={{ fontSize: '0.72rem', fontFamily: 'var(--mono)', textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--muted)' }}>
+                Descripción
+              </label>
+              <input
+                value={addAccDesc}
+                onChange={e => setAddAccDesc(e.target.value)}
+                placeholder="Opcional"
+                onKeyDown={e => { if (e.key === 'Enter') saveAddAcc() }}
+                style={{
+                  width: '100%', boxSizing: 'border-box', padding: '9px 12px',
+                  border: '1.5px solid var(--border)', borderRadius: 'var(--radius-sm)',
+                  background: 'var(--surface2)', color: 'var(--text)',
+                  fontFamily: 'var(--sans)', fontSize: '0.875rem', outline: 'none',
+                }}
+              />
+            </div>
+            <p style={{ fontSize: '0.72rem', color: 'var(--muted)', margin: 0 }}>
+              Se marcará con el tag 🧪 "Agregado manualmente" para distinguirlo del catálogo oficial de Hanna.
+              Si el código ya está registrado como compatible con {resultado.codigo}, esto solo actualiza su descripción.
+            </p>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 8 }}>
+              <Button variant="ghost" onClick={() => setShowAddAcc(false)} disabled={addAccSaving}>Cancelar</Button>
+              <Button onClick={saveAddAcc} disabled={addAccSaving || !addAccCodigo.trim()}>
+                {addAccSaving ? <Spinner size={14} /> : 'Guardar'}
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+    </div>
+  )
+}
+
 // ─── CSV parser ───────────────────────────────────────────────────────────────
 
 function parseCSV(text: string): Record<string, string>[] {
@@ -798,7 +1170,9 @@ interface PlanPrecios {
   invalidas: { code: string, valor: string }[]
 }
 
-function TabGestion({ items, spItems }: { items: CodInetItem[], spItems: SpPriceItem[] }) {
+interface AccesorioCsvRow { equipo_codigo: string, accesorio_codigo: string, descripcion: string, descripcion_es: string | null }
+
+function TabGestion({ items, spItems, accItems }: { items: CodInetItem[], spItems: SpPriceItem[], accItems: AccesorioItem[] }) {
   const qc = useQueryClient()
 
   const [search, setSearch]     = useState('')
@@ -821,6 +1195,13 @@ function TabGestion({ items, spItems }: { items: CodInetItem[], spItems: SpPrice
   const [csvErrorPrecios, setCsvErrorPrecios]     = useState('')
   const [importingPrecios, setImportingPrecios]   = useState(false)
   const [importMsgPrecios, setImportMsgPrecios]   = useState('')
+
+  const [showImportAcc, setShowImportAcc]   = useState(false)
+  const [csvRowsAcc, setCsvRowsAcc]         = useState<AccesorioCsvRow[] | null>(null)
+  const [csvErrorAcc, setCsvErrorAcc]       = useState('')
+  const [importModeAcc, setImportModeAcc]   = useState<'upsert' | 'replace'>('upsert')
+  const [importingAcc, setImportingAcc]     = useState(false)
+  const [importMsgAcc, setImportMsgAcc]     = useState('')
 
   const PAGE = 25
   const filtered = items.filter(r =>
@@ -1009,6 +1390,63 @@ function TabGestion({ items, spItems }: { items: CodInetItem[], spItems: SpPrice
     }
   }
 
+  // ── CSV import de accesorios (codigos_accesorios) ──
+  const handleFileAcc = (file: File) => {
+    setCsvErrorAcc(''); setCsvRowsAcc(null); setImportMsgAcc('')
+    const reader = new FileReader()
+    reader.onload = e => {
+      const text = e.target?.result as string
+      const rows = parseCSV(text)
+      if (!rows.length) { setCsvErrorAcc('El archivo está vacío o no tiene el formato correcto.'); return }
+      const headers = Object.keys(rows[0])
+      const equipoKey    = headers.find(h => h === 'equipo_codigo' || h === 'code' || h === 'código')
+      const accesorioKey = headers.find(h => h === 'accesorio_codigo' || h === 'accessory' || h === 'accesorio')
+      if (!equipoKey || !accesorioKey) {
+        setCsvErrorAcc('No se encontraron las columnas "equipo_codigo" y "accesorio_codigo". Revisa el encabezado del CSV.')
+        return
+      }
+      const descKey   = headers.find(h => h === 'descripcion' || h === 'descripción' || h === 'description')
+      const descEsKey = headers.find(h => h === 'descripcion_es' || h === 'descripción en español')
+      const rowsParsed = rows
+        .map(r => ({
+          equipo_codigo: (r[equipoKey] || '').trim(),
+          accesorio_codigo: (r[accesorioKey] || '').trim(),
+          descripcion: descKey ? (r[descKey] || '').trim() : '',
+          descripcion_es: descEsKey ? (r[descEsKey] || '').trim() || null : null,
+        }))
+        .filter(r => r.equipo_codigo && r.accesorio_codigo && r.accesorio_codigo.toLowerCase() !== 'no accessory')
+      if (!rowsParsed.length) { setCsvErrorAcc('No se encontraron filas válidas (equipo_codigo y accesorio_codigo son obligatorios).'); return }
+      setCsvRowsAcc(rowsParsed)
+    }
+    reader.readAsText(file, 'UTF-8')
+  }
+
+  const runImportAcc = async () => {
+    if (!csvRowsAcc?.length) return
+    setImportingAcc(true)
+    try {
+      if (importModeAcc === 'replace') {
+        setImportMsgAcc('Eliminando registros existentes…')
+        const { error } = await supabase.from('codigos_accesorios').delete().not('equipo_codigo', 'is', null)
+        if (error) throw error
+      }
+      const BATCH = 500
+      for (let i = 0; i < csvRowsAcc.length; i += BATCH) {
+        const batch = csvRowsAcc.slice(i, i + BATCH)
+        const { error } = await supabase.from('codigos_accesorios').upsert(batch, { onConflict: 'equipo_codigo,accesorio_codigo' })
+        if (error) throw error
+        setImportMsgAcc(`Importando… ${Math.min(i + BATCH, csvRowsAcc.length)} / ${csvRowsAcc.length}`)
+      }
+      await qc.invalidateQueries({ queryKey: ['codigos-accesorios'] })
+      toast.success(`${csvRowsAcc.length} pares equipo↔accesorio importados correctamente`)
+      setShowImportAcc(false); setCsvRowsAcc(null); setImportMsgAcc('')
+    } catch {
+      toast.error('Error durante la importación')
+    } finally {
+      setImportingAcc(false)
+    }
+  }
+
   const formField = (label: string, key: keyof CodInetItem, required?: boolean) => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
       <label style={{ fontSize: '0.72rem', fontFamily: 'var(--mono)', textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--muted)' }}>
@@ -1056,6 +1494,9 @@ function TabGestion({ items, spItems }: { items: CodInetItem[], spItems: SpPrice
         </Button>
         <Button size="sm" variant="ghost" onClick={() => setShowImportPrecios(true)} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <Upload size={13} /> Actualizar precios (CSV)
+        </Button>
+        <Button size="sm" variant="ghost" onClick={() => setShowImportAcc(true)} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Upload size={13} /> Actualizar accesorios (CSV)
         </Button>
       </div>
 
@@ -1386,6 +1827,113 @@ SP122-1,HI122,HI122 Main Board Spare Part,"$1,214,500.00"`}
           </div>
         </Modal>
       )}
+
+      {/* Modal: Importar/actualizar accesorios (CSV) */}
+      {showImportAcc && (
+        <Modal
+          title="Actualizar accesorios — CSV"
+          onClose={() => { if (!importingAcc) { setShowImportAcc(false); setCsvRowsAcc(null); setCsvErrorAcc(''); setImportMsgAcc('') } }}
+          width={640}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+            <div style={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 8, padding: 14 }}>
+              <p style={{ fontSize: '0.78rem', fontFamily: 'var(--mono)', color: 'var(--muted)', marginBottom: 8, fontWeight: 600 }}>FORMATO ESPERADO DEL CSV:</p>
+              <pre style={{ fontSize: '0.72rem', fontFamily: 'var(--mono)', color: 'var(--text)', margin: 0, overflowX: 'auto' }}>
+{`equipo_codigo,accesorio_codigo,descripcion
+BL1.5,HI720032,"Pump spare part, LDPE hose, 100 m"
+BL1.5,HI721003,"Pump spare part, Glass ball with O-ring"`}
+              </pre>
+              <p style={{ fontSize: '0.7rem', color: 'var(--muted)', marginTop: 8, marginBottom: 0 }}>
+                • Si el archivo original es el Excel de accesorios de Hanna, exporta la hoja "Worksheet" como CSV UTF-8 (Excel → Guardar como → CSV UTF-8) — las columnas <code>Code</code>/<code>Accessory</code> también se reconocen.<br />
+                • Filas con <code>accesorio_codigo</code> = "No Accessory" se ignoran automáticamente.<br />
+                • Actualmente hay {accItems.length.toLocaleString('es-CO')} pares equipo↔accesorio cargados.
+              </p>
+            </div>
+
+            <div>
+              <label style={{ fontSize: '0.72rem', fontFamily: 'var(--mono)', textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--muted)', display: 'block', marginBottom: 8 }}>
+                Archivo CSV
+              </label>
+              <input
+                type="file"
+                accept=".csv,text/csv"
+                disabled={importingAcc}
+                onChange={e => { const f = e.target.files?.[0]; if (f) handleFileAcc(f) }}
+                style={{ fontSize: '0.875rem', color: 'var(--text)' }}
+              />
+              {csvErrorAcc && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, color: 'var(--red, #dc2626)', fontSize: '0.8rem' }}>
+                  <AlertTriangle size={14} />{csvErrorAcc}
+                </div>
+              )}
+            </div>
+
+            {csvRowsAcc && (
+              <div>
+                <p style={{ fontSize: '0.78rem', fontFamily: 'var(--mono)', color: 'var(--muted)', marginBottom: 8 }}>
+                  {csvRowsAcc.length} pares detectados — primeros 3:
+                </p>
+                <div style={{ background: 'var(--surface2)', borderRadius: 6, padding: 10, overflowX: 'auto' }}>
+                  <table style={{ borderCollapse: 'collapse', fontSize: '0.72rem', fontFamily: 'var(--mono)', width: '100%' }}>
+                    <thead>
+                      <tr>
+                        {['equipo_codigo', 'accesorio_codigo', 'descripcion'].map(h => (
+                          <th key={h} style={{ textAlign: 'left', padding: '4px 10px', color: 'var(--muted)', borderBottom: '1px solid var(--border)' }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {csvRowsAcc.slice(0, 3).map((r, i) => (
+                        <tr key={i}>
+                          <td style={{ padding: '4px 10px', color: 'var(--accent)' }}>{r.equipo_codigo}</td>
+                          <td style={{ padding: '4px 10px' }}>{r.accesorio_codigo}</td>
+                          <td style={{ padding: '4px 10px', maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.descripcion}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {csvRowsAcc && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <label style={{ fontSize: '0.72rem', fontFamily: 'var(--mono)', textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--muted)' }}>
+                  Modo de importación
+                </label>
+                {([['upsert', 'Actualizar / Agregar', 'Inserta los pares nuevos y actualiza los existentes. No borra nada.'], ['replace', 'Reemplazar todo', 'Elimina TODOS los pares equipo↔accesorio actuales y los sustituye por los del CSV.']] as const).map(([val, lbl, desc]) => (
+                  <label key={val} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', padding: '10px 12px', borderRadius: 8, border: `1.5px solid ${importModeAcc === val ? 'var(--accent)' : 'var(--border)'}`, background: importModeAcc === val ? 'var(--accent-bg)' : 'var(--surface2)' }}>
+                    <input type="radio" name="importModeAcc" value={val} checked={importModeAcc === val} onChange={() => setImportModeAcc(val)} style={{ marginTop: 2 }} />
+                    <div>
+                      <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text)' }}>{lbl}</div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--muted)', marginTop: 2 }}>{desc}</div>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            )}
+
+            {importModeAcc === 'replace' && csvRowsAcc && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderRadius: 8, background: '#fef3c7', border: '1px solid #fbbf24', color: '#92400e', fontSize: '0.78rem' }}>
+                <AlertTriangle size={15} /> Esta acción eliminará permanentemente todos los pares equipo↔accesorio actuales antes de importar.
+              </div>
+            )}
+
+            {importMsgAcc && (
+              <p style={{ fontSize: '0.8rem', fontFamily: 'var(--mono)', color: 'var(--accent)', margin: 0 }}>{importMsgAcc}</p>
+            )}
+
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <Button variant="ghost" onClick={() => { setShowImportAcc(false); setCsvRowsAcc(null); setCsvErrorAcc(''); setImportMsgAcc('') }} disabled={importingAcc}>
+                Cancelar
+              </Button>
+              <Button onClick={runImportAcc} disabled={!csvRowsAcc || importingAcc} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                {importingAcc ? <><Spinner size={14} /> {importMsgAcc || 'Importando…'}</> : <><Upload size={13} /> Importar {csvRowsAcc ? `(${csvRowsAcc.length})` : ''}</>}
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   )
 }
@@ -1396,14 +1944,17 @@ export function CodigosPage() {
   const { data, isLoading, error, refetch, isFetching } = useCodigosData()
   const { hasCapability } = useUser()
   const canGestion = hasCapability('gestion_codigos')
-  const [tab, setTab] = useState<'equipos' | 'precios' | 'gestion'>('equipos')
+  const [tab, setTab] = useState<'equipos' | 'precios' | 'accesorios' | 'gestion'>('equipos')
 
-  const inetItems  = data?.codInet.items ?? []
-  const spItems    = data?.spPrice.items ?? []
-  const inetCount  = inetItems.length
-  const priceCount = [...new Set(spItems.map(r => r.product).filter(Boolean))].length
+  const inetItems      = data?.codInet.items ?? []
+  const spItems        = data?.spPrice.items ?? []
+  const accItems        = data?.accesorios.items ?? []
+  const catalogoItems   = data?.catalogo.items ?? []
+  const inetCount       = inetItems.length
+  const priceCount      = [...new Set(spItems.map(r => r.product).filter(Boolean))].length
+  const accesoriosCount = accItems.length
 
-  const tabBtn = (key: 'equipos' | 'precios' | 'gestion', icon: string, label: string, count?: number) => (
+  const tabBtn = (key: 'equipos' | 'precios' | 'accesorios' | 'gestion', icon: string, label: string, count?: number) => (
     <button
       onClick={() => setTab(key)}
       style={{
@@ -1467,12 +2018,14 @@ export function CodigosPage() {
           }}>
             {tabBtn('equipos', '🔧', 'Equipos', inetCount)}
             {tabBtn('precios', '💰', 'Precios', priceCount)}
+            {tabBtn('accesorios', '🧩', 'Accesorios', accesoriosCount)}
             {canGestion && tabBtn('gestion', '⚙️', 'Gestión')}
           </div>
 
           {tab === 'equipos' && <TabEquipos items={data!.codInet.items} />}
           {tab === 'precios' && <TabPrecios items={data!.spPrice.items} />}
-          {tab === 'gestion' && canGestion && <TabGestion items={inetItems} spItems={spItems} />}
+          {tab === 'accesorios' && <TabAccesorios items={accItems} catalogo={catalogoItems} spItems={spItems} />}
+          {tab === 'gestion' && canGestion && <TabGestion items={inetItems} spItems={spItems} accItems={accItems} />}
         </>
       )}
     </div>
