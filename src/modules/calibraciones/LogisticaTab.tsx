@@ -17,8 +17,11 @@ import {
   grupoEstado, ESTADO_LABEL, estaVencido, proximoAVencer, fechaObjetivo, descripcionSemaforo,
   usePendientesLogistica, usePendientesLogisticaOrdenes, useAsesores, useInvalidateCalibraciones,
 } from './hooks/useCalibraciones'
-import { FG, IconBtn, INP, PRI, GHOST, B_INFO, B_VENCIDA, B_PROXIMA, GRUPO_COLOR, EMPTY, fmtFecha, fechaLocalISO } from './ui'
-import { linkOtst, parseOtstCodes, parseNumeroOC } from './vistas/CamposCompartidos'
+import { FG, IconBtn, INP, PRI, GHOST, B_INFO, B_VENCIDA, B_PROXIMA, B_SUGERIDA, GRUPO_COLOR, EMPTY, fmtFecha, fechaLocalISO } from './ui'
+import {
+  linkOtst, parseOtstCodes, parseNumeroOC,
+  sugerirOrdenesParaPendiente, esCoincidenciaFuerte, SENAL_LABEL, type SugerenciaOrden,
+} from './vistas/CamposCompartidos'
 import type { Asesor, LogisticaPendiente, OrdenCalibracion } from '../../types'
 
 // Arma el mensaje de seguimiento para un pendiente ya gestionado (asesor
@@ -109,6 +112,15 @@ export function LogisticaTab({ ordenes }: { ordenes: OrdenCalibracion[] }) {
   const pendientesPorProcesar = pendientes.filter(p => !ordenesPorPendiente.has(p.id))
   const pendientesEnlazados = pendientes.filter(p => ordenesPorPendiente.has(p.id))
   const pendientesMostrados = verEnlazadas ? pendientesEnlazados : pendientesPorProcesar
+
+  // Sugerencias de enlace (comparando Cliente/Remisión/Factura/OTST) — solo
+  // para lo que todavía está "por procesar", nunca se resalta nada ya
+  // enlazado. Resaltar, no enlazar: el logístico siempre confirma a mano.
+  const sugerenciasPorPendiente = new Map<string, SugerenciaOrden[]>()
+  for (const p of pendientesPorProcesar) {
+    const excluirIds = new Set((ordenesPorPendiente.get(p.id) || []).map(o => o.id))
+    sugerenciasPorPendiente.set(p.id, sugerirOrdenesParaPendiente(p, ordenes, excluirIds))
+  }
 
   const ordenesLogistica = ordenes
     .filter(o => ESTADOS_LOGISTICA.includes(o.estado) && !o.anulada)
@@ -273,12 +285,16 @@ export function LogisticaTab({ ordenes }: { ordenes: OrdenCalibracion[] }) {
         ) : (
           <Table
             columns={columnasPendientes({
-              puedeEditar, asesores, ordenesPorPendiente, verEnlazadas,
+              puedeEditar, asesores, ordenesPorPendiente, verEnlazadas, sugerenciasPorPendiente,
               onGestionar: setGestionando, onEnlazar: setEnlazando, onCopiar: copiarMensaje,
               onEliminar: eliminarPendiente, onDesenlazar: desenlazarOrden,
             })}
             data={pendientesMostrados}
             keyExtractor={p => p.id}
+            rowStyle={p => {
+              const sugerencias = sugerenciasPorPendiente.get(p.id) || []
+              return sugerencias.some(s => esCoincidenciaFuerte(s.senales)) ? { background: 'var(--green-bg, #dcfce7)' } : undefined
+            }}
           />
         )}
       </Card>
@@ -309,11 +325,12 @@ export function LogisticaTab({ ordenes }: { ordenes: OrdenCalibracion[] }) {
   )
 }
 
-function columnasPendientes({ puedeEditar, asesores, ordenesPorPendiente, verEnlazadas, onGestionar, onEnlazar, onCopiar, onEliminar, onDesenlazar }: {
+function columnasPendientes({ puedeEditar, asesores, ordenesPorPendiente, verEnlazadas, sugerenciasPorPendiente, onGestionar, onEnlazar, onCopiar, onEliminar, onDesenlazar }: {
   puedeEditar: boolean
   asesores: Asesor[]
   ordenesPorPendiente: Map<string, OrdenCalibracion[]>
   verEnlazadas: boolean
+  sugerenciasPorPendiente: Map<string, SugerenciaOrden[]>
   onGestionar: (p: LogisticaPendiente) => void
   onEnlazar: (p: LogisticaPendiente) => void
   onCopiar: (p: LogisticaPendiente) => void
@@ -323,7 +340,24 @@ function columnasPendientes({ puedeEditar, asesores, ordenesPorPendiente, verEnl
   const columnas: Column<LogisticaPendiente>[] = [
     {
       key: 'cliente', header: 'Cliente',
-      render: p => <span style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--text)' }}>{p.cliente}</span>,
+      render: p => {
+        const sugerencias = (sugerenciasPorPendiente.get(p.id) || []).filter(s => esCoincidenciaFuerte(s.senales))
+        const mejor = sugerencias[0]
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-start' }}>
+            <span style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--text)' }}>{p.cliente}</span>
+            {mejor && (
+              <span
+                style={B_SUGERIDA}
+                title={`Coincide con ${mejor.orden.numero_oc || mejor.orden.cliente} por: ${mejor.senales.map(s => SENAL_LABEL[s]).join(', ')}${sugerencias.length > 1 ? ` (+${sugerencias.length - 1} más)` : ''}`}
+                onClick={e => { e.stopPropagation(); onEnlazar(p) }}
+              >
+                ✓ Posible match — {mejor.orden.numero_oc || mejor.orden.cliente}
+              </span>
+            )}
+          </div>
+        )
+      },
     },
     {
       key: 'factura', header: 'Factura', width: '140px',
@@ -524,10 +558,19 @@ function ModalEnlazarPendiente({ pendiente, ordenes, yaEnlazadas, onClose, onSav
   const [saving, setSaving] = useState(false)
 
   const yaEnlazadasIds = new Set(yaEnlazadas.map(o => o.id))
+  // Mismas señales que resaltan la fila en la tabla — aquí solo se usan para
+  // ordenar la candidata sugerida al principio y marcarla, nunca para
+  // pre-seleccionarla: el logístico siempre confirma la casilla a mano.
+  const senalesPorOrden = new Map(
+    sugerirOrdenesParaPendiente(pendiente, ordenes, yaEnlazadasIds)
+      .filter(s => esCoincidenciaFuerte(s.senales))
+      .map(s => [s.orden.id, s.senales])
+  )
   const q = search.toLowerCase().trim()
   const filtradas = ordenes
     .filter(o => !yaEnlazadasIds.has(o.id))
     .filter(o => !q || (o.cliente || '').toLowerCase().includes(q) || (o.numero_oc || '').toLowerCase().includes(q))
+    .sort((a, b) => (senalesPorOrden.has(b.id) ? 1 : 0) - (senalesPorOrden.has(a.id) ? 1 : 0))
     .slice(0, 50)
 
   function toggle(id: string) {
@@ -565,19 +608,29 @@ function ModalEnlazarPendiente({ pendiente, ordenes, yaEnlazadas, onClose, onSav
       <div style={{ maxHeight: 300, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6 }}>
         {filtradas.length === 0 ? (
           <p style={{ fontSize: 13, color: 'var(--muted)', padding: '8px 0' }}>Sin resultados</p>
-        ) : filtradas.map(o => (
+        ) : filtradas.map(o => {
+          const senales = senalesPorOrden.get(o.id)
+          return (
           <label key={o.id} style={{
             display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderRadius: 8, cursor: 'pointer',
-            border: `1px solid ${seleccionadas.has(o.id) ? 'var(--accent)' : 'var(--border)'}`,
+            border: `1px solid ${seleccionadas.has(o.id) ? 'var(--accent)' : senales ? 'var(--green-border, #86efac)' : 'var(--border)'}`,
             background: seleccionadas.has(o.id) ? 'var(--accent-bg)' : 'var(--surface2)',
           }}>
             <input type="checkbox" checked={seleccionadas.has(o.id)} onChange={() => toggle(o.id)} />
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{o.cliente}</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                {o.cliente}
+                {senales && (
+                  <span style={{ ...B_SUGERIDA, cursor: 'default' }} title={`Coincide por: ${senales.map(s => SENAL_LABEL[s]).join(', ')}`}>
+                    Sugerida
+                  </span>
+                )}
+              </div>
               <div style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--mono)' }}>{o.numero_oc || '—'} · {ESTADO_LABEL[o.estado]}</div>
             </div>
           </label>
-        ))}
+          )
+        })}
       </div>
       <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 20 }}>
         <button onClick={onClose} style={GHOST}>Cancelar</button>
