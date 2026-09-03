@@ -69,7 +69,6 @@ const DICCIONARIO_TRADUCCION: Record<string, string> = {
   'digital': 'Digital',
   'analog': 'Analógico',
   'wireless': 'Inalámbrico',
-  'probe': 'Sonda',
   'conductivity': 'Conductividad',
   'dissolved oxygen': 'Oxígeno disuelto',
   'ph': 'pH',
@@ -90,12 +89,9 @@ const DICCIONARIO_TRADUCCION: Record<string, string> = {
 
 const traducir = (texto: string): string => {
   if (!texto) return '';
-  
-  const textoLower = texto.toLowerCase();
-  
-  // Verificar si el texto contiene palabras en inglés
+
   let resultado = texto;
-  
+
   // Buscar coincidencias en el diccionario (palabras completas primero)
   for (const [ingles, espanol] of Object.entries(DICCIONARIO_TRADUCCION)) {
     const regex = new RegExp(`\\b${ingles}\\b`, 'gi');
@@ -115,8 +111,6 @@ export const parseEquipoQR = (qrRaw: string): ParsedQR => {
   
   // Intentar dividir por Ñ
   const parts = qrLimpio.split('Ñ').map(p => p.trim()).filter(p => p !== '');
-
-  console.log('QR parseado:', { qrRaw, parts, longitud: parts.length });
 
   if (parts.length >= 4) {
     // Formato completo: REF Ñ SERIAL Ñ ORIGEN Ñ NOMBRE
@@ -143,13 +137,14 @@ export const parseEquipoQR = (qrRaw: string): ParsedQR => {
       isValid: true
     };
   } else if (parts.length >= 1) {
-    // Formato simple
+    // Solo referencia (y quizás serie) — no alcanza a tener nombre de
+    // equipo, se deja para corrección manual en vez de marcarlo válido.
     return {
       referencia: parts[0] || '',
       serie: parts[1] || '',
-      origen: parts[2] || '',
-      nombre: traducir(parts[3] || ''),
-      isValid: parts.length > 0
+      origen: '',
+      nombre: '',
+      isValid: false
     };
   }
 

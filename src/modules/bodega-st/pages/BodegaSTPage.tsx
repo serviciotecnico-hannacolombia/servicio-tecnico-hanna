@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { BodegaSTForm } from '../components/BodegaSTForm';
 import { BodegaSTTable } from '../components/BodegaSTTable';
@@ -9,12 +10,28 @@ import { Button } from '../../../components/ui/Button';
 import { StatCard } from '../../../components/ui/StatCard';
 import { Modal } from '../../../components/ui/Modal';
 import { AuditHistory } from '../../../components/ui/AuditHistory';
+import { supabase, fetchAllRows } from '../../../lib/supabase';
 import type { BodegaSTAudit, RegistroBodegaST } from '../types';
 import { Download } from 'lucide-react';
 
+function useBodegaSTRegistros() {
+  return useQuery({
+    queryKey: ['bodega_st_registros'],
+    queryFn: () => fetchAllRows<RegistroBodegaST>('bodega_st_registros', q => q.order('created_at', { ascending: false })),
+  });
+}
+
+function useBodegaSTAuditoria() {
+  return useQuery({
+    queryKey: ['bodega_st_registros_auditoria'],
+    queryFn: () => fetchAllRows<BodegaSTAudit>('bodega_st_registros_auditoria', q => q.order('created_at', { ascending: false })),
+  });
+}
+
 export function BodegaSTPage() {
-  const [visibleRecords, setVisibleRecords] = useState<RegistroBodegaST[]>([]);
-  const [audits, setAudits] = useState<BodegaSTAudit[]>([]);
+  const qc = useQueryClient();
+  const { data: visibleRecords = [] } = useBodegaSTRegistros();
+  const { data: audits = [] } = useBodegaSTAuditoria();
 
   const [selectedRecord, setSelectedRecord] = useState<RegistroBodegaST | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -26,30 +43,55 @@ export function BodegaSTPage() {
   const totalIncompletos = visibleRecords.filter(r => r.estado === 'incompleto_espera_partes').length;
   const totalListos = visibleRecords.filter(r => r.estado === 'restaurado_listo').length;
 
-  const addAudit = (record: RegistroBodegaST, accion: BodegaSTAudit['accion'], previous: RegistroBodegaST | null, next: RegistroBodegaST | null) => {
-    setAudits(previousAudits => [{ id: crypto.randomUUID(), bodega_st_id: record.id ?? null, accion, datos_anteriores: previous, datos_nuevos: next, usuario_id: null, created_at: new Date().toISOString() }, ...previousAudits]);
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ['bodega_st_registros'] });
+    qc.invalidateQueries({ queryKey: ['bodega_st_registros_auditoria'] });
   };
 
-  const handleSaveRecord = (newRecord: RegistroBodegaST) => {
-    const record = { ...newRecord, id: crypto.randomUUID(), registro_id: `BST-${Date.now().toString(36).toUpperCase()}`, created_at: new Date().toISOString() };
-    setVisibleRecords(previous => [record, ...previous]);
-    addAudit(record, 'INSERT', null, record);
+  const handleSaveRecord = async (newRecord: RegistroBodegaST) => {
+    const { error } = await supabase.from('bodega_st_registros').insert({
+      registro_id: `BST-${Date.now().toString(36).toUpperCase()}`,
+      qr_equipo: newRecord.qr_equipo,
+      referencia: newRecord.referencia,
+      numero_serie: newRecord.numero_serie,
+      nombre_equipo: newRecord.nombre_equipo,
+      estado: newRecord.estado,
+      partes_requeridas: newRecord.partes_requeridas || null,
+      reparaciones_realizadas: newRecord.reparaciones_realizadas || null,
+      tecnico_responsable: newRecord.tecnico_responsable || null,
+      ubicacion_estante: newRecord.ubicacion_estante || null,
+      bodega_destino: newRecord.bodega_destino || null,
+      observaciones: newRecord.observaciones || null,
+    });
+    if (error) { toast.error('Error al guardar: ' + error.message); return; }
+    invalidate();
     toast.success('Registro de Bodega ST guardado');
   };
 
-  const handleUpdate = (updated: RegistroBodegaST) => {
-    const previous = visibleRecords.find(item => item.id === updated.id);
-    if (!previous) return;
-    const record = { ...updated, updated_at: new Date().toISOString() };
-    setVisibleRecords(items => items.map(item => item.id === updated.id ? record : item));
-    addAudit(record, 'UPDATE', previous, record);
-    toast.success('Registro de Bodega ST actualizado'); setIsModalOpen(false);
+  const handleUpdate = async (updated: RegistroBodegaST) => {
+    if (!updated.id) return;
+    const { error } = await supabase.from('bodega_st_registros').update({
+      estado: updated.estado,
+      partes_requeridas: updated.partes_requeridas || null,
+      reparaciones_realizadas: updated.reparaciones_realizadas || null,
+      tecnico_responsable: updated.tecnico_responsable || null,
+      ubicacion_estante: updated.ubicacion_estante || null,
+      bodega_destino: updated.bodega_destino || null,
+      observaciones: updated.observaciones || null,
+      updated_at: new Date().toISOString(),
+    }).eq('id', updated.id);
+    if (error) { toast.error('Error al actualizar: ' + error.message); return; }
+    invalidate();
+    toast.success('Registro de Bodega ST actualizado');
+    setIsModalOpen(false);
   };
 
-  const handleDelete = (record: RegistroBodegaST) => {
+  const handleDelete = async (record: RegistroBodegaST) => {
+    if (!record.id) return;
     if (!window.confirm(`¿Eliminar el registro de ${record.numero_serie}? Esta acción quedará en el historial.`)) return;
-    setVisibleRecords(items => items.filter(item => item.id !== record.id));
-    addAudit(record, 'DELETE', record, null);
+    const { error } = await supabase.from('bodega_st_registros').delete().eq('id', record.id);
+    if (error) { toast.error('Error al eliminar: ' + error.message); return; }
+    invalidate();
     toast.success('Registro de Bodega ST eliminado');
   };
 

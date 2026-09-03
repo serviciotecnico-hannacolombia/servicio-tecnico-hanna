@@ -23,36 +23,12 @@ import { TareasPage } from './modules/tareas/TareasPage'
 import { MantenimientoProgramadoPage } from './modules/mantenimiento-programado/MantenimientoProgramadoPage'
 import { VoidControlPage } from './modules/void/pages/VoidControlPage'
 import { BodegaSTPage } from './modules/bodega-st/pages/BodegaSTPage'
-import { Sidebar } from './components/layout/Sidebar'
-import { SidebarProvider } from './components/layout/SidebarContext'
 import { CalibracionesPage } from './modules/calibraciones/CalibracionesPage'
 import { OrdenCalibracionDetailPage } from './modules/calibraciones/OrdenCalibracionDetailPage'
 
 function DefaultRedirect() {
   const { hasModule } = useUser()
   return <Navigate to={getDefaultRoute(hasModule)} replace />
-}
-
-// Layout de prueba local con estilos completos sin depender de Supabase Auth
-function LocalLayoutPreview({ children }: { children: React.ReactNode }) {
-  return (
-    <SidebarProvider>
-      <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg, #f8fafc)' }}>
-        <Sidebar />
-        <main 
-          style={{ 
-            flex: 1, 
-            marginLeft: 240, // Espacio para no tapar con el Sidebar
-            padding: '32px 40px', 
-            minWidth: 0, 
-            transition: 'margin-left 0.22s cubic-bezier(.4,0,.2,1)' 
-          }}
-        >
-          {children}
-        </main>
-      </div>
-    </SidebarProvider>
-  )
 }
 
 export default function App() {
@@ -62,24 +38,6 @@ export default function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
-
-            {/* Ruta directa con diseño e integración completa de Sidebar */}
-            <Route
-              path="/void"
-              element={
-                <LocalLayoutPreview>
-                  <VoidControlPage />
-                </LocalLayoutPreview>
-              }
-            />
-            <Route
-              path="/bodega-st"
-              element={
-                <LocalLayoutPreview>
-                  <BodegaSTPage />
-                </LocalLayoutPreview>
-              }
-            />
             <Route
               element={
                 <AuthGuard>
@@ -88,6 +46,8 @@ export default function App() {
               }
             >
               <Route index element={<DefaultRedirect />} />
+              <Route path="/void"        element={<ModuleGuard moduleKey="void"><VoidControlPage /></ModuleGuard>} />
+              <Route path="/bodega-st"   element={<ModuleGuard moduleKey="bodega_st"><BodegaSTPage /></ModuleGuard>} />
               <Route path="/llamadas"    element={<ModuleGuard moduleKey="llamadas"><LlamadasPage /></ModuleGuard>} />
               <Route path="/bodega"      element={<ModuleGuard moduleKey="bodega"><OtstBodegaPage /></ModuleGuard>} />
               <Route path="/consumibles" element={<ModuleGuard moduleKey="consumibles"><ConsumiblesPage /></ModuleGuard>} />

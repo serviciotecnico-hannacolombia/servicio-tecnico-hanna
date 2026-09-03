@@ -22,7 +22,7 @@ const ESTADO_OPTIONS = [
 ];
 
 export function EditBodegaSTModal({ record, isOpen, onClose, onUpdate }: EditBodegaSTModalProps) {
-  const [prevRecordId, setPrevRecordId] = useState<string | null>(null);
+  const [prevRecordId, setPrevRecordId] = useState<string | undefined>(undefined);
   const [estado, setEstado] = useState<EstadoRestauracion>('en_diagnostico');
   const [partesRequeridas, setPartesRequeridas] = useState('');
   const [reparaciones, setReparaciones] = useState('');
@@ -30,8 +30,8 @@ export function EditBodegaSTModal({ record, isOpen, onClose, onUpdate }: EditBod
   const [bodegaDestino, setBodegaDestino] = useState(BODEGAS_DESTINO[0]);
   const [observaciones, setObservaciones] = useState('');
 
-  if (record && record.numero_serie !== prevRecordId) {
-    setPrevRecordId(record.numero_serie);
+  if (record && record.id !== prevRecordId) {
+    setPrevRecordId(record.id);
     setEstado(record.estado);
     setPartesRequeridas(record.partes_requeridas || '');
     setReparaciones(record.reparaciones_realizadas || '');
@@ -49,7 +49,7 @@ export function EditBodegaSTModal({ record, isOpen, onClose, onUpdate }: EditBod
       estado,
       partes_requeridas: partesRequeridas,
       reparaciones_realizadas: reparaciones,
-      ubicacion_estante: ubicacion,
+      ubicacion_estante: estado === 'restaurado_listo' ? undefined : ubicacion,
       bodega_destino: estado === 'restaurado_listo' ? bodegaDestino : undefined,
       observaciones
     });

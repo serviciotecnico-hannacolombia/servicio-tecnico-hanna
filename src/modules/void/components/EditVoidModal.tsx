@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, type FormEvent } from 'react'
+import { toast } from 'sonner'
 import type { VoidRecord } from '../types'
 import { Save } from 'lucide-react'
 import { Modal } from '../../../components/ui/Modal'
@@ -20,9 +21,18 @@ export function EditVoidModal({ record, onClose, onSave }: { record: VoidRecord 
 
   const set = (key: keyof VoidRecord, value: string) => setForm(prev => prev ? { ...prev, [key]: value } : prev)
 
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault()
+    if (!form.documento_referencia?.trim() || !form.void_blanco?.trim() || !form.void_gris?.trim()) {
+      toast.error('Factura/Remisión/OTST y los dos VOID son obligatorios')
+      return
+    }
+    onSave(form)
+  }
+
   return (
     <Modal open={!!record} onClose={onClose} title={`Editar Registro VOID · ${form.registro_id || form.id}`} width={560}>
-      <form onSubmit={e => { e.preventDefault(); onSave(form) }} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div style={{ display: 'flex', gap: 16, borderBottom: '1px solid var(--border)' }}>
           {(['info', 'advanced'] as const).map(tab => (
             <button

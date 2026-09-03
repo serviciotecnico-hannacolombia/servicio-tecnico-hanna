@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { VoidForm } from '../components/VoidForm';
 import { VoidTable } from '../components/VoidTable';
@@ -9,6 +10,7 @@ import { Header } from '../../../components/layout/Header';
 import { Button } from '../../../components/ui/Button';
 import { Modal } from '../../../components/ui/Modal';
 import { AuditHistory } from '../../../components/ui/AuditHistory';
+import { supabase, fetchAllRows } from '../../../lib/supabase';
 import type { VoidAudit, VoidRecord } from '../types';
 import { Download } from 'lucide-react';
 
@@ -17,37 +19,75 @@ const LIBROS_VOID = [
   'Pereira', 'CC No requerido', 'Sin Sistema', 'Reenvios Logistica',
 ];
 
+function useVoidRegistros() {
+  return useQuery({
+    queryKey: ['void_registros'],
+    queryFn: () => fetchAllRows<VoidRecord>('void_registros', q => q.order('created_at', { ascending: false })),
+  });
+}
+
+function useVoidAuditoria() {
+  return useQuery({
+    queryKey: ['void_registros_auditoria'],
+    queryFn: () => fetchAllRows<VoidAudit>('void_registros_auditoria', q => q.order('created_at', { ascending: false })),
+  });
+}
+
 export function VoidControlPage() {
-  const [records, setRecords] = useState<VoidRecord[]>([]);
-  const [audits, setAudits] = useState<VoidAudit[]>([]);
+  const qc = useQueryClient();
+  const { data: records = [] } = useVoidRegistros();
+  const { data: audits = [] } = useVoidAuditoria();
   const [selected, setSelected] = useState<VoidRecord | null>(null);
   const [deletedSnapshot, setDeletedSnapshot] = useState<VoidRecord | null>(null);
   const [libroActivo, setLibroActivo] = useState(LIBROS_VOID[0]);
 
-  const addAudit = (record: VoidRecord, accion: VoidAudit['accion'], previous: VoidRecord | null, next: VoidRecord | null) => {
-    setAudits(previousAudits => [{ id: crypto.randomUUID(), void_id: record.id ?? null, accion, datos_anteriores: previous, datos_nuevos: next, usuario_id: null, created_at: new Date().toISOString() }, ...previousAudits]);
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ['void_registros'] });
+    qc.invalidateQueries({ queryKey: ['void_registros_auditoria'] });
   };
 
-  const handleSaveRecord = (newRecord: VoidRecord) => {
-    const record = { ...newRecord, id: crypto.randomUUID(), registro_id: newRecord.registro_id || `VOID-${Date.now().toString(36).toUpperCase()}`, libro: newRecord.libro || libroActivo, created_at: new Date().toISOString() };
-    setRecords(previous => [record, ...previous]);
-    addAudit(record, 'INSERT', null, record);
+  const handleSaveRecord = async (newRecord: VoidRecord) => {
+    const { error } = await supabase.from('void_registros').insert({
+      registro_id: newRecord.registro_id || `VOID-${Date.now().toString(36).toUpperCase()}`,
+      qr_equipo: newRecord.qr_equipo,
+      libro: newRecord.libro || libroActivo,
+      referencia: newRecord.referencia || null,
+      numero_serie: newRecord.numero_serie || null,
+      nombre_equipo: newRecord.nombre_equipo || null,
+      void_blanco: newRecord.void_blanco,
+      void_gris: newRecord.void_gris,
+      documento_referencia: newRecord.documento_referencia || null,
+      observaciones: newRecord.observaciones || null,
+    });
+    if (error) { toast.error('Error al guardar: ' + error.message); return; }
+    invalidate();
     toast.success('Registro VOID guardado');
   };
 
-  const handleUpdate = (record: VoidRecord) => {
-    const previous = records.find(item => item.id === record.id);
-    if (!previous) return;
-    const updated = { ...record, updated_at: new Date().toISOString() };
-    setRecords(items => items.map(item => item.id === record.id ? updated : item));
-    addAudit(updated, 'UPDATE', previous, updated);
-    toast.success('Registro VOID actualizado'); setSelected(null);
+  const handleUpdate = async (record: VoidRecord) => {
+    if (!record.id) return;
+    const { error } = await supabase.from('void_registros').update({
+      referencia: record.referencia || null,
+      numero_serie: record.numero_serie || null,
+      nombre_equipo: record.nombre_equipo || null,
+      void_blanco: record.void_blanco,
+      void_gris: record.void_gris,
+      documento_referencia: record.documento_referencia || null,
+      observaciones: record.observaciones || null,
+      updated_at: new Date().toISOString(),
+    }).eq('id', record.id);
+    if (error) { toast.error('Error al actualizar: ' + error.message); return; }
+    invalidate();
+    toast.success('Registro VOID actualizado');
+    setSelected(null);
   };
 
-  const handleDelete = (record: VoidRecord) => {
+  const handleDelete = async (record: VoidRecord) => {
+    if (!record.id) return;
     if (!window.confirm(`¿Eliminar el registro de ${record.numero_serie || record.referencia}? Esta acción quedará en el historial.`)) return;
-    setRecords(items => items.filter(item => item.id !== record.id));
-    addAudit(record, 'DELETE', record, null);
+    const { error } = await supabase.from('void_registros').delete().eq('id', record.id);
+    if (error) { toast.error('Error al eliminar: ' + error.message); return; }
+    invalidate();
     toast.success('Registro VOID eliminado');
   };
 
