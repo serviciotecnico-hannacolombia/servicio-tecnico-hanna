@@ -13,6 +13,11 @@ dist-ssr
 *.local
 .wrangler
 
+# Variables de entorno (credenciales de Supabase, etc.) — nunca a git
+.env
+.env.*
+!.env.example
+
 # Supabase CLI cache
 supabase/.temp
 
