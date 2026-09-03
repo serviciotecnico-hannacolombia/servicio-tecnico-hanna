@@ -76,6 +76,10 @@ export const B_VENCIDA: React.CSSProperties = { display: 'inline-flex', alignIte
 export const B_PROXIMA: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: 20, fontFamily: 'var(--mono)', fontSize: 10, fontWeight: 700, background: 'var(--yellow-bg)', color: 'var(--yellow)', border: '1px solid var(--yellow-border)' }
 export const B_NOVEDAD: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: 20, fontFamily: 'var(--mono)', fontSize: 10, fontWeight: 700, background: 'var(--yellow-bg)', color: 'var(--yellow)', border: '1px solid var(--yellow-border)' }
 export const B_INFO: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: 20, fontFamily: 'var(--mono)', fontSize: 10, fontWeight: 600, background: 'var(--surface)', color: 'var(--muted)', border: '1px solid var(--border)' }
+// Coincidencia sugerida (Logística: pendiente ↔ orden) — verde para
+// distinguirla de las alertas rojas/amarillas de vencimiento, se lee como
+// "oportunidad" en vez de "advertencia".
+export const B_SUGERIDA: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: 20, fontFamily: 'var(--mono)', fontSize: 10, fontWeight: 700, background: 'var(--green-bg, #dcfce7)', color: 'var(--green, #16a34a)', border: '1px solid var(--green-border, #86efac)', cursor: 'pointer' }
 export const EMPTY: React.CSSProperties = { textAlign: 'center', padding: '50px 20px', color: 'var(--muted)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }
 
 // ── Colores por grupo de estado (para badges de estado en lista/detalle) ───

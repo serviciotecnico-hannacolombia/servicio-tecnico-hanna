@@ -2,7 +2,7 @@
 // y las vistas dedicadas por estado (VistaMantenimiento, VistaVisitaProgramada…).
 import { AlertTriangle } from 'lucide-react'
 import { FG, Seccion, Grid2, INP } from '../ui'
-import type { Asesor, OrdenCalibracion } from '../../../types'
+import type { Asesor, LogisticaPendiente, OrdenCalibracion } from '../../../types'
 
 // El No. de Orden de Compra siempre tiene el formato ST{número}-{año} — al
 // usuario solo le pedimos el número, el resto se arma solo.
@@ -52,6 +52,94 @@ export function linkOtst(otst: string): string | null {
 // campo admite varios códigos separados por coma y cada uno arma su link.
 export function parseOtstCodes(raw: string | null | undefined): string[] {
   return (raw || '').split(',').map(v => v.trim()).filter(Boolean)
+}
+
+// ── Sugerencia de enlace Pendiente ↔ Orden (Logística) ─────────────────────
+// Comparación best-effort para RESALTAR una posible coincidencia, nunca para
+// enlazar solo — el logístico siempre confirma a mano en ModalEnlazarPendiente.
+
+// Mayúsculas, sin tildes, sin puntuación (así "S.A.S." y "SAS" quedan
+// iguales), espacios colapsados. Solo sirve para comparar por igualdad
+// exacta — no es una razón social "canónica" ni corrige LTDA vs LIMITADA.
+function normalizarTexto(v: string | null | undefined): string {
+  return (v || '')
+    .toUpperCase()
+    .normalize('NFD')
+    .replace(/[^\x00-\x7f]/g, '')
+    .replace(/[^A-Z0-9\s]/g, '')
+    .trim()
+    .replace(/\s+/g, ' ')
+}
+
+function soloDigitos(v: string | null | undefined): string {
+  return (v || '').replace(/\D/g, '')
+}
+
+// rmv_fv es texto libre que puede combinar RMV y FV en el mismo campo
+// ("RMV 123 / FV 456") — se parte en tokens numéricos para comparar cada
+// número por separado, no como substring (evita falsos positivos tipo "123"
+// encontrado dentro de "45123").
+function tokensNumericos(raw: string | null | undefined): string[] {
+  return (raw || '').split(/\D+/).filter(Boolean)
+}
+
+export type SenalMatch = 'otst' | 'cliente' | 'remision' | 'factura'
+
+export interface SugerenciaOrden {
+  orden: OrdenCalibracion
+  senales: SenalMatch[]
+}
+
+// Umbral mínimo de dígitos para que una remisión/factura cuente como señal —
+// números más cortos coinciden por azar con demasiada facilidad.
+const MIN_DIGITOS_REMISION = 4
+
+// Coincidencia "fuerte" = OTST compartido, o Cliente + (Remisión o Factura).
+// Cliente solo, o Remisión/Factura solo, no basta — son señales débiles que
+// generarían demasiados falsos positivos si se resaltaran por sí solas.
+export function esCoincidenciaFuerte(senales: SenalMatch[]): boolean {
+  return senales.includes('otst') || (senales.includes('cliente') && (senales.includes('remision') || senales.includes('factura')))
+}
+
+export function sugerirOrdenesParaPendiente(
+  pendiente: Pick<LogisticaPendiente, 'cliente' | 'otst' | 'remision' | 'factura'>,
+  ordenes: OrdenCalibracion[],
+  excluirIds: Set<string>,
+): SugerenciaOrden[] {
+  const otstPendiente = new Set(parseOtstCodes(pendiente.otst).map(c => c.toUpperCase()))
+  const clientePendiente = normalizarTexto(pendiente.cliente)
+  const remisionPendiente = soloDigitos(pendiente.remision)
+  const facturaPendiente = soloDigitos(pendiente.factura)
+
+  const resultado: SugerenciaOrden[] = []
+  for (const orden of ordenes) {
+    if (orden.anulada || excluirIds.has(orden.id)) continue
+
+    const senales: SenalMatch[] = []
+
+    if (otstPendiente.size) {
+      const otstOrden = parseOtstCodes(orden.otst).map(c => c.toUpperCase())
+      if (otstOrden.some(c => otstPendiente.has(c))) senales.push('otst')
+    }
+
+    if (clientePendiente && clientePendiente === normalizarTexto(orden.cliente)) senales.push('cliente')
+
+    if (remisionPendiente.length >= MIN_DIGITOS_REMISION || facturaPendiente.length >= MIN_DIGITOS_REMISION) {
+      const tokensOrden = tokensNumericos(orden.rmv_fv)
+      if (remisionPendiente.length >= MIN_DIGITOS_REMISION && tokensOrden.includes(remisionPendiente)) senales.push('remision')
+      if (facturaPendiente.length >= MIN_DIGITOS_REMISION && tokensOrden.includes(facturaPendiente)) senales.push('factura')
+    }
+
+    if (senales.length) resultado.push({ orden, senales })
+  }
+  return resultado
+}
+
+export const SENAL_LABEL: Record<SenalMatch, string> = {
+  otst: 'OTST',
+  cliente: 'Cliente',
+  remision: 'Remisión',
+  factura: 'Factura',
 }
 
 export function IdentificacionFields({ form, set, esNueva, asesores, asesorSeleccionado, ordenes }: {
