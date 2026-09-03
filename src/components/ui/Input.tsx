@@ -1,3 +1,4 @@
+import { forwardRef } from 'react'
 import type { CSSProperties, InputHTMLAttributes, ReactNode } from 'react'
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
@@ -6,7 +7,7 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   wrapStyle?: CSSProperties
 }
 
-export function Input({ label, icon, style, wrapStyle, ...props }: InputProps) {
+export const Input = forwardRef<HTMLInputElement, InputProps>(function Input({ label, icon, style, wrapStyle, ...props }, ref) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', ...wrapStyle }}>
       {label && (
@@ -29,6 +30,7 @@ export function Input({ label, icon, style, wrapStyle, ...props }: InputProps) {
           </span>
         )}
         <input
+          ref={ref}
           style={{
             width: '100%',
             padding: icon ? '8px 12px 8px 36px' : '8px 12px',
@@ -45,4 +47,4 @@ export function Input({ label, icon, style, wrapStyle, ...props }: InputProps) {
       </div>
     </div>
   )
-}
+})

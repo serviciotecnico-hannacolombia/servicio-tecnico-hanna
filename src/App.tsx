@@ -21,6 +21,8 @@ import { FormatosPage } from './modules/formatos/FormatosPage'
 import { ReporteSTPage } from './modules/reporte-st/ReporteSTPage'
 import { TareasPage } from './modules/tareas/TareasPage'
 import { MantenimientoProgramadoPage } from './modules/mantenimiento-programado/MantenimientoProgramadoPage'
+import { VoidControlPage } from './modules/void/pages/VoidControlPage'
+import { BodegaSTPage } from './modules/bodega-st/pages/BodegaSTPage'
 import { CalibracionesPage } from './modules/calibraciones/CalibracionesPage'
 import { OrdenCalibracionDetailPage } from './modules/calibraciones/OrdenCalibracionDetailPage'
 
@@ -44,12 +46,14 @@ export default function App() {
               }
             >
               <Route index element={<DefaultRedirect />} />
+              <Route path="/void"        element={<ModuleGuard moduleKey="void"><VoidControlPage /></ModuleGuard>} />
+              <Route path="/bodega-st"   element={<ModuleGuard moduleKey="bodega_st"><BodegaSTPage /></ModuleGuard>} />
               <Route path="/llamadas"    element={<ModuleGuard moduleKey="llamadas"><LlamadasPage /></ModuleGuard>} />
               <Route path="/bodega"      element={<ModuleGuard moduleKey="bodega"><OtstBodegaPage /></ModuleGuard>} />
               <Route path="/consumibles" element={<ModuleGuard moduleKey="consumibles"><ConsumiblesPage /></ModuleGuard>} />
               <Route path="/tarifas"     element={<ModuleGuard moduleKey="tarifas"><TarifasPage /></ModuleGuard>} />
               <Route path="/codigos"     element={<ModuleGuard moduleKey="codigos"><CodigosPage /></ModuleGuard>} />
-              <Route path="/editor"       element={<ModuleGuard moduleKey="editor"><EditorPage /></ModuleGuard>} />
+              <Route path="/editor"      element={<ModuleGuard moduleKey="editor"><EditorPage /></ModuleGuard>} />
               <Route path="/indicadores" element={<ModuleGuard moduleKey="indicadores"><IndicadoresPage /></ModuleGuard>} />
               <Route path="/correos"     element={<ModuleGuard moduleKey="correos"><FormatosPage /></ModuleGuard>} />
               <Route path="/reporte-st"  element={<ModuleGuard moduleKey="reporte_st"><ReporteSTPage /></ModuleGuard>} />

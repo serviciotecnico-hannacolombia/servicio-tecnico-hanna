@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { NavLink, useNavigate } from 'react-router-dom'
+import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import logo from '../../assets/logo.svg'
 import {
   Phone, Package, DollarSign, Wrench, FileText, Warehouse,
-  LogOut, Pencil, ShieldCheck, BarChart2, Mail, KeyRound, ChevronDown, Timer, ListTodo, CalendarClock,
-  FlaskConical,
+  LogOut, Pencil, ShieldCheck, BarChart2, Mail, KeyRound, ChevronDown, Timer, ListTodo, CalendarClock, QrCode, Box,
+  FlaskConical
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useSidebar } from './SidebarContext'
@@ -19,7 +19,6 @@ import { useCalibracionesBadgeCount } from '../../modules/calibraciones/hooks/us
 import type { ModuleKey } from '../../types'
 
 // ── Hamburger animado ────────────────────────────────────────────────────────
-// open=false → 3 líneas (hamburguesa)   open=true → X (cerrar)
 function HamburgerIcon({ open }: { open: boolean }) {
   const T = 'transform 0.24s cubic-bezier(.4,0,.2,1), opacity 0.18s ease'
   const bar = (extra: React.CSSProperties): React.CSSProperties => ({
@@ -52,20 +51,56 @@ function HamburgerIcon({ open }: { open: boolean }) {
   )
 }
 
-const NAV_ITEMS: { to: string; label: string; icon: typeof Phone; moduleKey: ModuleKey }[] = [
-  { to: '/llamadas',    label: 'Control Llamadas',   icon: Phone,      moduleKey: 'llamadas'    },
-  { to: '/bodega',      label: 'Bodega',              icon: Warehouse,  moduleKey: 'bodega'      },
-  { to: '/consumibles', label: 'Consumibles',         icon: Package,    moduleKey: 'consumibles' },
-  { to: '/tarifas',     label: 'Tarifas de Envío',   icon: DollarSign, moduleKey: 'tarifas'     },
-  { to: '/codigos',     label: 'Códigos y Partes',   icon: Wrench,     moduleKey: 'codigos'     },
-  { to: '/editor',       label: 'Editor de Informes', icon: FileText,   moduleKey: 'editor'      },
-  { to: '/indicadores',  label: 'Indicadores',        icon: BarChart2,  moduleKey: 'indicadores' },
-  { to: '/correos',      label: 'Correos',             icon: Mail,       moduleKey: 'correos'     },
-  { to: '/reporte-st',   label: 'Reporte ST',          icon: Timer,      moduleKey: 'reporte_st'  },
-  { to: '/tareas',       label: 'Tareas',               icon: ListTodo,   moduleKey: 'tareas'      },
-  { to: '/mantenimiento-programado', label: 'Mantenimiento Programado', icon: CalendarClock, moduleKey: 'mantenimiento_programado' },
-  { to: '/calibraciones', label: 'Calibraciones', icon: FlaskConical, moduleKey: 'calibraciones' },
+interface NavItem { to: string; label: string; icon: typeof Phone; moduleKey: ModuleKey }
+interface NavGroup { key: string; label: string; items: NavItem[] }
+
+// Agrupado por área de negocio — un rol típico solo tiene módulos en uno o
+// dos grupos, así que en la práctica cada quien ve una lista corta, no las
+// 14 opciones. Colapsable en modo expandido (ver gruposColapsados más abajo);
+// en modo colapsado (solo íconos) los grupos no aplican, se ve todo plano.
+const NAV_GROUPS: NavGroup[] = [
+  {
+    key: 'comercial', label: 'Comercial', items: [
+      { to: '/llamadas', label: 'Control Llamadas',   icon: Phone,      moduleKey: 'llamadas' },
+      { to: '/tarifas',  label: 'Tarifas de Envío',   icon: DollarSign, moduleKey: 'tarifas'  },
+      { to: '/codigos',  label: 'Códigos y Partes',   icon: Wrench,     moduleKey: 'codigos'  },
+      { to: '/tareas',   label: 'Tareas',              icon: ListTodo,   moduleKey: 'tareas'   },
+    ],
+  },
+  {
+    key: 'operativo', label: 'Operativo', items: [
+      { to: '/bodega',      label: 'Bodega',             icon: Warehouse, moduleKey: 'bodega'      },
+      { to: '/consumibles', label: 'Consumibles',        icon: Package,   moduleKey: 'consumibles' },
+      { to: '/reporte-st',  label: 'Reporte ST',          icon: Timer,     moduleKey: 'reporte_st'  },
+      { to: '/editor',      label: 'Editor de Informes', icon: FileText,  moduleKey: 'editor'      },
+      { to: '/indicadores', label: 'Indicadores',        icon: BarChart2, moduleKey: 'indicadores' },
+      { to: '/correos',     label: 'Correos',            icon: Mail,      moduleKey: 'correos'     },
+    ],
+  },
+  {
+    key: 'control_calidad', label: 'Control de Calidad', items: [
+      { to: '/void',       label: 'Control VOIDs',            icon: QrCode, moduleKey: 'void'      },
+      { to: '/bodega-st',  label: 'Bodega ST (Restauración)', icon: Box,    moduleKey: 'bodega_st' },
+    ],
+  },
+  {
+    key: 'estrategico', label: 'Estratégico', items: [
+      { to: '/calibraciones',              label: 'Calibraciones',            icon: FlaskConical,  moduleKey: 'calibraciones' },
+      { to: '/mantenimiento-programado',   label: 'Mantenimiento Programado', icon: CalendarClock, moduleKey: 'mantenimiento_programado' },
+    ],
+  },
 ]
+
+const GRUPOS_COLAPSADOS_KEY = 'sidebar-grupos-colapsados'
+
+function leerGruposColapsados(): Set<string> {
+  try {
+    const raw = localStorage.getItem(GRUPOS_COLAPSADOS_KEY)
+    return raw ? new Set(JSON.parse(raw)) : new Set()
+  } catch {
+    return new Set()
+  }
+}
 
 const ANIMALS = [
   '🐶','🐱','🐰','🦊','🐻','🐼','🐨','🐯',
@@ -88,8 +123,10 @@ export function Sidebar() {
   const { collapsed, toggle } = useSidebar()
   const { user, displayName, profile, isAdmin, hasModule, signOut, updateDisplayName, updateAvatar } = useUser()
   const navigate = useNavigate()
+  const location = useLocation()
   const tareasBadge = useTareasBadgeCount()
   const calibracionesBadge = useCalibracionesBadgeCount()
+  const [gruposColapsados, setGruposColapsados] = useState<Set<string>>(leerGruposColapsados)
   const [profileOpen, setProfileOpen] = useState(false)
   const [nombre, setNombre] = useState('')
   const [selectedEmoji, setSelectedEmoji] = useState<string | null>(null)
@@ -151,6 +188,62 @@ export function Sidebar() {
   const handleSignOut = async () => {
     await signOut()
     navigate('/login')
+  }
+
+  const toggleGrupo = (key: string) => {
+    setGruposColapsados(prev => {
+      const next = new Set(prev)
+      next.has(key) ? next.delete(key) : next.add(key)
+      try { localStorage.setItem(GRUPOS_COLAPSADOS_KEY, JSON.stringify([...next])) } catch { /* localStorage inaccesible (privado/bloqueado) — no crítico */ }
+      return next
+    })
+  }
+
+  const renderNavItem = ({ to, label, icon: Icon, moduleKey }: NavItem) => {
+    const badge = moduleKey === 'tareas' ? tareasBadge : moduleKey === 'calibraciones' ? calibracionesBadge : 0
+    return (
+      <NavLink
+        key={to}
+        to={to}
+        title={collapsed ? `${label}${badge > 0 ? ` (${badge})` : ''}` : undefined}
+        style={({ isActive }) => ({
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          padding: collapsed ? '11px 0' : '10px 16px',
+          justifyContent: collapsed ? 'center' : 'flex-start',
+          textDecoration: 'none',
+          fontSize: '0.875rem',
+          fontWeight: 500,
+          color: isActive ? 'var(--accent)' : 'var(--muted)',
+          background: isActive ? 'var(--accent-bg)' : 'transparent',
+          borderLeft: isActive ? '3px solid var(--accent)' : '3px solid transparent',
+          transition: 'all 0.14s',
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          position: 'relative',
+        })}
+      >
+        <span style={{ position: 'relative', display: 'inline-flex', flexShrink: 0 }}>
+          <Icon size={18} />
+          {badge > 0 && collapsed && (
+            <span style={{
+              position: 'absolute', top: -5, right: -7, minWidth: 15, height: 15, padding: '0 3px',
+              borderRadius: 8, background: '#c0392b', color: '#fff', fontSize: 9, fontWeight: 700,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--mono)',
+            }}>{badge > 9 ? '9+' : badge}</span>
+          )}
+        </span>
+        {!collapsed && <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', flex: 1 }}>{label}</span>}
+        {!collapsed && badge > 0 && (
+          <span style={{
+            minWidth: 18, height: 18, padding: '0 5px', borderRadius: 10, background: '#c0392b', color: '#fff',
+            fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontFamily: 'var(--mono)', flexShrink: 0,
+          }}>{badge > 99 ? '99+' : badge}</span>
+        )}
+      </NavLink>
+    )
   }
 
   const W = collapsed ? 60 : 240
@@ -229,52 +322,35 @@ export function Sidebar() {
 
       {/* Nav */}
       <nav style={{ flex: 1, padding: '10px 0', overflowY: 'auto', overflowX: 'hidden' }}>
-        {NAV_ITEMS.filter(item => hasModule(item.moduleKey)).map(({ to, label, icon: Icon, moduleKey }) => {
-          const badge = moduleKey === 'tareas' ? tareasBadge : moduleKey === 'calibraciones' ? calibracionesBadge : 0
-          return (
-            <NavLink
-              key={to}
-              to={to}
-              title={collapsed ? `${label}${badge > 0 ? ` (${badge})` : ''}` : undefined}
-              style={({ isActive }) => ({
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                padding: collapsed ? '11px 0' : '10px 16px',
-                justifyContent: collapsed ? 'center' : 'flex-start',
-                textDecoration: 'none',
-                fontSize: '0.875rem',
-                fontWeight: 500,
-                color: isActive ? 'var(--accent)' : 'var(--muted)',
-                background: isActive ? 'var(--accent-bg)' : 'transparent',
-                borderLeft: isActive ? '3px solid var(--accent)' : '3px solid transparent',
-                transition: 'all 0.14s',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                position: 'relative',
-              })}
-            >
-              <span style={{ position: 'relative', display: 'inline-flex', flexShrink: 0 }}>
-                <Icon size={18} />
-                {badge > 0 && collapsed && (
-                  <span style={{
-                    position: 'absolute', top: -5, right: -7, minWidth: 15, height: 15, padding: '0 3px',
-                    borderRadius: 8, background: '#c0392b', color: '#fff', fontSize: 9, fontWeight: 700,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--mono)',
-                  }}>{badge > 9 ? '9+' : badge}</span>
-                )}
-              </span>
-              {!collapsed && <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', flex: 1 }}>{label}</span>}
-              {!collapsed && badge > 0 && (
-                <span style={{
-                  minWidth: 18, height: 18, padding: '0 5px', borderRadius: 10, background: '#c0392b', color: '#fff',
-                  fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontFamily: 'var(--mono)', flexShrink: 0,
-                }}>{badge > 99 ? '99+' : badge}</span>
-              )}
-            </NavLink>
-          )
-        })}
+        {collapsed
+          ? NAV_GROUPS.flatMap(g => g.items).filter(item => hasModule(item.moduleKey)).map(renderNavItem)
+          : NAV_GROUPS.map(group => {
+              const items = group.items.filter(item => hasModule(item.moduleKey))
+              if (!items.length) return null
+              // El grupo que contiene la ruta activa siempre se ve, aunque el
+              // usuario lo haya colapsado antes — para no "perder" de vista
+              // dónde está parado al navegar.
+              const tieneActiva = items.some(item => item.to === location.pathname)
+              const abierto = tieneActiva || !gruposColapsados.has(group.key)
+              return (
+                <div key={group.key}>
+                  <button
+                    onClick={() => toggleGrupo(group.key)}
+                    style={{
+                      display: 'flex', alignItems: 'center', width: '100%',
+                      padding: '10px 16px 6px', background: 'none', border: 'none', cursor: 'pointer',
+                      fontSize: '0.62rem', fontFamily: 'var(--mono)', fontWeight: 600,
+                      color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.1em',
+                      opacity: 0.7,
+                    }}
+                  >
+                    <span style={{ flex: 1, textAlign: 'left' }}>{group.label}</span>
+                    <ChevronDown size={12} style={{ transition: 'transform .18s', transform: abierto ? 'none' : 'rotate(-90deg)', flexShrink: 0 }} />
+                  </button>
+                  {abierto && items.map(renderNavItem)}
+                </div>
+              )
+            })}
 
         {isAdmin && (
           <>
@@ -447,7 +523,6 @@ export function Sidebar() {
               Elige un animal
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: 6 }}>
-              {/* Opción "sin animal" */}
               <button
                 type="button"
                 onClick={() => setSelectedEmoji(null)}
@@ -490,7 +565,6 @@ export function Sidebar() {
               Color de fondo
             </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {/* Opción "sin color" (gradient por defecto) */}
               <button
                 type="button"
                 onClick={() => setSelectedColor(null)}
