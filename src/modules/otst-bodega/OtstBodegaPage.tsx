@@ -168,7 +168,7 @@ type Tab = 'ingreso' | 'bodega' | 'rotacion' | 'pendientes' | 'historial' | 'con
 export function OtstBodegaPage() {
   const { hasCapability } = useUser()
   const canRegistrarIngreso = hasCapability('bodega_registrar_ingreso')
-  const [tab, setTab] = useState<Tab>(canRegistrarIngreso ? 'ingreso' : 'bodega')
+  const [tab, setTab] = useState<Tab>(canRegistrarIngreso ? 'ingreso' : 'pendientes')
   const { data: bodega     = [] } = useBodega()
   const { data: movimientos = [] } = useMovimientos()
   const { data: zonas      = [] } = useZonas()
@@ -189,7 +189,7 @@ export function OtstBodegaPage() {
           ...(canRegistrarIngreso ? [['ingreso', '📥', 'Ingreso']] : []),
           ...(canRegistrarIngreso ? [['rotacion', '🔁', 'Rotación']] : []),
           ['historial',  '🕓', 'Historial'],
-          ['config',     '⚙️', 'Config'],
+          ...(canRegistrarIngreso ? [['config', '⚙️', 'Config']] : []),
         ] as [Tab, string, string][]).map(([id, icon, label]) => (
           <button key={id} onClick={() => setTab(id)} style={{
             flex: 1, padding: '10px 16px', border: 'none', borderRadius: 9, cursor: 'pointer',
@@ -1596,7 +1596,8 @@ function diasTranscurridos(fecha: string): number {
 
 function TabPendientes({ bodega, pendientes, umbral, columnas }: { bodega: OtstBodega[], pendientes: OtstBodegaPendiente[], umbral: number, columnas: string[] }) {
   const qc              = useQueryClient()
-  const { displayName } = useUser()
+  const { displayName, hasCapability } = useUser()
+  const canEliminar     = hasCapability('bodega_eliminar')
   const otstRef          = useRef<HTMLInputElement>(null)
   const [otstInput, setOtstInput] = useState('')
   const [notaInput, setNotaInput] = useState('')
@@ -1730,7 +1731,9 @@ function TabPendientes({ bodega, pendientes, umbral, columnas }: { bodega: OtstB
                                 </IconBtn>
                               )
                             )}
-                            <IconBtn title="Quitar de pendientes" onClick={() => quitar(p.id)}><X size={14} /></IconBtn>
+                            {canEliminar && (
+                              <IconBtn title="Quitar de pendientes" onClick={() => quitar(p.id)}><X size={14} /></IconBtn>
+                            )}
                           </div>
                         </td>
                       </tr>
