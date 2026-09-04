@@ -6,7 +6,7 @@ import { Header } from '../../components/layout/Header'
 import { Spinner } from '../../components/ui/Spinner'
 import { Button } from '../../components/ui/Button'
 import { Modal } from '../../components/ui/Modal'
-import { supabase } from '../../lib/supabase'
+import { supabase, fetchAllRows } from '../../lib/supabase'
 import { useUser } from '../../hooks/useUser'
 import type { TarifaEnvio } from '../../types'
 
@@ -77,14 +77,7 @@ function rowFromCSV(r: Record<string, string>): TarifaRow | null {
 function useTarifas() {
   return useQuery<TarifaEnvio[]>({
     queryKey: ['tarifas-envio'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('tarifas_envio')
-        .select('*')
-        .order('ciudad')
-      if (error) throw error
-      return data as TarifaEnvio[]
-    },
+    queryFn: () => fetchAllRows<TarifaEnvio>('tarifas_envio', q => q.order('ciudad')),
     staleTime: 30 * 60 * 1000,
   })
 }
