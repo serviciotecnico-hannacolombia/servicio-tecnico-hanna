@@ -8,7 +8,6 @@ import { AuthGuard } from './components/auth/AuthGuard'
 import { AdminGuard } from './components/auth/AdminGuard'
 import { ModuleGuard } from './components/auth/ModuleGuard'
 import { LoginPage } from './components/auth/LoginPage'
-import { ResetPasswordPage } from './components/auth/ResetPasswordPage'
 import { AppLayout } from './components/layout/AppLayout'
 import { LlamadasPage } from './modules/llamadas/LlamadasPage'
 import { OtstBodegaPage } from './modules/otst-bodega/OtstBodegaPage'
@@ -39,7 +38,6 @@ export default function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
-            <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route
               element={
                 <AuthGuard>
