@@ -15,7 +15,7 @@ const ALLOWED_DOMAIN = 'hannacolombia.com'
 export function LoginPage() {
   const { user, loading, hasModule } = useUser()
   const navigate = useNavigate()
-  const [mode, setMode] = useState<'login' | 'signup'>('login')
+  const [mode, setMode] = useState<'login' | 'signup' | 'forgot'>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [fullName, setFullName] = useState('')
@@ -32,7 +32,7 @@ export function LoginPage() {
 
   if (user) return <Navigate to={getDefaultRoute(hasModule)} replace />
 
-  const switchMode = (next: 'login' | 'signup') => {
+  const switchMode = (next: 'login' | 'signup' | 'forgot') => {
     setMode(next)
     setPassword('')
     setConfirmPassword('')
@@ -80,7 +80,23 @@ export function LoginPage() {
     }
   }
 
-  const handleSubmit = mode === 'login' ? handleLogin : handleSignup
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!email.trim()) return
+    setSubmitting(true)
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/reset-password`,
+    })
+    setSubmitting(false)
+    if (error) {
+      toast.error(error.message)
+      return
+    }
+    toast.success('Si el correo existe, te enviamos un enlace para restablecer tu contraseña')
+    switchMode('login')
+  }
+
+  const handleSubmit = mode === 'login' ? handleLogin : mode === 'signup' ? handleSignup : handleForgotPassword
 
   return (
     <div style={{
@@ -151,16 +167,18 @@ export function LoginPage() {
             autoFocus={mode === 'login'}
             icon={<Mail size={15} />}
           />
-          <Input
-            label="Contraseña"
-            type="password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            placeholder="••••••••"
-            required
-            minLength={mode === 'signup' ? 6 : undefined}
-            icon={<Lock size={15} />}
-          />
+          {mode !== 'forgot' && (
+            <Input
+              label="Contraseña"
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              placeholder="••••••••"
+              required
+              minLength={mode === 'signup' ? 6 : undefined}
+              icon={<Lock size={15} />}
+            />
+          )}
           {mode === 'signup' && (
             <Input
               label="Confirmar contraseña"
@@ -173,12 +191,23 @@ export function LoginPage() {
               icon={<Lock size={15} />}
             />
           )}
+          {mode === 'login' && (
+            <button
+              type="button"
+              onClick={() => switchMode('forgot')}
+              style={{ background: 'none', border: 'none', padding: 0, color: 'var(--muted)', cursor: 'pointer', fontFamily: 'var(--sans)', fontSize: '0.78rem', textAlign: 'right', alignSelf: 'flex-end' }}
+            >
+              ¿Olvidaste tu contraseña?
+            </button>
+          )}
           <Button
             type="submit"
             disabled={submitting}
             style={{ marginTop: 8, width: '100%', padding: '11px 18px', fontSize: '0.9rem' }}
           >
-            {submitting ? <Spinner size={16} color="#fff" /> : mode === 'login' ? 'Ingresar' : 'Crear cuenta'}
+            {submitting
+              ? <Spinner size={16} color="#fff" />
+              : mode === 'login' ? 'Ingresar' : mode === 'signup' ? 'Crear cuenta' : 'Enviar enlace de recuperación'}
           </Button>
         </form>
 
@@ -206,7 +235,7 @@ export function LoginPage() {
         </p>
 
         <p style={{ textAlign: 'center', marginTop: 8, fontSize: '0.75rem', color: 'var(--muted)' }}>
-          {mode === 'signup' ? `Solo se permiten correos @${ALLOWED_DOMAIN}` : 'Acceso solo para el equipo de Servicio Técnico'}
+          {mode === 'signup' ? `Solo se permiten correos @${ALLOWED_DOMAIN}` : mode === 'forgot' ? 'Te enviaremos un enlace para restablecer tu contraseña' : 'Acceso solo para el equipo de Servicio Técnico'}
         </p>
 
         <a
