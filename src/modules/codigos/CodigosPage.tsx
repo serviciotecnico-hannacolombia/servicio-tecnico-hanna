@@ -1944,6 +1944,7 @@ export function CodigosPage() {
   const { data, isLoading, error, refetch, isFetching } = useCodigosData()
   const { hasCapability } = useUser()
   const canGestion = hasCapability('gestion_codigos')
+  const canVerPrecios = hasCapability('ver_precios_codigos')
   const [tab, setTab] = useState<'equipos' | 'precios' | 'accesorios' | 'gestion'>('equipos')
 
   const inetItems      = data?.codInet.items ?? []
@@ -2017,14 +2018,14 @@ export function CodigosPage() {
             borderRadius: 12, padding: 4, marginBottom: 24,
           }}>
             {tabBtn('equipos', '🔧', 'Equipos', inetCount)}
-            {tabBtn('precios', '💰', 'Precios', priceCount)}
             {tabBtn('accesorios', '🧩', 'Accesorios', accesoriosCount)}
+            {canVerPrecios && tabBtn('precios', '💰', 'Precios', priceCount)}
             {canGestion && tabBtn('gestion', '⚙️', 'Gestión')}
           </div>
 
           {tab === 'equipos' && <TabEquipos items={data!.codInet.items} />}
-          {tab === 'precios' && <TabPrecios items={data!.spPrice.items} />}
           {tab === 'accesorios' && <TabAccesorios items={accItems} catalogo={catalogoItems} spItems={spItems} />}
+          {tab === 'precios' && canVerPrecios && <TabPrecios items={data!.spPrice.items} />}
           {tab === 'gestion' && canGestion && <TabGestion items={inetItems} spItems={spItems} accItems={accItems} />}
         </>
       )}
