@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useLayoutEffect, forwardRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import Papa from 'papaparse'
-import { Search, Warehouse, AlertTriangle, ArrowRightLeft, Mail, CheckCircle2, Download, Upload, Trash2, X, ListTodo, MapPinOff, Pencil, MoreVertical } from 'lucide-react'
+import { Search, Warehouse, AlertTriangle, ArrowRightLeft, Mail, CheckCircle2, Download, Upload, Trash2, X, ListTodo, MapPinOff, Pencil, MoreVertical, Ban } from 'lucide-react'
 import { toast } from 'sonner'
 import { supabase, fetchAllRows } from '../../lib/supabase'
 import { Header } from '../../components/layout/Header'
@@ -1604,6 +1604,7 @@ function TabPendientes({ bodega, pendientes, umbral, columnas }: { bodega: OtstB
   const [saving,    setSaving]    = useState(false)
   const [verCompletados, setVerCompletados] = useState(false)
   const [completando, setCompletando] = useState<{ pendiente: OtstBodegaPendiente, item: OtstBodega } | null>(null)
+  const [cancelando, setCancelando] = useState<OtstBodegaPendiente | null>(null)
   const [marcandoNovedad, setMarcandoNovedad] = useState<OtstBodega | null>(null)
   const [resolviendoNovedad, setResolviendoNovedad] = useState<OtstBodega | null>(null)
 
@@ -1642,7 +1643,7 @@ function TabPendientes({ bodega, pendientes, umbral, columnas }: { bodega: OtstB
     .sort((a, b) => a.p.created_at.localeCompare(b.p.created_at))
 
   const completados = pendientes
-    .filter(p => p.estado === 'completado')
+    .filter(p => p.estado === 'completado' || p.estado === 'cancelado')
     .map(p => ({ p, item: resolverItem(p) }))
 
   return (
@@ -1731,6 +1732,9 @@ function TabPendientes({ bodega, pendientes, umbral, columnas }: { bodega: OtstB
                                 </IconBtn>
                               )
                             )}
+                            <IconBtn title="Cancelar despacho (sin borrar, queda en el historial)" onClick={() => setCancelando(p)}>
+                              <Ban size={14} color="#c0392b" />
+                            </IconBtn>
                             {canEliminar && (
                               <IconBtn title="Quitar de pendientes" onClick={() => quitar(p.id)}><X size={14} /></IconBtn>
                             )}
@@ -1749,14 +1753,18 @@ function TabPendientes({ bodega, pendientes, umbral, columnas }: { bodega: OtstB
       <div style={{ marginTop: 20 }}>
         <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--muted)', cursor: 'pointer' }}>
           <input type="checkbox" checked={verCompletados} onChange={e => setVerCompletados(e.target.checked)} />
-          Ver completados ({completados.length})
+          Ver historial — completados y cancelados ({completados.length})
         </label>
         {verCompletados && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 12 }}>
             {completados.map(({ p, item }) => (
               <div key={p.id} style={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 16px', fontSize: 12, opacity: .8 }}>
-                <strong>OTST <OtstLink otst={p.otst} /></strong>{item ? ` (${codigoUbicacion(item.columna, item.fila, item.subcolumna)})` : ''} — despachado por {p.completado_por || '—'} el {p.completado_at ? new Date(p.completado_at).toLocaleString() : '—'}
-                {p.nota && <div style={{ marginTop: 4, color: 'var(--muted)' }}>{p.nota}</div>}
+                <strong>OTST <OtstLink otst={p.otst} /></strong>{item ? ` (${codigoUbicacion(item.columna, item.fila, item.subcolumna)})` : ''}
+                {p.estado === 'cancelado'
+                  ? <> — <span style={{ color: '#c0392b', fontWeight: 600 }}>✕ cancelado</span> por {p.cancelado_por || '—'} el {p.cancelado_at ? new Date(p.cancelado_at).toLocaleString() : '—'}</>
+                  : <> — despachado por {p.completado_por || '—'} el {p.completado_at ? new Date(p.completado_at).toLocaleString() : '—'}</>}
+                {p.estado === 'cancelado' && p.motivo_cancelacion && <div style={{ marginTop: 4, color: 'var(--muted)' }}>Motivo: {p.motivo_cancelacion}</div>}
+                {p.estado !== 'cancelado' && p.nota && <div style={{ marginTop: 4, color: 'var(--muted)' }}>{p.nota}</div>}
               </div>
             ))}
           </div>
@@ -1765,6 +1773,9 @@ function TabPendientes({ bodega, pendientes, umbral, columnas }: { bodega: OtstB
 
       {completando && (
         <ModalCompletarPendiente pendiente={completando.pendiente} item={completando.item} onClose={() => setCompletando(null)} />
+      )}
+      {cancelando && (
+        <ModalCancelarPendiente pendiente={cancelando} onClose={() => setCancelando(null)} />
       )}
       {marcandoNovedad && (
         <ModalNovedad item={marcandoNovedad} onClose={() => setMarcandoNovedad(null)} />
@@ -1819,6 +1830,47 @@ function ModalCompletarPendiente({ pendiente, item, onClose }: { pendiente: Otst
       <Actions>
         <button onClick={onClose} style={GHOST}>Cancelar</button>
         <button onClick={submit} disabled={saving} style={PRI}>{saving ? 'Guardando…' : '✓ Confirmar despacho'}</button>
+      </Actions>
+    </Modal>
+  )
+}
+
+// Cierra un pendiente SIN despacharlo ni tocar otst_bodega — para cuando la
+// solicitud no procede (se pidió por error, se resolvió por otra vía, etc.)
+// o para OTST "no encontradas en bodega" que nunca podrían pasar por
+// ModalCompletarPendiente. A diferencia de "Quitar de pendientes" (borrado
+// real, requiere bodega_eliminar), esto es un UPDATE — solo requiere el
+// módulo bodega, y el motivo queda guardado para trazabilidad.
+function ModalCancelarPendiente({ pendiente, onClose }: { pendiente: OtstBodegaPendiente, onClose: () => void }) {
+  const qc              = useQueryClient()
+  const { displayName } = useUser()
+  const [motivo, setMotivo] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  async function submit() {
+    if (!motivo.trim()) { toast.error('Escribe el motivo de la cancelación'); return }
+    setSaving(true)
+    const { error } = await supabase.from('otst_bodega_pendientes')
+      .update({ estado: 'cancelado', cancelado_por: displayName, cancelado_at: new Date().toISOString(), motivo_cancelacion: motivo.trim() })
+      .eq('id', pendiente.id)
+    setSaving(false)
+    if (error) { toast.error('Error: ' + error.message); return }
+    toast.success('Solicitud cancelada')
+    qc.invalidateQueries({ queryKey: ['otst_bodega_pendientes'] })
+    onClose()
+  }
+
+  return (
+    <Modal open onClose={onClose} title={`Cancelar despacho — OTST ${pendiente.otst}`}>
+      <p style={{ fontSize: 13, color: 'var(--muted)' }}>
+        Esto cierra la solicitud sin marcar la OTST como despachada — queda en el historial con el motivo, no se borra.
+      </p>
+      <FG label="Motivo de la cancelación *">
+        <textarea value={motivo} onChange={e => setMotivo(e.target.value)} placeholder="Ej. Se solicitó por error, ya se resolvió por otra vía..." rows={3} autoFocus style={{ ...INP, resize: 'vertical' }} />
+      </FG>
+      <Actions>
+        <button onClick={onClose} style={GHOST}>Volver</button>
+        <button onClick={submit} disabled={saving || !motivo.trim()} style={PRI}>{saving ? 'Guardando…' : 'Confirmar cancelación'}</button>
       </Actions>
     </Modal>
   )
