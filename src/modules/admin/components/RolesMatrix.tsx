@@ -5,6 +5,7 @@ import { Card } from '../../../components/ui/Card'
 import { Button } from '../../../components/ui/Button'
 import { Spinner } from '../../../components/ui/Spinner'
 import { useRoles } from '../hooks/useRoles'
+import { useUser } from '../../../hooks/useUser'
 import type { ModuleKey, CapabilityKey } from '../../../types'
 
 const MODULE_LABELS: Record<ModuleKey, string> = {
@@ -45,11 +46,13 @@ export function RolesMatrix() {
     roles, modulesByRole, capabilitiesByRole, isLoading,
     createRole, renameRole, deleteRole, setModuleGrant, setCapabilityGrant,
   } = useRoles()
+  const { profile } = useUser()
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
   const selected = roles.find(r => r.id === selectedId) ?? roles[0] ?? null
   const selectedModules = selected ? (modulesByRole.get(selected.id) ?? new Set<ModuleKey>()) : new Set<ModuleKey>()
   const selectedCapabilities = selected ? (capabilitiesByRole.get(selected.id) ?? new Set<CapabilityKey>()) : new Set<CapabilityKey>()
+  const esRolPropio = !!selected && selected.id === profile?.role_id
 
   const handleCreate = async () => {
     const name = prompt('Nombre del nuevo rol:')
@@ -86,6 +89,10 @@ export function RolesMatrix() {
 
   const toggleModule = (moduleKey: ModuleKey, granted: boolean) => {
     if (!selected) return
+    if (moduleKey === 'admin' && !granted && esRolPropio) {
+      toast.error('No puedes quitarte el módulo Administración a ti mismo — pídele a otro admin que lo haga.')
+      return
+    }
     setModuleGrant.mutate({ roleId: selected.id, moduleKey, granted })
   }
 
@@ -118,7 +125,18 @@ export function RolesMatrix() {
                 color: selected?.id === role.id ? 'var(--accent)' : 'var(--text)',
               }}
             >
-              <span style={{ flex: 1, fontSize: '0.85rem', fontWeight: 600 }}>{role.name}</span>
+              <span style={{ flex: 1, fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+                {role.name}
+                {role.id === profile?.role_id && (
+                  <span style={{
+                    fontSize: '0.62rem', fontWeight: 700, color: 'var(--accent)',
+                    background: 'var(--accent-bg)', border: '1px solid var(--accent)',
+                    borderRadius: 8, padding: '1px 6px',
+                  }}>
+                    TÚ
+                  </span>
+                )}
+              </span>
               <button
                 onClick={e => { e.stopPropagation(); handleRename(role.id, role.name) }}
                 title="Renombrar"
@@ -146,22 +164,33 @@ export function RolesMatrix() {
       {/* Matriz de permisos del rol seleccionado */}
       {selected ? (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <Card title={`Módulos — ${selected.name}`}>
+          <Card title={`Módulos — ${selected.name}${esRolPropio ? ' (tu rol actual)' : ''}`}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 8 }}>
-              {MODULE_KEYS.map(key => (
-                <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.85rem', cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    checked={selectedModules.has(key)}
-                    onChange={e => toggleModule(key, e.target.checked)}
-                  />
-                  {MODULE_LABELS[key]}
-                </label>
-              ))}
+              {MODULE_KEYS.map(key => {
+                const bloqueado = esRolPropio && key === 'admin' && selectedModules.has(key)
+                return (
+                  <label
+                    key={key}
+                    title={bloqueado ? 'No puedes quitarte el módulo Administración a ti mismo' : undefined}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.85rem',
+                      cursor: bloqueado ? 'not-allowed' : 'pointer', opacity: bloqueado ? 0.6 : 1,
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedModules.has(key)}
+                      disabled={bloqueado}
+                      onChange={e => toggleModule(key, e.target.checked)}
+                    />
+                    {MODULE_LABELS[key]}
+                  </label>
+                )
+              })}
             </div>
           </Card>
 
-          <Card title={`Capacidades sensibles — ${selected.name}`}>
+          <Card title={`Capacidades sensibles — ${selected.name}${esRolPropio ? ' (tu rol actual)' : ''}`}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 8 }}>
               {CAPABILITY_KEYS.map(key => (
                 <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.85rem', cursor: 'pointer' }}>
