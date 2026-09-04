@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { supabase } from '../../../lib/supabase'
+import { supabase, fetchAllRows } from '../../../lib/supabase'
 import { useUser } from '../../../hooks/useUser'
 import type { EquipoMantenimiento, EventoMantenimiento, Periodicidad } from '../../../types'
 
@@ -7,12 +7,7 @@ export function useEquiposMantenimiento() {
   const { user } = useUser()
   return useQuery({
     queryKey: ['equipos_mantenimiento', user?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('equipos_mantenimiento').select('*').order('proxima_fecha', { ascending: true })
-      if (error) throw error
-      return data as EquipoMantenimiento[]
-    },
+    queryFn: () => fetchAllRows<EquipoMantenimiento>('equipos_mantenimiento', q => q.order('proxima_fecha', { ascending: true })),
     enabled: !!user,
   })
 }
