@@ -97,9 +97,17 @@ const traducir = (texto: string): string => {
     const regex = new RegExp(`\\b${ingles}\\b`, 'gi');
     resultado = resultado.replace(regex, espanol);
   }
-  
+
   return resultado;
 };
+
+// Algunos equipos (los que traen reactivos) insertan una fecha de
+// vencimiento entre el origen y el nombre, ej:
+// HI98494ÑM04430001111ÑROMANIAÑ12-2028ÑMultiparameter WP pH-EC-OPDo-ORP
+// Sin este filtro esa fecha se reconocía como si fuera el nombre del equipo.
+const FECHA_VENCIMIENTO_REGEX = /^\d{1,2}[/-]\d{4}$|^\d{4}[/-]\d{1,2}$|^\d{1,2}[/-]\d{1,2}[/-]\d{2,4}$/;
+
+const esFechaVencimiento = (texto: string): boolean => FECHA_VENCIMIENTO_REGEX.test(texto.trim());
 
 export const parseEquipoQR = (qrRaw: string): ParsedQR => {
   if (!qrRaw || qrRaw.trim() === '') {
@@ -108,51 +116,42 @@ export const parseEquipoQR = (qrRaw: string): ParsedQR => {
 
   // Limpiar el QR
   const qrLimpio = qrRaw.trim();
-  
+
   // Intentar dividir por Ñ
   const parts = qrLimpio.split('Ñ').map(p => p.trim()).filter(p => p !== '');
 
-  if (parts.length >= 4) {
-    // Formato completo: REF Ñ SERIAL Ñ ORIGEN Ñ NOMBRE
-    let nombre = parts[3] || '';
-    nombre = traducir(nombre);
-    
-    return {
-      referencia: parts[0] || '',
-      serie: parts[1] || '',
-      origen: parts[2] || '',
-      nombre: nombre,
-      isValid: true
-    };
-  } else if (parts.length === 3) {
-    // Formato sin origen: REF Ñ SERIAL Ñ NOMBRE
-    let nombre = parts[2] || '';
-    nombre = traducir(nombre);
-    
-    return {
-      referencia: parts[0] || '',
-      serie: parts[1] || '',
-      origen: '',
-      nombre: nombre,
-      isValid: true
-    };
-  } else if (parts.length >= 1) {
-    // Solo referencia (y quizás serie) — no alcanza a tener nombre de
-    // equipo, se deja para corrección manual en vez de marcarlo válido.
-    return {
-      referencia: parts[0] || '',
-      serie: parts[1] || '',
-      origen: '',
-      nombre: '',
-      isValid: false
-    };
+  if (parts.length === 0) {
+    return { referencia: '', serie: '', origen: '', nombre: '', isValid: false };
   }
 
+  const referencia = parts[0] || '';
+  const serie = parts[1] || '';
+  // Todo lo que viene después de REF y SERIAL: [ORIGEN?, FECHA_VENCIMIENTO?..., NOMBRE]
+  const resto = parts.slice(2);
+
+  if (resto.length === 0) {
+    // Solo referencia (y quizás serie) — no alcanza a tener nombre de
+    // equipo, se deja para corrección manual en vez de marcarlo válido.
+    return { referencia, serie, origen: '', nombre: '', isValid: false };
+  }
+
+  // El nombre del equipo siempre es el último campo real (no una fecha).
+  let nombreIndex = resto.length - 1;
+  while (nombreIndex > 0 && esFechaVencimiento(resto[nombreIndex])) {
+    nombreIndex--;
+  }
+
+  const nombre = traducir(resto[nombreIndex] || '');
+  const origen = resto
+    .slice(0, nombreIndex)
+    .filter(p => !esFechaVencimiento(p))
+    .join(' ');
+
   return {
-    referencia: '',
-    serie: '',
-    origen: '',
-    nombre: '',
-    isValid: false
+    referencia,
+    serie,
+    origen,
+    nombre,
+    isValid: true
   };
 };

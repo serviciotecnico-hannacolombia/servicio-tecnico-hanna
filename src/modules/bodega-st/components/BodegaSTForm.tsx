@@ -2,7 +2,7 @@ import { useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import type { RegistroBodegaST, EstadoRestauracion } from '../types';
 import { UBICACIONES_BODEGA_ST } from '../types';
 import { parseEquipoQR } from '../../void/utils/qrParser';
-import { Wrench, PackageCheck, Edit3 } from 'lucide-react';
+import { Wrench, PackageCheck, Edit3, PackageSearch } from 'lucide-react';
 import { Card } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
@@ -61,8 +61,8 @@ export function BodegaSTForm({ onSave }: BodegaSTFormProps) {
       estado,
       partes_requeridas: estado === 'incompleto_espera_partes' ? accesoriosFaltantes : (estado === 'en_diagnostico' ? repuestosPedir : ''),
       reparaciones_realizadas: estado === 'en_reparacion' ? piezasColocar : (estado === 'incompleto_espera_partes' ? reparacionesRealizadas : ''),
-      ubicacion_estante: estado === 'restaurado_listo' ? undefined : ubicacion,
-      bodega_destino: estado === 'restaurado_listo' ? bodegaDestino : undefined,
+      ubicacion_estante: (estado === 'restaurado_listo' || estado === 'incompleto_espera_partes') ? undefined : ubicacion,
+      bodega_destino: estado === 'restaurado_listo' ? bodegaDestino : (estado === 'incompleto_espera_partes' ? 'Bodega Incompletos' : undefined),
       observaciones,
       created_at: new Date().toISOString()
     });
@@ -134,6 +134,11 @@ export function BodegaSTForm({ onSave }: BodegaSTFormProps) {
               options={[{ value: 'Bodega Principal', label: 'Bodega Principal' }, { value: 'Bodega Incompletos', label: 'Bodega Incompletos' }]}
               style={{ border: '1px solid var(--green)', background: 'var(--green-bg)', fontWeight: 600 }}
             />
+          ) : estado === 'incompleto_espera_partes' ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--red-bg, rgba(239,68,68,.08))', border: '1px solid var(--red)', borderRadius: 'var(--radius-sm)', padding: '10px 12px', fontSize: '0.85rem', color: 'var(--text)' }}>
+              <PackageSearch size={16} style={{ color: 'var(--red)', flexShrink: 0 }} />
+              <span>Se asignará automáticamente a <strong>Bodega Incompletos</strong></span>
+            </div>
           ) : (
             <Select
               label="UBICACIÓN EN ESTANTE (BODEGA ST)"

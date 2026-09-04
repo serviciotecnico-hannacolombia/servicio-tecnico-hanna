@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import type { RegistroBodegaST, EstadoRestauracion } from '../types';
 import { UBICACIONES_BODEGA_ST, BODEGAS_DESTINO } from '../types';
-import { Save } from 'lucide-react';
+import { Save, PackageSearch } from 'lucide-react';
 import { Modal } from '../../../components/ui/Modal';
 import { Input } from '../../../components/ui/Input';
 import { Select } from '../../../components/ui/Select';
@@ -24,8 +24,12 @@ const ESTADO_OPTIONS = [
 export function EditBodegaSTModal({ record, isOpen, onClose, onUpdate }: EditBodegaSTModalProps) {
   const [prevRecordId, setPrevRecordId] = useState<string | undefined>(undefined);
   const [estado, setEstado] = useState<EstadoRestauracion>('en_diagnostico');
-  const [partesRequeridas, setPartesRequeridas] = useState('');
-  const [reparaciones, setReparaciones] = useState('');
+
+  const [repuestosPedir, setRepuestosPedir] = useState('');
+  const [piezasColocar, setPiezasColocar] = useState('');
+  const [reparacionesRealizadas, setReparacionesRealizadas] = useState('');
+  const [accesoriosFaltantes, setAccesoriosFaltantes] = useState('');
+
   const [ubicacion, setUbicacion] = useState(UBICACIONES_BODEGA_ST[0]);
   const [bodegaDestino, setBodegaDestino] = useState(BODEGAS_DESTINO[0]);
   const [observaciones, setObservaciones] = useState('');
@@ -33,8 +37,14 @@ export function EditBodegaSTModal({ record, isOpen, onClose, onUpdate }: EditBod
   if (record && record.id !== prevRecordId) {
     setPrevRecordId(record.id);
     setEstado(record.estado);
-    setPartesRequeridas(record.partes_requeridas || '');
-    setReparaciones(record.reparaciones_realizadas || '');
+
+    // Cada etapa guarda su información en columnas distintas; al cargar el
+    // registro se reparte de vuelta al campo específico de esa etapa.
+    setRepuestosPedir(record.estado === 'en_diagnostico' ? (record.partes_requeridas || '') : '');
+    setPiezasColocar(record.estado === 'en_reparacion' ? (record.reparaciones_realizadas || '') : '');
+    setReparacionesRealizadas(record.estado === 'incompleto_espera_partes' ? (record.reparaciones_realizadas || '') : '');
+    setAccesoriosFaltantes(record.estado === 'incompleto_espera_partes' ? (record.partes_requeridas || '') : '');
+
     setUbicacion(record.ubicacion_estante || UBICACIONES_BODEGA_ST[0]);
     setBodegaDestino(record.bodega_destino || BODEGAS_DESTINO[0]);
     setObservaciones(record.observaciones || '');
@@ -47,10 +57,10 @@ export function EditBodegaSTModal({ record, isOpen, onClose, onUpdate }: EditBod
     onUpdate({
       ...record,
       estado,
-      partes_requeridas: partesRequeridas,
-      reparaciones_realizadas: reparaciones,
-      ubicacion_estante: estado === 'restaurado_listo' ? undefined : ubicacion,
-      bodega_destino: estado === 'restaurado_listo' ? bodegaDestino : undefined,
+      partes_requeridas: estado === 'incompleto_espera_partes' ? accesoriosFaltantes : (estado === 'en_diagnostico' ? repuestosPedir : ''),
+      reparaciones_realizadas: estado === 'en_reparacion' ? piezasColocar : (estado === 'incompleto_espera_partes' ? reparacionesRealizadas : ''),
+      ubicacion_estante: (estado === 'restaurado_listo' || estado === 'incompleto_espera_partes') ? undefined : ubicacion,
+      bodega_destino: estado === 'restaurado_listo' ? bodegaDestino : (estado === 'incompleto_espera_partes' ? 'Bodega Incompletos' : undefined),
       observaciones
     });
     onClose();
@@ -60,11 +70,28 @@ export function EditBodegaSTModal({ record, isOpen, onClose, onUpdate }: EditBod
     <Modal open={isOpen} onClose={onClose} title={`Actualizar Restauración · ${record.nombre_equipo} (${record.numero_serie})`} width={560}>
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         <Select label="Estado Actual" value={estado} onChange={e => setEstado(e.target.value as EstadoRestauracion)} options={ESTADO_OPTIONS} />
-        <Input label="Partes / Accesorios Faltantes" value={partesRequeridas} onChange={e => setPartesRequeridas(e.target.value)} />
-        <Input label="Reparaciones Realizadas" value={reparaciones} onChange={e => setReparaciones(e.target.value)} />
-        <Select label="Ubicación en Bodega ST" value={ubicacion} onChange={e => setUbicacion(e.target.value)} options={UBICACIONES_BODEGA_ST.map(loc => ({ value: loc, label: loc }))} />
 
-        {estado === 'restaurado_listo' && (
+        {estado === 'en_diagnostico' && (
+          <Input label="Repuestos a Pedir / Diagnóstico Inicial" value={repuestosPedir} onChange={e => setRepuestosPedir(e.target.value)} placeholder="Ej: Solicitar tarjeta lógica y pantalla LCD" />
+        )}
+
+        {estado === 'en_reparacion' && (
+          <Input label="Repuestos o Piezas a Colocar" value={piezasColocar} onChange={e => setPiezasColocar(e.target.value)} placeholder="Ej: Instalación de sensor de pH y batería nueva" />
+        )}
+
+        {estado === 'incompleto_espera_partes' && (
+          <>
+            <Input label="Reparaciones Realizadas" value={reparacionesRealizadas} onChange={e => setReparacionesRealizadas(e.target.value)} placeholder="Ej: Limpieza interna y soldadura de conector" />
+            <Input label="Accesorios / Partes Faltantes" value={accesoriosFaltantes} onChange={e => setAccesoriosFaltantes(e.target.value)} placeholder="Ej: Falta tapa trasera y manual" />
+          </>
+        )}
+
+        {estado === 'incompleto_espera_partes' ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--red-bg, rgba(239,68,68,.08))', border: '1px solid var(--red)', borderRadius: 'var(--radius-sm)', padding: 12, fontSize: '0.85rem', color: 'var(--text)' }}>
+            <PackageSearch size={16} style={{ color: 'var(--red)', flexShrink: 0 }} />
+            <span>Este equipo se moverá automáticamente a <strong>Bodega Incompletos</strong> mientras se completan los accesorios/partes.</span>
+          </div>
+        ) : estado === 'restaurado_listo' ? (
           <Select
             label="📦 Bodega Destino"
             value={bodegaDestino}
@@ -72,6 +99,8 @@ export function EditBodegaSTModal({ record, isOpen, onClose, onUpdate }: EditBod
             options={BODEGAS_DESTINO.map(b => ({ value: b, label: b }))}
             style={{ border: '1px solid var(--green)', background: 'var(--green-bg)' }}
           />
+        ) : (
+          <Select label="Ubicación en Bodega ST" value={ubicacion} onChange={e => setUbicacion(e.target.value)} options={UBICACIONES_BODEGA_ST.map(loc => ({ value: loc, label: loc }))} />
         )}
 
         <Input label="Observaciones" value={observaciones} onChange={e => setObservaciones(e.target.value)} />
