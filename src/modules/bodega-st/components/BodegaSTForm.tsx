@@ -33,7 +33,6 @@ export function BodegaSTForm({ onSave }: BodegaSTFormProps) {
   const [accesoriosFaltantes, setAccesoriosFaltantes] = useState('');
 
   const [ubicacion, setUbicacion] = useState(UBICACIONES_BODEGA_ST[0]);
-  const [bodegaDestino, setBodegaDestino] = useState('Bodega Principal');
   const [observaciones, setObservaciones] = useState('');
 
   const inputQrRef = useRef<HTMLInputElement>(null);
@@ -62,7 +61,7 @@ export function BodegaSTForm({ onSave }: BodegaSTFormProps) {
       partes_requeridas: estado === 'incompleto_espera_partes' ? accesoriosFaltantes : (estado === 'en_diagnostico' ? repuestosPedir : ''),
       reparaciones_realizadas: estado === 'en_reparacion' ? piezasColocar : (estado === 'incompleto_espera_partes' ? reparacionesRealizadas : ''),
       ubicacion_estante: (estado === 'restaurado_listo' || estado === 'incompleto_espera_partes') ? undefined : ubicacion,
-      bodega_destino: estado === 'restaurado_listo' ? bodegaDestino : (estado === 'incompleto_espera_partes' ? 'Bodega Incompletos' : undefined),
+      bodega_destino: estado === 'restaurado_listo' ? 'Bodega Principal' : (estado === 'incompleto_espera_partes' ? 'Bodega Incompletos' : undefined),
       observaciones,
       created_at: new Date().toISOString()
     });
@@ -127,13 +126,10 @@ export function BodegaSTForm({ onSave }: BodegaSTFormProps) {
           <Select label="ESTADO DEL EQUIPO (ETAPA)" value={estado} onChange={e => setEstado(e.target.value as EstadoRestauracion)} options={ESTADO_OPTIONS} />
 
           {estado === 'restaurado_listo' ? (
-            <Select
-              label="📦 BODEGA DESTINO"
-              value={bodegaDestino}
-              onChange={e => setBodegaDestino(e.target.value)}
-              options={[{ value: 'Bodega Principal', label: 'Bodega Principal' }, { value: 'Bodega Incompletos', label: 'Bodega Incompletos' }]}
-              style={{ border: '1px solid var(--green)', background: 'var(--green-bg)', fontWeight: 600 }}
-            />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--green-bg)', border: '1px solid var(--green)', borderRadius: 'var(--radius-sm)', padding: '10px 12px', fontSize: '0.85rem', color: 'var(--text)', fontWeight: 600 }}>
+              <PackageCheck size={16} style={{ color: 'var(--green)', flexShrink: 0 }} />
+              <span>Se asignará automáticamente a <strong>Bodega Principal</strong></span>
+            </div>
           ) : estado === 'incompleto_espera_partes' ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--red-bg, rgba(239,68,68,.08))', border: '1px solid var(--red)', borderRadius: 'var(--radius-sm)', padding: '10px 12px', fontSize: '0.85rem', color: 'var(--text)' }}>
               <PackageSearch size={16} style={{ color: 'var(--red)', flexShrink: 0 }} />

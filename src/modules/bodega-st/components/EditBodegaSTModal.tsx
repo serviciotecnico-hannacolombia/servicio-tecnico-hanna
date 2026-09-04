@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import type { RegistroBodegaST, EstadoRestauracion } from '../types';
-import { UBICACIONES_BODEGA_ST, BODEGAS_DESTINO } from '../types';
-import { Save, PackageSearch } from 'lucide-react';
+import { UBICACIONES_BODEGA_ST } from '../types';
+import { Save, PackageSearch, PackageCheck } from 'lucide-react';
 import { Modal } from '../../../components/ui/Modal';
 import { Input } from '../../../components/ui/Input';
 import { Select } from '../../../components/ui/Select';
@@ -31,7 +31,6 @@ export function EditBodegaSTModal({ record, isOpen, onClose, onUpdate }: EditBod
   const [accesoriosFaltantes, setAccesoriosFaltantes] = useState('');
 
   const [ubicacion, setUbicacion] = useState(UBICACIONES_BODEGA_ST[0]);
-  const [bodegaDestino, setBodegaDestino] = useState(BODEGAS_DESTINO[0]);
   const [observaciones, setObservaciones] = useState('');
 
   if (record && record.id !== prevRecordId) {
@@ -46,7 +45,6 @@ export function EditBodegaSTModal({ record, isOpen, onClose, onUpdate }: EditBod
     setAccesoriosFaltantes(record.estado === 'incompleto_espera_partes' ? (record.partes_requeridas || '') : '');
 
     setUbicacion(record.ubicacion_estante || UBICACIONES_BODEGA_ST[0]);
-    setBodegaDestino(record.bodega_destino || BODEGAS_DESTINO[0]);
     setObservaciones(record.observaciones || '');
   }
 
@@ -60,7 +58,7 @@ export function EditBodegaSTModal({ record, isOpen, onClose, onUpdate }: EditBod
       partes_requeridas: estado === 'incompleto_espera_partes' ? accesoriosFaltantes : (estado === 'en_diagnostico' ? repuestosPedir : ''),
       reparaciones_realizadas: estado === 'en_reparacion' ? piezasColocar : (estado === 'incompleto_espera_partes' ? reparacionesRealizadas : ''),
       ubicacion_estante: (estado === 'restaurado_listo' || estado === 'incompleto_espera_partes') ? undefined : ubicacion,
-      bodega_destino: estado === 'restaurado_listo' ? bodegaDestino : (estado === 'incompleto_espera_partes' ? 'Bodega Incompletos' : undefined),
+      bodega_destino: estado === 'restaurado_listo' ? 'Bodega Principal' : (estado === 'incompleto_espera_partes' ? 'Bodega Incompletos' : undefined),
       observaciones
     });
     onClose();
@@ -92,13 +90,10 @@ export function EditBodegaSTModal({ record, isOpen, onClose, onUpdate }: EditBod
             <span>Este equipo se moverá automáticamente a <strong>Bodega Incompletos</strong> mientras se completan los accesorios/partes.</span>
           </div>
         ) : estado === 'restaurado_listo' ? (
-          <Select
-            label="📦 Bodega Destino"
-            value={bodegaDestino}
-            onChange={e => setBodegaDestino(e.target.value)}
-            options={BODEGAS_DESTINO.map(b => ({ value: b, label: b }))}
-            style={{ border: '1px solid var(--green)', background: 'var(--green-bg)' }}
-          />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--green-bg)', border: '1px solid var(--green)', borderRadius: 'var(--radius-sm)', padding: 12, fontSize: '0.85rem', color: 'var(--text)', fontWeight: 600 }}>
+            <PackageCheck size={16} style={{ color: 'var(--green)', flexShrink: 0 }} />
+            <span>Este equipo se moverá automáticamente a <strong>Bodega Principal</strong>.</span>
+          </div>
         ) : (
           <Select label="Ubicación en Bodega ST" value={ubicacion} onChange={e => setUbicacion(e.target.value)} options={UBICACIONES_BODEGA_ST.map(loc => ({ value: loc, label: loc }))} />
         )}

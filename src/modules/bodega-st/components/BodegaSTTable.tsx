@@ -64,9 +64,15 @@ export function BodegaSTTable({ records, onEdit, onDelete }: BodegaSTTableProps)
     { key: 'reparaciones', header: 'Reparaciones', render: r => <span style={{ color: 'var(--muted)' }} title={r.reparaciones_realizadas || ''}>{truncateText(r.reparaciones_realizadas)}</span> },
     {
       key: 'ubicacion', header: 'Ubicación',
-      render: r => r.estado === 'restaurado_listo'
-        ? <span style={{ color: 'var(--green)', fontWeight: 600 }}>📦 {r.bodega_destino || 'Bodega Principal'}</span>
-        : <span>{r.ubicacion_estante || '—'}</span>,
+      render: r => {
+        if (r.estado === 'restaurado_listo') {
+          return <span style={{ color: 'var(--green)', fontWeight: 600 }}>📦 {r.bodega_destino || 'Bodega Principal'}</span>;
+        }
+        if (r.estado === 'incompleto_espera_partes') {
+          return <span style={{ color: 'var(--red)', fontWeight: 600 }}>📦 {r.bodega_destino || 'Bodega Incompletos'}</span>;
+        }
+        return <span>{r.ubicacion_estante || '—'}</span>;
+      },
     },
     { key: 'obs', header: 'Observaciones', render: r => <span style={{ color: 'var(--muted)' }} title={r.observaciones || ''}>{truncateText(r.observaciones)}</span> },
     {
