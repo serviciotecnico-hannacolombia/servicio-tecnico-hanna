@@ -91,6 +91,24 @@ export function useAsesores() {
   })
 }
 
+// Correos de todos los usuarios registrados en la app — se usa para marcar
+// qué asesores ya tienen cuenta creada en la intranet. profiles.email no
+// está garantizado normalizado a nivel de BD (a diferencia de
+// calibraciones_asesores.correo, que sí se guarda trim+lowercase), así que
+// se normaliza acá antes de comparar.
+export function useProfileEmails() {
+  const { user } = useUser()
+  return useQuery({
+    queryKey: ['calibraciones_profile_emails'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('profiles').select('email')
+      if (error) throw error
+      return new Set((data as { email: string }[]).map(p => p.email.trim().toLowerCase()))
+    },
+    enabled: !!user,
+  })
+}
+
 // Reutiliza el maestro de proveedores del módulo de Correos OC
 // (correos_proveedores) — son los mismos laboratorios de calibración a los
 // que ya se les envían las órdenes de compra por correo.
