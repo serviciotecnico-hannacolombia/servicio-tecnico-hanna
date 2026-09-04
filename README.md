@@ -32,6 +32,12 @@ Generación rápida de correos preformateados que se abren directamente en el cl
 
 Los destinatarios de cada proveedor se administran desde el panel de **Administración → Correos OC**.
 
+### Control VOID
+Registro y control de los sellos VOID (blanco y gris) colocados a los equipos, organizado por libro (Calibración, Bogotá, Cali, Medellín, Bucaramanga, Pereira, CC No requerido, Sin Sistema, Reenvíos Logística). Lee el código QR del equipo para autocompletar referencia, número de serie y nombre, deja trazabilidad del documento de referencia (factura, remisión u OTST), mantiene historial de auditoría de cada registro y permite exportar a Excel.
+
+### Bodega ST
+Seguimiento de equipos en restauración dentro de la bodega de Servicio Técnico, desde el diagnóstico hasta quedar listos para despacho (En diagnóstico, En reparación, Incompleto/espera de partes, Restaurado y listo). Registra ubicación en estante, técnico responsable, partes requeridas y reparaciones realizadas, con indicadores por estado, historial de auditoría y exportación a Excel.
+
 ### Administración *(solo admins)*
 Gestión de usuarios: creación, cambio de rol, activación/desactivación y eliminación. Incluye la configuración de destinatarios de correo TO/CC por proveedor de calibración.
 
