@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
-import { Upload, PlusCircle, Archive, Trash2, SkipForward, Eraser, Star } from 'lucide-react'
+import { Upload, PlusCircle, Archive, Trash2, SkipForward, Eraser, Star, Truck } from 'lucide-react'
 import { toast } from 'sonner'
 import { Header } from '../../components/layout/Header'
 import { Card } from '../../components/ui/Card'
@@ -12,7 +12,9 @@ import { Avatar } from '../../components/ui/Avatar'
 import { AddLlamadaModal } from './components/AddLlamadaModal'
 import { ImportCSVModal } from './components/ImportCSVModal'
 import { HistorialSection } from './components/HistorialSection'
+import { DespacharModal } from './components/DespacharModal'
 import { useLlamadasDiario } from './hooks/useLlamadasDiario'
+import { useDespacharOtst, usePendientesOtst } from './hooks/useDespacharOtst'
 import { useUser } from '../../hooks/useUser'
 import { useProfiles } from '../../hooks/useProfiles'
 import { INTRANET_URL } from '../../lib/constants'
@@ -84,6 +86,7 @@ export function LlamadasPage() {
   const [tab, setTab] = useState<Tab>('hoy')
   const [addOpen, setAddOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
+  const [despachando, setDespachando] = useState<string | null>(null)
   const [archivarOpen, setArchivarOpen]       = useState(false)
   const [limpiarOpen, setLimpiarOpen]         = useState(false)
   const [confirmLimpiar, setConfirmLimpiar]   = useState('')
@@ -99,6 +102,11 @@ export function LlamadasPage() {
   const canImportarCSV = hasCapability('importar_csv_llamadas')
   const { data: profiles = [] } = useProfiles()
   const { data: llamadas = [], isLoading, importCSV, addLlamada, updateEstado, togglePrioridad, marcarVaciosNoLlamado, deleteLlamada, archivarDia, limpiarDia } = useLlamadasDiario()
+  const { data: pendientesOtst = [] } = usePendientesOtst()
+  const despacharOtst = useDespacharOtst()
+  const otstsPendientes = useMemo(() =>
+    new Set(pendientesOtst.filter(p => p.estado === 'pendiente').map(p => p.otst.trim().toLowerCase()))
+  , [pendientesOtst])
 
   // Stats
   const cierre      = llamadas.filter(l => l.estado === 'CIERRE').length
@@ -211,6 +219,11 @@ export function LlamadasPage() {
     catch { toast.error('Error al eliminar') }
   }
 
+  const handleDespachar = async (motivo: string) => {
+    if (!despachando) return
+    await despacharOtst.mutateAsync({ otst: despachando, nota: motivo, solicitadoPor: displayName })
+  }
+
   const handleArchivar = async () => {
     try { await archivarDia.mutateAsync(llamadas); toast.success('Día archivado'); setArchivarOpen(false) }
     catch { toast.error('Error al archivar') }
@@ -261,6 +274,28 @@ export function LlamadasPage() {
     },
     { key: 'hora',    header: 'Hora',    width: '65px', align: 'center', render: r => <span style={{ fontFamily: 'var(--mono)', fontSize: '0.78rem', color: 'var(--muted)' }}>{r.hora || '—'}</span> },
     { key: 'usuario', header: 'Registró', width: '80px', render: r => <span style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>{r.usuario ? r.usuario.split(' ')[0] : '—'}</span> },
+    {
+      key: 'despachar', header: '', width: '40px', align: 'center',
+      render: r => {
+        const yaPendiente = otstsPendientes.has(r.otst.trim().toLowerCase())
+        return (
+          <button
+            onClick={() => !yaPendiente && setDespachando(r.otst)}
+            disabled={yaPendiente}
+            title={yaPendiente ? 'Ya está pendiente de despacho' : 'Despachar — agregar a pendientes de Bodega'}
+            style={{
+              background: 'none', border: 'none', cursor: yaPendiente ? 'not-allowed' : 'pointer',
+              color: yaPendiente ? 'var(--green)' : 'var(--muted)', opacity: yaPendiente ? 0.6 : 1,
+              padding: 4, borderRadius: 6, display: 'inline-flex', transition: 'color .1s',
+            }}
+            onMouseEnter={e => { if (!yaPendiente) (e.currentTarget as HTMLElement).style.color = 'var(--accent)' }}
+            onMouseLeave={e => { if (!yaPendiente) (e.currentTarget as HTMLElement).style.color = 'var(--muted)' }}
+          >
+            <Truck size={14} />
+          </button>
+        )
+      },
+    },
     {
       key: 'del', header: '', width: '40px', align: 'center',
       render: r => (
@@ -589,6 +624,12 @@ export function LlamadasPage() {
         onClose={() => setAddOpen(false)}
         carrera={displayName}
         onAdd={data => addLlamada.mutateAsync(data)}
+      />
+
+      <DespacharModal
+        otst={despachando}
+        onClose={() => setDespachando(null)}
+        onConfirm={handleDespachar}
       />
 
       <Modal open={limpiarOpen} onClose={closeLimpiar} title="Limpiar diario">
