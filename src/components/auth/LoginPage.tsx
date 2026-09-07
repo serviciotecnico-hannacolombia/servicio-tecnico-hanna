@@ -210,7 +210,7 @@ export function LoginPage() {
         </p>
 
         <a
-          href="https://www.instagram.com/brayansgl"
+          href="https://github.com/BrayanSGL"
           target="_blank"
           rel="noopener noreferrer"
           style={{
