@@ -122,9 +122,9 @@ export function AnalisisTab({ ordenes }: { ordenes: OrdenCalibracion[] }) {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 14 }}>
         <ChartCard titulo="Órdenes creadas por mes (últimos 12)">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={historico} margin={{ top: 4, right: 8, left: -14, bottom: 0 }}>
+            <BarChart data={historico} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-              <XAxis dataKey="mesLabel" tick={EJE_COMUN} axisLine={false} tickLine={false} />
+              <XAxis dataKey="mesLabel" tick={EJE_COMUN} axisLine={false} tickLine={false} interval={0} tickFormatter={(v: string) => v.split(' ')[0]} />
               <YAxis tick={EJE_COMUN} axisLine={false} tickLine={false} allowDecimals={false} width={28} />
               <Tooltip content={crearTooltip(' órdenes')} cursor={{ fill: 'var(--surface2)' }} />
               <Bar dataKey="ordenesCreadas" fill={AZUL} radius={[4, 4, 0, 0]} />
@@ -134,9 +134,9 @@ export function AnalisisTab({ ordenes }: { ordenes: OrdenCalibracion[] }) {
 
         <ChartCard titulo="Equipos gestionados por mes (últimos 12)">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={historico} margin={{ top: 4, right: 8, left: -14, bottom: 0 }}>
+            <BarChart data={historico} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-              <XAxis dataKey="mesLabel" tick={EJE_COMUN} axisLine={false} tickLine={false} />
+              <XAxis dataKey="mesLabel" tick={EJE_COMUN} axisLine={false} tickLine={false} interval={0} tickFormatter={(v: string) => v.split(' ')[0]} />
               <YAxis tick={EJE_COMUN} axisLine={false} tickLine={false} allowDecimals={false} width={28} />
               <Tooltip content={crearTooltip(' equipos')} cursor={{ fill: 'var(--surface2)' }} />
               <Bar dataKey="equiposGestionados" fill={MORADO} radius={[4, 4, 0, 0]} />
@@ -146,9 +146,9 @@ export function AnalisisTab({ ordenes }: { ordenes: OrdenCalibracion[] }) {
 
         <ChartCard titulo="Efectividad promedio por mes (últimos 12)">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={historico} margin={{ top: 4, right: 8, left: -14, bottom: 0 }}>
+            <BarChart data={historico} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-              <XAxis dataKey="mesLabel" tick={EJE_COMUN} axisLine={false} tickLine={false} />
+              <XAxis dataKey="mesLabel" tick={EJE_COMUN} axisLine={false} tickLine={false} interval={0} tickFormatter={(v: string) => v.split(' ')[0]} />
               <YAxis tick={EJE_COMUN} axisLine={false} tickLine={false} domain={[0, 100]} width={28} />
               <Tooltip content={crearTooltip('%')} cursor={{ fill: 'var(--surface2)' }} />
               <Bar dataKey="efectividadPromedio" fill={VERDE} radius={[4, 4, 0, 0]} />
