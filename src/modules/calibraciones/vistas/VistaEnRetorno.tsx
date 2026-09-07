@@ -81,6 +81,13 @@ export function VistaEnRetorno({ form, puedeEditar, soloLectura, saving, onAvanz
             <div style={{ ...INP, color: form.codigos_certificados ? 'var(--text)' : 'var(--muted)' }}>{form.codigos_certificados || '—'}</div>
           </FG>
         </div>
+        <div style={{ marginTop: 14 }}>
+          <FG label="Nota de retorno">
+            <div style={{ ...INP, color: form.nota_retorno ? 'var(--text)' : 'var(--muted)' }}>
+              {form.nota_retorno || 'Sin nota de retorno'}
+            </div>
+          </FG>
+        </div>
       </Seccion>
 
       <Seccion titulo="Entrega">
