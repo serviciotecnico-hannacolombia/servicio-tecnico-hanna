@@ -209,12 +209,9 @@ export function LoginPage() {
           {mode === 'signup' ? `Solo se permiten correos @${ALLOWED_DOMAIN}` : 'Acceso solo para el equipo de Servicio Técnico'}
         </p>
 
-        <a
-          href="https://www.instagram.com/brayansgl"
-          target="_blank"
-          rel="noopener noreferrer"
+        <div
           style={{
-            display: 'inline-block',
+            display: 'block',
             width: '100%',
             textAlign: 'center',
             marginTop: 20,
@@ -223,18 +220,37 @@ export function LoginPage() {
             fontWeight: 700,
             letterSpacing: '0.05em',
             color: 'var(--muted)',
-            opacity: 0.65,
-            textDecoration: 'none',
             animation: 'heartbeat 2.4s ease-in-out infinite',
-            transition: 'opacity .2s',
           }}
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '1' }}
-          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '0.65' }}
-          onMouseDown={e => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.94)' }}
-          onMouseUp={e => { (e.currentTarget as HTMLElement).style.transform = '' }}
         >
-          Desarrollado por @brayansgl <span className="bat-icon" aria-hidden="true" />
-        </a>
+          Desarrollado por{' '}
+          <a
+            href="https://github.com/BrayanSGL"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: 'inherit', opacity: 0.65, textDecoration: 'none', transition: 'opacity .2s' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '1' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '0.65' }}
+            onMouseDown={e => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.94)' }}
+            onMouseUp={e => { (e.currentTarget as HTMLElement).style.transform = '' }}
+          >
+            @brayansgl
+          </a>
+          {' · '}
+          <a
+            href="https://github.com/Foxanti"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: 'inherit', opacity: 0.65, textDecoration: 'none', transition: 'opacity .2s' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '1' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '0.65' }}
+            onMouseDown={e => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.94)' }}
+            onMouseUp={e => { (e.currentTarget as HTMLElement).style.transform = '' }}
+          >
+            @Foxanti
+          </a>{' '}
+          <span className="bat-icon" aria-hidden="true" />
+        </div>
       </div>
     </div>
   )

@@ -25,6 +25,7 @@ import { VoidControlPage } from './modules/void/pages/VoidControlPage'
 import { BodegaSTPage } from './modules/bodega-st/pages/BodegaSTPage'
 import { CalibracionesPage } from './modules/calibraciones/CalibracionesPage'
 import { OrdenCalibracionDetailPage } from './modules/calibraciones/OrdenCalibracionDetailPage'
+import { NotFoundPage } from './components/NotFoundPage'
 
 function DefaultRedirect() {
   const { hasModule } = useUser()
@@ -69,6 +70,7 @@ export default function App() {
                   </AdminGuard>
                 }
               />
+              <Route path="*" element={<NotFoundPage />} />
             </Route>
           </Routes>
         </BrowserRouter>

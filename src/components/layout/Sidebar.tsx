@@ -452,47 +452,124 @@ export function Sidebar() {
         </button>
 
         {!collapsed && (
-          <a
-            href="https://www.instagram.com/brayansgl"
-            target="_blank"
-            rel="noopener noreferrer"
+          <div
             style={{
               marginTop: 10,
               fontSize: '0.62rem',
               color: 'var(--muted)',
-              opacity: 0.45,
               textAlign: 'center',
               fontFamily: 'var(--mono)',
               letterSpacing: '0.03em',
               userSelect: 'none',
               display: 'block',
-              textDecoration: 'none',
-              transition: 'opacity .2s, transform .2s',
-            }}
-            onMouseEnter={e => {
-              const el = e.currentTarget as HTMLElement
-              el.style.opacity = '0.85'
-              el.style.transform = 'scale(1.06)'
-            }}
-            onMouseLeave={e => {
-              const el = e.currentTarget as HTMLElement
-              el.style.opacity = '0.45'
-              el.style.transform = 'scale(1)'
-            }}
-            onMouseDown={e => {
-              (e.currentTarget as HTMLElement).style.transform = 'scale(0.94)'
-            }}
-            onMouseUp={e => {
-              (e.currentTarget as HTMLElement).style.transform = 'scale(1.06)'
             }}
           >
-            Desarrollado por @brayansgl <span className="bat-icon" aria-hidden="true" />
-          </a>
+            Desarrollado por{' '}
+            <a
+              href="https://github.com/BrayanSGL"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: 'inherit', opacity: 0.45, textDecoration: 'none', transition: 'opacity .2s, transform .2s', display: 'inline-block' }}
+              onMouseEnter={e => {
+                const el = e.currentTarget as HTMLElement
+                el.style.opacity = '0.85'
+                el.style.transform = 'scale(1.06)'
+              }}
+              onMouseLeave={e => {
+                const el = e.currentTarget as HTMLElement
+                el.style.opacity = '0.45'
+                el.style.transform = 'scale(1)'
+              }}
+              onMouseDown={e => {
+                (e.currentTarget as HTMLElement).style.transform = 'scale(0.94)'
+              }}
+              onMouseUp={e => {
+                (e.currentTarget as HTMLElement).style.transform = 'scale(1.06)'
+              }}
+            >
+              @brayansgl
+            </a>
+            {' · '}
+            <a
+              href="https://github.com/Foxanti"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: 'inherit', opacity: 0.45, textDecoration: 'none', transition: 'opacity .2s, transform .2s', display: 'inline-block' }}
+              onMouseEnter={e => {
+                const el = e.currentTarget as HTMLElement
+                el.style.opacity = '0.85'
+                el.style.transform = 'scale(1.06)'
+              }}
+              onMouseLeave={e => {
+                const el = e.currentTarget as HTMLElement
+                el.style.opacity = '0.45'
+                el.style.transform = 'scale(1)'
+              }}
+              onMouseDown={e => {
+                (e.currentTarget as HTMLElement).style.transform = 'scale(0.94)'
+              }}
+              onMouseUp={e => {
+                (e.currentTarget as HTMLElement).style.transform = 'scale(1.06)'
+              }}
+            >
+              @Foxanti
+            </a>{' '}
+            <span className="bat-icon" aria-hidden="true" />
+          </div>
         )}
       </div>
 
       {/* Modal de perfil */}
       <Modal open={profileOpen} onClose={() => setProfileOpen(false)} title="Editar perfil" width={500}>
+        {/* Cambiar contraseña — primera opción, para que sea fácil de encontrar */}
+        <div style={{ borderBottom: '1px solid var(--border)', marginBottom: 20, paddingBottom: 16 }}>
+          <button
+            type="button"
+            onClick={() => { setPwdOpen(o => !o); setPwdActual(''); setPwdNueva(''); setPwdConfirm('') }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8, width: '100%',
+              background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+              fontSize: '0.82rem', fontWeight: 600, color: 'var(--muted)',
+            }}
+          >
+            <KeyRound size={14} />
+            Cambiar contraseña
+            <ChevronDown size={14} style={{ marginLeft: 'auto', transition: 'transform .2s', transform: pwdOpen ? 'rotate(180deg)' : 'none' }} />
+          </button>
+
+          {pwdOpen && (
+            <form onSubmit={handleCambiarPwd} style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 14 }}>
+              <Input
+                label="Contraseña actual"
+                type="password"
+                value={pwdActual}
+                onChange={e => setPwdActual(e.target.value)}
+                placeholder="••••••••"
+                required
+              />
+              <Input
+                label="Nueva contraseña"
+                type="password"
+                value={pwdNueva}
+                onChange={e => setPwdNueva(e.target.value)}
+                placeholder="Mínimo 6 caracteres"
+                required
+              />
+              <Input
+                label="Confirmar nueva contraseña"
+                type="password"
+                value={pwdConfirm}
+                onChange={e => setPwdConfirm(e.target.value)}
+                placeholder="••••••••"
+                required
+              />
+              <Button type="submit" disabled={savingPwd || !pwdActual || !pwdNueva || !pwdConfirm}>
+                {savingPwd ? 'Actualizando…' : 'Actualizar contraseña'}
+              </Button>
+            </form>
+          )}
+        </div>
+
         <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
 
           {/* Preview */}
@@ -611,55 +688,6 @@ export function Sidebar() {
             </Button>
           </div>
         </form>
-
-        {/* Cambiar contraseña */}
-        <div style={{ borderTop: '1px solid var(--border)', marginTop: 20, paddingTop: 16 }}>
-          <button
-            type="button"
-            onClick={() => { setPwdOpen(o => !o); setPwdActual(''); setPwdNueva(''); setPwdConfirm('') }}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 8, width: '100%',
-              background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-              fontSize: '0.82rem', fontWeight: 600, color: 'var(--muted)',
-            }}
-          >
-            <KeyRound size={14} />
-            Cambiar contraseña
-            <ChevronDown size={14} style={{ marginLeft: 'auto', transition: 'transform .2s', transform: pwdOpen ? 'rotate(180deg)' : 'none' }} />
-          </button>
-
-          {pwdOpen && (
-            <form onSubmit={handleCambiarPwd} style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 14 }}>
-              <Input
-                label="Contraseña actual"
-                type="password"
-                value={pwdActual}
-                onChange={e => setPwdActual(e.target.value)}
-                placeholder="••••••••"
-                required
-              />
-              <Input
-                label="Nueva contraseña"
-                type="password"
-                value={pwdNueva}
-                onChange={e => setPwdNueva(e.target.value)}
-                placeholder="Mínimo 6 caracteres"
-                required
-              />
-              <Input
-                label="Confirmar nueva contraseña"
-                type="password"
-                value={pwdConfirm}
-                onChange={e => setPwdConfirm(e.target.value)}
-                placeholder="••••••••"
-                required
-              />
-              <Button type="submit" disabled={savingPwd || !pwdActual || !pwdNueva || !pwdConfirm}>
-                {savingPwd ? 'Actualizando…' : 'Actualizar contraseña'}
-              </Button>
-            </form>
-          )}
-        </div>
       </Modal>
     </aside>
   )

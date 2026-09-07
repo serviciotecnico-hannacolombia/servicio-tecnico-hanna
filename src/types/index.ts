@@ -211,7 +211,7 @@ export interface OtstBodegaConfig {
   columnas: string[]
 }
 
-export type EstadoPendienteOtst = 'pendiente' | 'completado'
+export type EstadoPendienteOtst = 'pendiente' | 'completado' | 'cancelado'
 
 export interface OtstBodegaPendiente {
   id: string
@@ -222,6 +222,9 @@ export interface OtstBodegaPendiente {
   solicitado_por: string | null
   completado_por: string | null
   completado_at: string | null
+  cancelado_por: string | null
+  cancelado_at: string | null
+  motivo_cancelacion: string | null
   created_at: string
 }
 

@@ -9,7 +9,7 @@ import { Modal } from '../../components/ui/Modal'
 import { Table, type Column } from '../../components/ui/Table'
 import { useUser } from '../../hooks/useUser'
 import {
-  useOrdenesCalibracion, useCatalogoRvCalibr, useAsesores, useProveedores, useInvalidateCalibraciones, useTodosParametros,
+  useOrdenesCalibracion, useCatalogoRvCalibr, useAsesores, useProfileEmails, useProveedores, useInvalidateCalibraciones, useTodosParametros,
   grupoEstado, ESTADO_LABEL, MODALIDAD_LABEL, estaVencido, proximoAVencer, visitaSinProgramar, fechaObjetivo, descripcionSemaforo,
 } from './hooks/useCalibraciones'
 import {
@@ -75,6 +75,7 @@ export function CalibracionesPage() {
   const { data: ordenes = [], isLoading } = useOrdenesCalibracion()
   const { data: catalogo = [] } = useCatalogoRvCalibr()
   const { data: asesores = [] } = useAsesores()
+  const { data: profileEmails } = useProfileEmails()
   const { data: proveedores = [] } = useProveedores()
   const { data: parametros = [] } = useTodosParametros()
   const invalidate = useInvalidateCalibraciones()
@@ -371,7 +372,7 @@ export function CalibracionesPage() {
       ) : tab === 'catalogo' ? (
         <CatalogoTab catalogo={catalogo} proveedores={proveedores} onSaved={invalidate.catalogo} />
       ) : (
-        <AsesoresTab asesores={asesores} onSaved={invalidate.asesores} />
+        <AsesoresTab asesores={asesores} profileEmails={profileEmails} onSaved={invalidate.asesores} />
       )}
     </div>
   )
@@ -550,7 +551,7 @@ const PLATAFORMAS_SUGERIDAS = [
   'Preferente', 'Nuevos negocios', 'Televentas', 'Canal Indirecto Y Cooperativo', 'Educación', 'Territory',
 ]
 
-function AsesoresTab({ asesores, onSaved }: { asesores: Asesor[], onSaved: () => void }) {
+function AsesoresTab({ asesores, profileEmails, onSaved }: { asesores: Asesor[], profileEmails: Set<string> | undefined, onSaved: () => void }) {
   const [search, setSearch] = useState('')
   const [editando, setEditando] = useState<Asesor | null>(null)
   const [creando, setCreando] = useState(false)
@@ -587,6 +588,11 @@ function AsesoresTab({ asesores, onSaved }: { asesores: Asesor[], onSaved: () =>
                 <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text)' }}>{a.nombre}</div>
                 <div style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--mono)', marginTop: 4, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
                   <span>{a.correo}</span>
+                  {profileEmails?.has(a.correo) && (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: 20, fontFamily: 'var(--mono)', fontSize: 10, fontWeight: 700, background: 'var(--green-bg, #dcfce7)', color: 'var(--green, #16a34a)', border: '1px solid var(--green-border, #86efac)' }}>
+                      ✓ Registrado
+                    </span>
+                  )}
                   {a.plataforma && <span style={B_INFO}>{a.plataforma}</span>}
                   {!a.activo && <span>Inactivo</span>}
                 </div>
