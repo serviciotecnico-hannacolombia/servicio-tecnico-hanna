@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { VoidRecord } from '../types'
-import { Search, FileText, Shield, Pencil, Trash2 } from 'lucide-react'
+import { Search, FileText, Shield, Pencil, Trash2, ArrowRightLeft } from 'lucide-react'
 import { Card } from '../../../components/ui/Card'
 import { Table, type Column } from '../../../components/ui/Table'
 
@@ -8,6 +8,7 @@ interface VoidTableProps {
   records: VoidRecord[]
   onEdit: (record: VoidRecord) => void
   onDelete: (record: VoidRecord) => void
+  onMove: (record: VoidRecord) => void
 }
 
 const truncateText = (text: string | undefined | null, maxLength = 30) => {
@@ -15,7 +16,7 @@ const truncateText = (text: string | undefined | null, maxLength = 30) => {
   return text.length > maxLength ? text.substring(0, maxLength) + '...' : text
 }
 
-export function VoidTable({ records, onEdit, onDelete }: VoidTableProps) {
+export function VoidTable({ records, onEdit, onDelete, onMove }: VoidTableProps) {
   const [searchTerm, setSearchTerm] = useState('')
 
   const filteredRecords = records.filter(rec => {
@@ -59,9 +60,10 @@ export function VoidTable({ records, onEdit, onDelete }: VoidTableProps) {
     },
     { key: 'obs', header: 'Observaciones', render: r => <span style={{ color: 'var(--muted)' }} title={r.observaciones || ''}>{truncateText(r.observaciones)}</span> },
     {
-      key: 'acciones', header: 'Acciones', width: '90px', align: 'center',
+      key: 'acciones', header: 'Acciones', width: '120px', align: 'center',
       render: r => (
         <div style={{ display: 'flex', gap: 5, justifyContent: 'center' }}>
+          <button title="Mover de libro" onClick={() => onMove(r)} style={{ border: 'none', background: 'var(--surface2)', color: 'var(--text)', padding: 7, borderRadius: 'var(--radius-sm)', cursor: 'pointer', display: 'flex' }}><ArrowRightLeft size={14} /></button>
           <button title="Editar" onClick={() => onEdit(r)} style={{ border: 'none', background: 'var(--accent-bg)', color: 'var(--accent)', padding: 7, borderRadius: 'var(--radius-sm)', cursor: 'pointer', display: 'flex' }}><Pencil size={14} /></button>
           <button title="Eliminar" onClick={() => onDelete(r)} style={{ border: 'none', background: 'var(--red-bg)', color: 'var(--red)', padding: 7, borderRadius: 'var(--radius-sm)', cursor: 'pointer', display: 'flex' }}><Trash2 size={14} /></button>
         </div>
