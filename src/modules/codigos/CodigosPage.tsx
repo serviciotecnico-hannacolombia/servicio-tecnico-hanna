@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Search, X, Copy, Check, RefreshCw, Wrench, Pencil, Trash2, Plus, Upload, AlertTriangle } from 'lucide-react'
 import { toast } from 'sonner'
@@ -48,16 +48,27 @@ interface CatalogoItem {
 
 // PostgREST limita cada respuesta a 1000 filas por defecto — sin paginar, cualquier
 // catálogo más grande que eso se corta en silencio y el resto nunca llega al cliente.
+// La primera página trae el total (`count: 'exact'`), y con eso el resto de páginas
+// se piden todas en paralelo en vez de una tras otra — para codigos_accesorios
+// (~11k filas) eso baja de ~12 viajes secuenciales a solo 2 tandas de red.
 async function fetchAllRows<T>(table: string, select: string, orderCol: string): Promise<T[]> {
   const PAGE = 1000
-  const all: T[] = []
-  let from = 0
-  for (;;) {
-    const { data, error } = await supabase.from(table).select(select).order(orderCol).range(from, from + PAGE - 1)
-    if (error) throw error
-    all.push(...(data as T[]))
-    if (!data || data.length < PAGE) break
-    from += PAGE
+  const first = await supabase.from(table).select(select, { count: 'exact' }).order(orderCol).range(0, PAGE - 1)
+  if (first.error) throw first.error
+  const all: T[] = [...(first.data as T[])]
+  const total = first.count ?? all.length
+
+  const pageStarts: number[] = []
+  for (let from = PAGE; from < total; from += PAGE) pageStarts.push(from)
+
+  if (pageStarts.length) {
+    const pages = await Promise.all(pageStarts.map(from =>
+      supabase.from(table).select(select).order(orderCol).range(from, from + PAGE - 1)
+    ))
+    for (const { data, error } of pages) {
+      if (error) throw error
+      all.push(...(data as T[]))
+    }
   }
   return all
 }
@@ -276,9 +287,9 @@ function TabEquipos({ items }: { items: CodInetItem[] }) {
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
-  const suggestions = query.trim()
+  const suggestions = useMemo(() => query.trim()
     ? items.filter(r => r.codigo.toLowerCase().includes(query.toLowerCase())).slice(0, 20)
-    : []
+    : [], [query, items])
 
   const select = (i: number) => {
     const item = suggestions[i]
@@ -514,10 +525,10 @@ function TabPrecios({ items }: { items: SpPriceItem[] }) {
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
-  const allProducts = [...new Set(items.map(r => r.product).filter(Boolean))]
-  const suggestions = query.trim()
+  const allProducts = useMemo(() => [...new Set(items.map(r => r.product).filter(Boolean))], [items])
+  const suggestions = useMemo(() => query.trim()
     ? allProducts.filter(p => p.toLowerCase().includes(query.toLowerCase())).slice(0, 20)
-    : []
+    : [], [query, allProducts])
 
   const select = (i: number) => {
     const p = suggestions[i]
@@ -785,19 +796,22 @@ function TabAccesorios({ items, catalogo, spItems }: { items: AccesorioItem[], c
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
-  const catalogoPorCodigo = new Map(catalogo.map(c => [c.codigo.toLowerCase(), c]))
-  const precioPorCodigo = new Map<string, number>()
-  spItems.forEach(r => { if (!precioPorCodigo.has(r.code.toLowerCase())) precioPorCodigo.set(r.code.toLowerCase(), Number(r.precio_a_cobrar) || 0) })
+  const catalogoPorCodigo = useMemo(() => new Map(catalogo.map(c => [c.codigo.toLowerCase(), c])), [catalogo])
+  const precioPorCodigo = useMemo(() => {
+    const m = new Map<string, number>()
+    spItems.forEach(r => { if (!m.has(r.code.toLowerCase())) m.set(r.code.toLowerCase(), Number(r.precio_a_cobrar) || 0) })
+    return m
+  }, [spItems])
 
-  const equipoCodigos    = [...new Set(items.map(r => r.equipo_codigo))]
-  const accesorioCodigos = [...new Set(items.map(r => r.accesorio_codigo))]
+  const equipoCodigos    = useMemo(() => [...new Set(items.map(r => r.equipo_codigo))], [items])
+  const accesorioCodigos = useMemo(() => [...new Set(items.map(r => r.accesorio_codigo))], [items])
 
-  const suggestions = query.trim()
+  const suggestions = useMemo(() => query.trim()
     ? [
         ...equipoCodigos.filter(c => c.toLowerCase().includes(query.toLowerCase())).slice(0, 12).map(c => ({ tipo: 'equipo' as const, codigo: c })),
         ...accesorioCodigos.filter(c => c.toLowerCase().includes(query.toLowerCase())).slice(0, 12).map(c => ({ tipo: 'accesorio' as const, codigo: c })),
       ].slice(0, 20)
-    : []
+    : [], [query, equipoCodigos, accesorioCodigos])
 
   const buscar = (tipo: 'equipo' | 'accesorio', codigo: string) => {
     setQuery(codigo)
@@ -1204,12 +1218,12 @@ function TabGestion({ items, spItems, accItems }: { items: CodInetItem[], spItem
   const [importMsgAcc, setImportMsgAcc]     = useState('')
 
   const PAGE = 25
-  const filtered = items.filter(r =>
+  const filtered = useMemo(() => items.filter(r =>
     !search.trim() ||
     r.codigo.toLowerCase().includes(search.toLowerCase()) ||
     (r.descripcion || '').toLowerCase().includes(search.toLowerCase()) ||
     (r.familia || '').toLowerCase().includes(search.toLowerCase())
-  )
+  ), [items, search])
   const totalPages = Math.ceil(filtered.length / PAGE)
   const pageItems  = filtered.slice(page * PAGE, (page + 1) * PAGE)
 
