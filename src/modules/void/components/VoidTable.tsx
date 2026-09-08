@@ -9,6 +9,7 @@ interface VoidTableProps {
   onEdit: (record: VoidRecord) => void
   onDelete: (record: VoidRecord) => void
   onMove: (record: VoidRecord) => void
+  title?: string
 }
 
 const truncateText = (text: string | undefined | null, maxLength = 30) => {
@@ -16,7 +17,7 @@ const truncateText = (text: string | undefined | null, maxLength = 30) => {
   return text.length > maxLength ? text.substring(0, maxLength) + '...' : text
 }
 
-export function VoidTable({ records, onEdit, onDelete, onMove }: VoidTableProps) {
+export function VoidTable({ records, onEdit, onDelete, onMove, title = 'Registros de Equipos Escaneados' }: VoidTableProps) {
   const [searchTerm, setSearchTerm] = useState('')
 
   const filteredRecords = records.filter(rec => {
@@ -75,7 +76,7 @@ export function VoidTable({ records, onEdit, onDelete, onMove }: VoidTableProps)
     <Card bodyStyle={{ padding: 0 }}>
       <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
         <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text)' }}>
-          Registros de Equipos Escaneados <span style={{ color: 'var(--muted)', fontWeight: 500 }}>({records.length})</span>
+          {title} <span style={{ color: 'var(--muted)', fontWeight: 500 }}>({records.length})</span>
         </h3>
         <div style={{ position: 'relative', width: 280 }}>
           <Search size={15} style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)' }} />

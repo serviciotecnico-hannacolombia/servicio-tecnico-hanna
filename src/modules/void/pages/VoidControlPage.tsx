@@ -14,7 +14,7 @@ import { Modal } from '../../../components/ui/Modal';
 import { AuditHistory } from '../../../components/ui/AuditHistory';
 import { supabase, fetchAllRows } from '../../../lib/supabase';
 import type { VoidAudit, VoidRecord } from '../types';
-import { Download, Upload } from 'lucide-react';
+import { Download, Upload, ChevronDown, ChevronRight } from 'lucide-react';
 
 const LIBROS_VOID = [
   'Calibración', 'Bogotá', 'Cali', 'Medellín', 'Bucaramanga',
@@ -44,10 +44,28 @@ export function VoidControlPage() {
   const [libroActivo, setLibroActivo] = useState(LIBROS_VOID[0]);
   const [importOpen, setImportOpen] = useState(false);
   const [moving, setMoving] = useState<VoidRecord | null>(null);
+  const [showAntiguos, setShowAntiguos] = useState(false);
 
   const existingVoidBlancos = useMemo(
     () => new Set(records.map(r => r.void_blanco?.trim().toUpperCase()).filter(Boolean) as string[]),
     [records]
+  );
+
+  // Los registros importados del Excel histórico no traían bien relacionado
+  // el equipo con la serie/VOID, así que quedaron sin `nombre_equipo`. Se
+  // separan de la vista principal para no saturarla, pero siguen disponibles
+  // desplegando la sección de registros antiguos.
+  const registrosDelLibro = useMemo(
+    () => records.filter(record => record.libro === libroActivo),
+    [records, libroActivo]
+  );
+  const registrosVigentes = useMemo(
+    () => registrosDelLibro.filter(r => r.nombre_equipo?.trim()),
+    [registrosDelLibro]
+  );
+  const registrosAntiguos = useMemo(
+    () => registrosDelLibro.filter(r => !r.nombre_equipo?.trim()),
+    [registrosDelLibro]
   );
 
   const invalidate = () => {
@@ -222,7 +240,35 @@ export function VoidControlPage() {
 
       <VoidSearchPanel records={records} onSelectRecord={setSelected} />
       <VoidForm onSave={record => handleSaveRecord(record)} />
-      <VoidTable records={records.filter(record => record.libro === libroActivo)} onEdit={setSelected} onDelete={handleDelete} onMove={setMoving} />
+      <VoidTable records={registrosVigentes} onEdit={setSelected} onDelete={handleDelete} onMove={setMoving} />
+
+      {registrosAntiguos.length > 0 && (
+        <div style={{ marginTop: 14 }}>
+          <button
+            onClick={() => setShowAntiguos(v => !v)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6, padding: '8px 12px', cursor: 'pointer',
+              border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', background: 'var(--surface)',
+              color: 'var(--muted)', fontFamily: 'var(--sans)', fontSize: '0.8rem', fontWeight: 600,
+            }}
+          >
+            {showAntiguos ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
+            {showAntiguos ? 'Ocultar' : 'Mostrar'} datos antiguos importados ({registrosAntiguos.length})
+          </button>
+
+          {showAntiguos && (
+            <div style={{ marginTop: 10 }}>
+              <VoidTable
+                records={registrosAntiguos}
+                onEdit={setSelected}
+                onDelete={handleDelete}
+                onMove={setMoving}
+                title="Registros antiguos (importados, sin nombre de equipo)"
+              />
+            </div>
+          )}
+        </div>
+      )}
 
       <AuditHistory
         audits={audits.map(a => ({
