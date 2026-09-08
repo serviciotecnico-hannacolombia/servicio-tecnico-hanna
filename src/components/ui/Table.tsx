@@ -77,7 +77,10 @@ export function Table<T extends object>({
                   {columns.map(col => (
                     <td
                       key={col.key}
-                      style={{ padding: '10px 14px', color: 'var(--text)', textAlign: col.align ?? 'left', verticalAlign: 'middle' }}
+                      style={{
+                        padding: '10px 14px', color: 'var(--text)', textAlign: col.align ?? 'left', verticalAlign: 'middle',
+                        wordBreak: 'break-word', overflowWrap: 'anywhere',
+                      }}
                     >
                       {col.render
                         ? col.render(row)
