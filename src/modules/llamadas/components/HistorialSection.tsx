@@ -11,7 +11,7 @@ import { Table, type Column } from '../../../components/ui/Table'
 import { Spinner } from '../../../components/ui/Spinner'
 import { useHistorial, useCierres } from '../hooks/useHistorial'
 import { INTRANET_URL } from '../../../lib/constants'
-import type { LlamadaHistorico } from '../../../types'
+import type { LlamadaHistorico, LlamadaDiario } from '../../../types'
 
 // ─── Colores (hex para SVG de Recharts) ───────────────────────────────────────
 const C = {
@@ -83,7 +83,7 @@ function Chip({ label, active, onClick }: { label: string; active?: boolean; onC
 }
 
 // ─── Componente principal ──────────────────────────────────────────────────────
-export function HistorialSection() {
+export function HistorialSection({ llamadasHoy }: { llamadasHoy: LlamadaDiario[] }) {
   type QuickRange = 7 | 30 | 90 | 'mes' | 'todo' | null
 
   const [subTab, setSubTab]           = useState<SubTab>('resumen')
@@ -97,8 +97,21 @@ export function HistorialSection() {
   const [page, setPage]               = useState(1)
   const PAGE = 50
 
-  const { data: todos = [], isLoading } = useHistorial(desde, hasta)
+  const { data: historico = [], isLoading } = useHistorial(desde, hasta)
   const { data: cierres = [] } = useCierres(desde, hasta)
+
+  // El historial (llamadas_historico) solo recibe las llamadas de un día
+  // cuando alguien presiona "Archivar día" — hasta ese momento las de hoy
+  // viven solo en llamadas_diario, así que se agregan aquí cuando el rango
+  // seleccionado incluye el día de hoy, para que la tendencia no lo omita.
+  const todos = useMemo(() => {
+    if (hasta < HOY || desde > HOY) return historico
+    const hoyComoHistorico: LlamadaHistorico[] = llamadasHoy.map(d => ({
+      id: d.id, otst: d.otst, cliente: d.cliente, ingeniero: d.ingeniero, garantia: d.garantia,
+      estado: d.estado, hora: d.hora, usuario: d.usuario, fecha_dia: d.fecha_dia, archivado_at: '',
+    }))
+    return [...historico, ...hoyComoHistorico]
+  }, [historico, llamadasHoy, desde, hasta])
 
   // Selects dinámicos
   const ingenieros = useMemo(() => [...new Set(todos.map(r => r.ingeniero).filter(Boolean) as string[])].sort(), [todos])
@@ -372,10 +385,10 @@ export function HistorialSection() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr minmax(260px, 340px)', gap: 16 }}>
                 <Card title="Llamadas por día">
                   <ResponsiveContainer width="100%" height={220}>
-                    <BarChart data={timeline} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+                    <BarChart data={timeline} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#edf1f7" vertical={false} />
                       <XAxis dataKey="fecha" tick={{ fontSize: 10, fontFamily: 'DM Mono, monospace', fill: '#6b7a99' }} tickLine={false} axisLine={false} />
-                      <YAxis tick={{ fontSize: 10, fontFamily: 'DM Mono, monospace', fill: '#6b7a99' }} tickLine={false} axisLine={false} allowDecimals={false} />
+                      <YAxis tick={{ fontSize: 10, fontFamily: 'DM Mono, monospace', fill: '#6b7a99' }} tickLine={false} axisLine={false} allowDecimals={false} width={30} />
                       <Tooltip content={<BarTooltip />} />
                       <Bar dataKey="cierre"      name="Cierre"       stackId="a" fill={C.cierre}      radius={[0,0,0,0]} />
                       <Bar dataKey="contactado"  name="Contactado"   stackId="a" fill={C.contactado}  />
@@ -384,6 +397,20 @@ export function HistorialSection() {
                       <Bar dataKey="sinMarcar"   name="Sin marcar"   stackId="a" fill={C.sinMarcar}   radius={[4,4,0,0]} />
                     </BarChart>
                   </ResponsiveContainer>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 14px', marginTop: 4, justifyContent: 'center' }}>
+                    {[
+                      { name: 'Cierre',       color: C.cierre },
+                      { name: 'Contactado',   color: C.contactado },
+                      { name: 'Sin contacto', color: C.sinContacto },
+                      { name: 'No llamado',   color: C.noLlamado },
+                      { name: 'Sin marcar',   color: C.sinMarcar },
+                    ].map(d => (
+                      <div key={d.name} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.72rem', color: '#6b7a99' }}>
+                        <div style={{ width: 9, height: 9, borderRadius: 2, background: d.color, flexShrink: 0 }} />
+                        {d.name}
+                      </div>
+                    ))}
+                  </div>
                 </Card>
 
                 <Card title="Distribución de estados">

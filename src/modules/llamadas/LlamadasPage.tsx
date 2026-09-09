@@ -609,7 +609,7 @@ export function LlamadasPage() {
         </>
       )}
 
-      {tab === 'historial' && <HistorialSection />}
+      {tab === 'historial' && <HistorialSection llamadasHoy={llamadas} />}
 
       {/* Modals */}
       <ImportCSVModal
