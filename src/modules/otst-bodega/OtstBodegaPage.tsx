@@ -1603,6 +1603,9 @@ function TabPendientes({ bodega, pendientes, umbral, columnas }: { bodega: OtstB
   const [notaInput, setNotaInput] = useState('')
   const [saving,    setSaving]    = useState(false)
   const [verCompletados, setVerCompletados] = useState(false)
+  const [historialSearch, setHistorialSearch] = useState('')
+  const [historialPage, setHistorialPage] = useState(0)
+  const HISTORIAL_PAGE_SIZE = 10
   const [completando, setCompletando] = useState<{ pendiente: OtstBodegaPendiente, item: OtstBodega } | null>(null)
   const [cancelando, setCancelando] = useState<OtstBodegaPendiente | null>(null)
   const [marcandoNovedad, setMarcandoNovedad] = useState<OtstBodega | null>(null)
@@ -1645,6 +1648,21 @@ function TabPendientes({ bodega, pendientes, umbral, columnas }: { bodega: OtstB
   const completados = pendientes
     .filter(p => p.estado === 'completado' || p.estado === 'cancelado')
     .map(p => ({ p, item: resolverItem(p) }))
+
+  const completadosFiltrados = completados.filter(({ p, item }) => {
+    const q = historialSearch.trim().toLowerCase()
+    if (!q) return true
+    return p.otst.toLowerCase().includes(q)
+      || (p.solicitado_por || '').toLowerCase().includes(q)
+      || (p.completado_por || '').toLowerCase().includes(q)
+      || (p.cancelado_por || '').toLowerCase().includes(q)
+      || (p.nota || '').toLowerCase().includes(q)
+      || (p.motivo_cancelacion || '').toLowerCase().includes(q)
+      || (item ? codigoUbicacion(item.columna, item.fila, item.subcolumna).toLowerCase().includes(q) : false)
+  })
+  const historialTotalPages = Math.max(1, Math.ceil(completadosFiltrados.length / HISTORIAL_PAGE_SIZE))
+  const historialPageActual = Math.min(historialPage, historialTotalPages - 1)
+  const completadosPagina = completadosFiltrados.slice(historialPageActual * HISTORIAL_PAGE_SIZE, (historialPageActual + 1) * HISTORIAL_PAGE_SIZE)
 
   return (
     <div>
@@ -1752,22 +1770,48 @@ function TabPendientes({ bodega, pendientes, umbral, columnas }: { bodega: OtstB
 
       <div style={{ marginTop: 20 }}>
         <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--muted)', cursor: 'pointer' }}>
-          <input type="checkbox" checked={verCompletados} onChange={e => setVerCompletados(e.target.checked)} />
+          <input type="checkbox" checked={verCompletados} onChange={e => { setVerCompletados(e.target.checked); setHistorialPage(0) }} />
           Ver historial — completados y cancelados ({completados.length})
         </label>
         {verCompletados && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 12 }}>
-            {completados.map(({ p, item }) => (
-              <div key={p.id} style={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 16px', fontSize: 12, opacity: .8 }}>
-                <strong>OTST <OtstLink otst={p.otst} /></strong>{item ? ` (${codigoUbicacion(item.columna, item.fila, item.subcolumna)})` : ''}
-                {p.estado === 'cancelado'
-                  ? <> — <span style={{ color: '#c0392b', fontWeight: 600 }}>✕ cancelado</span> por {p.cancelado_por || '—'} el {p.cancelado_at ? new Date(p.cancelado_at).toLocaleString() : '—'}</>
-                  : <> — despachado por {p.completado_por || '—'} el {p.completado_at ? new Date(p.completado_at).toLocaleString() : '—'}</>}
-                {p.estado === 'cancelado' && p.motivo_cancelacion && <div style={{ marginTop: 4, color: 'var(--muted)' }}>Motivo: {p.motivo_cancelacion}</div>}
-                {p.estado !== 'cancelado' && p.nota && <div style={{ marginTop: 4, color: 'var(--muted)' }}>{p.nota}</div>}
+          <>
+            <div style={{ position: 'relative', marginTop: 12, maxWidth: 360 }}>
+              <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)', pointerEvents: 'none' }} />
+              <input
+                value={historialSearch}
+                onChange={e => { setHistorialSearch(e.target.value); setHistorialPage(0) }}
+                placeholder="Buscar por OTST, ubicación, usuario o motivo..."
+                style={{ ...INP, paddingLeft: 34 }}
+              />
+            </div>
+            {completadosFiltrados.length === 0 ? (
+              <div style={{ ...EMPTY, marginTop: 12 }}><Search size={28} strokeWidth={1.5} /><p>Sin resultados para el historial</p></div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 12 }}>
+                {completadosPagina.map(({ p, item }) => (
+                  <div key={p.id} style={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 16px', fontSize: 12, opacity: .8 }}>
+                    <strong>OTST <OtstLink otst={p.otst} /></strong>{item ? ` (${codigoUbicacion(item.columna, item.fila, item.subcolumna)})` : ''}
+                    {p.estado === 'cancelado'
+                      ? <> — <span style={{ color: '#c0392b', fontWeight: 600 }}>✕ cancelado</span> por {p.cancelado_por || '—'} el {p.cancelado_at ? new Date(p.cancelado_at).toLocaleString() : '—'}</>
+                      : <> — despachado por {p.completado_por || '—'} el {p.completado_at ? new Date(p.completado_at).toLocaleString() : '—'}</>}
+                    {p.estado === 'cancelado' && p.motivo_cancelacion && <div style={{ marginTop: 4, color: 'var(--muted)' }}>Motivo: {p.motivo_cancelacion}</div>}
+                    {p.estado !== 'cancelado' && p.nota && <div style={{ marginTop: 4, color: 'var(--muted)' }}>{p.nota}</div>}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            )}
+            {historialTotalPages > 1 && (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8, marginTop: 14 }}>
+                <button onClick={() => setHistorialPage(p => Math.max(0, p - 1))} disabled={historialPageActual === 0} style={{ ...GHOST, padding: '6px 14px', opacity: historialPageActual === 0 ? .5 : 1 }}>
+                  ← Anterior
+                </button>
+                <span style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--mono)' }}>{historialPageActual + 1} / {historialTotalPages}</span>
+                <button onClick={() => setHistorialPage(p => Math.min(historialTotalPages - 1, p + 1))} disabled={historialPageActual >= historialTotalPages - 1} style={{ ...GHOST, padding: '6px 14px', opacity: historialPageActual >= historialTotalPages - 1 ? .5 : 1 }}>
+                  Siguiente →
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
 
