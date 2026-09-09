@@ -575,7 +575,7 @@ export function LlamadasPage() {
               {ingenieros.length > 0 && (
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
                   {ingenieros.map(ing => {
-                    const count = llamadas.filter(l => l.ingeniero === ing).length
+                    const count = llamadas.filter(l => l.ingeniero === ing && !l.estado).length
                     const active = filtroIngeniero === ing
                     return (
                       <button key={ing} onClick={() => setFiltroIngeniero(active ? null : ing)} style={{
