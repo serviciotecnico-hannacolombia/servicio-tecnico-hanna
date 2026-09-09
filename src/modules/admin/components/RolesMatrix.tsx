@@ -23,6 +23,7 @@ const MODULE_LABELS: Record<ModuleKey, string> = {
   calibraciones: 'Calibraciones',
   void: 'Control VOID',
   bodega_st: 'Bodega ST (Restauración)',
+  tickets: 'Tickets a Fábrica',
   admin: 'Administración',
 }
 

@@ -25,6 +25,7 @@ import { VoidControlPage } from './modules/void/pages/VoidControlPage'
 import { BodegaSTPage } from './modules/bodega-st/pages/BodegaSTPage'
 import { CalibracionesPage } from './modules/calibraciones/CalibracionesPage'
 import { OrdenCalibracionDetailPage } from './modules/calibraciones/OrdenCalibracionDetailPage'
+import { TicketsPage } from './modules/tickets/pages/TicketsPage'
 import { NotFoundPage } from './components/NotFoundPage'
 
 function DefaultRedirect() {
@@ -62,6 +63,7 @@ export default function App() {
               <Route path="/mantenimiento-programado" element={<ModuleGuard moduleKey="mantenimiento_programado"><MantenimientoProgramadoPage /></ModuleGuard>} />
               <Route path="/calibraciones" element={<ModuleGuard moduleKey="calibraciones"><CalibracionesPage /></ModuleGuard>} />
               <Route path="/calibraciones/:id" element={<ModuleGuard moduleKey="calibraciones"><OrdenCalibracionDetailPage /></ModuleGuard>} />
+              <Route path="/tickets" element={<ModuleGuard moduleKey="tickets"><TicketsPage /></ModuleGuard>} />
               <Route
                 path="/admin"
                 element={
