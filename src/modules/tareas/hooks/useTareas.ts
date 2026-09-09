@@ -40,9 +40,10 @@ export function esUrgente(t: Pick<Tarea, 'fecha_vencimiento' | 'estado'>): boole
   return estaVencida(t) || venceManana(t)
 }
 
-// Badge del sidebar: entre mis tareas (asignadas a mí o creadas por mí para
-// otros), las que están a un día de vencer o ya vencieron.
-export function useTareasBadgeCount(): number {
+// Badge del sidebar: cuántas tareas tengo asignadas (pendientes, en total) y
+// cuántas de las mías (asignadas a mí o creadas por mí para otros) están a un
+// día de vencer o ya vencieron.
+export function useTareasBadgeCount(): { asignadas: number, vencidas: number } {
   const { user, hasModule } = useUser()
   const { data } = useQuery({
     queryKey: ['tareas_badge', user?.id],
@@ -56,6 +57,9 @@ export function useTareasBadgeCount(): number {
     enabled: !!user && hasModule('tareas'),
     refetchInterval: 60_000,
   })
-  if (!data || !user) return 0
-  return data.filter(t => (t.asignado_a === user.id || t.creado_por === user.id) && esUrgente(t)).length
+  if (!data || !user) return { asignadas: 0, vencidas: 0 }
+  return {
+    asignadas: data.filter(t => t.asignado_a === user.id).length,
+    vencidas: data.filter(t => (t.asignado_a === user.id || t.creado_por === user.id) && esUrgente(t)).length,
+  }
 }

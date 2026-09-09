@@ -16,6 +16,7 @@ import { Button } from '../ui/Button'
 import { Avatar } from '../ui/Avatar'
 import { useTareasBadgeCount } from '../../modules/tareas/hooks/useTareas'
 import { useCalibracionesBadgeCount } from '../../modules/calibraciones/hooks/useCalibraciones'
+import { useBodegaBadgeCount } from '../../modules/otst-bodega/hooks/useBodegaBadge'
 import type { ModuleKey } from '../../types'
 
 // ── Hamburger animado ────────────────────────────────────────────────────────
@@ -126,6 +127,7 @@ export function Sidebar() {
   const location = useLocation()
   const tareasBadge = useTareasBadgeCount()
   const calibracionesBadge = useCalibracionesBadgeCount()
+  const bodegaBadge = useBodegaBadgeCount()
   const [gruposColapsados, setGruposColapsados] = useState<Set<string>>(leerGruposColapsados)
   const [profileOpen, setProfileOpen] = useState(false)
   const [nombre, setNombre] = useState('')
@@ -200,7 +202,8 @@ export function Sidebar() {
   }
 
   const renderNavItem = ({ to, label, icon: Icon, moduleKey }: NavItem) => {
-    const badge = moduleKey === 'tareas' ? tareasBadge : moduleKey === 'calibraciones' ? calibracionesBadge : 0
+    const isTareas = moduleKey === 'tareas'
+    const badge = isTareas ? tareasBadge.vencidas : moduleKey === 'calibraciones' ? calibracionesBadge : moduleKey === 'bodega' ? bodegaBadge : 0
     return (
       <NavLink
         key={to}
@@ -235,7 +238,24 @@ export function Sidebar() {
           )}
         </span>
         {!collapsed && <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', flex: 1 }}>{label}</span>}
-        {!collapsed && badge > 0 && (
+        {!collapsed && isTareas ? (
+          <span style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+            {tareasBadge.asignadas > 0 && (
+              <span title="Asignadas" style={{
+                minWidth: 18, height: 18, padding: '0 5px', borderRadius: 10, background: 'var(--accent)', color: '#fff',
+                fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontFamily: 'var(--mono)',
+              }}>{tareasBadge.asignadas > 99 ? '99+' : tareasBadge.asignadas}</span>
+            )}
+            {tareasBadge.vencidas > 0 && (
+              <span title="Vencidas" style={{
+                minWidth: 18, height: 18, padding: '0 5px', borderRadius: 10, background: '#c0392b', color: '#fff',
+                fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontFamily: 'var(--mono)',
+              }}>{tareasBadge.vencidas > 99 ? '99+' : tareasBadge.vencidas}</span>
+            )}
+          </span>
+        ) : !collapsed && badge > 0 && (
           <span style={{
             minWidth: 18, height: 18, padding: '0 5px', borderRadius: 10, background: '#c0392b', color: '#fff',
             fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center',
