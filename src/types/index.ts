@@ -273,6 +273,9 @@ export interface EquipoMantenimiento {
   proxima_fecha: string
   estado: EstadoEquipoMantenimiento
   observaciones: string | null
+  ubicacion: string | null
+  proceso: string | null
+  id_interno: string | null
   creado_por: string | null
   created_at: string
   updated_at: string
