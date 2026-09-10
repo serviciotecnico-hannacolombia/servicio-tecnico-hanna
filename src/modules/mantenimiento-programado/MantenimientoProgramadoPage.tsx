@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, forwardRef, useRef } from 'react'
 import { toast } from 'sonner'
 import { Plus, Pencil, Trash2, Wrench, AlertTriangle, History, Ban, RotateCcw } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
@@ -27,6 +27,17 @@ function fmtFecha(iso: string | null): string {
   if (!iso) return '—'
   const [y, m, d] = iso.split('-')
   return `${d}/${m}/${y}`
+}
+
+// Código generado por el script de Tampermonkey en el SGP al vender un
+// equipo nuevo — formato MANTPROG|serial|familia|cliente|otst|cotizacion.
+// El SGP no siempre expone familia/serial en el pedido, así que cualquier
+// posición puede venir vacía.
+function parseEquipoNuevoQR(raw: string): { serial: string, familia: string, cliente: string, otst: string, cotizacion: string } | null {
+  const parts = raw.trim().split('|')
+  if (parts[0] !== 'MANTPROG') return null
+  const [, serial = '', familia = '', cliente = '', otst = '', cotizacion = ''] = parts
+  return { serial, familia, cliente, otst, cotizacion }
 }
 
 export function MantenimientoProgramadoPage() {
@@ -133,8 +144,15 @@ export function MantenimientoProgramadoPage() {
                     <div style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--mono)', marginTop: 6, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                       <span>Cliente: <strong>{e.cliente}</strong></span>
                       {e.codigo_mantprog && <span>Código: <strong>{e.codigo_mantprog}</strong></span>}
+                      {e.id_interno && <span>ID interno: <strong>{e.id_interno}</strong></span>}
                       <span>Próximo mantenimiento: <strong style={{ color: vencido ? 'var(--red)' : undefined }}>{fmtFecha(e.proxima_fecha)}</strong></span>
                     </div>
+                    {(e.ubicacion || e.proceso) && (
+                      <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                        {e.ubicacion && <span>📍 {e.ubicacion}</span>}
+                        {e.proceso && <span>⚙ {e.proceso}</span>}
+                      </div>
+                    )}
                   </div>
                   <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
                     <IconBtn title="Ver historial / registrar mantenimiento" onClick={() => setHistorial(e)}><History size={14} /></IconBtn>
@@ -188,6 +206,11 @@ function ModalEquipo({ equipo, miId, onClose, onSaved }: {
   const [fechaCompra, setFechaCompra] = useState(equipo?.fecha_compra || new Date().toISOString().slice(0, 10))
   const [proximaFecha, setProximaFecha] = useState(equipo?.proxima_fecha || calcularProximaFecha('anual', new Date().toISOString().slice(0, 10)))
   const [observaciones, setObservaciones] = useState(equipo?.observaciones || '')
+  const [ubicacion, setUbicacion] = useState(equipo?.ubicacion || '')
+  const [proceso, setProceso] = useState(equipo?.proceso || '')
+  const [idInterno, setIdInterno] = useState(equipo?.id_interno || '')
+  const [codigo, setCodigo] = useState('')
+  const codigoRef = useRef<HTMLInputElement>(null)
   const [saving, setSaving] = useState(false)
   const [proximaFechaTocada, setProximaFechaTocada] = useState(!!equipo)
 
@@ -201,6 +224,19 @@ function ModalEquipo({ equipo, miId, onClose, onSaved }: {
     if (!proximaFechaTocada) setProximaFecha(calcularProximaFecha(v, fechaCompra))
   }
 
+  function handleCodigo(raw: string) {
+    setCodigo(raw)
+    const datos = parseEquipoNuevoQR(raw)
+    if (!datos) return
+    if (datos.serial) setSerial(datos.serial)
+    if (datos.familia) setFamilia(datos.familia)
+    if (datos.cliente) setCliente(datos.cliente)
+    if ((datos.otst || datos.cotizacion) && !observaciones.trim()) {
+      setObservaciones([datos.otst && `OTST: ${datos.otst}`, datos.cotizacion && `Cotización: ${datos.cotizacion}`].filter(Boolean).join(' · '))
+    }
+    toast.success('Datos del equipo autocompletados desde el código')
+  }
+
   async function submit() {
     if (!serial.trim()) { toast.error('Ingresa el serial'); return }
     if (!cliente.trim()) { toast.error('Ingresa el cliente'); return }
@@ -210,6 +246,9 @@ function ModalEquipo({ equipo, miId, onClose, onSaved }: {
       codigo_mantprog: codigoMantprog.trim() || null,
       periodicidad, fecha_compra: fechaCompra, proxima_fecha: proximaFecha,
       observaciones: observaciones.trim() || null,
+      ubicacion: ubicacion.trim() || null,
+      proceso: proceso.trim() || null,
+      id_interno: idInterno.trim() || null,
     }
     if (equipo) {
       const { error } = await supabase.from('equipos_mantenimiento')
@@ -230,6 +269,13 @@ function ModalEquipo({ equipo, miId, onClose, onSaved }: {
 
   return (
     <Modal open onClose={onClose} title={equipo ? 'Editar equipo' : 'Registrar equipo'} width={560}>
+      {!equipo && (
+        <div style={{ marginBottom: 14 }}>
+          <FG label="Código de registro (opcional)" hint="Escanea o pega el código generado al vender el equipo para autocompletar serial, familia y cliente">
+            <QRInput ref={codigoRef} value={codigo} onChange={handleCodigo} />
+          </FG>
+        </div>
+      )}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
         <FG label="Serial">
           <input value={serial} onChange={e => setSerial(e.target.value)} placeholder="Ej. HI98107-01234" style={INP} autoFocus />
@@ -263,6 +309,19 @@ function ModalEquipo({ equipo, miId, onClose, onSaved }: {
         </FG>
         <FG label="Próximo mantenimiento">
           <input type="date" value={proximaFecha} onChange={e => { setProximaFecha(e.target.value); setProximaFechaTocada(true) }} style={INP} />
+        </FG>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginTop: 14 }}>
+        <FG label="Ubicación del equipo (opcional)">
+          <input value={ubicacion} onChange={e => setUbicacion(e.target.value)} placeholder="Ej. Planta de producción, línea 2" style={INP} />
+        </FG>
+        <FG label="Proceso en que se usa (opcional)">
+          <input value={proceso} onChange={e => setProceso(e.target.value)} placeholder="Ej. Control de calidad de agua" style={INP} />
+        </FG>
+      </div>
+      <div style={{ marginTop: 14 }}>
+        <FG label="ID interno del cliente (opcional)">
+          <input value={idInterno} onChange={e => setIdInterno(e.target.value)} placeholder="Ej. código de activo interno, distinto del serial" style={INP} />
         </FG>
       </div>
       <div style={{ marginTop: 14 }}>
@@ -378,6 +437,17 @@ function Stat({ label, value, color }: { label: string, value: number, color: st
   )
 }
 
+const QRInput = forwardRef<HTMLInputElement, { value: string, onChange: (v: string) => void }>(
+  ({ value, onChange }, ref) => (
+    <div style={{ position: 'relative' }}>
+      <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--accent)', fontSize: 18, pointerEvents: 'none' }}>▣</span>
+      <input ref={ref} value={value} onChange={e => onChange(e.target.value)}
+        placeholder="Escanear o escribir código..." autoComplete="off"
+        style={{ ...INP, paddingLeft: 40, fontFamily: 'var(--mono)', fontSize: 14 }} />
+    </div>
+  )
+)
+
 function IconBtn({ title, onClick, children }: { title: string, onClick: () => void, children: React.ReactNode }) {
   return (
     <button title={title} onClick={onClick} style={{
@@ -388,11 +458,12 @@ function IconBtn({ title, onClick, children }: { title: string, onClick: () => v
   )
 }
 
-function FG({ label, children }: { label: string, children: React.ReactNode }) {
+function FG({ label, hint, children }: { label: string, hint?: string, children: React.ReactNode }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
       <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.8px', fontFamily: 'var(--mono)' }}>{label}</label>
       {children}
+      {hint && <span style={{ fontSize: 10.5, color: 'var(--muted)' }}>{hint}</span>}
     </div>
   )
 }
