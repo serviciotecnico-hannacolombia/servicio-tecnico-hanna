@@ -19,7 +19,7 @@ export interface CorreoDestinatario {
 export type ModuleKey =
   | 'llamadas' | 'bodega' | 'consumibles' | 'tarifas' | 'codigos'
   | 'editor' | 'indicadores' | 'correos' | 'reporte_st' | 'tareas'
-  | 'mantenimiento_programado' | 'calibraciones' | 'void' | 'bodega_st' | 'admin'
+  | 'mantenimiento_programado' | 'calibraciones' | 'void' | 'bodega_st' | 'tickets' | 'admin'
 
 export type CapabilityKey =
   | 'importar_csv_tarifas' | 'importar_csv_codigos' | 'importar_csv_llamadas'
