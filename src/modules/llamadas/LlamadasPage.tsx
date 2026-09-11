@@ -272,7 +272,7 @@ export function LlamadasPage() {
       key: 'estado', header: 'Estado', width: '175px',
       render: row => <EstadoBadge estado={row.estado} onClick={e => openPopover(e, row.id)} />,
     },
-    { key: 'hora',    header: 'Hora',    width: '65px', align: 'center', render: r => <span style={{ fontFamily: 'var(--mono)', fontSize: '0.78rem', color: 'var(--muted)' }}>{r.hora || '—'}</span> },
+    { key: 'hora',    header: 'Hora',    width: '65px', align: 'center', render: r => <span style={{ fontFamily: 'var(--mono)', fontSize: '0.78rem', color: 'var(--muted)', whiteSpace: 'nowrap' }}>{r.hora || '—'}</span> },
     { key: 'usuario', header: 'Registró', width: '80px', render: r => <span style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>{r.usuario ? r.usuario.split(' ')[0] : '—'}</span> },
     {
       key: 'despachar', header: '', width: '40px', align: 'center',

@@ -9,12 +9,12 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { ChevronLeft, ChevronRight, CalendarClock, Wrench, FlaskConical } from 'lucide-react'
+import { ChevronLeft, ChevronRight, CalendarClock, Wrench, FlaskConical, History } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { Card } from '../../components/ui/Card'
 import { Table, type Column } from '../../components/ui/Table'
 import { Stat, B_INFO, INP, GHOST, fmtFecha, EMPTY } from './ui'
-import { rangoSemana, MES_CORTO, UBICACION_EQUIPO_LABEL, useInvalidateCalibraciones } from './hooks/useCalibraciones'
+import { rangoSemana, MES_CORTO, UBICACION_EQUIPO_LABEL, ESTADO_LABEL, useInvalidateCalibraciones } from './hooks/useCalibraciones'
 import { parseOtstCodes, parseNumeroOC } from './vistas/CamposCompartidos'
 import type { OrdenCalibracion, OrdenCalibracionParametro, RvCalibrItem, UbicacionEquipo } from '../../types'
 
@@ -43,11 +43,12 @@ const UBICACION_COLOR: Record<UbicacionEquipo, { bg: string, border: string, tex
 // Columnas compartidas entre las tres tablas de esta pestaña — solo cambian
 // la etiqueta/fuente de la fecha y si se puede editar la ubicación del
 // equipo (únicamente en la tabla de visitas).
-function columnasSedeHanna({ magnitudesDe, etiquetaFecha, fechaDe, onCambiarUbicacion }: {
+function columnasSedeHanna({ magnitudesDe, etiquetaFecha, fechaDe, onCambiarUbicacion, mostrarEstado }: {
   magnitudesDe: (orden: OrdenCalibracion) => string[]
   etiquetaFecha: string
   fechaDe: (orden: OrdenCalibracion) => string | null
   onCambiarUbicacion?: (ordenId: string, valor: UbicacionEquipo | '') => void
+  mostrarEstado?: boolean
 }): Column<OrdenCalibracion>[] {
   const columnas: Column<OrdenCalibracion>[] = [
     {
@@ -86,6 +87,13 @@ function columnasSedeHanna({ magnitudesDe, etiquetaFecha, fechaDe, onCambiarUbic
       render: o => <span style={{ fontSize: 12 }}>{o.cantidad_equipos ?? '—'}</span>,
     },
   ]
+
+  if (mostrarEstado) {
+    columnas.push({
+      key: 'estado', header: 'Estado', width: '150px',
+      render: o => <span style={B_INFO}>{ESTADO_LABEL[o.estado]}</span>,
+    })
+  }
 
   if (onCambiarUbicacion) {
     columnas.push({
@@ -160,6 +168,15 @@ export function CoordinacionSedeHannaTab({ ordenes, parametros, catalogo }: {
     .filter(o => !o.anulada && o.modalidad === 'sede_hanna_dorado' && o.estado === 'en_calibracion')
     .sort(porNumeroOCDesc)
 
+  // A diferencia de las tres listas anteriores, esta no filtra por estado —
+  // muestra cualquier orden cuyo metrólogo haya llegado esa semana, sin
+  // importar si el proceso ya avanzó (o terminó) desde entonces. Es el
+  // registro histórico "qué se calibró esta semana", independiente de en
+  // qué va cada orden hoy.
+  const ordenesHistorial = ordenes
+    .filter(o => !o.anulada && o.modalidad === 'sede_hanna_dorado' && enSemana(o.fecha_llegada_metrologo))
+    .sort(porNumeroOCDesc)
+
   const conteoMagnitudes = new Map<string, number>()
   for (const o of ordenesVisita) {
     for (const m of magnitudesDe(o)) conteoMagnitudes.set(m, (conteoMagnitudes.get(m) || 0) + 1)
@@ -182,6 +199,10 @@ export function CoordinacionSedeHannaTab({ ordenes, parametros, catalogo }: {
   })
   const columnasEnCalibracion = columnasSedeHanna({
     magnitudesDe, etiquetaFecha: 'Llegada del metrólogo(a)', fechaDe: o => o.fecha_llegada_metrologo,
+  })
+  const columnasHistorial = columnasSedeHanna({
+    magnitudesDe, etiquetaFecha: 'Llegada del metrólogo(a)', fechaDe: o => o.fecha_llegada_metrologo,
+    mostrarEstado: true,
   })
 
   return (
@@ -210,6 +231,7 @@ export function CoordinacionSedeHannaTab({ ordenes, parametros, catalogo }: {
           <Stat label="Total equipos" value={totalEquipos} color="var(--accent)" />
           <Stat label="Saliendo de mantenimiento" value={ordenesMantenimiento.length} color="var(--yellow, #ca8a04)" />
           <Stat label="En calibración" value={ordenesEnCalibracion.length} color="var(--green, #16a34a)" />
+          <Stat label="Calibradas esta semana" value={ordenesHistorial.length} color="var(--muted)" />
         </div>
 
         {conteoMagnitudes.size > 0 && (
@@ -275,6 +297,25 @@ export function CoordinacionSedeHannaTab({ ordenes, parametros, catalogo }: {
           />
         </Card>
       )}
+
+      <Card bodyStyle={{ padding: 0 }}>
+        <h4 style={{
+          fontSize: 12, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase',
+          letterSpacing: '.6px', padding: '16px 16px 0', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 6,
+        }}>
+          <History size={13} /> Historial de la semana — llegada del metrólogo(a), sin importar el estado actual
+        </h4>
+        {ordenesHistorial.length === 0 ? (
+          <div style={EMPTY}><History size={32} strokeWidth={1.5} /><p>No hay historial de calibraciones en Sede Hanna Dorado para esta semana</p></div>
+        ) : (
+          <Table
+            columns={columnasHistorial}
+            data={ordenesHistorial}
+            keyExtractor={o => o.id}
+            onRowClick={o => navigate(`/calibraciones/${o.id}`)}
+          />
+        )}
+      </Card>
     </div>
   )
 }
