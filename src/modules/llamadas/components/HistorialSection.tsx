@@ -259,7 +259,7 @@ export function HistorialSection({ llamadasHoy }: { llamadasHoy: LlamadaDiario[]
         return <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: 20, fontSize: '0.7rem', fontWeight: 700, fontFamily: 'DM Mono, monospace', background: s.bg, color: s.color }}>{labels[r.estado ?? ''] ?? r.estado}</span>
       },
     },
-    { key: 'hora',    header: 'Hora',    width: '60px',  align: 'center', render: r => <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.78rem', color: '#6b7a99' }}>{r.hora || '—'}</span> },
+    { key: 'hora',    header: 'Hora',    width: '60px',  align: 'center', render: r => <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.78rem', color: '#6b7a99', whiteSpace: 'nowrap' }}>{r.hora || '—'}</span> },
     { key: 'usuario', header: 'Registró', width: '100px', render: r => <span style={{ fontSize: '0.78rem', color: '#6b7a99' }}>{r.usuario || '—'}</span> },
   ]
 
