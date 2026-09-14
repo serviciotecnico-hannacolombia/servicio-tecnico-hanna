@@ -37,6 +37,7 @@ const CAPABILITY_LABELS: Record<CapabilityKey, string> = {
   bodega_eliminar: 'Eliminar ítems de Bodega',
   calibraciones_editar: 'Crear/editar órdenes y catálogo (Calibraciones)',
   ver_precios_codigos: 'Ver pestaña "Precios" en Códigos y Partes',
+  tablas_mantenimiento_editar: 'Agregar/editar tablas de mantenimiento (Editor de Informes)',
 }
 
 const MODULE_KEYS = Object.keys(MODULE_LABELS) as ModuleKey[]

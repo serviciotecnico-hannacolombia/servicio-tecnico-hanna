@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { Copy, Check } from 'lucide-react'
 import { toast } from 'sonner'
+import { TablasMantenimientoModal } from './TablasMantenimientoModal'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -245,6 +246,9 @@ export function EditorPage() {
   // Templates
   const [showTpl,    setShowTpl]    = useState(false)
   const [plantillas, setPlantillas] = useState<Plantilla[]>([])
+
+  // Tablas de mantenimiento
+  const [showTablasMant, setShowTablasMant] = useState(false)
 
   // Save dialog
   const [showSave, setShowSave] = useState(false)
@@ -533,6 +537,13 @@ export function EditorPage() {
           📋 Plantillas
         </button>
 
+        <button
+          onMouseDown={e => { e.preventDefault(); setShowTablasMant(true) }}
+          style={{ ...tbBtn(), background: 'var(--accent)', color: '#fff', fontWeight: 700, border: '1px solid var(--accent)', padding: '0 14px' }}
+        >
+          🧪 Tablas de mantenimiento
+        </button>
+
         <Sep />
         <Label>Formato</Label>
         <button onMouseDown={e => { e.preventDefault(); execFmt('bold') }}      style={tbBtn(boldActive)}  title="Negrita (Ctrl+B)"><b>N</b></button>
@@ -716,6 +727,14 @@ export function EditorPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── Tablas de mantenimiento modal ── */}
+      {showTablasMant && (
+        <TablasMantenimientoModal
+          onClose={() => setShowTablasMant(false)}
+          onInsert={html => iHTML(html)}
+        />
       )}
 
       {/* ── Table dialog ── */}

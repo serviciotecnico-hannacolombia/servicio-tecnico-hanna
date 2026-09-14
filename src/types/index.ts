@@ -24,7 +24,7 @@ export type ModuleKey =
 export type CapabilityKey =
   | 'importar_csv_tarifas' | 'importar_csv_codigos' | 'importar_csv_llamadas'
   | 'bodega_registrar_ingreso' | 'editar_codigos' | 'gestion_codigos' | 'bodega_eliminar'
-  | 'calibraciones_editar' | 'ver_precios_codigos'
+  | 'calibraciones_editar' | 'ver_precios_codigos' | 'tablas_mantenimiento_editar'
 
 export interface Role {
   id: string
@@ -236,6 +236,24 @@ export interface PlantillaInforme {
   categoria: string | null
   activa: boolean
   created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+// ── Tablas de mantenimiento (Editor de Informes) ──────────────────────────────
+
+export interface FilaTablaMantenimiento {
+  lectura: string
+  estandar: string
+  tolerancia: string
+}
+
+export interface TablaMantenimiento {
+  id: string
+  equipo: string
+  parametro: string | null
+  filas: FilaTablaMantenimiento[]
+  creado_por: string | null
   created_at: string
   updated_at: string
 }
