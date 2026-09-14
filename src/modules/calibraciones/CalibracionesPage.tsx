@@ -19,14 +19,15 @@ import {
 import { AnalisisTab } from './AnalisisTab'
 import { CoordinacionSedeHannaTab } from './CoordinacionSedeHannaTab'
 import { LogisticaTab } from './LogisticaTab'
+import { SaciTab } from './SaciTab'
 import { parseNumeroOC } from './vistas/CamposCompartidos'
 import type { Asesor, CorreoProveedor, EstadoCalibracion, Modalidad, OrdenCalibracion, RvCalibrItem } from '../../types'
 
 type VistaFiltro = 'activas' | 'vencidas' | 'completadas' | 'anuladas' | 'todas'
-type Tab = 'ordenes' | 'analisis' | 'sede_hanna' | 'logistica' | 'catalogo' | 'asesores'
+type Tab = 'ordenes' | 'analisis' | 'sede_hanna' | 'logistica' | 'saci' | 'catalogo' | 'asesores'
 
 const TAB_LABEL: Record<Tab, string> = {
-  ordenes: 'Órdenes', analisis: 'Análisis', sede_hanna: 'Sede Hanna', logistica: 'Logística', catalogo: 'Catálogo RV CALIBR', asesores: 'Asesores',
+  ordenes: 'Órdenes', analisis: 'Análisis', sede_hanna: 'Sede Hanna', logistica: 'Logística', saci: 'SACI', catalogo: 'Catálogo RV CALIBR', asesores: 'Asesores',
 }
 
 // Filtros de Estado / Modalidad / Asesor — se recuerdan entre sesiones para
@@ -56,7 +57,7 @@ function cargarFiltros(): FiltrosOrdenes {
 
 // Pestaña activa — se recuerda entre sesiones para que un refresh no te
 // devuelva siempre a "Órdenes".
-const TAB_VALIDAS: Tab[] = ['ordenes', 'analisis', 'sede_hanna', 'logistica', 'catalogo', 'asesores']
+const TAB_VALIDAS: Tab[] = ['ordenes', 'analisis', 'sede_hanna', 'logistica', 'saci', 'catalogo', 'asesores']
 const TAB_KEY = 'calibraciones_tab'
 
 function cargarTab(): Tab {
@@ -242,7 +243,7 @@ export function CalibracionesPage() {
       )}
 
       <div style={{ display: 'flex', gap: 4, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 4, marginBottom: 20, maxWidth: 820, flexWrap: 'wrap' }}>
-        {(['ordenes', 'analisis', 'sede_hanna', 'logistica', ...(puedeEditar ? ['catalogo', 'asesores'] as const : [])] as Tab[]).map(t => (
+        {(['ordenes', 'analisis', 'sede_hanna', 'logistica', 'saci', ...(puedeEditar ? ['catalogo', 'asesores'] as const : [])] as Tab[]).map(t => (
           <button key={t} onClick={() => setTab(t)} style={{
             flex: 1, padding: '9px 14px', border: 'none', borderRadius: 9,
             background: tab === t ? 'var(--accent)' : 'transparent',
@@ -369,6 +370,8 @@ export function CalibracionesPage() {
         <CoordinacionSedeHannaTab ordenes={ordenes} parametros={parametros} catalogo={catalogo} />
       ) : tab === 'logistica' ? (
         <LogisticaTab ordenes={ordenes} />
+      ) : tab === 'saci' ? (
+        <SaciTab />
       ) : tab === 'catalogo' ? (
         <CatalogoTab catalogo={catalogo} proveedores={proveedores} onSaved={invalidate.catalogo} />
       ) : (
