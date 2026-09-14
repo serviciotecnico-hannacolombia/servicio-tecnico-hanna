@@ -38,13 +38,14 @@ export function IconBtn({ title, onClick, children }: { title: string, onClick: 
   )
 }
 
-export function FG({ label, required, children }: { label: string, required?: boolean, children: React.ReactNode }) {
+export function FG({ label, required, hint, children }: { label: string, required?: boolean, hint?: string, children: React.ReactNode }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
       <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.8px', fontFamily: 'var(--mono)' }}>
         {label}{required && <span style={{ color: 'var(--red)' }}> *</span>}
       </label>
       {children}
+      {hint && <span style={{ fontSize: 10.5, color: 'var(--muted)', fontWeight: 400, textTransform: 'none', letterSpacing: 'normal' }}>{hint}</span>}
     </div>
   )
 }

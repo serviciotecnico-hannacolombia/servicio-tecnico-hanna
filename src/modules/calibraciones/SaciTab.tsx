@@ -108,11 +108,11 @@ export function SaciTab() {
             </FG>
           </div>
           <Grid2>
-            <FG label="Referencia del equipo">
-              <input value={form.referenciaEquipo} onChange={e => set('referenciaEquipo', e.target.value)} style={INP} />
+            <FG label="Referencia del equipo" hint="Si son varios equipos, sepáralos por comas">
+              <input value={form.referenciaEquipo} onChange={e => set('referenciaEquipo', e.target.value)} placeholder="Ej. HI98194, HI98195" style={INP} />
             </FG>
-            <FG label="Remisión / Factura">
-              <input value={form.remisionFactura} onChange={e => set('remisionFactura', e.target.value)} style={INP} />
+            <FG label="Remisión / Factura" hint="Si son varias, sepáralas por comas">
+              <input value={form.remisionFactura} onChange={e => set('remisionFactura', e.target.value)} placeholder="Ej. REM-1234, REM-1235" style={INP} />
             </FG>
           </Grid2>
         </Seccion>
@@ -135,11 +135,11 @@ export function SaciTab() {
                 <input value={form.ciudad} onChange={e => set('ciudad', e.target.value)} style={INP} />
               </FG>
             </Grid2>
-            <FG label="Ubicación del equipo">
+            <FG label="Ubicación del equipo" hint="Dato para el certificado (dónde lo usa el cliente), no dónde está el equipo ahora mismo">
               <input value={form.ubicacionEquipo} onChange={e => set('ubicacionEquipo', e.target.value)} placeholder="Ej. Laboratorio de calidad, gestión ambiental (si aplica)" style={INP} />
             </FG>
-            <FG label="ID / Activo fijo">
-              <input value={form.idActivoFijo} onChange={e => set('idActivoFijo', e.target.value)} placeholder="Número de activo fijo del cliente (si aplica)" style={INP} />
+            <FG label="ID / Activo fijo" hint="Dato para el certificado — el número de activo fijo que el cliente usa internamente (si aplica)">
+              <input value={form.idActivoFijo} onChange={e => set('idActivoFijo', e.target.value)} placeholder="Número de activo fijo del cliente" style={INP} />
             </FG>
             <FG label="Parámetro y puntos a calibrar">
               <textarea value={form.parametroPuntos} onChange={e => set('parametroPuntos', e.target.value)} rows={2} style={{ ...INP, resize: 'vertical' }} />
