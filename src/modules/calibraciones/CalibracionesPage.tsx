@@ -391,6 +391,7 @@ const FILTRO_MODALIDAD_OPCIONES: [FiltroModalidad, string][] = [
 
 function CatalogoTab({ catalogo, proveedores, onSaved }: { catalogo: RvCalibrItem[], proveedores: CorreoProveedor[], onSaved: () => void }) {
   const [editando, setEditando] = useState<RvCalibrItem | null>(null)
+  const [creando, setCreando] = useState(false)
   const [search, setSearch] = useState('')
   const [filtroModalidad, setFiltroModalidad] = useState<FiltroModalidad>('todas')
 
@@ -421,6 +422,7 @@ function CatalogoTab({ catalogo, proveedores, onSaved }: { catalogo: RvCalibrIte
           <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)', pointerEvents: 'none' }} />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por código, magnitud o descripción..." style={{ ...INP, paddingLeft: 34 }} />
         </div>
+        <button onClick={() => setCreando(true)} style={PRI}><Plus size={14} style={{ verticalAlign: -2 }} /> Nuevo servicio</button>
       </div>
 
       {filtrado.length === 0 ? (
@@ -450,21 +452,30 @@ function CatalogoTab({ catalogo, proveedores, onSaved }: { catalogo: RvCalibrIte
         </div>
       )}
 
-      {editando && (
-        <ModalCatalogoItem item={editando} proveedores={proveedores} onClose={() => setEditando(null)} onSaved={onSaved} />
+      {(editando || creando) && (
+        <ModalCatalogoItem
+          item={editando ?? undefined}
+          codigosExistentes={new Set(catalogo.map(c => c.codigo))}
+          proveedores={proveedores}
+          onClose={() => { setEditando(null); setCreando(false) }}
+          onSaved={onSaved}
+        />
       )}
     </Card>
   )
 }
 
-function ModalCatalogoItem({ item, proveedores, onClose, onSaved }: { item: RvCalibrItem, proveedores: CorreoProveedor[], onClose: () => void, onSaved: () => void }) {
-  const [magnitud, setMagnitud] = useState(item.magnitud)
-  const [descripcion, setDescripcion] = useState(item.descripcion)
-  const [modalidades, setModalidades] = useState<Set<Modalidad>>(new Set(item.modalidades_permitidas))
-  const [proveedoresSel, setProveedoresSel] = useState<Set<string>>(new Set(item.proveedores_permitidos || []))
-  const [soloLab, setSoloLab] = useState(item.solo_laboratorio_externo)
-  const [tcc, setTcc] = useState(item.envio_exclusivo_tcc)
-  const [activo, setActivo] = useState(item.activo)
+function ModalCatalogoItem({ item, codigosExistentes, proveedores, onClose, onSaved }: {
+  item?: RvCalibrItem, codigosExistentes: Set<string>, proveedores: CorreoProveedor[], onClose: () => void, onSaved: () => void,
+}) {
+  const [codigo, setCodigo] = useState(item?.codigo || '')
+  const [magnitud, setMagnitud] = useState(item?.magnitud || '')
+  const [descripcion, setDescripcion] = useState(item?.descripcion || '')
+  const [modalidades, setModalidades] = useState<Set<Modalidad>>(new Set(item?.modalidades_permitidas || []))
+  const [proveedoresSel, setProveedoresSel] = useState<Set<string>>(new Set(item?.proveedores_permitidos || []))
+  const [soloLab, setSoloLab] = useState(item?.solo_laboratorio_externo || false)
+  const [tcc, setTcc] = useState(item?.envio_exclusivo_tcc || false)
+  const [activo, setActivo] = useState(item?.activo ?? true)
   const [saving, setSaving] = useState(false)
 
   const toggleModalidad = (m: Modalidad) => {
@@ -484,22 +495,39 @@ function ModalCatalogoItem({ item, proveedores, onClose, onSaved }: { item: RvCa
   }
 
   async function submit() {
-    setSaving(true)
-    const { error } = await supabase.from('rv_calibr_catalogo').update({
+    const payload = {
       magnitud: magnitud.trim(), descripcion: descripcion.trim(),
       modalidades_permitidas: [...modalidades], solo_laboratorio_externo: soloLab,
       proveedores_permitidos: proveedoresSel.size ? [...proveedoresSel] : null,
       envio_exclusivo_tcc: tcc, activo,
-    }).eq('codigo', item.codigo)
-    setSaving(false)
-    if (error) { toast.error('Error: ' + error.message); return }
-    toast.success('Catálogo actualizado')
+    }
+    if (item) {
+      setSaving(true)
+      const { error } = await supabase.from('rv_calibr_catalogo').update(payload).eq('codigo', item.codigo)
+      setSaving(false)
+      if (error) { toast.error('Error: ' + error.message); return }
+      toast.success('Catálogo actualizado')
+    } else {
+      const codigoTrim = codigo.trim()
+      if (!codigoTrim) { toast.error('Ingresa el código'); return }
+      if (codigosExistentes.has(codigoTrim)) { toast.error(`El código ${codigoTrim} ya existe`); return }
+      setSaving(true)
+      const { error } = await supabase.from('rv_calibr_catalogo').insert({ codigo: codigoTrim, ...payload })
+      setSaving(false)
+      if (error) { toast.error('Error: ' + error.message); return }
+      toast.success('Servicio creado')
+    }
     onSaved()
     onClose()
   }
 
   return (
-    <Modal open onClose={onClose} title={`Editar ${item.codigo}`} width={480}>
+    <Modal open onClose={onClose} title={item ? `Editar ${item.codigo}` : 'Nuevo servicio de calibración'} width={480}>
+      {!item && (
+        <div style={{ marginBottom: 14 }}>
+          <FG label="Código"><input value={codigo} onChange={e => setCodigo(e.target.value)} placeholder="Ej. RV CALIBR.16" style={INP} autoFocus /></FG>
+        </div>
+      )}
       <FG label="Magnitud"><input value={magnitud} onChange={e => setMagnitud(e.target.value)} style={INP} /></FG>
       <div style={{ marginTop: 14 }}>
         <FG label="Descripción"><textarea value={descripcion} onChange={e => setDescripcion(e.target.value)} rows={3} style={{ ...INP, resize: 'vertical' }} /></FG>
@@ -539,7 +567,7 @@ function ModalCatalogoItem({ item, proveedores, onClose, onSaved }: { item: RvCa
       </div>
       <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 20 }}>
         <button onClick={onClose} style={GHOST}>Cancelar</button>
-        <button onClick={submit} disabled={saving} style={PRI}>{saving ? 'Guardando…' : '✓ Guardar cambios'}</button>
+        <button onClick={submit} disabled={saving} style={PRI}>{saving ? 'Guardando…' : item ? '✓ Guardar cambios' : '+ Crear servicio'}</button>
       </div>
     </Modal>
   )
