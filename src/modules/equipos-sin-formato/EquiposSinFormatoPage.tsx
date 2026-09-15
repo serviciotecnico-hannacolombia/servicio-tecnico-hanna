@@ -79,6 +79,23 @@ export function EquiposSinFormatoPage() {
     { key: 'asesor', header: 'Asesor', render: r => <span style={{ fontSize: 12.5, color: 'var(--muted)' }}>{nombrePorCorreo.get(r.asesor_correo) || r.asesor_correo}</span> },
     { key: 'fecha_llegada', header: 'Fecha llegada', width: '120px', render: r => <span style={{ fontFamily: 'var(--mono)', fontSize: 12.5 }}>{fmtFecha(r.fecha_llegada)}</span> },
     {
+      key: 'equipos', header: 'Equipos', width: '260px',
+      render: r => {
+        const items = itemsPorRegistro.get(r.id) || []
+        if (!items.length) return <span style={{ color: 'var(--muted)' }}>—</span>
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {items.map(it => (
+              <div key={it.id} style={{ fontSize: 12 }}>
+                <strong>{it.referencia}</strong>{it.serial && <> — <span style={{ fontFamily: 'var(--mono)' }}>{it.serial}</span></>}
+                {it.observaciones && <div style={{ color: 'var(--muted)', fontSize: 11 }}>{it.observaciones}</div>}
+              </div>
+            ))}
+          </div>
+        )
+      },
+    },
+    {
       key: 'estado', header: 'Estado', width: '130px',
       render: r => (
         <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 10px', borderRadius: 20, fontFamily: 'var(--mono)', fontSize: 10.5, fontWeight: 700, ...B_ESTADO[r.estado] }}>
