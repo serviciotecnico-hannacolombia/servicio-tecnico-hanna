@@ -56,7 +56,10 @@ export async function crearEquipoSinFormato(
   payload: Omit<EquipoSinFormato, 'id' | 'numero' | 'estado' | 'fecha_recibido' | 'fecha_pendiente' | 'fecha_preingreso' | 'fecha_ingreso' | 'created_at' | 'updated_at' | 'numero_pre_ingreso' | 'otst'>,
   items: { referencia: string, serial: string, observaciones: string }[],
 ) {
-  const { data, error } = await supabase.from('equipos_sin_formato').insert(payload).select().single()
+  // Al enviar el correo ya se sabe que el registro queda pendiente de
+  // respuesta del asesor — no hace falta un paso manual "Recibido → Pendiente".
+  const { data, error } = await supabase.from('equipos_sin_formato')
+    .insert({ ...payload, estado: 'pendiente', fecha_pendiente: new Date().toISOString() }).select().single()
   if (error) return { data: null, error }
   const { error: itemsError } = await supabase.from('equipos_sin_formato_items').insert(
     items.map(it => ({ equipo_sf_id: data.id, referencia: it.referencia, serial: it.serial || null, observaciones: it.observaciones || null }))

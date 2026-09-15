@@ -4,6 +4,8 @@
 // servidor, solo se arma la URL mailto y se abre el cliente de correo.
 import type { EquipoSinFormato } from '../../types'
 
+export const CC_SERVICIO_TECNICO = 'serviciotecnico@hannacolombia.com'
+
 interface ItemMailto {
   referencia: string
   serial: string
@@ -32,7 +34,7 @@ export function generarMailtoSinFormato(
     `• Cliente: ${sf.razon_social}`,
     ...bloquesEquipos,
     '',
-    'Agradecemos su colaboración en la revisión y en el envío de los formatos de recepción correspondientes, en respuesta a este correo, con el fin de proceder con el ingreso al sistema.',
+    'Agradecemos su colaboración en la revisión y en el envío del número de preingreso en respuesta a este correo, con el fin de proceder con el ingreso al sistema.',
     '',
     'Quedo atenta a cualquier información adicional que se requiera.',
     '',
@@ -40,6 +42,7 @@ export function generarMailtoSinFormato(
   ].join('\n')
 
   const params = [
+    `cc=${encodeURIComponent(CC_SERVICIO_TECNICO)}`,
     `subject=${encodeURIComponent(subject)}`,
     `body=${encodeURIComponent(body)}`,
   ].join('&')

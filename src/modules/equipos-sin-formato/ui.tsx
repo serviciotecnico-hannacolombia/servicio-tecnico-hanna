@@ -1,10 +1,12 @@
 // Estilos y sub-componentes compartidos del módulo Equipos Sin Formato —
 // mismo molde que src/modules/calibraciones/ui.tsx.
 
-export function FG({ label, children }: { label: string, children: React.ReactNode }) {
+export function FG({ label, required, children }: { label: string, required?: boolean, children: React.ReactNode }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-      <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.8px', fontFamily: 'var(--mono)' }}>{label}</label>
+      <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.8px', fontFamily: 'var(--mono)' }}>
+        {label}{required && <span style={{ color: 'var(--red)' }}> *</span>}
+      </label>
       {children}
     </div>
   )

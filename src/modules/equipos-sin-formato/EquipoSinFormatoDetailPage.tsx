@@ -11,10 +11,10 @@ import {
   crearEquipoSinFormato, avanzarEquipoSinFormato, ESTADO_LABEL_SF,
 } from './hooks/useEquiposSinFormato'
 import { generarMailtoSinFormato } from './correo'
-import { VistaRecibido } from './vistas/VistaRecibido'
 import { VistaPendiente } from './vistas/VistaPendiente'
 import { VistaPreingresado } from './vistas/VistaPreingresado'
 import { VistaIngresado } from './vistas/VistaIngresado'
+import { LineaTiempoSF } from './LineaTiempoSF'
 import { FG, INP, PRI, GHOST } from './ui'
 import type { EquipoSinFormatoItem } from '../../types'
 
@@ -58,21 +58,24 @@ export function EquipoSinFormatoDetailPage() {
   async function crear() {
     if (!razonSocial.trim()) { toast.error('Ingresa la razón social'); return }
     if (!fechaLlegada) { toast.error('Ingresa la fecha de llegada'); return }
+    if (!modoLlegada.trim()) { toast.error('Ingresa el modo de llegada'); return }
     if (!asesorCorreo) { toast.error('Selecciona el asesor'); return }
-    const itemsValidos = itemsForm.filter(it => it.referencia.trim())
-    if (!itemsValidos.length) { toast.error('Agrega al menos un equipo con su referencia'); return }
+    if (itemsForm.some(it => !it.referencia.trim() || !it.serial.trim())) {
+      toast.error('Completa la referencia y el serial de todos los equipos')
+      return
+    }
 
     setSaving(true)
     const { data, error } = await crearEquipoSinFormato(
-      { razon_social: razonSocial.trim(), fecha_llegada: fechaLlegada, modo_llegada: modoLlegada.trim() || null, asesor_correo: asesorCorreo, creado_por: user?.id || null },
-      itemsValidos,
+      { razon_social: razonSocial.trim(), fecha_llegada: fechaLlegada, modo_llegada: modoLlegada.trim(), asesor_correo: asesorCorreo, creado_por: user?.id || null },
+      itemsForm,
     )
     setSaving(false)
     if (error || !data) { toast.error('Error: ' + error?.message); return }
 
     toast.success('Registro creado')
     invalidate()
-    window.location.href = generarMailtoSinFormato(data, itemsValidos, asesorCorreo)
+    window.location.href = generarMailtoSinFormato(data, itemsForm, asesorCorreo)
     navigate(`/equipos-sin-formato/${data.id}`, { replace: true })
   }
 
@@ -106,10 +109,10 @@ export function EquipoSinFormatoDetailPage() {
         <Card>
           <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 18 }}>Nuevo registro — Equipo Sin Formato</h3>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-            <FG label="Razón social">
-              <input value={razonSocial} onChange={e => setRazonSocial(e.target.value)} placeholder="Ej. PINTURAS DAVINCI S.A.S." style={INP} autoFocus />
+            <FG label="Razón social" required>
+              <input value={razonSocial} onChange={e => setRazonSocial(e.target.value.toUpperCase())} placeholder="Ej. PINTURAS DAVINCI S.A.S." style={INP} autoFocus />
             </FG>
-            <FG label="Asesor">
+            <FG label="Asesor" required>
               <select value={asesorCorreo} onChange={e => setAsesorCorreo(e.target.value)} style={INP}>
                 <option value="">Selecciona...</option>
                 {asesores.map(a => <option key={a.id} value={a.correo}>{a.nombre}{a.plataforma ? ` — ${a.plataforma}` : ''}</option>)}
@@ -117,10 +120,10 @@ export function EquipoSinFormatoDetailPage() {
             </FG>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginTop: 14 }}>
-            <FG label="Fecha de llegada">
+            <FG label="Fecha de llegada" required>
               <input type="date" value={fechaLlegada} onChange={e => setFechaLlegada(e.target.value)} style={INP} />
             </FG>
-            <FG label="Modo de llegada">
+            <FG label="Modo de llegada" required>
               <input value={modoLlegada} onChange={e => setModoLlegada(e.target.value)} placeholder="Ej. Guía TCC #12314221, dejado en bodega por el cliente..." style={INP} />
             </FG>
           </div>
@@ -132,11 +135,11 @@ export function EquipoSinFormatoDetailPage() {
             {itemsForm.map((it, i) => (
               <div key={i} style={{ border: '1px solid var(--border)', borderRadius: 10, padding: 14, background: 'var(--surface2)' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                  <FG label="Referencia">
-                    <input value={it.referencia} onChange={e => actualizarItem(i, 'referencia', e.target.value)} placeholder="Ej. HI2620" style={INP} />
+                  <FG label="Referencia" required>
+                    <input value={it.referencia} onChange={e => actualizarItem(i, 'referencia', e.target.value.toUpperCase())} placeholder="Ej. HI2620" style={INP} />
                   </FG>
-                  <FG label="Serial">
-                    <input value={it.serial} onChange={e => actualizarItem(i, 'serial', e.target.value)} placeholder="Ej. C0107019" style={INP} />
+                  <FG label="Serial" required>
+                    <input value={it.serial} onChange={e => actualizarItem(i, 'serial', e.target.value.toUpperCase())} placeholder="Ej. C0107019" style={INP} />
                   </FG>
                 </div>
                 <div style={{ marginTop: 12 }}>
@@ -167,7 +170,7 @@ export function EquipoSinFormatoDetailPage() {
                 <div style={{ fontSize: 11, fontFamily: 'var(--mono)', color: 'var(--accent)', fontWeight: 700 }}>SF-{registro.numero} — {ESTADO_LABEL_SF[registro.estado]}</div>
                 <h3 style={{ fontSize: 17, fontWeight: 700, marginTop: 4 }}>{registro.razon_social}</h3>
               </div>
-              {puedeEditar && registro.estado === 'recibido' && (
+              {puedeEditar && registro.estado === 'pendiente' && (
                 <button onClick={reenviarCorreo} style={GHOST}>✉ Reenviar correo</button>
               )}
             </div>
@@ -190,15 +193,15 @@ export function EquipoSinFormatoDetailPage() {
             </div>
           </Card>
 
-          {registro.estado === 'recibido' ? (
-            <VistaRecibido registro={registro} puedeEditar={puedeEditar} onAvanzar={onAvanzar} />
-          ) : registro.estado === 'pendiente' ? (
+          <LineaTiempoSF registro={registro} />
+
+          {registro.estado === 'pendiente' ? (
             <VistaPendiente registro={registro} puedeEditar={puedeEditar} onAvanzar={onAvanzar} />
           ) : registro.estado === 'preingresado' ? (
             <VistaPreingresado registro={registro} puedeEditar={puedeEditar} onAvanzar={onAvanzar} />
-          ) : (
+          ) : registro.estado === 'ingresado' ? (
             <VistaIngresado registro={registro} />
-          )}
+          ) : null}
         </div>
       )}
     </div>
