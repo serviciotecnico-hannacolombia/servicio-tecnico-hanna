@@ -6,9 +6,10 @@ import { FG, INP, PRI } from '../ui'
 import { linkOtst, parseOtstCodes } from '../hooks/useEquiposSinFormato'
 import type { EquipoSinFormato } from '../../../types'
 
-export function VistaPreingresado({ registro, puedeEditar, onAvanzar }: {
+export function VistaPreingresado({ registro, puedeEditar, soloLectura, onAvanzar }: {
   registro: EquipoSinFormato
   puedeEditar: boolean
+  soloLectura?: boolean
   onAvanzar: (overrides: Record<string, unknown>) => void
 }) {
   const [otst, setOtst] = useState(registro.otst || '')
@@ -26,12 +27,12 @@ export function VistaPreingresado({ registro, puedeEditar, onAvanzar }: {
         background: 'var(--accent-bg)', border: '1px solid var(--accent)', color: 'var(--accent)',
         marginBottom: 20, fontSize: 13, fontWeight: 600,
       }}>
-        <FileCheck size={16} /> Preingresado — con el pre-ingreso <strong>{registro.numero_pre_ingreso}</strong> ya asignado, falta el OTST para quedar ingresado.
+        <FileCheck size={16} /> {soloLectura ? 'Revisando "Preingresado" (solo lectura)' : <>Preingresado — con el pre-ingreso <strong>{registro.numero_pre_ingreso}</strong> ya asignado, falta el OTST para quedar ingresado.</>}
       </div>
 
       <div style={{ maxWidth: 400 }}>
         <FG label="OTST (separados por coma si son varios)">
-          <input value={otst} onChange={e => setOtst(e.target.value)} placeholder="Ej. 41784, 41785" style={INP} disabled={!puedeEditar} />
+          <input value={otst} onChange={e => setOtst(e.target.value)} placeholder="Ej. 41784, 41785" style={INP} disabled={!puedeEditar || soloLectura} />
         </FG>
         {codigos.length > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 8 }}>
@@ -44,7 +45,7 @@ export function VistaPreingresado({ registro, puedeEditar, onAvanzar }: {
         )}
       </div>
 
-      {puedeEditar && (
+      {puedeEditar && !soloLectura && (
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20 }}>
           <button onClick={confirmar} style={PRI}>✓ Confirmar ingreso →</button>
         </div>

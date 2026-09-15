@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react'
@@ -14,7 +14,7 @@ import { generarMailtoSinFormato } from './correo'
 import { VistaPendiente } from './vistas/VistaPendiente'
 import { VistaPreingresado } from './vistas/VistaPreingresado'
 import { VistaIngresado } from './vistas/VistaIngresado'
-import { LineaTiempoSF } from './LineaTiempoSF'
+import { StepperSF, FLUJO_SF } from './StepperSF'
 import { FG, INP, PRI, GHOST } from './ui'
 import type { EquipoSinFormatoItem } from '../../types'
 
@@ -36,6 +36,16 @@ export function EquipoSinFormatoDetailPage() {
   const registro = esNueva ? undefined : registros.find(r => r.id === id)
   const items = registro ? allItems.filter(i => i.equipo_sf_id === registro.id) : []
   const asesorNombre = registro ? (asesores.find(a => a.correo === registro.asesor_correo)?.nombre || registro.asesor_correo) : ''
+
+  // Índice del paso que se está viendo en el stepper — null = el actual
+  // (en vivo). Se resetea al cambiar de registro para no arrastrar la
+  // selección de un registro anterior.
+  const [vistaIdx, setVistaIdx] = useState<number | null>(null)
+  useEffect(() => { setVistaIdx(null) }, [id])
+  const idxActual = registro ? FLUJO_SF.findIndex(s => s.key === registro.estado) : -1
+  const idxMostrado = vistaIdx ?? idxActual
+  const etapaMostrada = idxMostrado >= 0 ? FLUJO_SF[idxMostrado] : undefined
+  const soloLectura = idxMostrado !== idxActual
 
   // ── Formulario de creación ──────────────────────────────────────────────
   const [razonSocial, setRazonSocial] = useState('')
@@ -181,6 +191,8 @@ export function EquipoSinFormatoDetailPage() {
             </div>
           </Card>
 
+          <StepperSF estado={registro.estado} idxActual={idxActual} idxMostrado={idxMostrado} onSeleccionar={setVistaIdx} />
+
           <Card>
             <h4 style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 12 }}>Equipos</h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -193,13 +205,17 @@ export function EquipoSinFormatoDetailPage() {
             </div>
           </Card>
 
-          <LineaTiempoSF registro={registro} />
-
-          {registro.estado === 'pendiente' ? (
-            <VistaPendiente registro={registro} puedeEditar={puedeEditar} onAvanzar={onAvanzar} />
-          ) : registro.estado === 'preingresado' ? (
-            <VistaPreingresado registro={registro} puedeEditar={puedeEditar} onAvanzar={onAvanzar} />
-          ) : registro.estado === 'ingresado' ? (
+          {etapaMostrada?.key === 'recibido' ? (
+            <Card>
+              <p style={{ fontSize: 13, color: 'var(--muted)' }}>
+                Recibido el {new Date(registro.fecha_recibido).toLocaleString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })} — correo enviado al asesor.
+              </p>
+            </Card>
+          ) : etapaMostrada?.key === 'pendiente' ? (
+            <VistaPendiente registro={registro} puedeEditar={puedeEditar} soloLectura={soloLectura} onAvanzar={onAvanzar} />
+          ) : etapaMostrada?.key === 'preingresado' ? (
+            <VistaPreingresado registro={registro} puedeEditar={puedeEditar} soloLectura={soloLectura} onAvanzar={onAvanzar} />
+          ) : etapaMostrada?.key === 'ingresado' ? (
             <VistaIngresado registro={registro} />
           ) : null}
         </div>
