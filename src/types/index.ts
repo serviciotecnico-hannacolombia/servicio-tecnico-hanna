@@ -42,6 +42,7 @@ export interface Profile {
   activo: boolean
   avatar_emoji: string | null
   avatar_color: string | null
+  favoritos_modulos: string[]
   created_at: string
 }
 
