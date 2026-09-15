@@ -300,6 +300,33 @@ export function EquipoSinFormatoDetailPage() {
                     <span>Fecha de llegada: <strong>{registro.fecha_llegada}</strong></span>
                     {registro.modo_llegada && <span>Modo de llegada: <strong>{registro.modo_llegada}</strong></span>}
                   </div>
+
+                  <div style={{ borderTop: '1px solid var(--border)', marginTop: 16, paddingTop: 14 }}>
+                    <h4 style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 10 }}>
+                      Equipos ({items.length})
+                    </h4>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      {items.map((it: EquipoSinFormatoItem, i: number) => (
+                        <div key={it.id} style={{ display: 'grid', gridTemplateColumns: '20px 1fr 1fr', gap: 12, fontSize: 12.5, alignItems: 'start' }}>
+                          <span style={{ color: 'var(--muted)', fontFamily: 'var(--mono)', fontSize: 11 }}>{i + 1}.</span>
+                          <div>
+                            <div style={{ fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.5px' }}>Referencia</div>
+                            <strong>{it.referencia}</strong>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.5px' }}>Serial</div>
+                            <span style={{ fontFamily: 'var(--mono)' }}>{it.serial || '—'}</span>
+                          </div>
+                          {it.observaciones && (
+                            <div style={{ gridColumn: '2 / -1', color: 'var(--muted)' }}>
+                              <span style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '.5px' }}>Observaciones: </span>
+                              {it.observaciones}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </Card>
 
                 {registro.anulada && (
@@ -310,18 +337,6 @@ export function EquipoSinFormatoDetailPage() {
                 )}
 
                 <StepperSF estado={registro.estado} idxActual={idxActual} idxMostrado={idxMostrado} onSeleccionar={setVistaIdx} />
-
-                <Card>
-                  <h4 style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 12 }}>Equipos</h4>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    {items.map((it: EquipoSinFormatoItem) => (
-                      <div key={it.id} style={{ padding: '10px 14px', border: '1px solid var(--border)', borderRadius: 9, background: 'var(--surface2)', fontSize: 12.5 }}>
-                        <strong>{it.referencia}</strong>{it.serial && <> — Serial: <span style={{ fontFamily: 'var(--mono)' }}>{it.serial}</span></>}
-                        {it.observaciones && <div style={{ color: 'var(--muted)', marginTop: 4 }}>{it.observaciones}</div>}
-                      </div>
-                    ))}
-                  </div>
-                </Card>
 
                 {etapaMostrada?.key === 'recibido' ? (
                   <Card>
