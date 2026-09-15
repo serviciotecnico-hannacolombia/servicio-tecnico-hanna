@@ -3,7 +3,7 @@ import { toast } from 'sonner'
 import { FileCheck } from 'lucide-react'
 import { Card } from '../../../components/ui/Card'
 import { FG, INP, PRI } from '../ui'
-import { linkOtst, parseOtstCodes } from '../hooks/useEquiposSinFormato'
+import { linkOtst, linkPreIngreso, parseOtstCodes } from '../hooks/useEquiposSinFormato'
 import type { EquipoSinFormato } from '../../../types'
 
 export function VistaPreingresado({ registro, puedeEditar, soloLectura, onAvanzar }: {
@@ -27,7 +27,19 @@ export function VistaPreingresado({ registro, puedeEditar, soloLectura, onAvanza
         background: 'var(--accent-bg)', border: '1px solid var(--accent)', color: 'var(--accent)',
         marginBottom: 20, fontSize: 13, fontWeight: 600,
       }}>
-        <FileCheck size={16} /> {soloLectura ? 'Revisando "Preingresado" (solo lectura)' : <>Preingresado — con el pre-ingreso <strong>{registro.numero_pre_ingreso}</strong> ya asignado, falta el OTST para quedar ingresado.</>}
+        <FileCheck size={16} /> {soloLectura ? 'Revisando "Preingresado" (solo lectura)' : (
+          <>
+            Preingresado — con el pre-ingreso{' '}
+            {registro.numero_pre_ingreso && linkPreIngreso(registro.numero_pre_ingreso) ? (
+              <a href={linkPreIngreso(registro.numero_pre_ingreso)!} target="_blank" rel="noopener noreferrer" style={{ fontWeight: 700, color: 'inherit', textDecoration: 'underline' }}>
+                {registro.numero_pre_ingreso}
+              </a>
+            ) : (
+              <strong>{registro.numero_pre_ingreso}</strong>
+            )}
+            {' '}ya asignado, falta el OTST para quedar ingresado.
+          </>
+        )}
       </div>
 
       <div style={{ maxWidth: 400 }}>
