@@ -4,7 +4,7 @@ import logo from '../../assets/logo.svg'
 import {
   Phone, Package, DollarSign, Wrench, FileText, Warehouse,
   LogOut, Pencil, ShieldCheck, BarChart2, Mail, KeyRound, ChevronDown, Timer, ListTodo, CalendarClock, QrCode, Box,
-  FlaskConical, Ticket, PackageX
+  FlaskConical, Ticket, PackageX, Star, GripVertical
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useSidebar } from './SidebarContext'
@@ -94,6 +94,10 @@ const NAV_GROUPS: NavGroup[] = [
   },
 ]
 
+const ALL_ITEMS_BY_KEY = new Map<ModuleKey, NavItem>(
+  NAV_GROUPS.flatMap(g => g.items).map(item => [item.moduleKey, item])
+)
+
 const GRUPOS_COLAPSADOS_KEY = 'sidebar-grupos-colapsados'
 
 function leerGruposColapsados(): Set<string> {
@@ -124,13 +128,14 @@ const AVATAR_COLORS = [
 
 export function Sidebar() {
   const { collapsed, toggle } = useSidebar()
-  const { user, displayName, profile, isAdmin, hasModule, signOut, updateDisplayName, updateAvatar } = useUser()
+  const { user, displayName, profile, isAdmin, hasModule, signOut, updateDisplayName, updateAvatar, updateFavoritos } = useUser()
   const navigate = useNavigate()
   const location = useLocation()
   const tareasBadge = useTareasBadgeCount()
   const calibracionesBadge = useCalibracionesBadgeCount()
   const bodegaBadge = useBodegaBadgeCount()
   const [gruposColapsados, setGruposColapsados] = useState<Set<string>>(leerGruposColapsados)
+  const [dragIdx, setDragIdx] = useState<number | null>(null)
   const [profileOpen, setProfileOpen] = useState(false)
   const [nombre, setNombre] = useState('')
   const [selectedEmoji, setSelectedEmoji] = useState<string | null>(null)
@@ -194,6 +199,35 @@ export function Sidebar() {
     navigate('/login')
   }
 
+  // Favoritos: guardados como un array ordenado de module_key en el perfil
+  // del usuario — se filtran los que ya no existen o a los que perdió acceso,
+  // para no romper el sidebar si un módulo se renombra o le quitan el rol.
+  const favoritosKeys = (profile?.favoritos_modulos ?? [])
+    .filter((k): k is ModuleKey => ALL_ITEMS_BY_KEY.has(k as ModuleKey) && hasModule(k as ModuleKey))
+  const favoritosItems = favoritosKeys.map(k => ALL_ITEMS_BY_KEY.get(k)!)
+
+  const toggleFavorito = async (moduleKey: ModuleKey) => {
+    const actuales = profile?.favoritos_modulos ?? []
+    const next = actuales.includes(moduleKey) ? actuales.filter(k => k !== moduleKey) : [...actuales, moduleKey]
+    try {
+      await updateFavoritos(next)
+    } catch {
+      toast.error('Error al actualizar favoritos')
+    }
+  }
+
+  const moverFavorito = async (desde: number, hasta: number) => {
+    if (desde === hasta) return
+    const next = [...favoritosKeys]
+    const [movido] = next.splice(desde, 1)
+    next.splice(hasta, 0, movido)
+    try {
+      await updateFavoritos(next)
+    } catch {
+      toast.error('Error al reordenar favoritos')
+    }
+  }
+
   const toggleGrupo = (key: string) => {
     setGruposColapsados(prev => {
       const next = new Set(prev)
@@ -203,19 +237,20 @@ export function Sidebar() {
     })
   }
 
-  const renderNavItem = ({ to, label, icon: Icon, moduleKey }: NavItem) => {
+  const renderNavItem = ({ to, label, icon: Icon, moduleKey }: NavItem, favoritoCtx?: { index: number }) => {
     const isTareas = moduleKey === 'tareas'
     const badge = isTareas ? tareasBadge.vencidas : moduleKey === 'calibraciones' ? calibracionesBadge : moduleKey === 'bodega' ? bodegaBadge : 0
-    return (
+    const esFavorito = favoritosKeys.includes(moduleKey)
+
+    const link = (
       <NavLink
-        key={to}
         to={to}
         title={collapsed ? `${label}${badge > 0 ? ` (${badge})` : ''}` : undefined}
         style={({ isActive }) => ({
           display: 'flex',
           alignItems: 'center',
           gap: 10,
-          padding: collapsed ? '11px 0' : '10px 16px',
+          padding: collapsed ? '11px 0' : `10px ${favoritoCtx ? 32 : 30}px 10px ${favoritoCtx ? 34 : 16}px`,
           justifyContent: collapsed ? 'center' : 'flex-start',
           textDecoration: 'none',
           fontSize: '0.875rem',
@@ -265,6 +300,43 @@ export function Sidebar() {
           }}>{badge > 99 ? '99+' : badge}</span>
         )}
       </NavLink>
+    )
+
+    if (collapsed) return <div key={to}>{link}</div>
+
+    return (
+      <div
+        key={to}
+        draggable={!!favoritoCtx}
+        onDragStart={favoritoCtx ? () => setDragIdx(favoritoCtx.index) : undefined}
+        onDragOver={favoritoCtx ? e => e.preventDefault() : undefined}
+        onDrop={favoritoCtx ? () => {
+          if (dragIdx !== null && dragIdx !== favoritoCtx.index) moverFavorito(dragIdx, favoritoCtx.index)
+          setDragIdx(null)
+        } : undefined}
+        onDragEnd={favoritoCtx ? () => setDragIdx(null) : undefined}
+        style={{ position: 'relative', opacity: favoritoCtx && dragIdx === favoritoCtx.index ? 0.4 : 1 }}
+      >
+        {link}
+        {favoritoCtx && (
+          <GripVertical
+            size={13}
+            style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--border)', cursor: 'grab', pointerEvents: 'none' }}
+          />
+        )}
+        <button
+          onClick={e => { e.preventDefault(); e.stopPropagation(); toggleFavorito(moduleKey) }}
+          title={esFavorito ? 'Quitar de favoritos' : 'Marcar como favorito'}
+          style={{
+            position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
+            width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'none', border: 'none', cursor: 'pointer', borderRadius: 6,
+            color: esFavorito ? 'var(--yellow)' : 'var(--border)',
+          }}
+        >
+          <Star size={13} fill={esFavorito ? 'currentColor' : 'none'} />
+        </button>
+      </div>
     )
   }
 
@@ -344,8 +416,32 @@ export function Sidebar() {
 
       {/* Nav */}
       <nav style={{ flex: 1, padding: '10px 0', overflowY: 'auto', overflowX: 'hidden' }}>
+        {favoritosItems.length > 0 && (
+          collapsed ? (
+            <>
+              {favoritosItems.map(item => renderNavItem(item))}
+              <div style={{ height: 1, background: 'var(--border)', margin: '6px 10px' }} />
+            </>
+          ) : (
+            <div>
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 5, width: '100%',
+                padding: '10px 16px 6px',
+                fontSize: '0.62rem', fontFamily: 'var(--mono)', fontWeight: 600,
+                color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.1em',
+                opacity: 0.7,
+              }}>
+                <Star size={11} fill="var(--yellow)" style={{ color: 'var(--yellow)', flexShrink: 0 }} />
+                <span>Favoritos</span>
+              </div>
+              {favoritosItems.map((item, i) => renderNavItem(item, { index: i }))}
+              <div style={{ height: 1, background: 'var(--border)', margin: '8px 16px' }} />
+            </div>
+          )
+        )}
+
         {collapsed
-          ? NAV_GROUPS.flatMap(g => g.items).filter(item => hasModule(item.moduleKey)).map(renderNavItem)
+          ? NAV_GROUPS.flatMap(g => g.items).filter(item => hasModule(item.moduleKey)).map(item => renderNavItem(item))
           : NAV_GROUPS.map(group => {
               const items = group.items.filter(item => hasModule(item.moduleKey))
               if (!items.length) return null
@@ -369,7 +465,7 @@ export function Sidebar() {
                     <span style={{ flex: 1, textAlign: 'left' }}>{group.label}</span>
                     <ChevronDown size={12} style={{ transition: 'transform .18s', transform: abierto ? 'none' : 'rotate(-90deg)', flexShrink: 0 }} />
                   </button>
-                  {abierto && items.map(renderNavItem)}
+                  {abierto && items.map(item => renderNavItem(item))}
                 </div>
               )
             })}

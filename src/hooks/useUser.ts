@@ -14,6 +14,7 @@ interface UserContextValue {
   signOut: () => Promise<void>
   updateDisplayName: (name: string) => Promise<void>
   updateAvatar: (emoji: string | null, color: string | null) => Promise<void>
+  updateFavoritos: (favoritos: string[]) => Promise<void>
   refreshProfile: () => Promise<void>
 }
 
@@ -28,6 +29,7 @@ const UserContext = createContext<UserContextValue>({
   signOut: async () => {},
   updateDisplayName: async () => {},
   updateAvatar: async () => {},
+  updateFavoritos: async () => {},
   refreshProfile: async () => {},
 })
 
@@ -136,13 +138,23 @@ export function UserProvider({ children }: { children: ReactNode }) {
     setProfile(prev => prev ? { ...prev, avatar_emoji: emoji, avatar_color: color } : null)
   }
 
+  const updateFavoritos = async (favoritos: string[]) => {
+    if (!user) return
+    const { error } = await supabase
+      .from('profiles')
+      .update({ favoritos_modulos: favoritos })
+      .eq('id', user.id)
+    if (error) throw error
+    setProfile(prev => prev ? { ...prev, favoritos_modulos: favoritos } : null)
+  }
+
   const refreshProfile = async () => {
     if (user) await loadProfileAndPermissions(user.id)
   }
 
   return createElement(
     UserContext.Provider,
-    { value: { user, profile, displayName, isAdmin, hasModule, hasCapability, loading, signOut, updateDisplayName, updateAvatar, refreshProfile } },
+    { value: { user, profile, displayName, isAdmin, hasModule, hasCapability, loading, signOut, updateDisplayName, updateAvatar, updateFavoritos, refreshProfile } },
     children
   )
 }
