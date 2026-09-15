@@ -97,6 +97,7 @@ export interface ConsumibleLlegada {
 export interface ConsumibleDestape {
   id: string
   fecha: string
+  qr: string | null
   llegada_id: string | null
   ref: string | null
   nombre: string | null
@@ -105,6 +106,14 @@ export interface ConsumibleDestape {
   ubicacion: string | null
   obs: string | null
   created_at: string
+}
+
+export interface ConsumiblesConfig {
+  id: number
+  ultimo_vale_fecha: string | null
+  ultimo_vale_nota: string | null
+  updated_by: string | null
+  updated_at: string
 }
 
 export interface ConsumibleCatalogo {
