@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Search, PackageX } from 'lucide-react'
+import { Plus, Search, PackageX, Download } from 'lucide-react'
 import { Header } from '../../components/layout/Header'
 import { Card } from '../../components/ui/Card'
 import { Table, type Column } from '../../components/ui/Table'
 import { useUser } from '../../hooks/useUser'
 import { useAsesores } from '../calibraciones/hooks/useCalibraciones'
 import { useEquiposSinFormato, ESTADO_LABEL_SF } from './hooks/useEquiposSinFormato'
-import { INP, PRI, EMPTY } from './ui'
+import { INP, PRI, GHOST, EMPTY } from './ui'
 import type { EquipoSinFormato, EstadoEquipoSinFormato } from '../../types'
 
 type VistaFiltro = 'todas' | EstadoEquipoSinFormato
@@ -44,6 +44,21 @@ export function EquiposSinFormatoPage() {
       if (!q) return true
       return r.razon_social.toLowerCase().includes(q) || `sf-${r.numero}`.includes(q)
     })
+
+  function exportarCSV() {
+    const headers = ['N°', 'Razón social', 'Asesor', 'Fecha llegada', 'Estado']
+    const rows = filtrados.map(r => [
+      `SF-${r.numero}`, r.razon_social, nombrePorCorreo.get(r.asesor_correo) || r.asesor_correo,
+      fmtFecha(r.fecha_llegada), ESTADO_LABEL_SF[r.estado],
+    ])
+    const esc = (v: string) => /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v
+    const csv = [headers, ...rows].map(r => r.map(esc).join(',')).join('\r\n')
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = `equipos-sin-formato_${new Date().toISOString().slice(0, 10)}.csv`
+    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url)
+  }
 
   const columns: Column<EquipoSinFormato>[] = [
     { key: 'numero', header: 'N°', width: '90px', render: r => <span style={{ fontFamily: 'var(--mono)', fontWeight: 700, color: 'var(--accent)' }}>SF-{r.numero}</span> },
@@ -84,6 +99,9 @@ export function EquiposSinFormatoPage() {
             <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)', pointerEvents: 'none' }} />
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por razón social o SF-..." style={{ ...INP, paddingLeft: 34 }} />
           </div>
+          <button onClick={exportarCSV} disabled={filtrados.length === 0} style={{ ...GHOST, opacity: filtrados.length === 0 ? .5 : 1, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <Download size={14} /> CSV
+          </button>
         </div>
 
         {isLoading ? (

@@ -430,9 +430,21 @@ export interface EquipoSinFormato {
   fecha_pendiente: string | null
   fecha_preingreso: string | null
   fecha_ingreso: string | null
+  anulada: boolean
+  motivo_anulacion: string | null
   creado_por: string | null
   created_at: string
   updated_at: string
+}
+
+export interface EquipoSinFormatoHistorial {
+  id: string
+  equipo_sf_id: string
+  usuario_id: string | null
+  campo: string
+  valor_anterior: string | null
+  valor_nuevo: string | null
+  created_at: string
 }
 
 export interface EquipoSinFormatoItem {
