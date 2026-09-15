@@ -104,17 +104,17 @@ export function LoginPage() {
       }}>
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: '36px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'center', gap: 16 }}>
             <img
               src={logo}
               alt="Hanna Instruments"
               style={{ height: 42, width: 'auto', display: 'block' }}
             />
-            <div style={{ width: 1, height: 36, background: 'var(--accent)', opacity: 0.4, flexShrink: 0 }} />
+            <div style={{ width: 1, height: 42, background: 'var(--accent)', opacity: 0.4, flexShrink: 0 }} />
             <img
               src="/favicon.svg"
               alt="Servicio Técnico"
-              style={{ height: 34, width: 'auto', display: 'block' }}
+              style={{ height: 48, width: 'auto', display: 'block' }}
             />
           </div>
           <div style={{
