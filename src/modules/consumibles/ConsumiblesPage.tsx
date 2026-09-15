@@ -24,6 +24,7 @@ interface ParsedQR {
 // ── Constants ──────────────────────────────────────────────────────────────────
 
 const UBICACIONES = ['Control de Calidad', 'Servicio Técnico']
+const CLAVE_ELIMINAR_TODO = '2711'
 
 // ── QR Parser (formato Ñ de Hanna Instruments) ────────────────────────────────
 
@@ -86,11 +87,33 @@ function useConsumiblesConfig() {
 type Tab = 'ingreso' | 'destape' | 'inventario' | 'buscar'
 
 export function ConsumiblesPage() {
+  const qc = useQueryClient()
   const [tab, setTab] = useState<Tab>('ingreso')
   const [exportOpen, setExportOpen] = useState(false)
+  const [deletingAll, setDeletingAll] = useState(false)
   const { data: llegadas = [] } = useLlegadas()
   const { data: destapes = [] } = useDestapes()
   const { data: config } = useConsumiblesConfig()
+
+  async function handleDeleteAll() {
+    const clave = window.prompt('Esta acción eliminará TODOS los registros de llegadas y destapes de Consumibles.\n\nEscribe la clave de seguridad para continuar:')
+    if (clave === null) return
+    if (clave !== CLAVE_ELIMINAR_TODO) { toast.error('Clave incorrecta'); return }
+    if (!window.confirm(`¿Confirmas eliminar los ${llegadas.length} registros de llegadas y ${destapes.length} de destapes? Esta acción NO se puede deshacer.`)) return
+
+    setDeletingAll(true)
+    const { error: errDestapes } = await supabase.from('consumibles_destape').delete().gte('id', 0)
+    const { error: errLlegadas } = await supabase.from('consumibles_llegada').delete().gte('id', 0)
+    setDeletingAll(false)
+
+    if (errDestapes || errLlegadas) {
+      toast.error('Error al eliminar: ' + (errDestapes?.message || errLlegadas?.message))
+      return
+    }
+    toast.success('Todos los registros de Consumibles fueron eliminados')
+    qc.invalidateQueries({ queryKey: ['consumibles_llegada'] })
+    qc.invalidateQueries({ queryKey: ['consumibles_destape'] })
+  }
 
   return (
     <div>
@@ -98,9 +121,14 @@ export function ConsumiblesPage() {
         title="Consumibles"
         subtitle="Control de llegadas y destapes de soluciones técnicas"
         actions={
-          <button onClick={() => setExportOpen(true)} style={{ ...GHOST, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-            <Download size={14} /> Exportar Excel
-          </button>
+          <>
+            <button onClick={() => setExportOpen(true)} style={{ ...GHOST, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <Download size={14} /> Exportar Excel
+            </button>
+            <IconBtn title="Eliminar todos los registros" onClick={handleDeleteAll} danger>
+              {deletingAll ? <span style={{ fontSize: 10 }}>…</span> : <Trash2 size={14} />}
+            </IconBtn>
+          </>
         }
       />
 
