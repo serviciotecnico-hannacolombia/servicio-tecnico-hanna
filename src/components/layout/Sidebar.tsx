@@ -374,11 +374,19 @@ export function Sidebar() {
       }}>
         {!collapsed && (
           <div style={{ overflow: 'hidden' }}>
-            <img
-              src={logo}
-              alt="Hanna Instruments"
-              style={{ height: 28, width: 'auto', display: 'block' }}
-            />
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+              <img
+                src={logo}
+                alt="Hanna Instruments"
+                style={{ height: 28, width: 'auto', display: 'block' }}
+              />
+              <div style={{ width: 1, height: 28, background: 'var(--accent)', opacity: 0.4, flexShrink: 0 }} />
+              <img
+                src="/favicon.svg"
+                alt="Servicio Técnico"
+                style={{ height: 32, width: 'auto', display: 'block', flexShrink: 0 }}
+              />
+            </div>
             <div style={{
               fontSize: '0.65rem',
               color: 'var(--muted)',
