@@ -6,9 +6,9 @@ import { Card } from '../../components/ui/Card'
 import { Table, type Column } from '../../components/ui/Table'
 import { useUser } from '../../hooks/useUser'
 import { useAsesores } from '../calibraciones/hooks/useCalibraciones'
-import { useEquiposSinFormato, ESTADO_LABEL_SF } from './hooks/useEquiposSinFormato'
+import { useEquiposSinFormato, useEquiposSinFormatoItems, ESTADO_LABEL_SF, parseOtstCodes } from './hooks/useEquiposSinFormato'
 import { INP, PRI, GHOST, EMPTY } from './ui'
-import type { EquipoSinFormato, EstadoEquipoSinFormato } from '../../types'
+import type { EquipoSinFormato, EquipoSinFormatoItem, EstadoEquipoSinFormato } from '../../types'
 
 type VistaFiltro = 'todas' | EstadoEquipoSinFormato
 
@@ -30,27 +30,40 @@ export function EquiposSinFormatoPage() {
   const { hasCapability } = useUser()
   const puedeEditar = hasCapability('equipos_sin_formato_editar')
   const { data: registros = [], isLoading } = useEquiposSinFormato()
+  const { data: allItems = [] } = useEquiposSinFormatoItems()
   const { data: asesores = [] } = useAsesores()
 
   const [vista, setVista] = useState<VistaFiltro>('todas')
   const [search, setSearch] = useState('')
 
   const nombrePorCorreo = new Map(asesores.map(a => [a.correo, a.nombre]))
+  const itemsPorRegistro = new Map<string, EquipoSinFormatoItem[]>()
+  for (const it of allItems) {
+    if (!itemsPorRegistro.has(it.equipo_sf_id)) itemsPorRegistro.set(it.equipo_sf_id, [])
+    itemsPorRegistro.get(it.equipo_sf_id)!.push(it)
+  }
 
   const filtrados = registros
     .filter(r => vista === 'todas' || r.estado === vista)
     .filter(r => {
       const q = search.toLowerCase().trim()
       if (!q) return true
-      return r.razon_social.toLowerCase().includes(q) || `sf-${r.numero}`.includes(q)
+      if (r.razon_social.toLowerCase().includes(q) || `sf-${r.numero}`.includes(q)) return true
+      const items = itemsPorRegistro.get(r.id) || []
+      return items.some(it => it.referencia.toLowerCase().includes(q) || (it.serial || '').toLowerCase().includes(q))
     })
 
   function exportarCSV() {
-    const headers = ['N°', 'Razón social', 'Asesor', 'Fecha llegada', 'Estado']
-    const rows = filtrados.map(r => [
-      `SF-${r.numero}`, r.razon_social, nombrePorCorreo.get(r.asesor_correo) || r.asesor_correo,
-      fmtFecha(r.fecha_llegada), ESTADO_LABEL_SF[r.estado],
-    ])
+    const headers = ['N°', 'Razón social', 'Asesor', 'Fecha llegada', 'Estado', 'Número de preingreso', 'OTST', 'Referencias', 'Seriales']
+    const rows = filtrados.map(r => {
+      const items = itemsPorRegistro.get(r.id) || []
+      return [
+        `SF-${r.numero}`, r.razon_social, nombrePorCorreo.get(r.asesor_correo) || r.asesor_correo,
+        fmtFecha(r.fecha_llegada), ESTADO_LABEL_SF[r.estado],
+        r.numero_pre_ingreso || '', parseOtstCodes(r.otst).join(', '),
+        items.map(it => it.referencia).join(', '), items.map(it => it.serial || '').filter(Boolean).join(', '),
+      ]
+    })
     const esc = (v: string) => /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v
     const csv = [headers, ...rows].map(r => r.map(esc).join(',')).join('\r\n')
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
@@ -97,7 +110,7 @@ export function EquiposSinFormatoPage() {
           </div>
           <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
             <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)', pointerEvents: 'none' }} />
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por razón social o SF-..." style={{ ...INP, paddingLeft: 34 }} />
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por razón social, SF-, referencia o serial..." style={{ ...INP, paddingLeft: 34 }} />
           </div>
           <button onClick={exportarCSV} disabled={filtrados.length === 0} style={{ ...GHOST, opacity: filtrados.length === 0 ? .5 : 1, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
             <Download size={14} /> CSV
