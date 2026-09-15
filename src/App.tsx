@@ -26,6 +26,8 @@ import { BodegaSTPage } from './modules/bodega-st/pages/BodegaSTPage'
 import { CalibracionesPage } from './modules/calibraciones/CalibracionesPage'
 import { OrdenCalibracionDetailPage } from './modules/calibraciones/OrdenCalibracionDetailPage'
 import { TicketsPage } from './modules/tickets/pages/TicketsPage'
+import { EquiposSinFormatoPage } from './modules/equipos-sin-formato/EquiposSinFormatoPage'
+import { EquipoSinFormatoDetailPage } from './modules/equipos-sin-formato/EquipoSinFormatoDetailPage'
 import { NotFoundPage } from './components/NotFoundPage'
 
 function DefaultRedirect() {
@@ -64,6 +66,8 @@ export default function App() {
               <Route path="/calibraciones" element={<ModuleGuard moduleKey="calibraciones"><CalibracionesPage /></ModuleGuard>} />
               <Route path="/calibraciones/:id" element={<ModuleGuard moduleKey="calibraciones"><OrdenCalibracionDetailPage /></ModuleGuard>} />
               <Route path="/tickets" element={<ModuleGuard moduleKey="tickets"><TicketsPage /></ModuleGuard>} />
+              <Route path="/equipos-sin-formato" element={<ModuleGuard moduleKey="equipos_sin_formato"><EquiposSinFormatoPage /></ModuleGuard>} />
+              <Route path="/equipos-sin-formato/:id" element={<ModuleGuard moduleKey="equipos_sin_formato"><EquipoSinFormatoDetailPage /></ModuleGuard>} />
               <Route
                 path="/admin"
                 element={

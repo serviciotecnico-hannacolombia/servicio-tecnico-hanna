@@ -18,6 +18,7 @@ export const MODULE_ROUTES: { key: ModuleKey; path: string }[] = [
   { key: 'mantenimiento_programado', path: '/mantenimiento-programado' },
   { key: 'calibraciones', path: '/calibraciones' },
   { key: 'tickets',     path: '/tickets' },
+  { key: 'equipos_sin_formato', path: '/equipos-sin-formato' },
   { key: 'admin',       path: '/admin' },
 ]
 

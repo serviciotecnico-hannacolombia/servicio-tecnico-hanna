@@ -19,12 +19,14 @@ export interface CorreoDestinatario {
 export type ModuleKey =
   | 'llamadas' | 'bodega' | 'consumibles' | 'tarifas' | 'codigos'
   | 'editor' | 'indicadores' | 'correos' | 'reporte_st' | 'tareas'
-  | 'mantenimiento_programado' | 'calibraciones' | 'void' | 'bodega_st' | 'tickets' | 'admin'
+  | 'mantenimiento_programado' | 'calibraciones' | 'void' | 'bodega_st' | 'tickets'
+  | 'equipos_sin_formato' | 'admin'
 
 export type CapabilityKey =
   | 'importar_csv_tarifas' | 'importar_csv_codigos' | 'importar_csv_llamadas'
   | 'bodega_registrar_ingreso' | 'editar_codigos' | 'gestion_codigos' | 'bodega_eliminar'
   | 'calibraciones_editar' | 'ver_precios_codigos' | 'tablas_mantenimiento_editar'
+  | 'equipos_sin_formato_editar'
 
 export interface Role {
   id: string
@@ -417,6 +419,50 @@ export interface Asesor {
   activo: boolean
   created_at: string
   updated_at: string
+}
+
+// ── Equipos Sin Formato ──────────────────────────────────────────────────────
+
+export type EstadoEquipoSinFormato = 'recibido' | 'pendiente' | 'preingresado' | 'ingresado'
+
+export interface EquipoSinFormato {
+  id: string
+  numero: number
+  razon_social: string
+  fecha_llegada: string
+  modo_llegada: string | null
+  asesor_correo: string
+  estado: EstadoEquipoSinFormato
+  numero_pre_ingreso: string | null
+  otst: string | null
+  fecha_recibido: string
+  fecha_pendiente: string | null
+  fecha_preingreso: string | null
+  fecha_ingreso: string | null
+  anulada: boolean
+  motivo_anulacion: string | null
+  creado_por: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface EquipoSinFormatoHistorial {
+  id: string
+  equipo_sf_id: string
+  usuario_id: string | null
+  campo: string
+  valor_anterior: string | null
+  valor_nuevo: string | null
+  created_at: string
+}
+
+export interface EquipoSinFormatoItem {
+  id: string
+  equipo_sf_id: string
+  referencia: string
+  serial: string | null
+  observaciones: string | null
+  created_at: string
 }
 
 // Logística → Pendientes: remisiones/facturas recibidas pero todavía sin

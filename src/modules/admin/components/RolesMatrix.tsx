@@ -24,6 +24,7 @@ const MODULE_LABELS: Record<ModuleKey, string> = {
   void: 'Control VOID',
   bodega_st: 'Bodega ST (Restauración)',
   tickets: 'Tickets a Fábrica',
+  equipos_sin_formato: 'Equipos Sin Formato',
   admin: 'Administración',
 }
 
@@ -38,6 +39,7 @@ const CAPABILITY_LABELS: Record<CapabilityKey, string> = {
   calibraciones_editar: 'Crear/editar órdenes y catálogo (Calibraciones)',
   ver_precios_codigos: 'Ver pestaña "Precios" en Códigos y Partes',
   tablas_mantenimiento_editar: 'Agregar/editar tablas de mantenimiento (Editor de Informes)',
+  equipos_sin_formato_editar: 'Crear/editar y avanzar estados (Equipos Sin Formato)',
 }
 
 const MODULE_KEYS = Object.keys(MODULE_LABELS) as ModuleKey[]

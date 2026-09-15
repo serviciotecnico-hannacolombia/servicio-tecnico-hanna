@@ -1,0 +1,42 @@
+import { CheckCircle2 } from 'lucide-react'
+import { Card } from '../../../components/ui/Card'
+import { linkPreIngreso, linkOtst, parseOtstCodes } from '../hooks/useEquiposSinFormato'
+import type { EquipoSinFormato } from '../../../types'
+
+export function VistaIngresado({ registro }: { registro: EquipoSinFormato }) {
+  const codigos = parseOtstCodes(registro.otst)
+
+  return (
+    <Card>
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', borderRadius: 'var(--radius)',
+        background: 'var(--green-bg, #dcfce7)', border: '1px solid var(--green-border, #86efac)', color: 'var(--green, #16a34a)',
+        marginBottom: 20, fontSize: 13, fontWeight: 600,
+      }}>
+        <CheckCircle2 size={16} /> Ingresado — proceso completo.
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+        <div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.8px', fontFamily: 'var(--mono)', marginBottom: 6 }}>Pre-ingreso</div>
+          <div style={{ fontSize: 13, fontWeight: 600 }}>{registro.numero_pre_ingreso || '—'}</div>
+          {registro.numero_pre_ingreso && (
+            <a href={linkPreIngreso(registro.numero_pre_ingreso)!} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11.5, color: 'var(--accent)' }}>
+              {linkPreIngreso(registro.numero_pre_ingreso)}
+            </a>
+          )}
+        </div>
+        <div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.8px', fontFamily: 'var(--mono)', marginBottom: 6 }}>OTST</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {codigos.map(c => (
+              <a key={c} href={linkOtst(c)!} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12.5, color: 'var(--accent)' }}>
+                {c}
+              </a>
+            ))}
+          </div>
+        </div>
+      </div>
+    </Card>
+  )
+}
