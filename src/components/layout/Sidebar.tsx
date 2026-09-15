@@ -100,12 +100,14 @@ const ALL_ITEMS_BY_KEY = new Map<ModuleKey, NavItem>(
 
 const GRUPOS_COLAPSADOS_KEY = 'sidebar-grupos-colapsados'
 
+// Por defecto todos los grupos empiezan plegados (menos ruido visual) — solo
+// si el usuario ya guardó una preferencia distinta se respeta esa.
 function leerGruposColapsados(): Set<string> {
   try {
     const raw = localStorage.getItem(GRUPOS_COLAPSADOS_KEY)
-    return raw ? new Set(JSON.parse(raw)) : new Set()
+    return raw ? new Set(JSON.parse(raw)) : new Set(NAV_GROUPS.map(g => g.key))
   } catch {
-    return new Set()
+    return new Set(NAV_GROUPS.map(g => g.key))
   }
 }
 
@@ -440,10 +442,10 @@ export function Sidebar() {
           )
         )}
 
-        {collapsed
-          ? NAV_GROUPS.flatMap(g => g.items).filter(item => hasModule(item.moduleKey)).map(item => renderNavItem(item))
-          : NAV_GROUPS.map(group => {
-              const items = group.items.filter(item => hasModule(item.moduleKey))
+        {!collapsed && NAV_GROUPS.map(group => {
+              // Lo que ya está en Favoritos no se repite acá abajo — evita
+              // verlo dos veces (y dos ítems "activos" resaltados a la vez).
+              const items = group.items.filter(item => hasModule(item.moduleKey) && !favoritosKeys.includes(item.moduleKey))
               if (!items.length) return null
               // El grupo que contiene la ruta activa siempre se ve, aunque el
               // usuario lo haya colapsado antes — para no "perder" de vista
