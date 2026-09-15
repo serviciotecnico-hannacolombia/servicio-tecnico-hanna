@@ -322,10 +322,10 @@ function TabIngreso({ llegadas }: { llegadas: ConsumibleLlegada[] }) {
 
 function TabDestape({ llegadas, destapes }: { llegadas: ConsumibleLlegada[], destapes: ConsumibleDestape[] }) {
   const qc              = useQueryClient()
-  const qrRef           = useRef<HTMLInputElement>(null)
+  const searchRef       = useRef<HTMLInputElement>(null)
   const { displayName } = useUser()
 
-  const [qr,           setQr]           = useState('')
+  const [search,       setSearch]       = useState('')
   const [linked,       setLinked]       = useState<ConsumibleLlegada | null>(null)
   const [matches,      setMatches]      = useState<ConsumibleLlegada[]>([])
   const [manualRef,    setManualRef]    = useState('')
@@ -339,34 +339,33 @@ function TabDestape({ llegadas, destapes }: { llegadas: ConsumibleLlegada[], des
 
   const destapedIds = new Set(destapes.map(d => d.llegada_id).filter(Boolean))
 
-  function handleQR(val: string) {
-    setQr(val)
-    setLinked(null); setMatches([]); setManualRef(''); setManualNombre(''); setManualLote('')
-    const parsed = parseQR(val)
-    const searchKey = (parsed?.ref || val.trim()).toUpperCase()
-    if (searchKey.length < 2) return
+  function handleSearch(val: string) {
+    setSearch(val)
+    setLinked(null)
+    const q = val.trim().toLowerCase()
+    if (q.length < 2) { setMatches([]); return }
     const found = llegadas.filter(l =>
-      ((l.ref || '').toUpperCase() === searchKey ||
-       (l.lote || '').toUpperCase() === searchKey) &&
-      !destapedIds.has(l.id)
+      !destapedIds.has(l.id) &&
+      [l.nombre, l.ref, l.lote, l.qr].some(f => f?.toLowerCase().includes(q))
     )
-    if (found.length === 1) {
-      setLinked(found[0])
-    } else if (found.length > 1) {
-      setMatches(found)
-    } else if (parsed) {
-      setManualRef(parsed.ref); setManualNombre(parsed.nombre); setManualLote(parsed.lote)
-    }
+    // Si el escaneo/tecleo produce una sola coincidencia, se vincula de una vez
+    // (agiliza el flujo con pistola QR); si hay varias, el usuario elige.
+    if (found.length === 1) { setLinked(found[0]); setMatches([]) }
+    else setMatches(found)
+  }
+
+  function pick(m: ConsumibleLlegada) {
+    setLinked(m); setMatches([])
   }
 
   async function submit() {
     if (modoManual) {
       if (!manualRef.trim() && !manualNombre.trim()) { toast.error('Ingresa al menos la referencia o el nombre'); return }
-    } else if (!qr.trim()) { toast.error('Ingresa el código QR del envase'); return }
+    } else if (!linked) { toast.error('Busca y selecciona la solución a destapar en el inventario'); return }
     if (!fecha)     { toast.error('Selecciona la fecha de destape'); return }
     if (!ubicacion) { toast.error('Selecciona la ubicación'); return }
     setSaving(true)
-    const finalQr = qr.trim() || `${manualRef.trim()}Ñ${manualLote.trim()}Ñ${manualNombre.trim()}`
+    const finalQr = linked?.qr || `${manualRef.trim()}Ñ${manualLote.trim()}Ñ${manualNombre.trim()}`
     const { error } = await supabase.from('consumibles_destape').insert({
       fecha, qr: finalQr,
       llegada_id: linked?.id ?? null,
@@ -383,12 +382,11 @@ function TabDestape({ llegadas, destapes }: { llegadas: ConsumibleLlegada[], des
   }
 
   function clear() {
-    setQr(''); setLinked(null); setMatches([]); setManualRef(''); setManualNombre(''); setManualLote('')
+    setSearch(''); setLinked(null); setMatches([]); setManualRef(''); setManualNombre(''); setManualLote('')
     setFecha(todayStr()); setObs('')
-    qrRef.current?.focus()
+    searchRef.current?.focus()
   }
 
-  const hasQR    = qr.trim().length > 2
   const dispNombre = linked?.nombre || manualNombre || '—'
   const dispRef    = linked?.ref    || manualRef    || '—'
   const dispLote   = linked?.lote   || manualLote   || '—'
@@ -397,14 +395,19 @@ function TabDestape({ llegadas, destapes }: { llegadas: ConsumibleLlegada[], des
     <Card>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
         <SecTitle>Registrar destape</SecTitle>
-        <button onClick={() => { setModoManual(m => !m); setQr(''); setLinked(null); setMatches([]) }} style={modoManual ? PRI : GHOST}>
+        <button onClick={() => { setModoManual(m => !m); setSearch(''); setLinked(null); setMatches([]) }} style={modoManual ? PRI : GHOST}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Edit3 size={14} /> {modoManual ? 'Desactivar modo manual' : 'Destape sin QR (manual)'}</span>
         </button>
       </div>
 
       {!modoManual ? (
-        <FG label="Código QR del envase" hint="Escanea el QR del frasco que vas a destapar">
-          <QRInput ref={qrRef} value={qr} onChange={handleQR} />
+        <FG label="Buscar en inventario" hint="Escribe o escanea el nombre, referencia, lote o QR — se busca entre lo que está en stock">
+          <div style={{ position: 'relative' }}>
+            <Search size={15} style={{ position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)', pointerEvents: 'none' }} />
+            <input ref={searchRef} value={search} onChange={e => handleSearch(e.target.value)}
+              placeholder="Nombre, referencia, lote o QR..." autoComplete="off"
+              style={{ ...INP, paddingLeft: 38, fontFamily: 'var(--mono)', fontSize: 14 }} />
+          </div>
         </FG>
       ) : (
         <div style={G2}>
@@ -414,16 +417,16 @@ function TabDestape({ llegadas, destapes }: { llegadas: ConsumibleLlegada[], des
         </div>
       )}
 
-      {!modoManual && matches.length > 1 && (
+      {!modoManual && !linked && matches.length > 0 && (
         <div style={{ ...PREVIEW, borderColor: 'rgba(124,58,237,.3)', background: 'rgba(124,58,237,.04)', marginBottom: 14 }}>
           <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.6px', fontFamily: 'var(--mono)', color: 'var(--purple)', marginBottom: 10 }}>
-            {matches.length} unidades en stock — selecciona cuál destapar
+            {matches.length} coincidencia{matches.length > 1 ? 's' : ''} en stock — selecciona cuál destapar
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {matches.map(m => (
               <button
                 key={m.id}
-                onClick={() => { setLinked(m); setMatches([]) }}
+                onClick={() => pick(m)}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px',
                   border: '1.5px solid rgba(124,58,237,.25)', borderRadius: 8,
@@ -436,7 +439,7 @@ function TabDestape({ llegadas, destapes }: { llegadas: ConsumibleLlegada[], des
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 13, fontWeight: 600 }}>{m.nombre || m.ref}</div>
                   <div style={{ fontSize: 11, fontFamily: 'var(--mono)', color: 'var(--muted)', marginTop: 2 }}>
-                    Llegó: {m.fecha} · Lote: {m.lote || '—'}{m.venc ? ` · Vence: ${m.venc}` : ''}
+                    Ref: {m.ref || '—'} · Llegó: {m.fecha} · Lote: {m.lote || '—'}{m.venc ? ` · Vence: ${m.venc}` : ''}
                   </div>
                 </div>
                 <span style={{ fontSize: 11, fontFamily: 'var(--mono)', color: 'var(--purple)', fontWeight: 700 }}>Seleccionar →</span>
@@ -446,22 +449,29 @@ function TabDestape({ llegadas, destapes }: { llegadas: ConsumibleLlegada[], des
         </div>
       )}
 
-      {hasQR && !matches.length && (
-        <div style={{
-          ...PREVIEW,
-          borderColor: linked ? 'rgba(0,94,184,.3)' : 'rgba(224,123,0,.3)',
-          background:  linked ? 'rgba(0,94,184,.05)' : 'rgba(224,123,0,.04)',
-        }}>
-          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.6px', fontFamily: 'var(--mono)', color: linked ? 'var(--accent)' : '#e07b00', marginBottom: 6 }}>
-            {linked ? '✓ Llegada vinculada' : '⚠ Sin llegada previa — se registrará sin vinculación'}
+      {!modoManual && !linked && search.trim().length >= 2 && matches.length === 0 && (
+        <div style={{ ...PREVIEW, borderColor: 'rgba(224,123,0,.3)', background: 'rgba(224,123,0,.04)', marginBottom: 14 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: '#e07b00' }}>
+            Sin coincidencias en stock para "{search.trim()}". Si el consumible no fue registrado como llegada, usa "Destape sin QR (manual)".
+          </div>
+        </div>
+      )}
+
+      {!modoManual && linked && (
+        <div style={{ ...PREVIEW, borderColor: 'rgba(0,94,184,.3)', background: 'rgba(0,94,184,.05)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.6px', fontFamily: 'var(--mono)', color: 'var(--accent)' }}>
+              ✓ Solución seleccionada
+            </div>
+            <button onClick={() => { setLinked(null); setSearch(''); searchRef.current?.focus() }} style={{ background: 'none', border: 'none', color: 'var(--muted)', fontSize: 11, cursor: 'pointer', textDecoration: 'underline' }}>Cambiar</button>
           </div>
           <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 4 }}>{dispNombre}</div>
           <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--muted)' }}>
             <span>REF: <strong style={{ color: 'var(--text)' }}>{dispRef}</strong></span>
             <span>LOTE: <strong style={{ color: 'var(--text)' }}>{dispLote}</strong></span>
-            {linked?.fecha && <span>Llegó: <strong style={{ color: 'var(--text)' }}>{linked.fecha}</strong></span>}
-            {linked?.venc  && <span>Vence: <strong style={{ color: 'var(--text)' }}>{linked.venc}</strong></span>}
-            {linked?.vol   && <span>Vol: <strong style={{ color: 'var(--text)' }}>{linked.vol}</strong></span>}
+            {linked.fecha && <span>Llegó: <strong style={{ color: 'var(--text)' }}>{linked.fecha}</strong></span>}
+            {linked.venc  && <span>Vence: <strong style={{ color: 'var(--text)' }}>{linked.venc}</strong></span>}
+            {linked.vol   && <span>Vol: <strong style={{ color: 'var(--text)' }}>{linked.vol}</strong></span>}
           </div>
         </div>
       )}
