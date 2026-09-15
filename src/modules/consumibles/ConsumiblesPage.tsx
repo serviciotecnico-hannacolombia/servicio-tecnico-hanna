@@ -1,12 +1,15 @@
 import { useState, useRef, forwardRef } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Search, Package } from 'lucide-react'
+import { Search, Package, Pencil, Trash2, Edit3, Download } from 'lucide-react'
 import { toast } from 'sonner'
 import { supabase, fetchAllRows } from '../../lib/supabase'
 import { Header } from '../../components/layout/Header'
 import { Card } from '../../components/ui/Card'
 import { useUser } from '../../hooks/useUser'
-import type { ConsumibleLlegada, ConsumibleDestape } from '../../types'
+import { EditLlegadaModal } from './EditLlegadaModal'
+import { EditDestapeModal } from './EditDestapeModal'
+import { ExportConsumiblesModal } from './ExportConsumiblesModal'
+import type { ConsumibleLlegada, ConsumibleDestape, ConsumiblesConfig } from '../../types'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -67,18 +70,39 @@ function useDestapes() {
   })
 }
 
+function useConsumiblesConfig() {
+  return useQuery({
+    queryKey: ['consumibles_config'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('consumibles_config').select('*').eq('id', 1).maybeSingle()
+      if (error) throw error
+      return data as ConsumiblesConfig | null
+    },
+  })
+}
+
 // ── Page ───────────────────────────────────────────────────────────────────────
 
 type Tab = 'ingreso' | 'destape' | 'inventario' | 'buscar'
 
 export function ConsumiblesPage() {
   const [tab, setTab] = useState<Tab>('ingreso')
+  const [exportOpen, setExportOpen] = useState(false)
   const { data: llegadas = [] } = useLlegadas()
   const { data: destapes = [] } = useDestapes()
+  const { data: config } = useConsumiblesConfig()
 
   return (
     <div>
-      <Header title="Consumibles" subtitle="Control de llegadas y destapes de soluciones técnicas" />
+      <Header
+        title="Consumibles"
+        subtitle="Control de llegadas y destapes de soluciones técnicas"
+        actions={
+          <button onClick={() => setExportOpen(true)} style={{ ...GHOST, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <Download size={14} /> Exportar Excel
+          </button>
+        }
+      />
 
       {/* Tab bar */}
       <div style={{ display: 'flex', gap: 4, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 4, marginBottom: 24 }}>
@@ -101,8 +125,10 @@ export function ConsumiblesPage() {
 
       {tab === 'ingreso'    && <TabIngreso    llegadas={llegadas} />}
       {tab === 'destape'    && <TabDestape    llegadas={llegadas} destapes={destapes} />}
-      {tab === 'inventario' && <TabInventario llegadas={llegadas} destapes={destapes} />}
+      {tab === 'inventario' && <TabInventario llegadas={llegadas} destapes={destapes} config={config ?? null} />}
       {tab === 'buscar'     && <TabBuscar     llegadas={llegadas} destapes={destapes} />}
+
+      <ExportConsumiblesModal open={exportOpen} onClose={() => setExportOpen(false)} llegadas={llegadas} destapes={destapes} />
     </div>
   )
 }
@@ -124,6 +150,7 @@ function TabIngreso({ llegadas }: { llegadas: ConsumibleLlegada[] }) {
   const [obs,        setObs]        = useState('')
   const [autoFilled, setAutoFilled] = useState(false)
   const [saving,     setSaving]     = useState(false)
+  const [modoManual, setModoManual] = useState(false)
 
   function handleQR(val: string) {
     setQr(val)
@@ -150,19 +177,40 @@ function TabIngreso({ llegadas }: { llegadas: ConsumibleLlegada[] }) {
   }
 
   async function submit() {
-    if (!qr.trim()) { toast.error('Ingresa el código QR'); return }
+    if (modoManual) {
+      if (!ref.trim() && !nombre.trim()) { toast.error('Ingresa al menos la referencia o el nombre'); return }
+    } else if (!qr.trim()) { toast.error('Ingresa el código QR'); return }
     if (!ubicacion) { toast.error('Selecciona una ubicación'); return }
     setSaving(true)
-    const { error } = await supabase.from('consumibles_llegada').insert({
-      fecha: todayStr(), qr: qr.trim(),
+    const finalQr = qr.trim() || `${ref.trim()}Ñ${lote.trim()}Ñ${nombre.trim()}`
+    const { data: inserted, error } = await supabase.from('consumibles_llegada').insert({
+      fecha: todayStr(), qr: finalQr,
       nombre: nombre.trim() || null, ref: ref.trim() || null,
       lote: lote.trim() || null, venc: venc.trim() || null,
       vol: vol.trim() || null,
       responsable: displayName, ubicacion, obs: obs.trim() || null,
-    })
-    setSaving(false)
-    if (error) { toast.error('Error: ' + error.message); return }
-    toast.success('Llegada registrada')
+    }).select().single()
+    if (error) { setSaving(false); toast.error('Error: ' + error.message); return }
+
+    // Servicio Técnico no es una ubicación de stock sellado: el consumible
+    // se considera abierto/usado de inmediato, así que se destapa automáticamente.
+    if (ubicacion === 'Servicio Técnico' && inserted) {
+      const { error: destapeError } = await supabase.from('consumibles_destape').insert({
+        fecha: todayStr(), qr: finalQr, llegada_id: inserted.id,
+        ref: inserted.ref, nombre: inserted.nombre, lote: inserted.lote,
+        responsable: displayName, ubicacion,
+        obs: 'Destape automático — ingreso directo a Servicio Técnico',
+      })
+      setSaving(false)
+      if (destapeError) { toast.error('Llegada registrada, pero falló el destape automático: ' + destapeError.message) }
+      else {
+        toast.success('Llegada registrada y destapada automáticamente (Servicio Técnico)')
+        qc.invalidateQueries({ queryKey: ['consumibles_destape'] })
+      }
+    } else {
+      setSaving(false)
+      toast.success('Llegada registrada')
+    }
     qc.invalidateQueries({ queryKey: ['consumibles_llegada'] })
     clear()
   }
@@ -175,10 +223,22 @@ function TabIngreso({ llegadas }: { llegadas: ConsumibleLlegada[] }) {
 
   return (
     <Card>
-      <SecTitle>Registrar llegada</SecTitle>
-      <FG label="Código QR / Referencia" hint="Escanea el QR del envase para rellenar los campos automáticamente">
-        <QRInput ref={qrRef} value={qr} onChange={handleQR} />
-      </FG>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
+        <SecTitle>Registrar llegada</SecTitle>
+        <button onClick={() => setModoManual(m => !m)} style={modoManual ? PRI : GHOST}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Edit3 size={14} /> {modoManual ? 'Desactivar modo manual' : 'Ingreso sin QR (manual)'}</span>
+        </button>
+      </div>
+
+      {!modoManual ? (
+        <FG label="Código QR / Referencia" hint="Escanea el QR del envase para rellenar los campos automáticamente">
+          <QRInput ref={qrRef} value={qr} onChange={handleQR} />
+        </FG>
+      ) : (
+        <div style={{ ...PREVIEW, borderColor: 'rgba(224,123,0,.3)', background: 'rgba(224,123,0,.04)' }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: '#e07b00' }}>Modo manual activado — completa los campos de abajo sin escanear el QR</div>
+        </div>
+      )}
 
       {autoFilled && (
         <div style={PREVIEW}>
@@ -193,20 +253,20 @@ function TabIngreso({ llegadas }: { llegadas: ConsumibleLlegada[] }) {
       )}
 
       <div style={G2}>
-        <FG label="Nombre (AUTO)">
-          <input value={nombre} onChange={e => setNombre(e.target.value)} readOnly={autoFilled} placeholder="Auto desde QR" style={iS(autoFilled)} />
+        <FG label={modoManual ? 'Nombre' : 'Nombre (AUTO)'}>
+          <input value={nombre} onChange={e => setNombre(e.target.value)} readOnly={autoFilled} placeholder={modoManual ? 'Ej: Solución de calibración pH 7.01' : 'Auto desde QR'} style={iS(autoFilled)} />
         </FG>
-        <FG label="Referencia (AUTO)">
-          <input value={ref} onChange={e => setRef(e.target.value)} readOnly={autoFilled} placeholder="Auto desde QR" style={iS(autoFilled)} />
+        <FG label={modoManual ? 'Referencia' : 'Referencia (AUTO)'}>
+          <input value={ref} onChange={e => setRef(e.target.value)} readOnly={autoFilled} placeholder={modoManual ? 'Ej: HI7007' : 'Auto desde QR'} style={iS(autoFilled)} />
         </FG>
-        <FG label="Lote (AUTO)">
-          <input value={lote} onChange={e => setLote(e.target.value)} readOnly={autoFilled} placeholder="Auto desde QR" style={iS(autoFilled)} />
+        <FG label={modoManual ? 'Lote' : 'Lote (AUTO)'}>
+          <input value={lote} onChange={e => setLote(e.target.value)} readOnly={autoFilled} placeholder={modoManual ? 'Ej: L12345' : 'Auto desde QR'} style={iS(autoFilled)} />
         </FG>
-        <FG label="F. Vencimiento (AUTO)">
-          <input value={venc} onChange={e => setVenc(e.target.value)} readOnly={autoFilled} placeholder="Auto desde QR" style={iS(autoFilled)} />
+        <FG label={modoManual ? 'F. Vencimiento' : 'F. Vencimiento (AUTO)'}>
+          <input value={venc} onChange={e => setVenc(e.target.value)} readOnly={autoFilled} placeholder={modoManual ? 'Ej: 12/2027' : 'Auto desde QR'} style={iS(autoFilled)} />
         </FG>
-        <FG label="Volumen (AUTO)">
-          <input value={vol} onChange={e => setVol(e.target.value)} readOnly={autoFilled} placeholder="Auto desde QR" style={iS(autoFilled && !!vol)} />
+        <FG label={modoManual ? 'Volumen' : 'Volumen (AUTO)'}>
+          <input value={vol} onChange={e => setVol(e.target.value)} readOnly={autoFilled} placeholder={modoManual ? 'Ej: 500 mL' : 'Auto desde QR'} style={iS(autoFilled && !!vol)} />
         </FG>
         <FG label="Responsable">
           <input value={displayName} readOnly style={iS(true)} />
@@ -247,6 +307,7 @@ function TabDestape({ llegadas, destapes }: { llegadas: ConsumibleLlegada[], des
   const [ubicacion,    setUbicacion]    = useState(() => localStorage.getItem('consumibles_destape_ubicacion') ?? '')
   const [obs,          setObs]          = useState('')
   const [saving,       setSaving]       = useState(false)
+  const [modoManual,   setModoManual]   = useState(false)
 
   const destapedIds = new Set(destapes.map(d => d.llegada_id).filter(Boolean))
 
@@ -271,12 +332,15 @@ function TabDestape({ llegadas, destapes }: { llegadas: ConsumibleLlegada[], des
   }
 
   async function submit() {
-    if (!qr.trim()) { toast.error('Ingresa el código QR del envase'); return }
+    if (modoManual) {
+      if (!manualRef.trim() && !manualNombre.trim()) { toast.error('Ingresa al menos la referencia o el nombre'); return }
+    } else if (!qr.trim()) { toast.error('Ingresa el código QR del envase'); return }
     if (!fecha)     { toast.error('Selecciona la fecha de destape'); return }
     if (!ubicacion) { toast.error('Selecciona la ubicación'); return }
     setSaving(true)
+    const finalQr = qr.trim() || `${manualRef.trim()}Ñ${manualLote.trim()}Ñ${manualNombre.trim()}`
     const { error } = await supabase.from('consumibles_destape').insert({
-      fecha, qr: qr.trim(),
+      fecha, qr: finalQr,
       llegada_id: linked?.id ?? null,
       ref:    linked?.ref    ?? manualRef    ?? null,
       nombre: linked?.nombre ?? manualNombre ?? null,
@@ -303,12 +367,26 @@ function TabDestape({ llegadas, destapes }: { llegadas: ConsumibleLlegada[], des
 
   return (
     <Card>
-      <SecTitle>Registrar destape</SecTitle>
-      <FG label="Código QR del envase" hint="Escanea el QR del frasco que vas a destapar">
-        <QRInput ref={qrRef} value={qr} onChange={handleQR} />
-      </FG>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
+        <SecTitle>Registrar destape</SecTitle>
+        <button onClick={() => { setModoManual(m => !m); setQr(''); setLinked(null); setMatches([]) }} style={modoManual ? PRI : GHOST}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Edit3 size={14} /> {modoManual ? 'Desactivar modo manual' : 'Destape sin QR (manual)'}</span>
+        </button>
+      </div>
 
-      {matches.length > 1 && (
+      {!modoManual ? (
+        <FG label="Código QR del envase" hint="Escanea el QR del frasco que vas a destapar">
+          <QRInput ref={qrRef} value={qr} onChange={handleQR} />
+        </FG>
+      ) : (
+        <div style={G2}>
+          <FG label="Nombre"><input value={manualNombre} onChange={e => setManualNombre(e.target.value)} placeholder="Ej: Solución de calibración pH 7.01" style={INP} /></FG>
+          <FG label="Referencia"><input value={manualRef} onChange={e => setManualRef(e.target.value)} placeholder="Ej: HI7007" style={{ ...INP, fontFamily: 'var(--mono)' }} /></FG>
+          <FG label="Lote" full><input value={manualLote} onChange={e => setManualLote(e.target.value)} placeholder="Ej: L12345" style={{ ...INP, fontFamily: 'var(--mono)' }} /></FG>
+        </div>
+      )}
+
+      {!modoManual && matches.length > 1 && (
         <div style={{ ...PREVIEW, borderColor: 'rgba(124,58,237,.3)', background: 'rgba(124,58,237,.04)', marginBottom: 14 }}>
           <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.6px', fontFamily: 'var(--mono)', color: 'var(--purple)', marginBottom: 10 }}>
             {matches.length} unidades en stock — selecciona cuál destapar
@@ -385,12 +463,16 @@ function TabDestape({ llegadas, destapes }: { llegadas: ConsumibleLlegada[], des
 
 // ── Tab Inventario ─────────────────────────────────────────────────────────────
 
-function TabInventario({ llegadas, destapes }: { llegadas: ConsumibleLlegada[], destapes: ConsumibleDestape[] }) {
+function TabInventario({ llegadas, destapes, config }: { llegadas: ConsumibleLlegada[], destapes: ConsumibleDestape[], config: ConsumiblesConfig | null }) {
+  const qc = useQueryClient()
   const [search,   setSearch]   = useState('')
   const [statusF,  setStatusF]  = useState<'all' | 'stock' | 'destapado'>('all')
   const [ubicF,    setUbicF]    = useState('')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo,   setDateTo]   = useState('')
+
+  const [editLlegada, setEditLlegada] = useState<ConsumibleLlegada | null>(null)
+  const [editDestape, setEditDestape] = useState<ConsumibleDestape | null>(null)
 
   const destapedMap = new Map(
     destapes.filter(d => d.llegada_id).map(d => [d.llegada_id!, d])
@@ -407,13 +489,53 @@ function TabInventario({ llegadas, destapes }: { llegadas: ConsumibleLlegada[], 
     return ok && okS && okU && okF
   })
 
-  const mes       = new Date().toISOString().slice(0, 7)
-  const enStock   = llegadas.filter(l => !destapedMap.has(l.id)).length
+  const enStock    = llegadas.filter(l => !destapedMap.has(l.id)).length
   const destapados = llegadas.filter(l => destapedMap.has(l.id)).length
-  const esteMes   = llegadas.filter(l => l.fecha?.startsWith(mes)).length
 
   function clearFilters() {
     setSearch(''); setStatusF('all'); setUbicF(''); setDateFrom(''); setDateTo('')
+  }
+
+  async function handleUpdateLlegada(llegada: ConsumibleLlegada) {
+    const { error } = await supabase.from('consumibles_llegada').update({
+      fecha: llegada.fecha, qr: llegada.qr,
+      nombre: llegada.nombre || null, ref: llegada.ref || null,
+      lote: llegada.lote || null, venc: llegada.venc || null, vol: llegada.vol || null,
+      responsable: llegada.responsable || null, ubicacion: llegada.ubicacion, obs: llegada.obs || null,
+    }).eq('id', llegada.id)
+    if (error) { toast.error('Error al actualizar: ' + error.message); return }
+    toast.success('Llegada actualizada')
+    qc.invalidateQueries({ queryKey: ['consumibles_llegada'] })
+    setEditLlegada(null)
+  }
+
+  async function handleDeleteLlegada(llegada: ConsumibleLlegada) {
+    if (!window.confirm(`¿Eliminar la llegada "${llegada.nombre || llegada.ref || llegada.qr}"? Esta acción no se puede deshacer.`)) return
+    const { error } = await supabase.from('consumibles_llegada').delete().eq('id', llegada.id)
+    if (error) { toast.error('Error al eliminar: ' + error.message); return }
+    toast.success('Llegada eliminada')
+    qc.invalidateQueries({ queryKey: ['consumibles_llegada'] })
+    qc.invalidateQueries({ queryKey: ['consumibles_destape'] })
+  }
+
+  async function handleUpdateDestape(destape: ConsumibleDestape) {
+    const { error } = await supabase.from('consumibles_destape').update({
+      fecha: destape.fecha, ref: destape.ref || null, nombre: destape.nombre || null,
+      lote: destape.lote || null, responsable: destape.responsable || null,
+      ubicacion: destape.ubicacion, obs: destape.obs || null,
+    }).eq('id', destape.id)
+    if (error) { toast.error('Error al actualizar: ' + error.message); return }
+    toast.success('Destape actualizado')
+    qc.invalidateQueries({ queryKey: ['consumibles_destape'] })
+    setEditDestape(null)
+  }
+
+  async function handleDeleteDestape(destape: ConsumibleDestape) {
+    if (!window.confirm(`¿Eliminar el destape de "${destape.nombre || destape.ref || destape.qr}"? El consumible volverá a figurar en stock.`)) return
+    const { error } = await supabase.from('consumibles_destape').delete().eq('id', destape.id)
+    if (error) { toast.error('Error al eliminar: ' + error.message); return }
+    toast.success('Destape eliminado')
+    qc.invalidateQueries({ queryKey: ['consumibles_destape'] })
   }
 
   return (
@@ -423,13 +545,13 @@ function TabInventario({ llegadas, destapes }: { llegadas: ConsumibleLlegada[], 
           ['Total llegadas', llegadas.length, 'var(--accent)'],
           ['En stock',       enStock,         '#2e9e4e'],
           ['Destapados',     destapados,      '#e07b00'],
-          ['Este mes',       esteMes,         'var(--accent)'],
         ] as [string, number, string][]).map(([label, num, color]) => (
           <div key={label} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 18 }}>
             <div style={{ fontSize: 28, fontWeight: 700, fontFamily: 'var(--mono)', color }}>{num}</div>
             <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4, textTransform: 'uppercase', letterSpacing: '.8px' }}>{label}</div>
           </div>
         ))}
+        <UltimoValeCard config={config} />
       </div>
 
       <Card>
@@ -472,14 +594,14 @@ function TabInventario({ llegadas, destapes }: { llegadas: ConsumibleLlegada[], 
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
             <thead>
               <tr>
-                {['#', 'Estado', 'F. Llegada', 'Nombre', 'Ref', 'Lote', 'Vol', 'Vence', 'Responsable', 'Ubicación', 'F. Destape'].map(h => (
+                {['#', 'Estado', 'F. Llegada', 'Nombre', 'Ref', 'Lote', 'Vol', 'Vence', 'Responsable', 'Ubicación', 'F. Destape', 'Acciones'].map(h => (
                   <th key={h} style={TH}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {rows.length === 0 ? (
-                <tr><td colSpan={11}><div style={EMPTY_TD}><Package size={30} strokeWidth={1.5} /><p>Sin registros</p></div></td></tr>
+                <tr><td colSpan={12}><div style={EMPTY_TD}><Package size={30} strokeWidth={1.5} /><p>Sin registros</p></div></td></tr>
               ) : rows.map((r, i) => (
                 <tr key={r.id} style={{ borderBottom: '1px solid rgba(221,227,237,.5)' }}>
                   <td style={TMONO}>{rows.length - i}</td>
@@ -502,13 +624,101 @@ function TabInventario({ llegadas, destapes }: { llegadas: ConsumibleLlegada[], 
                   <td style={{ padding: '10px 14px' }}><span style={B_EXP}>{r.venc || '—'}</span></td>
                   <td style={{ padding: '10px 14px' }}>{r.responsable || '—'}</td>
                   <td style={{ padding: '10px 14px' }}><span style={B_LOC}>{r.ubicacion || '—'}</span></td>
-                  <td style={TMONO}>{r.destape?.fecha || '—'}</td>
+                  <td style={{ padding: '10px 14px' }}>
+                    {r.destape ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)' }}>
+                        {r.destape.fecha || '—'}
+                        <IconBtn title="Editar destape" onClick={() => setEditDestape(r.destape!)}><Pencil size={12} /></IconBtn>
+                        <IconBtn title="Eliminar destape" onClick={() => handleDeleteDestape(r.destape!)} danger><Trash2 size={12} /></IconBtn>
+                      </div>
+                    ) : '—'}
+                  </td>
+                  <td style={{ padding: '10px 14px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <IconBtn title="Editar llegada" onClick={() => setEditLlegada(r)}><Pencil size={13} /></IconBtn>
+                      <IconBtn title="Eliminar llegada" onClick={() => handleDeleteLlegada(r)} danger><Trash2 size={13} /></IconBtn>
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       </Card>
+
+      <EditLlegadaModal llegada={editLlegada} ubicaciones={UBICACIONES} onClose={() => setEditLlegada(null)} onSave={handleUpdateLlegada} />
+      <EditDestapeModal destape={editDestape} ubicaciones={UBICACIONES} onClose={() => setEditDestape(null)} onSave={handleUpdateDestape} />
+    </div>
+  )
+}
+
+function IconBtn({ children, title, onClick, danger }: { children: React.ReactNode, title: string, onClick: () => void, danger?: boolean }) {
+  return (
+    <button title={title} onClick={onClick} style={{
+      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+      width: 24, height: 24, borderRadius: 6, cursor: 'pointer',
+      background: danger ? 'rgba(220,38,38,.08)' : 'var(--surface2)',
+      border: `1px solid ${danger ? 'rgba(220,38,38,.25)' : 'var(--border)'}`,
+      color: danger ? '#dc2626' : 'var(--muted)',
+    }}>
+      {children}
+    </button>
+  )
+}
+
+function UltimoValeCard({ config }: { config: ConsumiblesConfig | null }) {
+  const qc = useQueryClient()
+  const { user } = useUser()
+  const [editing, setEditing] = useState(false)
+  const [fecha,   setFecha]   = useState(config?.ultimo_vale_fecha ?? '')
+  const [saving,  setSaving]  = useState(false)
+
+  function startEdit() {
+    setFecha(config?.ultimo_vale_fecha ?? '')
+    setEditing(true)
+  }
+
+  async function save() {
+    setSaving(true)
+    const { error } = await supabase.from('consumibles_config').update({
+      ultimo_vale_fecha: fecha || null,
+      updated_by: user?.id ?? null,
+      updated_at: new Date().toISOString(),
+    }).eq('id', 1)
+    setSaving(false)
+    if (error) { toast.error('Error al guardar: ' + error.message); return }
+    toast.success('Fecha del último vale actualizada')
+    qc.invalidateQueries({ queryKey: ['consumibles_config'] })
+    setEditing(false)
+  }
+
+  return (
+    <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 18 }}>
+      {editing ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <input type="date" value={fecha} onChange={e => setFecha(e.target.value)} style={{ ...INP, padding: '6px 8px', fontSize: 13 }} autoFocus />
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button onClick={save} disabled={saving} style={{ ...PRI, padding: '4px 10px', fontSize: 11 }}>{saving ? '…' : 'Guardar'}</button>
+            <button onClick={() => setEditing(false)} style={{ ...GHOST, padding: '4px 10px', fontSize: 11 }}>Cancelar</button>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div style={{ fontSize: 22, fontWeight: 700, fontFamily: 'var(--mono)', color: 'var(--accent)' }}>
+            {config?.ultimo_vale_fecha || 'Sin registrar'}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
+            <div style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.8px' }}>Último vale de consumo</div>
+            <button title="Editar fecha" onClick={startEdit} style={{
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              width: 22, height: 22, borderRadius: 6, cursor: 'pointer',
+              background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--muted)',
+            }}>
+              <Pencil size={11} />
+            </button>
+          </div>
+        </>
+      )}
     </div>
   )
 }
