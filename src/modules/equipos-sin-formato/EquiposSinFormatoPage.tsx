@@ -10,7 +10,7 @@ import { useEquiposSinFormato, useEquiposSinFormatoItems, ESTADO_LABEL_SF, parse
 import { INP, PRI, GHOST, EMPTY } from './ui'
 import type { EquipoSinFormato, EquipoSinFormatoItem, EstadoEquipoSinFormato } from '../../types'
 
-type VistaFiltro = 'todas' | EstadoEquipoSinFormato
+type VistaFiltro = 'todas' | 'en_proceso' | EstadoEquipoSinFormato
 
 const B_ESTADO: Record<EstadoEquipoSinFormato, React.CSSProperties> = {
   recibido: { background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--muted)' },
@@ -33,7 +33,7 @@ export function EquiposSinFormatoPage() {
   const { data: allItems = [] } = useEquiposSinFormatoItems()
   const { data: asesores = [] } = useAsesores()
 
-  const [vista, setVista] = useState<VistaFiltro>('todas')
+  const [vista, setVista] = useState<VistaFiltro>('en_proceso')
   const [search, setSearch] = useState('')
 
   const nombrePorCorreo = new Map(asesores.map(a => [a.correo, a.nombre]))
@@ -44,7 +44,7 @@ export function EquiposSinFormatoPage() {
   }
 
   const filtrados = registros
-    .filter(r => vista === 'todas' || r.estado === vista)
+    .filter(r => vista === 'todas' || (vista === 'en_proceso' ? r.estado !== 'ingresado' : r.estado === vista))
     .filter(r => {
       const q = search.toLowerCase().trim()
       if (!q) return true
@@ -99,7 +99,7 @@ export function EquiposSinFormatoPage() {
       <Card>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', marginBottom: 14 }}>
           <div style={{ display: 'flex', gap: 4, background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 9, padding: 3, flexWrap: 'wrap' }}>
-            {([['todas', 'Todas'], ['recibido', 'Recibido'], ['pendiente', 'Pendiente'], ['preingresado', 'Preingresado'], ['ingresado', 'Ingresado']] as [VistaFiltro, string][]).map(([v, label]) => (
+            {([['todas', 'Todas'], ['en_proceso', 'En proceso'], ['pendiente', 'Pendiente'], ['preingresado', 'Preingresado'], ['ingresado', 'Ingresado']] as [VistaFiltro, string][]).map(([v, label]) => (
               <button key={v} onClick={() => setVista(v)} style={{
                 padding: '6px 12px', border: 'none', borderRadius: 7, cursor: 'pointer', fontSize: 12,
                 fontWeight: vista === v ? 600 : 500, fontFamily: 'var(--sans)',
