@@ -108,11 +108,14 @@ export interface SugerenciaOrden {
 // números más cortos coinciden por azar con demasiada facilidad.
 const MIN_DIGITOS_REMISION = 4
 
-// Coincidencia "fuerte" = OTST compartido, o Cliente + (Remisión o Factura).
-// Cliente solo, o Remisión/Factura solo, no basta — son señales débiles que
-// generarían demasiados falsos positivos si se resaltaran por sí solas.
+// Coincidencia "fuerte" = OTST, Remisión o Factura compartidos — la razón
+// social a veces cambia por completo entre el pendiente y la orden (cambios
+// de nombre del cliente), pero el número de RMV/FV es el identificador real
+// de la transacción, así que basta por sí solo (ya filtrado por el mínimo de
+// dígitos). Cliente solo no basta — ahí sí hay más riesgo de nombres
+// parecidos entre empresas distintas.
 export function esCoincidenciaFuerte(senales: SenalMatch[]): boolean {
-  return senales.includes('otst') || (senales.includes('cliente') && (senales.includes('remision') || senales.includes('factura')))
+  return senales.includes('otst') || senales.includes('remision') || senales.includes('factura')
 }
 
 export function sugerirOrdenesParaPendiente(
