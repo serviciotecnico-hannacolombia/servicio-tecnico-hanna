@@ -75,6 +75,20 @@ function soloDigitos(v: string | null | undefined): string {
   return (v || '').replace(/\D/g, '')
 }
 
+// Los pendientes a veces llegan con la razón social cortada (el sistema de
+// origen la trunca), así que la igualdad exacta se queda corta — si el más
+// corto es prefijo largo del más largo, cuenta como el mismo cliente. El
+// mínimo de caracteres evita que una razón social muy corta genere falsos
+// positivos por pura coincidencia de las primeras letras.
+const MIN_CARACTERES_CLIENTE = 8
+
+function clientesCoinciden(a: string, b: string): boolean {
+  if (!a || !b) return false
+  if (a === b) return true
+  const [corto, largo] = a.length <= b.length ? [a, b] : [b, a]
+  return corto.length >= MIN_CARACTERES_CLIENTE && largo.startsWith(corto)
+}
+
 // rmv_fv es texto libre que puede combinar RMV y FV en el mismo campo
 // ("RMV 123 / FV 456") — se parte en tokens numéricos para comparar cada
 // número por separado, no como substring (evita falsos positivos tipo "123"
@@ -122,7 +136,7 @@ export function sugerirOrdenesParaPendiente(
       if (otstOrden.some(c => otstPendiente.has(c))) senales.push('otst')
     }
 
-    if (clientePendiente && clientePendiente === normalizarTexto(orden.cliente)) senales.push('cliente')
+    if (clientesCoinciden(clientePendiente, normalizarTexto(orden.cliente))) senales.push('cliente')
 
     if (remisionPendiente.length >= MIN_DIGITOS_REMISION || facturaPendiente.length >= MIN_DIGITOS_REMISION) {
       const tokensOrden = tokensNumericos(orden.rmv_fv)
