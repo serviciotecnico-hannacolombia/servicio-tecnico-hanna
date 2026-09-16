@@ -71,7 +71,17 @@ export function TicketsPage() {
   }
 
   const handleImport = async (rows: ParsedTicketRow[], userMap: Record<string, string | null>) => {
-    const toInsert = rows.map(r => ({
+    // El Excel de Notion trae las filas del ticket más nuevo al más antiguo.
+    // Se insertan en orden cronológico (antiguo → nuevo) para que el ID
+    // consecutivo de la intranet quede alineado con la fecha real: el
+    // ticket más antiguo recibe el ID más bajo y el más reciente el más alto.
+    const rowsOrdenadas = [...rows].sort((a, b) => {
+      const ta = a.createdAt ? new Date(a.createdAt).getTime() : Infinity
+      const tb = b.createdAt ? new Date(b.createdAt).getTime() : Infinity
+      return ta - tb
+    })
+
+    const toInsert = rowsOrdenadas.map(r => ({
       nombre: r.nombre,
       codigo: r.codigo || null,
       serial: r.serial || null,
