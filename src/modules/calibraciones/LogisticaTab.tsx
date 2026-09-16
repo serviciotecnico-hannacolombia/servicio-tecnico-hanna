@@ -27,6 +27,8 @@ import type { Asesor, LogisticaPendiente, OrdenCalibracion } from '../../types'
 // Arma el mensaje de seguimiento para un pendiente ya gestionado (asesor
 // asignado) — misma lógica que la fórmula de Notion que se usaba antes.
 function generarMensajePendiente(p: LogisticaPendiente, nombreAsesor: string | null): string {
+  const primerNombreAsesor = nombreAsesor ? nombreAsesor.trim().split(/\s+/)[0] : null
+
   const partes: string[] = []
   if (p.remision) partes.push(`la RMV ${p.remision}`)
   if (p.factura) partes.push(`la FV ${p.factura}`)
@@ -35,14 +37,18 @@ function generarMensajePendiente(p: LogisticaPendiente, nombreAsesor: string | n
   const textoOtst = p.otst ? ` relacionada a la OTST ${p.otst}` : ''
   const textoObs = p.observaciones ? `. ${p.observaciones}` : ''
 
-  return 'Hola, buen día ' +
-    (nombreAsesor ? `${nombreAsesor} ` : '') +
-    'tengo pendiente de gestión de calibración' +
+  const cuerpo = 'Mira que tengo pendiente de gestión la calibración' +
     (p.cliente ? ` del cliente ${p.cliente}` : '') +
     ' ' +
-    (pendientesTexto ? `con ${pendientesTexto}` : 'un caso') +
+    (pendientesTexto ? `con ${pendientesTexto}` : 'de un caso') +
     textoOtst +
     textoObs
+
+  return [
+    `Hola, buen día${primerNombreAsesor ? ` ${primerNombreAsesor}` : ''}, ¿cómo estas?`,
+    cuerpo,
+    '¿Me podrías ayudar con el SACI?',
+  ].join('\n\n')
 }
 
 const ESTADOS_LOGISTICA: OrdenCalibracion['estado'][] = ['para_enviar', 'enviado', 'en_retorno']
