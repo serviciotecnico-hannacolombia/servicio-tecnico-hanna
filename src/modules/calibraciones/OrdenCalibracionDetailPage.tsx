@@ -574,7 +574,7 @@ export function OrdenCalibracionDetailPage() {
         {!esNueva && etapaMostrada?.key === 'en_mantenimiento_reparacion' ? (
           <VistaMantenimiento
             form={form} asesorSeleccionado={asesorSeleccionado} puedeEditar={puedeEditarFlujo} soloLectura={soloLectura}
-            saving={saving} onTerminar={terminarMantenimiento}
+            saving={saving} onTerminar={terminarMantenimiento} onGuardarFechaEstimada={avanzarEtapa}
           />
         ) : !esNueva && etapaMostrada?.key === 'visita_programada' ? (
           <VistaVisitaProgramada
