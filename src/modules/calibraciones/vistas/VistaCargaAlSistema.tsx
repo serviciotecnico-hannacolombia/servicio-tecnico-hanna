@@ -6,12 +6,14 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { UploadCloud } from 'lucide-react'
-import { FG, Seccion, Grid2, INP, PRI, fmtFecha } from '../ui'
+import { FG, Seccion, Grid2, INP, PRI, B_INFO, fmtFecha } from '../ui'
 import { sumarDias } from '../hooks/useCalibraciones'
-import type { OrdenCalibracion } from '../../../types'
+import type { OrdenCalibracion, RvCalibrItem } from '../../../types'
 
-export function VistaCargaAlSistema({ form, puedeEditar, soloLectura, saving, onAvanzar }: {
+export function VistaCargaAlSistema({ form, catalogo, codigosSel, puedeEditar, soloLectura, saving, onAvanzar }: {
   form: Partial<OrdenCalibracion>
+  catalogo: RvCalibrItem[]
+  codigosSel: Set<string>
   puedeEditar: boolean
   soloLectura: boolean
   saving: boolean
@@ -24,6 +26,7 @@ export function VistaCargaAlSistema({ form, puedeEditar, soloLectura, saving, on
   // Guía calculada en "En calibración" a partir de la misma fecha de fin de
   // calibración con la que se entra a esta etapa — no se persiste.
   const fechaEstimadaCertificados = form.certificado_fecha_fin ? sumarDias(form.certificado_fecha_fin, 10) : null
+  const serviciosSeleccionados = catalogo.filter(c => codigosSel.has(c.codigo))
 
   function confirmar() {
     if (!codigoRecepcion.trim()) { toast.error('Ingresa el código de recepción'); return }
@@ -51,6 +54,9 @@ export function VistaCargaAlSistema({ form, puedeEditar, soloLectura, saving, on
 
       <Seccion titulo="Resumen">
         <Grid2>
+          <FG label="Cantidad de equipos">
+            <div style={{ ...INP, color: form.cantidad_equipos ? 'var(--text)' : 'var(--muted)' }}>{form.cantidad_equipos ?? '—'}</div>
+          </FG>
           <FG label="Fecha de control de calidad">
             <div style={{ ...INP, color: form.fecha_control_calidad ? 'var(--text)' : 'var(--muted)' }}>
               {form.fecha_control_calidad ? fmtFecha(form.fecha_control_calidad) : '—'}
@@ -65,6 +71,19 @@ export function VistaCargaAlSistema({ form, puedeEditar, soloLectura, saving, on
             </div>
           </FG>
         </Grid2>
+        <div style={{ marginTop: 14 }}>
+          <FG label="Servicios RV CALIBR">
+            {serviciosSeleccionados.length ? (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {serviciosSeleccionados.map(c => (
+                  <span key={c.codigo} title={c.descripcion} style={B_INFO}>{c.codigo} — {c.magnitud}</span>
+                ))}
+              </div>
+            ) : (
+              <div style={{ ...INP, color: 'var(--muted)' }}>Sin servicios seleccionados</div>
+            )}
+          </FG>
+        </div>
       </Seccion>
 
       <Seccion titulo="Carga al sistema">
