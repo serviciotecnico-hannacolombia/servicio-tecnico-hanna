@@ -8,6 +8,8 @@ import { useUser } from '../../hooks/useUser'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
 import { Spinner } from '../ui/Spinner'
+import { PercyBubble } from '../ui/PercyBubble'
+import { saludoPercy } from '../../lib/percy'
 import logo from '../../assets/logo.svg'
 
 const ALLOWED_DOMAIN = 'hannacolombia.com'
@@ -111,11 +113,7 @@ export function LoginPage() {
               style={{ height: 42, width: 'auto', display: 'block' }}
             />
             <div style={{ width: 1, height: 42, background: 'var(--accent)', opacity: 0.4, flexShrink: 0 }} />
-            <img
-              src="/favicon.svg"
-              alt="Servicio Técnico"
-              style={{ height: 48, width: 'auto', display: 'block' }}
-            />
+            <PercyBubble src="/favicon.svg" alt="Servicio Técnico" size={48} mensaje={saludoPercy()} />
           </div>
           <div style={{
             fontSize: '0.7rem',
