@@ -84,6 +84,7 @@ export function CalibracionesPage() {
   const [tab, setTab] = useState<Tab>(cargarTab)
   const [vista, setVista] = useState<VistaFiltro>('activas')
   const [search, setSearch] = useState('')
+  const [searchOtstRmv, setSearchOtstRmv] = useState('')
   const [page, setPage] = useState(0)
   const [filtros, setFiltros] = useState<FiltrosOrdenes>(cargarFiltros)
   const [verFlujo, setVerFlujo] = useState(false)
@@ -122,6 +123,11 @@ export function CalibracionesPage() {
       return (o.cliente || '').toLowerCase().includes(q)
         || (o.numero_oc || '').toLowerCase().includes(q)
         || (o.correo_asesor || '').toLowerCase().includes(q)
+    })
+    .filter(o => {
+      const q = searchOtstRmv.toLowerCase().trim()
+      if (!q) return true
+      return (o.otst || '').toLowerCase().includes(q) || (o.rmv_fv || '').toLowerCase().includes(q)
     })
     .sort((a, b) => {
       // El No. de OC es el identificador de la orden (ST{número}-{año}) —
@@ -298,6 +304,10 @@ export function CalibracionesPage() {
               <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
                 <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)', pointerEvents: 'none' }} />
                 <input value={search} onChange={e => { setSearch(e.target.value); setPage(0) }} placeholder="Buscar por cliente, OC o asesor..." style={{ ...INP, paddingLeft: 34 }} />
+              </div>
+              <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
+                <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)', pointerEvents: 'none' }} />
+                <input value={searchOtstRmv} onChange={e => { setSearchOtstRmv(e.target.value); setPage(0) }} placeholder="Buscar por OTST o RMV..." style={{ ...INP, paddingLeft: 34 }} />
               </div>
             </div>
 
