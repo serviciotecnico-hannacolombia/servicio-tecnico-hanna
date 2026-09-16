@@ -1,20 +1,27 @@
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { Upload } from 'lucide-react'
 import { TicketForm } from '../components/TicketForm'
 import { TicketsTable } from '../components/TicketsTable'
 import { EditTicketModal } from '../components/EditTicketModal'
+import { ImportTicketsModal } from '../components/ImportTicketsModal'
 import { useTickets } from '../hooks/useTickets'
 import { Header } from '../../../components/layout/Header'
+import { Button } from '../../../components/ui/Button'
 import { supabase } from '../../../lib/supabase'
 import { useUser } from '../../../hooks/useUser'
+import { useProfiles } from '../../../hooks/useProfiles'
 import type { TicketFabrica } from '../types'
+import type { ParsedTicketRow } from '../utils/parseTicketsExcel'
 
 export function TicketsPage() {
   const qc = useQueryClient()
   const { user } = useUser()
   const { data: tickets = [] } = useTickets()
+  const { data: profiles = [] } = useProfiles()
   const [selected, setSelected] = useState<TicketFabrica | null>(null)
+  const [importOpen, setImportOpen] = useState(false)
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ['tickets_fabrica'] })
 
@@ -60,6 +67,36 @@ export function TicketsPage() {
     setSelected(null)
   }
 
+  const handleImport = async (rows: ParsedTicketRow[], userMap: Record<string, string | null>) => {
+    const toInsert = rows.map(r => ({
+      nombre: r.nombre,
+      codigo: r.codigo || null,
+      serial: r.serial || null,
+      origen: r.origen || null,
+      estado: r.estado || null,
+      nota_estado: r.notaEstado || null,
+      creado_por: r.creadoPorRaw ? (userMap[r.creadoPorRaw] ?? null) : null,
+      es_equipo_hijo: false,
+      // Siempre se envía una fecha: si se omitiera en algunas filas del lote,
+      // Supabase manda NULL explícito en vez de aplicar el DEFAULT now() de la
+      // columna cuando otras filas del mismo insert sí traen la columna.
+      created_at: r.createdAt || new Date().toISOString(),
+    }))
+
+    const CHUNK = 200
+    let inserted = 0
+    for (let i = 0; i < toInsert.length; i += CHUNK) {
+      const chunk = toInsert.slice(i, i + CHUNK)
+      const { error } = await supabase.from('tickets_fabrica').insert(chunk)
+      if (error) { toast.error('Error importando lote: ' + error.message); break }
+      inserted += chunk.length
+    }
+
+    invalidate()
+    toast.success(`Importación completada: ${inserted} tickets registrados`)
+    return { inserted }
+  }
+
   const handleDelete = async (ticket: TicketFabrica) => {
     if (!ticket.id) return
     if (!window.confirm(`¿Eliminar el ticket "${ticket.nombre}"?`)) return
@@ -74,12 +111,24 @@ export function TicketsPage() {
       <Header
         title="Tickets a Fábrica"
         subtitle="Reporte de fallas y novedades de equipos ante fábrica — reemplaza el seguimiento en Notion"
+        actions={
+          <Button variant="ghost" size="sm" onClick={() => setImportOpen(true)}>
+            <Upload size={14} /> Importar Excel
+          </Button>
+        }
       />
 
       <TicketForm onSave={handleSave} />
       <TicketsTable tickets={tickets} onEdit={setSelected} onDelete={handleDelete} />
 
       <EditTicketModal ticket={selected} onClose={() => setSelected(null)} onSave={handleUpdate} />
+
+      <ImportTicketsModal
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        profiles={profiles}
+        onImport={handleImport}
+      />
     </div>
   )
 }

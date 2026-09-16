@@ -32,10 +32,12 @@ export function EditBodegaSTModal({ record, isOpen, onClose, onUpdate }: EditBod
 
   const [ubicacion, setUbicacion] = useState(UBICACIONES_BODEGA_ST[0]);
   const [observaciones, setObservaciones] = useState('');
+  const [precio, setPrecio] = useState('');
 
   if (record && record.id !== prevRecordId) {
     setPrevRecordId(record.id);
     setEstado(record.estado);
+    setPrecio(record.precio != null ? String(record.precio) : '');
 
     // Cada etapa guarda su información en columnas distintas; al cargar el
     // registro se reparte de vuelta al campo específico de esa etapa.
@@ -59,7 +61,8 @@ export function EditBodegaSTModal({ record, isOpen, onClose, onUpdate }: EditBod
       reparaciones_realizadas: estado === 'en_reparacion' ? piezasColocar : (estado === 'incompleto_espera_partes' ? reparacionesRealizadas : ''),
       ubicacion_estante: (estado === 'restaurado_listo' || estado === 'incompleto_espera_partes') ? undefined : ubicacion,
       bodega_destino: estado === 'restaurado_listo' ? 'Bodega Principal' : (estado === 'incompleto_espera_partes' ? 'Bodega Incompletos' : undefined),
-      observaciones
+      observaciones,
+      precio: precio ? Number(precio) : undefined
     });
     onClose();
   };
@@ -99,6 +102,7 @@ export function EditBodegaSTModal({ record, isOpen, onClose, onUpdate }: EditBod
         )}
 
         <Input label="Observaciones" value={observaciones} onChange={e => setObservaciones(e.target.value)} />
+        <Input label="Precio del Equipo (COP)" type="number" min="0" step="0.01" value={precio} onChange={e => setPrecio(e.target.value)} placeholder="Ej: 1500000" />
 
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 6 }}>
           <Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button>

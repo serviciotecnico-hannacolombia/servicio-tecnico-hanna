@@ -42,6 +42,12 @@ export function BodegaSTPage() {
   const totalReparacion = visibleRecords.filter(r => r.estado === 'en_reparacion').length;
   const totalIncompletos = visibleRecords.filter(r => r.estado === 'incompleto_espera_partes').length;
   const totalListos = visibleRecords.filter(r => r.estado === 'restaurado_listo').length;
+  // El valor consolidado solo cuenta lo que sigue físicamente en Bodega ST:
+  // al pasar a Bodega Principal o Bodega Incompletos, el equipo ya salió y su precio deja de sumar.
+  const valorTotal = visibleRecords
+    .filter(r => r.estado !== 'restaurado_listo' && r.estado !== 'incompleto_espera_partes')
+    .reduce((sum, r) => sum + (r.precio || 0), 0);
+  const valorTotalFormateado = valorTotal.toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ['bodega_st_registros'] });
@@ -62,6 +68,7 @@ export function BodegaSTPage() {
       ubicacion_estante: newRecord.ubicacion_estante || null,
       bodega_destino: newRecord.bodega_destino || null,
       observaciones: newRecord.observaciones || null,
+      precio: newRecord.precio ?? null,
     });
     if (error) { toast.error('Error al guardar: ' + error.message); return; }
     invalidate();
@@ -78,6 +85,7 @@ export function BodegaSTPage() {
       ubicacion_estante: updated.ubicacion_estante || null,
       bodega_destino: updated.bodega_destino || null,
       observaciones: updated.observaciones || null,
+      precio: updated.precio ?? null,
       updated_at: new Date().toISOString(),
     }).eq('id', updated.id);
     if (error) { toast.error('Error al actualizar: ' + error.message); return; }
@@ -128,6 +136,7 @@ export function BodegaSTPage() {
         <StatCard value={totalReparacion} label="Reparación" sublabel="en proceso" color="accent" />
         <StatCard value={totalIncompletos} label="Incompletos" sublabel="esperando accesorios" color="red" />
         <StatCard value={totalListos} label="Rest. Listos" sublabel="listos para bodega" color="green" />
+        <StatCard value={valorTotalFormateado} label="Valor Total" sublabel="suma de precios en bodega" color="purple" />
       </div>
 
       <BodegaSTForm onSave={handleSaveRecord} />

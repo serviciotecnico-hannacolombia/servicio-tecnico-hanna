@@ -3,6 +3,7 @@ export type TicketOrigen = 'control_calidad' | 'orden_trabajo'
 export type TicketEstado =
   | 'exportacion_garantia' | 'consulta_resuelta' | 'pendiente_feedback'
   | 'exportacion' | 'denegada_garantia' | 'en_espera' | 'cambio_garantia'
+  | 'boletin_tecnico'
 
 export interface TicketFabrica {
   id?: string
@@ -46,6 +47,7 @@ export const ESTADO_LABEL: Record<TicketEstado, string> = {
   denegada_garantia: 'Denegada garantía',
   en_espera: 'En espera',
   cambio_garantia: 'Cambio garantía',
+  boletin_tecnico: 'Boletín Técnico',
 }
 
 export const ESTADO_COLOR: Record<TicketEstado, { bg: string; text: string; border: string }> = {
@@ -56,6 +58,7 @@ export const ESTADO_COLOR: Record<TicketEstado, { bg: string; text: string; bord
   denegada_garantia: { bg: '#fef2f2', text: '#dc2626', border: '#fca5a5' },
   en_espera: { bg: '#fffbeb', text: '#b45309', border: '#fcd34d' },
   cambio_garantia: { bg: '#f0fdf4', text: '#16a34a', border: '#86efac' },
+  boletin_tecnico: { bg: '#e0f2fe', text: '#0369a1', border: '#7dd3fc' },
 }
 
 // Ejemplo contextual del cuadro de texto "Detalle del estado" — cada estado
@@ -69,4 +72,5 @@ export const ESTADO_NOTA_PLACEHOLDER: Record<TicketEstado, string> = {
   denegada_garantia: 'Ej: Fábrica denegó la garantía por mal uso, se informa al cliente',
   en_espera: 'Ej: A la espera de respuesta de fábrica, sin novedades aún',
   cambio_garantia: 'Ej: Fábrica autorizó cambio del equipo/sonda por garantía',
+  boletin_tecnico: 'Ej: Fábrica emitió boletín técnico informando falla conocida y procedimiento a seguir',
 }

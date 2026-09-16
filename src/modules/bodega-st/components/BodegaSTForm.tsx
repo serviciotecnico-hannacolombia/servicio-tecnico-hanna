@@ -34,6 +34,7 @@ export function BodegaSTForm({ onSave }: BodegaSTFormProps) {
 
   const [ubicacion, setUbicacion] = useState(UBICACIONES_BODEGA_ST[0]);
   const [observaciones, setObservaciones] = useState('');
+  const [precio, setPrecio] = useState('');
 
   const inputQrRef = useRef<HTMLInputElement>(null);
 
@@ -63,6 +64,7 @@ export function BodegaSTForm({ onSave }: BodegaSTFormProps) {
       ubicacion_estante: (estado === 'restaurado_listo' || estado === 'incompleto_espera_partes') ? undefined : ubicacion,
       bodega_destino: estado === 'restaurado_listo' ? 'Bodega Principal' : (estado === 'incompleto_espera_partes' ? 'Bodega Incompletos' : undefined),
       observaciones,
+      precio: precio ? Number(precio) : undefined,
       created_at: new Date().toISOString()
     });
 
@@ -75,6 +77,7 @@ export function BodegaSTForm({ onSave }: BodegaSTFormProps) {
     setReparacionesRealizadas('');
     setAccesoriosFaltantes('');
     setObservaciones('');
+    setPrecio('');
     inputQrRef.current?.focus();
   };
 
@@ -160,7 +163,10 @@ export function BodegaSTForm({ onSave }: BodegaSTFormProps) {
           </div>
         )}
 
-        <Input label="OBSERVACIONES ADICIONALES" value={observaciones} onChange={e => setObservaciones(e.target.value)} placeholder="Detalles sobre el estado estético o pruebas..." />
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 220px', gap: 16 }}>
+          <Input label="OBSERVACIONES ADICIONALES" value={observaciones} onChange={e => setObservaciones(e.target.value)} placeholder="Detalles sobre el estado estético o pruebas..." />
+          <Input label="PRECIO DEL EQUIPO (COP)" type="number" min="0" step="0.01" value={precio} onChange={e => setPrecio(e.target.value)} placeholder="Ej: 1500000" />
+        </div>
 
         <Button type="submit" style={{ marginTop: 4 }}>
           <PackageCheck size={16} /> Registrar Estado en Bodega ST

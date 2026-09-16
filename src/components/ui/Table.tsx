@@ -15,6 +15,8 @@ interface TableProps<T extends object> {
   keyExtractor?: (row: T, i: number) => string | number
   onRowClick?: (row: T) => void
   rowStyle?: (row: T) => CSSProperties | undefined
+  /** Reduce el padding de celdas y encabezados para caber sin scroll horizontal en tablas con muchas columnas. */
+  compact?: boolean
 }
 
 export function Table<T extends object>({
@@ -24,25 +26,30 @@ export function Table<T extends object>({
   keyExtractor,
   onRowClick,
   rowStyle,
+  compact = false,
 }: TableProps<T>) {
+  const cellPadding = compact ? '6px 8px' : '10px 14px'
+
   return (
     <div style={{ overflowX: 'auto' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: compact ? '0.8rem' : '0.875rem', tableLayout: compact ? 'fixed' : 'auto' }}>
         <thead>
           <tr style={{ borderBottom: '2px solid var(--border)' }}>
             {columns.map(col => (
               <th
                 key={col.key}
                 style={{
-                  padding: '10px 14px',
+                  padding: cellPadding,
                   textAlign: col.align ?? 'left',
                   fontFamily: 'var(--mono)',
-                  fontSize: '0.68rem',
+                  fontSize: compact ? '0.6rem' : '0.68rem',
                   fontWeight: 500,
                   textTransform: 'uppercase',
                   letterSpacing: '0.07em',
                   color: 'var(--muted)',
-                  whiteSpace: 'nowrap',
+                  whiteSpace: compact ? 'normal' : 'nowrap',
+                  overflow: compact ? 'hidden' : undefined,
+                  textOverflow: compact ? 'ellipsis' : undefined,
                   width: col.width,
                   background: 'var(--surface)',
                 }}
@@ -78,7 +85,7 @@ export function Table<T extends object>({
                     <td
                       key={col.key}
                       style={{
-                        padding: '10px 14px', color: 'var(--text)', textAlign: col.align ?? 'left', verticalAlign: 'middle',
+                        padding: cellPadding, color: 'var(--text)', textAlign: col.align ?? 'left', verticalAlign: 'middle',
                         wordBreak: 'break-word', overflowWrap: 'anywhere',
                       }}
                     >

@@ -16,7 +16,8 @@ interface EditTicketModalProps {
   onSave: (ticket: TicketFabrica) => void
 }
 
-const TICKET_ID_PREFIJO = 'Ticket ID: '
+const TICKET_ID_PREFIJO = 'TID: '
+const TICKET_ID_PREFIJO_LEGACY = 'Ticket ID: '
 
 export function EditTicketModal({ ticket, onClose, onSave }: EditTicketModalProps) {
   const [prevId, setPrevId] = useState<string | undefined>(undefined)
@@ -32,7 +33,13 @@ export function EditTicketModal({ ticket, onClose, onSave }: EditTicketModalProp
   const set = <K extends keyof TicketFabrica>(key: K, value: TicketFabrica[K]) =>
     setForm(prev => prev ? { ...prev, [key]: value } : prev)
 
-  const numeroTicket = form.nombre.startsWith(TICKET_ID_PREFIJO) ? form.nombre.slice(TICKET_ID_PREFIJO.length) : form.nombre
+  // Los tickets importados de Notion aún guardan el prefijo largo "Ticket ID: ";
+  // se reconoce igual para no mostrarlo crudo al editar tickets antiguos.
+  const numeroTicket = form.nombre.startsWith(TICKET_ID_PREFIJO)
+    ? form.nombre.slice(TICKET_ID_PREFIJO.length)
+    : form.nombre.startsWith(TICKET_ID_PREFIJO_LEGACY)
+      ? form.nombre.slice(TICKET_ID_PREFIJO_LEGACY.length)
+      : form.nombre
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()

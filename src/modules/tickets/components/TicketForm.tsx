@@ -15,7 +15,7 @@ interface TicketFormProps {
   onSave: (ticket: TicketFabrica) => void
 }
 
-const TICKET_ID_PREFIJO = 'Ticket ID: '
+const TICKET_ID_PREFIJO = 'TID: '
 
 export function TicketForm({ onSave }: TicketFormProps) {
   const [numeroTicket, setNumeroTicket] = useState('')

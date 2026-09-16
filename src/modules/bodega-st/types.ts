@@ -27,6 +27,7 @@ export interface RegistroBodegaST {
   ubicacion_estante?: string;
   bodega_destino?: string;
   observaciones?: string;
+  precio?: number;
 }
 
 export interface BodegaSTAudit {

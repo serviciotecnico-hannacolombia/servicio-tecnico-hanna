@@ -14,13 +14,17 @@ interface TicketsTableProps {
 const fmtFecha = (iso?: string) => {
   if (!iso) return '—'
   const d = new Date(iso)
-  return `${d.toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' })} ${d.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}`
+  return `${d.toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: '2-digit' })} ${d.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}`
 }
 
 const truncateText = (text: string | undefined | null, maxLength = 40) => {
   if (!text) return '—'
   return text.length > maxLength ? text.substring(0, maxLength) + '...' : text
 }
+
+// Los tickets importados de Notion guardan el prefijo largo "Ticket ID: ";
+// se acorta solo para mostrar, sin tocar el dato guardado en la base.
+const formatNombre = (nombre: string) => nombre.replace(/^Ticket ID:\s*/i, 'TID: ')
 
 export function TicketsTable({ tickets, onEdit, onDelete }: TicketsTableProps) {
   const [searchTerm, setSearchTerm] = useState('')
@@ -44,28 +48,58 @@ export function TicketsTable({ tickets, onEdit, onDelete }: TicketsTableProps) {
     )
   })
 
+  // Anchos en porcentaje (suman 100%): con tableLayout "fixed" el navegador
+  // los respeta de forma proporcional al ancho disponible, así la tabla
+  // siempre cabe en pantalla sin scroll horizontal, sin importar el tamaño.
   const columns: Column<TicketFabrica>[] = [
-    { key: 'numero', header: 'ID', width: '60px', render: t => <span style={{ fontFamily: 'var(--mono)', fontSize: '0.78rem', color: 'var(--muted)' }}>{t.numero ?? '—'}</span> },
-    { key: 'nombre', header: 'Nombre', render: t => <span style={{ fontWeight: 600, fontFamily: 'var(--mono)', fontSize: '0.8rem' }}>{t.nombre}</span> },
-    { key: 'creado_por', header: 'Creado por', width: '160px', render: t => <span style={{ fontSize: '0.8rem' }}>{profileName(t.creado_por)}</span> },
+    { key: 'numero', header: 'ID', width: '4%', render: t => <span style={{ fontFamily: 'var(--mono)', fontSize: '0.76rem', color: 'var(--muted)', whiteSpace: 'nowrap' }}>{t.numero ?? '—'}</span> },
     {
-      key: 'codigo', header: 'Código', width: '150px',
+      key: 'nombre', header: 'Nombre', width: '8%',
       render: t => (
-        <div>
-          <div style={{ fontFamily: 'var(--mono)', fontSize: '0.8rem' }}>{t.codigo || '—'}</div>
-          {t.equipo_nombre && <div style={{ fontSize: '0.7rem', color: 'var(--muted)' }}>{t.equipo_nombre}</div>}
+        <span
+          title={t.nombre}
+          style={{ fontWeight: 600, fontFamily: 'var(--mono)', fontSize: '0.78rem', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+        >
+          {formatNombre(t.nombre)}
+        </span>
+      ),
+    },
+    {
+      key: 'creado_por', header: 'Creador', width: '13%',
+      render: t => (
+        <span
+          title={profileName(t.creado_por)}
+          style={{ fontSize: '0.78rem', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+        >
+          {profileName(t.creado_por)}
+        </span>
+      ),
+    },
+    {
+      key: 'codigo', header: 'Código', width: '9%',
+      render: t => (
+        <div style={{ overflow: 'hidden' }}>
+          <div title={t.codigo || ''} style={{ fontFamily: 'var(--mono)', fontSize: '0.78rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.codigo || '—'}</div>
+          {t.equipo_nombre && <div title={t.equipo_nombre} style={{ fontSize: '0.68rem', color: 'var(--muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.equipo_nombre}</div>}
         </div>
       ),
     },
-    { key: 'serial', header: 'Serial', width: '130px', render: t => <span style={{ fontFamily: 'var(--mono)', fontSize: '0.8rem' }}>{t.serial || '—'}</span> },
     {
-      key: 'equipo_madre', header: 'Equipo Madre', width: '190px',
+      key: 'serial', header: 'Serial', width: '7%',
+      render: t => (
+        <span title={t.serial || ''} style={{ fontFamily: 'var(--mono)', fontSize: '0.78rem', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {t.serial || '—'}
+        </span>
+      ),
+    },
+    {
+      key: 'equipo_madre', header: 'Eq. Madre', width: '10%',
       render: t => t.es_equipo_hijo ? (
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 5 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 5, overflow: 'hidden' }}>
           <Link2 size={12} style={{ color: 'var(--accent)', flexShrink: 0, marginTop: 2 }} />
-          <div style={{ fontSize: '0.75rem' }}>
-            <div style={{ fontWeight: 600, color: 'var(--text)' }}>{t.equipo_madre_nombre || '—'}</div>
-            <div style={{ color: 'var(--muted)', fontFamily: 'var(--mono)' }}>
+          <div style={{ fontSize: '0.72rem', minWidth: 0 }}>
+            <div title={t.equipo_madre_nombre || ''} style={{ fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.equipo_madre_nombre || '—'}</div>
+            <div style={{ color: 'var(--muted)', fontFamily: 'var(--mono)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {[t.equipo_madre_codigo, t.equipo_madre_serial].filter(Boolean).join(' · ') || '—'}
             </div>
           </div>
@@ -73,33 +107,43 @@ export function TicketsTable({ tickets, onEdit, onDelete }: TicketsTableProps) {
       ) : <span style={{ color: 'var(--muted)' }}>—</span>,
     },
     {
-      key: 'origen', header: 'Origen', width: '150px',
+      key: 'origen', header: 'Origen', width: '8%',
       render: t => t.origen ? (
         <span style={{
-          display: 'inline-flex', alignItems: 'center', padding: '3px 10px', borderRadius: 20,
-          fontSize: '0.75rem', fontWeight: 600,
+          display: 'inline-block', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis',
+          padding: '3px 8px', borderRadius: 20, fontSize: '0.7rem', fontWeight: 600, whiteSpace: 'nowrap',
           background: ORIGEN_COLOR[t.origen].bg, color: ORIGEN_COLOR[t.origen].text, border: `1px solid ${ORIGEN_COLOR[t.origen].border}`,
         }}>{ORIGEN_LABEL[t.origen]}</span>
       ) : <span style={{ color: 'var(--muted)' }}>—</span>,
     },
     {
-      key: 'estado', header: 'Estado', width: '160px',
+      key: 'estado', header: 'Estado', width: '12%',
       render: t => t.estado ? (
         <span style={{
-          display: 'inline-flex', alignItems: 'center', padding: '3px 10px', borderRadius: 20,
-          fontSize: '0.75rem', fontWeight: 600,
+          display: 'inline-block', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis',
+          padding: '3px 8px', borderRadius: 20, fontSize: '0.7rem', fontWeight: 600, whiteSpace: 'nowrap',
           background: ESTADO_COLOR[t.estado].bg, color: ESTADO_COLOR[t.estado].text, border: `1px solid ${ESTADO_COLOR[t.estado].border}`,
         }}>{ESTADO_LABEL[t.estado]}</span>
       ) : <span style={{ color: 'var(--muted)' }}>—</span>,
     },
-    { key: 'nota_estado', header: 'Detalle del Estado', render: t => <span style={{ color: 'var(--muted)', fontSize: '0.78rem' }} title={t.nota_estado || ''}>{truncateText(t.nota_estado)}</span> },
-    { key: 'created_at', header: 'Fecha de creación', width: '180px', render: t => <span style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>{fmtFecha(t.created_at)}</span> },
     {
-      key: 'acciones', header: 'Acciones', width: '90px', align: 'center',
+      key: 'nota_estado', header: 'Detalle', width: '14%',
       render: t => (
-        <div style={{ display: 'flex', gap: 5, justifyContent: 'center' }}>
-          <button title="Editar" onClick={() => onEdit(t)} style={{ border: 'none', background: 'var(--accent-bg)', color: 'var(--accent)', padding: 7, borderRadius: 'var(--radius-sm)', cursor: 'pointer', display: 'flex' }}><Pencil size={14} /></button>
-          <button title="Eliminar" onClick={() => onDelete(t)} style={{ border: 'none', background: 'var(--red-bg)', color: 'var(--red)', padding: 7, borderRadius: 'var(--radius-sm)', cursor: 'pointer', display: 'flex' }}><Trash2 size={14} /></button>
+        <span title={t.nota_estado || ''} style={{ color: 'var(--muted)', fontSize: '0.76rem', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {truncateText(t.nota_estado)}
+        </span>
+      ),
+    },
+    {
+      key: 'created_at', header: 'Fecha', width: '8%',
+      render: t => <span style={{ fontSize: '0.74rem', color: 'var(--muted)', whiteSpace: 'nowrap' }}>{fmtFecha(t.created_at)}</span>,
+    },
+    {
+      key: 'acciones', header: 'Acciones', width: '7%', align: 'center',
+      render: t => (
+        <div style={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
+          <button title="Editar" onClick={() => onEdit(t)} style={{ border: 'none', background: 'var(--accent-bg)', color: 'var(--accent)', padding: 6, borderRadius: 'var(--radius-sm)', cursor: 'pointer', display: 'flex' }}><Pencil size={13} /></button>
+          <button title="Eliminar" onClick={() => onDelete(t)} style={{ border: 'none', background: 'var(--red-bg)', color: 'var(--red)', padding: 6, borderRadius: 'var(--radius-sm)', cursor: 'pointer', display: 'flex' }}><Trash2 size={13} /></button>
         </div>
       ),
     },
@@ -123,7 +167,7 @@ export function TicketsTable({ tickets, onEdit, onDelete }: TicketsTableProps) {
         </div>
       </div>
 
-      <Table columns={columns} data={filteredTickets} emptyMessage="No hay tickets registrados aún." keyExtractor={(t, i) => t.id ?? i} />
+      <Table columns={columns} data={filteredTickets} emptyMessage="No hay tickets registrados aún." keyExtractor={(t, i) => t.id ?? i} compact />
     </Card>
   )
 }
