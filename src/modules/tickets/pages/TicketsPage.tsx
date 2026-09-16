@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Upload } from 'lucide-react'
+import { Upload, Trash2 } from 'lucide-react'
 import { TicketForm } from '../components/TicketForm'
 import { TicketsTable } from '../components/TicketsTable'
 import { EditTicketModal } from '../components/EditTicketModal'
@@ -15,6 +15,8 @@ import { useProfiles } from '../../../hooks/useProfiles'
 import type { TicketFabrica } from '../types'
 import type { ParsedTicketRow } from '../utils/parseTicketsExcel'
 
+const CLAVE_ELIMINAR_TODO = '2711'
+
 export function TicketsPage() {
   const qc = useQueryClient()
   const { user } = useUser()
@@ -22,6 +24,7 @@ export function TicketsPage() {
   const { data: profiles = [] } = useProfiles()
   const [selected, setSelected] = useState<TicketFabrica | null>(null)
   const [importOpen, setImportOpen] = useState(false)
+  const [deletingAll, setDeletingAll] = useState(false)
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ['tickets_fabrica'] })
 
@@ -106,15 +109,35 @@ export function TicketsPage() {
     toast.success('Ticket eliminado')
   }
 
+  const handleDeleteAll = async () => {
+    const clave = window.prompt('Esta acción eliminará TODOS los tickets a fábrica registrados.\n\nEscribe la clave de seguridad para continuar:')
+    if (clave === null) return
+    if (clave !== CLAVE_ELIMINAR_TODO) { toast.error('Clave incorrecta'); return }
+    if (!window.confirm(`¿Confirmas eliminar los ${tickets.length} tickets registrados? Esta acción NO se puede deshacer.`)) return
+
+    setDeletingAll(true)
+    const { error } = await supabase.from('tickets_fabrica').delete().not('id', 'is', null)
+    setDeletingAll(false)
+
+    if (error) { toast.error('Error al eliminar: ' + error.message); return }
+    toast.success('Todos los tickets fueron eliminados')
+    invalidate()
+  }
+
   return (
     <div>
       <Header
         title="Tickets a Fábrica"
         subtitle="Reporte de fallas y novedades de equipos ante fábrica — reemplaza el seguimiento en Notion"
         actions={
-          <Button variant="ghost" size="sm" onClick={() => setImportOpen(true)}>
-            <Upload size={14} /> Importar Excel
-          </Button>
+          <>
+            <Button variant="ghost" size="sm" onClick={() => setImportOpen(true)}>
+              <Upload size={14} /> Importar Excel
+            </Button>
+            <Button variant="danger" size="sm" onClick={handleDeleteAll} disabled={deletingAll}>
+              <Trash2 size={14} /> {deletingAll ? 'Eliminando…' : 'Eliminar todos'}
+            </Button>
+          </>
         }
       />
 
