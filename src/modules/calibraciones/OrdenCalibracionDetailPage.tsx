@@ -609,7 +609,7 @@ export function OrdenCalibracionDetailPage() {
           />
         ) : !esNueva && etapaMostrada?.key === 'carga_al_sistema' ? (
           <VistaCargaAlSistema
-            form={form} puedeEditar={puedeEditarFlujo} soloLectura={soloLectura}
+            form={form} catalogo={catalogo} codigosSel={codigosSel} puedeEditar={puedeEditarFlujo} soloLectura={soloLectura}
             saving={saving} onAvanzar={avanzarEtapa}
           />
         ) : !esNueva && etapaMostrada?.key === 'envio_certificados' ? (
