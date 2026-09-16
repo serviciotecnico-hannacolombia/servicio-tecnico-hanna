@@ -5,25 +5,33 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { Wrench } from 'lucide-react'
-import { FG, Seccion, Grid2, INP, PRI, fmtFecha } from '../ui'
+import { FG, Seccion, Grid2, INP, PRI, GHOST, fmtFecha } from '../ui'
 import { linkOtst, parseOtstCodes } from './CamposCompartidos'
 import type { Asesor, OrdenCalibracion } from '../../../types'
 
-export function VistaMantenimiento({ form, asesorSeleccionado, puedeEditar, soloLectura, saving, onTerminar }: {
+export function VistaMantenimiento({ form, asesorSeleccionado, puedeEditar, soloLectura, saving, onTerminar, onGuardarFechaEstimada }: {
   form: Partial<OrdenCalibracion>
   asesorSeleccionado: Asesor | undefined
   puedeEditar: boolean
   soloLectura: boolean
   saving: boolean
   onTerminar: (overrides: Partial<OrdenCalibracion>) => void
+  onGuardarFechaEstimada: (overrides: Partial<OrdenCalibracion>) => void
 }) {
   const [fechaSalidaReal, setFechaSalidaReal] = useState(form.fecha_salida_mantenimiento_real || '')
   const [nota, setNota] = useState(form.nota_mantenimiento || '')
+  const [fechaEstimada, setFechaEstimada] = useState(form.fecha_salida_mantenimiento || '')
   const otstCodigos = parseOtstCodes(form.otst)
 
   function confirmar() {
     if (!fechaSalidaReal) { toast.error('Ingresa la fecha de salida de mantenimiento'); return }
     onTerminar({ fecha_salida_mantenimiento_real: fechaSalidaReal, nota_mantenimiento: nota.trim() || null })
+  }
+
+  // Guarda solo la fecha estimada, sin avanzar de etapa — puede necesitar
+  // reprogramarse mientras el equipo sigue en mantenimiento.
+  function guardarFechaEstimada() {
+    onGuardarFechaEstimada({ fecha_salida_mantenimiento: fechaEstimada || null })
   }
 
   function copiarRmvFv() {
@@ -76,9 +84,26 @@ export function VistaMantenimiento({ form, asesorSeleccionado, puedeEditar, solo
             )}
           </FG>
           <FG label="Fecha estimada de salida de mantenimiento">
-            <div style={{ ...INP, color: form.fecha_salida_mantenimiento ? 'var(--text)' : 'var(--muted)' }}>
-              {form.fecha_salida_mantenimiento ? fmtFecha(form.fecha_salida_mantenimiento) : '—'}
-            </div>
+            {soloLectura ? (
+              <div style={{ ...INP, color: form.fecha_salida_mantenimiento ? 'var(--text)' : 'var(--muted)' }}>
+                {form.fecha_salida_mantenimiento ? fmtFecha(form.fecha_salida_mantenimiento) : '—'}
+              </div>
+            ) : (
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input
+                  type="date"
+                  value={fechaEstimada}
+                  onChange={e => setFechaEstimada(e.target.value)}
+                  disabled={!puedeEditar}
+                  style={INP}
+                />
+                {puedeEditar && fechaEstimada !== (form.fecha_salida_mantenimiento || '') && (
+                  <button onClick={guardarFechaEstimada} disabled={saving} style={{ ...GHOST, whiteSpace: 'nowrap' }}>
+                    {saving ? 'Guardando…' : 'Guardar'}
+                  </button>
+                )}
+              </div>
+            )}
           </FG>
         </Grid2>
       </Seccion>
