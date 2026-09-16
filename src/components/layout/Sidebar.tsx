@@ -14,6 +14,8 @@ import { Modal } from '../ui/Modal'
 import { Input } from '../ui/Input'
 import { Button } from '../ui/Button'
 import { Avatar } from '../ui/Avatar'
+import { PercyBubble } from '../ui/PercyBubble'
+import { saludoPercy, primerNombre } from '../../lib/percy'
 import { useTareasBadgeCount } from '../../modules/tareas/hooks/useTareas'
 import { useCalibracionesBadgeCount } from '../../modules/calibraciones/hooks/useCalibraciones'
 import { useBodegaBadgeCount } from '../../modules/otst-bodega/hooks/useBodegaBadge'
@@ -381,10 +383,11 @@ export function Sidebar() {
                 style={{ height: 28, width: 'auto', display: 'block' }}
               />
               <div style={{ width: 1, height: 28, background: 'var(--accent)', opacity: 0.4, flexShrink: 0 }} />
-              <img
+              <PercyBubble
                 src="/favicon.svg"
                 alt="Servicio Técnico"
-                style={{ height: 32, width: 'auto', display: 'block', flexShrink: 0 }}
+                size={32}
+                mensaje={saludoPercy(displayName ? primerNombre(displayName) : undefined)}
               />
             </div>
             <div style={{
