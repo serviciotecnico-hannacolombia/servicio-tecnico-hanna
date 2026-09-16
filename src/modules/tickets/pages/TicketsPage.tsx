@@ -117,10 +117,20 @@ export function TicketsPage() {
 
     setDeletingAll(true)
     const { error } = await supabase.from('tickets_fabrica').delete().not('id', 'is', null)
+    if (error) {
+      setDeletingAll(false)
+      toast.error('Error al eliminar: ' + error.message)
+      return
+    }
+
+    // El ID de la intranet (columna "numero") es un secuencial que no se
+    // reinicia solo al borrar filas; se reinicia aparte para que el próximo
+    // ticket vuelva a empezar en 1.
+    const { error: errReset } = await supabase.rpc('reset_tickets_fabrica_numero')
     setDeletingAll(false)
 
-    if (error) { toast.error('Error al eliminar: ' + error.message); return }
-    toast.success('Todos los tickets fueron eliminados')
+    if (errReset) toast.error('Se eliminaron los tickets, pero no se pudo reiniciar el ID: ' + errReset.message)
+    else toast.success('Todos los tickets fueron eliminados')
     invalidate()
   }
 
