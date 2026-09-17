@@ -13,11 +13,12 @@ interface ItemMailto {
 }
 
 export function generarMailtoSinFormato(
-  sf: Pick<EquipoSinFormato, 'numero' | 'razon_social'>,
+  sf: Pick<EquipoSinFormato, 'id' | 'numero' | 'razon_social'>,
   items: ItemMailto[],
   asesorCorreo: string,
 ): string {
   const subject = `[Sin Formato] SF-${sf.numero} - ${sf.razon_social}`
+  const enlace = `${window.location.origin}/equipos-sin-formato/${sf.id}`
 
   const bloquesEquipos = items.flatMap((it, i) => [
     '',
@@ -35,6 +36,8 @@ export function generarMailtoSinFormato(
     ...bloquesEquipos,
     '',
     'Agradecemos su colaboración en la revisión y en el envío del número de preingreso en respuesta a este correo, con el fin de proceder con el ingreso al sistema.',
+    '',
+    `Puedes consultar y hacer seguimiento a este registro aquí: ${enlace}`,
     '',
     'Quedo atenta a cualquier información adicional que se requiera.',
     '',

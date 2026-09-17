@@ -27,7 +27,7 @@ function fmtFecha(iso: string | null): string {
 
 export function EquiposSinFormatoPage() {
   const navigate = useNavigate()
-  const { hasCapability } = useUser()
+  const { user, hasCapability } = useUser()
   const puedeEditar = hasCapability('equipos_sin_formato_editar')
   const { data: registros = [], isLoading } = useEquiposSinFormato()
   const { data: allItems = [] } = useEquiposSinFormatoItems()
@@ -35,8 +35,11 @@ export function EquiposSinFormatoPage() {
 
   const [vista, setVista] = useState<VistaFiltro>('en_proceso')
   const [search, setSearch] = useState('')
+  const [plataforma, setPlataforma] = useState('')
 
   const nombrePorCorreo = new Map(asesores.map(a => [a.correo, a.nombre]))
+  const plataformaPorCorreo = new Map(asesores.map(a => [a.correo, a.plataforma]))
+  const plataformas = [...new Set(asesores.map(a => a.plataforma).filter((p): p is string => !!p))].sort()
   const itemsPorRegistro = new Map<string, EquipoSinFormatoItem[]>()
   for (const it of allItems) {
     if (!itemsPorRegistro.has(it.equipo_sf_id)) itemsPorRegistro.set(it.equipo_sf_id, [])
@@ -45,12 +48,22 @@ export function EquiposSinFormatoPage() {
 
   const filtrados = registros
     .filter(r => vista === 'todas' || (vista === 'en_proceso' ? r.estado !== 'ingresado' : r.estado === vista))
+    .filter(r => !plataforma || plataformaPorCorreo.get(r.asesor_correo) === plataforma)
     .filter(r => {
       const q = search.toLowerCase().trim()
       if (!q) return true
       if (r.razon_social.toLowerCase().includes(q) || `sf-${r.numero}`.includes(q)) return true
       const items = itemsPorRegistro.get(r.id) || []
       return items.some(it => it.referencia.toLowerCase().includes(q) || (it.serial || '').toLowerCase().includes(q))
+    })
+    // Ahora cualquiera ve todos los registros (no solo Ventas los suyos),
+    // pero si el usuario logueado es el asesor de un equipo, ese le
+    // interesa primero — sort estable: conserva el orden por fecha dentro
+    // de cada grupo (lo mío / lo de los demás).
+    .sort((a, b) => {
+      const aMio = user?.email && a.asesor_correo === user.email ? 0 : 1
+      const bMio = user?.email && b.asesor_correo === user.email ? 0 : 1
+      return aMio - bMio
     })
 
   function exportarCSV() {
@@ -112,6 +125,10 @@ export function EquiposSinFormatoPage() {
             <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)', pointerEvents: 'none' }} />
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por razón social, SF-, referencia o serial..." style={{ ...INP, paddingLeft: 34 }} />
           </div>
+          <select value={plataforma} onChange={e => setPlataforma(e.target.value)} style={{ ...INP, width: 'auto', minWidth: 170 }}>
+            <option value="">Plataforma: todas</option>
+            {plataformas.map(p => <option key={p} value={p}>{p}</option>)}
+          </select>
           <button onClick={exportarCSV} disabled={filtrados.length === 0} style={{ ...GHOST, opacity: filtrados.length === 0 ? .5 : 1, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
             <Download size={14} /> CSV
           </button>
