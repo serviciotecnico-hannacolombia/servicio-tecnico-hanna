@@ -6,6 +6,11 @@ import type { EquipoSinFormato } from '../../types'
 
 export const CC_SERVICIO_TECNICO = 'serviciotecnico@hannacolombia.com'
 
+// URL pública de producción — fija, en vez de window.location.origin, para
+// que el link del correo sea siempre el mismo sin importar desde dónde se
+// dispare (local, preview, producción).
+const APP_URL = 'https://servicio.tecnico.hannacolombia.com'
+
 interface ItemMailto {
   referencia: string
   serial: string
@@ -18,6 +23,10 @@ export function generarMailtoSinFormato(
   asesorCorreo: string,
 ): string {
   const subject = `[Sin Formato] SF-${sf.numero} - ${sf.razon_social}`
+  // Enlace al módulo en general, no al registro puntual: el ID en la URL
+  // hacía el link muy largo y feo como texto plano (el body de un mailto
+  // no admite HTML, así que nunca se ve como un link clickeable real).
+  const enlace = `${APP_URL}/equipos-sin-formato`
 
   const bloquesEquipos = items.flatMap((it, i) => [
     '',
@@ -35,6 +44,8 @@ export function generarMailtoSinFormato(
     ...bloquesEquipos,
     '',
     'Agradecemos su colaboración en la revisión y en el envío del número de preingreso en respuesta a este correo, con el fin de proceder con el ingreso al sistema.',
+    '',
+    `Puedes hacer seguimiento a este registro (SF-${sf.numero}) en el sistema aquí: ${enlace}`,
     '',
     'Quedo atenta a cualquier información adicional que se requiera.',
     '',
