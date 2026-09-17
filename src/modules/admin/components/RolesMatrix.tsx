@@ -25,6 +25,7 @@ const MODULE_LABELS: Record<ModuleKey, string> = {
   bodega_st: 'Bodega ST (Restauración)',
   tickets: 'Tickets a Fábrica',
   equipos_sin_formato: 'Equipos Sin Formato',
+  certificados_calidad: 'Certificados de Calidad',
   admin: 'Administración',
 }
 

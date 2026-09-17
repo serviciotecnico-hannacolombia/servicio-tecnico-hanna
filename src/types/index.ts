@@ -20,7 +20,7 @@ export type ModuleKey =
   | 'llamadas' | 'bodega' | 'consumibles' | 'tarifas' | 'codigos'
   | 'editor' | 'indicadores' | 'correos' | 'reporte_st' | 'tareas'
   | 'mantenimiento_programado' | 'calibraciones' | 'void' | 'bodega_st' | 'tickets'
-  | 'equipos_sin_formato' | 'admin'
+  | 'equipos_sin_formato' | 'certificados_calidad' | 'admin'
 
 export type CapabilityKey =
   | 'importar_csv_tarifas' | 'importar_csv_codigos' | 'importar_csv_llamadas'

@@ -4,7 +4,7 @@ import logo from '../../assets/logo.svg'
 import {
   Phone, Package, DollarSign, Wrench, FileText, Warehouse,
   LogOut, Pencil, ShieldCheck, BarChart2, Mail, KeyRound, ChevronDown, Timer, ListTodo, CalendarClock, QrCode, Box,
-  FlaskConical, Ticket, PackageX, Star, GripVertical
+  FlaskConical, Ticket, PackageX, Star, GripVertical, FileCheck
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useSidebar } from './SidebarContext'
@@ -82,8 +82,9 @@ const NAV_GROUPS: NavGroup[] = [
   },
   {
     key: 'control_calidad', label: 'Control de Calidad', items: [
-      { to: '/void',       label: 'Control VOIDs',            icon: QrCode, moduleKey: 'void'      },
-      { to: '/bodega-st',  label: 'Bodega ST (Restauración)', icon: Box,    moduleKey: 'bodega_st' },
+      { to: '/void',                  label: 'Control VOIDs',            icon: QrCode,     moduleKey: 'void'      },
+      { to: '/bodega-st',             label: 'Bodega ST (Restauración)', icon: Box,        moduleKey: 'bodega_st' },
+      { to: '/certificados-calidad',  label: 'Certificados de Calidad',  icon: FileCheck,  moduleKey: 'certificados_calidad' },
     ],
   },
   {
