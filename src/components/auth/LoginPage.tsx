@@ -212,7 +212,7 @@ export function LoginPage() {
         </p>
 
         <p style={{ textAlign: 'center', marginTop: 8, fontSize: '0.75rem', color: 'var(--muted)' }}>
-          {mode === 'signup' ? `Solo se permiten correos @${ALLOWED_DOMAIN}` : 'Acceso solo para el equipo de Servicio Técnico'}
+          {mode === 'signup' ? `Solo se permiten correos @${ALLOWED_DOMAIN}` : 'Bienvenido a la mini intranet de Servicio Técnico'}
         </p>
 
         <div
