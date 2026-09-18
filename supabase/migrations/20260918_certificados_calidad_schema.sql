@@ -18,7 +18,10 @@ CREATE TABLE IF NOT EXISTS certificados_calidad_plantillas (
   codigo                 text NOT NULL,
   nombre                 text,
   categoria              text,
-  mediciones_html        text,
+  -- Filas estructuradas [{valor, estandar, tolerancia}] de la tabla de
+  -- Mediciones — editables campo a campo en vez de HTML crudo (ver
+  -- CrearCertificadoTab.tsx / PlantillasCatalogoTab.tsx).
+  filas                  jsonb NOT NULL DEFAULT '[]',
   test_funcional_items   text[] NOT NULL DEFAULT '{}',
   embalaje_items         text[] NOT NULL DEFAULT '{}',
   control_estetico_items text[] NOT NULL DEFAULT '{}',
@@ -74,13 +77,11 @@ CREATE INDEX IF NOT EXISTS idx_certificados_calidad_archivos_categoria
 -- reemplaza el certificado oficial que solo existe en la plataforma externa).
 CREATE TABLE IF NOT EXISTS certificados_calidad_generados (
   id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  tipo_doc     text,
-  numero_doc   text,
-  nit          text,
-  razon_social text,
   equipos      jsonb NOT NULL DEFAULT '[]',
   soluciones   jsonb NOT NULL DEFAULT '[]',
-  mediciones   text,
+  -- Array de bloques de mediciones [{titulo, filas, notas, plantilla_id}],
+  -- uno por equipo con plantilla aplicada (ver MedicionBloque en types.ts).
+  mediciones   jsonb NOT NULL DEFAULT '[]',
   checklist    jsonb NOT NULL DEFAULT '{}',
   tecnico      text,
   fecha        date,
@@ -95,26 +96,34 @@ ALTER TABLE certificados_calidad_soluciones_patron  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE certificados_calidad_archivos           ENABLE ROW LEVEL SECURITY;
 ALTER TABLE certificados_calidad_generados          ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "certificados_calidad_plantillas select" ON certificados_calidad_plantillas;
 CREATE POLICY "certificados_calidad_plantillas select" ON certificados_calidad_plantillas
   FOR SELECT TO authenticated USING (has_module('certificados_calidad'));
+DROP POLICY IF EXISTS "certificados_calidad_plantillas write" ON certificados_calidad_plantillas;
 CREATE POLICY "certificados_calidad_plantillas write" ON certificados_calidad_plantillas
   FOR ALL TO authenticated
   USING (has_module('certificados_calidad')) WITH CHECK (has_module('certificados_calidad'));
 
+DROP POLICY IF EXISTS "certificados_calidad_soluciones select" ON certificados_calidad_soluciones_patron;
 CREATE POLICY "certificados_calidad_soluciones select" ON certificados_calidad_soluciones_patron
   FOR SELECT TO authenticated USING (has_module('certificados_calidad'));
+DROP POLICY IF EXISTS "certificados_calidad_soluciones write" ON certificados_calidad_soluciones_patron;
 CREATE POLICY "certificados_calidad_soluciones write" ON certificados_calidad_soluciones_patron
   FOR ALL TO authenticated
   USING (has_module('certificados_calidad')) WITH CHECK (has_module('certificados_calidad'));
 
+DROP POLICY IF EXISTS "certificados_calidad_archivos select" ON certificados_calidad_archivos;
 CREATE POLICY "certificados_calidad_archivos select" ON certificados_calidad_archivos
   FOR SELECT TO authenticated USING (has_module('certificados_calidad'));
+DROP POLICY IF EXISTS "certificados_calidad_archivos write" ON certificados_calidad_archivos;
 CREATE POLICY "certificados_calidad_archivos write" ON certificados_calidad_archivos
   FOR ALL TO authenticated
   USING (has_module('certificados_calidad')) WITH CHECK (has_module('certificados_calidad'));
 
+DROP POLICY IF EXISTS "certificados_calidad_generados select" ON certificados_calidad_generados;
 CREATE POLICY "certificados_calidad_generados select" ON certificados_calidad_generados
   FOR SELECT TO authenticated USING (has_module('certificados_calidad'));
+DROP POLICY IF EXISTS "certificados_calidad_generados write" ON certificados_calidad_generados;
 CREATE POLICY "certificados_calidad_generados write" ON certificados_calidad_generados
   FOR ALL TO authenticated
   USING (has_module('certificados_calidad')) WITH CHECK (has_module('certificados_calidad'));

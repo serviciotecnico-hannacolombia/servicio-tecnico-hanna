@@ -9,14 +9,17 @@ INSERT INTO storage.buckets (id, name, public)
 VALUES ('certificados-calidad', 'certificados-calidad', false)
 ON CONFLICT (id) DO NOTHING;
 
+DROP POLICY IF EXISTS "certificados_calidad storage select" ON storage.objects;
 CREATE POLICY "certificados_calidad storage select" ON storage.objects
   FOR SELECT TO authenticated
   USING (bucket_id = 'certificados-calidad' AND has_module('certificados_calidad'));
 
+DROP POLICY IF EXISTS "certificados_calidad storage insert" ON storage.objects;
 CREATE POLICY "certificados_calidad storage insert" ON storage.objects
   FOR INSERT TO authenticated
   WITH CHECK (bucket_id = 'certificados-calidad' AND has_module('certificados_calidad'));
 
+DROP POLICY IF EXISTS "certificados_calidad storage delete" ON storage.objects;
 CREATE POLICY "certificados_calidad storage delete" ON storage.objects
   FOR DELETE TO authenticated
   USING (bucket_id = 'certificados-calidad' AND has_module('certificados_calidad'));

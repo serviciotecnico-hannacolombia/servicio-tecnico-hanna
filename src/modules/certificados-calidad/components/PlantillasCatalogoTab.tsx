@@ -7,17 +7,22 @@ import { Input } from '../../../components/ui/Input';
 import { Modal } from '../../../components/ui/Modal';
 import { supabase } from '../../../lib/supabase';
 import { usePlantillas, useInvalidateCertificadosCalidad } from '../hooks/useCertificadosCalidad';
-import type { CertificadoPlantilla } from '../types';
+import type { CertificadoPlantilla, MedicionFila } from '../types';
 
 const textareaStyle: React.CSSProperties = {
-  width: '100%', minHeight: 90, padding: '8px 12px', border: '1px solid var(--border)',
+  width: '100%', minHeight: 70, padding: '8px 12px', border: '1px solid var(--border)',
   borderRadius: 'var(--radius-sm)', background: 'var(--surface)', color: 'var(--text)',
-  fontFamily: 'var(--mono)', fontSize: '0.78rem', resize: 'vertical',
+  fontFamily: 'var(--sans)', fontSize: '0.82rem', resize: 'vertical',
+};
+
+const rowInputStyle: React.CSSProperties = {
+  width: '100%', padding: '6px 8px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)',
+  background: 'var(--surface)', color: 'var(--text)', fontFamily: 'var(--sans)', fontSize: '0.82rem',
 };
 
 type FormState = {
   codigo: string; nombre: string; categoria: string;
-  mediciones_html: string; notas_generales: string;
+  filas: MedicionFila[]; notas_generales: string;
   test_funcional_items: string; embalaje_items: string; control_estetico_items: string;
   activo: boolean;
 };
@@ -27,7 +32,7 @@ function toForm(p?: CertificadoPlantilla | null): FormState {
     codigo: p?.codigo ?? '',
     nombre: p?.nombre ?? '',
     categoria: p?.categoria ?? '',
-    mediciones_html: p?.mediciones_html ?? '',
+    filas: p?.filas ?? [],
     notas_generales: p?.notas_generales ?? '',
     test_funcional_items: (p?.test_funcional_items ?? []).join(', '),
     embalaje_items: (p?.embalaje_items ?? []).join(', '),
@@ -49,6 +54,14 @@ export function PlantillasCatalogoTab() {
   const openEdit = (p: CertificadoPlantilla) => { setForm(toForm(p)); setEditing(p); };
   const close = () => setEditing(null);
 
+  const updateFila = (i: number, patch: Partial<MedicionFila>) => {
+    const filas = form.filas.slice();
+    filas[i] = { ...filas[i], ...patch };
+    setForm({ ...form, filas });
+  };
+  const addFila = () => setForm({ ...form, filas: [...form.filas, { valor: '', estandar: '', tolerancia: '' }] });
+  const removeFila = (i: number) => setForm({ ...form, filas: form.filas.filter((_, idx) => idx !== i) });
+
   const handleSave = async () => {
     if (!form.codigo.trim()) { toast.error('El código es obligatorio'); return; }
     setSaving(true);
@@ -56,7 +69,7 @@ export function PlantillasCatalogoTab() {
       codigo: form.codigo.trim(),
       nombre: form.nombre.trim() || null,
       categoria: form.categoria.trim() || null,
-      mediciones_html: form.mediciones_html || null,
+      filas: form.filas,
       notas_generales: form.notas_generales || null,
       test_funcional_items: splitList(form.test_funcional_items),
       embalaje_items: splitList(form.embalaje_items),
@@ -127,12 +140,38 @@ export function PlantillasCatalogoTab() {
 
           <div>
             <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--muted)', display: 'block', marginBottom: 5 }}>
-              Mediciones (HTML/texto) — usa <code>{'{{CODIGO}}'}</code> donde debe ir la referencia real del equipo
+              Mediciones — filas de la tabla (Valor / Sol. Estándar / Tolerancia)
             </label>
-            <textarea style={textareaStyle} value={form.mediciones_html} onChange={e => setForm({ ...form, mediciones_html: e.target.value })} />
+            {form.filas.length > 0 && (
+              <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 6 }}>
+                <thead>
+                  <tr>
+                    {['Valor', 'Sol. Estándar', 'Tolerancia', ''].map(h => (
+                      <th key={h} style={{ textAlign: 'left', fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--muted)', padding: '3px 6px' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {form.filas.map((fila, i) => (
+                    <tr key={i}>
+                      <td style={{ padding: '3px 6px' }}><input style={rowInputStyle} value={fila.valor} onChange={e => updateFila(i, { valor: e.target.value })} /></td>
+                      <td style={{ padding: '3px 6px' }}><input style={rowInputStyle} value={fila.estandar} onChange={e => updateFila(i, { estandar: e.target.value })} /></td>
+                      <td style={{ padding: '3px 6px' }}><input style={rowInputStyle} value={fila.tolerancia} onChange={e => updateFila(i, { tolerancia: e.target.value })} /></td>
+                      <td style={{ padding: '3px 6px', width: 28 }}>
+                        <button onClick={() => removeFila(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', display: 'flex' }}><Trash2 size={14} /></button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+            <Button variant="ghost" size="sm" onClick={addFila}><Plus size={13} /> Agregar fila</Button>
           </div>
+
           <div>
-            <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--muted)', display: 'block', marginBottom: 5 }}>Notas generales (texto narrativo reusable)</label>
+            <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--muted)', display: 'block', marginBottom: 5 }}>
+              Notas generales (texto narrativo, para plantillas sin tabla como Bomba o Reactivo)
+            </label>
             <textarea style={textareaStyle} value={form.notas_generales} onChange={e => setForm({ ...form, notas_generales: e.target.value })} />
           </div>
 

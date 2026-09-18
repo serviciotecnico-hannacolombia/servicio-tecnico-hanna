@@ -3,41 +3,30 @@ import { toast } from 'sonner';
 import { Save, RotateCcw } from 'lucide-react';
 import { Card } from '../../../components/ui/Card';
 import { Input } from '../../../components/ui/Input';
-import { Select } from '../../../components/ui/Select';
 import { Button } from '../../../components/ui/Button';
 import { supabase } from '../../../lib/supabase';
 import { useUser } from '../../../hooks/useUser';
 import { EquiposSelector } from './EquiposSelector';
 import { SolucionesPatronPicker } from './SolucionesPatronPicker';
-import { MedicionesBox } from './MedicionesBox';
+import { MedicionesEditor } from './MedicionesEditor';
 import { ChecklistPanel } from './ChecklistPanel';
 import { ArchivosAdjuntosPanel } from './ArchivosAdjuntosPanel';
 import { usePlantillas, useSolucionesPatron, useArchivosCertificado, useInvalidateCertificadosCalidad } from '../hooks/useCertificadosCalidad';
 import { emptyChecklist } from '../types';
-import type { CertificadoGenerado, ChecklistState, EquipoFila } from '../types';
+import type { CertificadoGenerado, ChecklistState, EquipoFila, MedicionBloque } from '../types';
 
 const emptyEquipo = (): EquipoFila => ({ codigo: '', nombre: '', serie: '', sello_calidad: '', plantilla_id: null });
 
 function emptyDraft(tecnico: string): CertificadoGenerado {
   return {
-    tipo_doc: 'Factura',
-    numero_doc: '',
-    nit: '',
-    razon_social: '',
     equipos: [emptyEquipo()],
     soluciones: [],
-    mediciones: '',
+    mediciones: [],
     checklist: emptyChecklist(),
     tecnico,
     fecha: new Date().toISOString().slice(0, 10),
   };
 }
-
-// Las plantillas guardan {{CODIGO}} en el título de su tabla (ver
-// PlantillasCatalogoTab) — al aplicarlas se reemplaza por el código real de
-// factura de esa fila, o por el código de la propia plantilla si esa fila
-// todavía no tiene uno escrito.
-const applyPlaceholder = (text: string, codigo: string) => text.split('{{CODIGO}}').join(codigo);
 
 interface CrearCertificadoTabProps {
   initialDraft?: CertificadoGenerado | null;
@@ -73,8 +62,8 @@ export function CrearCertificadoTab({ initialDraft }: CrearCertificadoTabProps) 
   const patch = (p: Partial<CertificadoGenerado>) => setDraft(prev => ({ ...prev, ...p }));
 
   // Disparado por el <select> de plantilla de una fila (acción explícita del
-  // técnico, no matching automático por texto): copia el bloque de
-  // mediciones (con el título sustituido) y pre-marca el checklist.
+  // técnico): agrega un bloque de mediciones con el título y filas de la
+  // plantilla (editables luego) y pre-marca el checklist.
   const handleSelectPlantilla = (rowIndex: number, plantillaId: string) => {
     const plantilla = plantillasActivas.find(p => p.id === plantillaId);
     if (!plantilla) return;
@@ -85,11 +74,12 @@ export function CrearCertificadoTab({ initialDraft }: CrearCertificadoTabProps) 
         : e);
       const codigoReal = equipos[rowIndex].codigo || plantilla.codigo;
 
-      const bloque = [plantilla.mediciones_html, plantilla.notas_generales]
-        .filter((t): t is string => !!t)
-        .map(t => applyPlaceholder(t, codigoReal))
-        .join('\n\n');
-      const mediciones = [prev.mediciones, bloque].filter(Boolean).join('\n\n---\n\n');
+      const bloque: MedicionBloque = {
+        titulo: codigoReal,
+        filas: plantilla.filas.map(f => ({ ...f })),
+        notas: plantilla.notas_generales || '',
+        plantilla_id: plantilla.id,
+      };
 
       const checklist: ChecklistState = {
         ...prev.checklist,
@@ -101,7 +91,7 @@ export function CrearCertificadoTab({ initialDraft }: CrearCertificadoTabProps) 
       plantilla.embalaje_items.forEach(i => { checklist.embalaje[i] = true; });
       plantilla.control_estetico_items.forEach(i => { checklist.control_estetico[i] = true; });
 
-      return { ...prev, equipos, mediciones, checklist };
+      return { ...prev, equipos, mediciones: [...prev.mediciones, bloque], checklist };
     });
   };
 
@@ -111,13 +101,9 @@ export function CrearCertificadoTab({ initialDraft }: CrearCertificadoTabProps) 
   };
 
   const handleGuardar = async () => {
-    if (!draft.numero_doc.trim()) { toast.error('Ingresa el número de documento'); return; }
+    if (!draft.equipos.some(e => e.codigo.trim())) { toast.error('Agrega al menos un equipo con código'); return; }
     setSaving(true);
     const { error } = await supabase.from('certificados_calidad_generados').insert({
-      tipo_doc: draft.tipo_doc,
-      numero_doc: draft.numero_doc,
-      nit: draft.nit || null,
-      razon_social: draft.razon_social || null,
       equipos: draft.equipos.filter(e => e.codigo.trim()),
       soluciones: draft.soluciones,
       mediciones: draft.mediciones,
@@ -134,20 +120,6 @@ export function CrearCertificadoTab({ initialDraft }: CrearCertificadoTabProps) 
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <Card title="Definición de Documento">
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12 }}>
-          <Select
-            label="Tipo"
-            value={draft.tipo_doc}
-            onChange={e => patch({ tipo_doc: e.target.value })}
-            options={[{ value: 'Factura', label: 'Factura' }, { value: 'Remisión', label: 'Remisión' }]}
-          />
-          <Input label="Número" value={draft.numero_doc} onChange={e => patch({ numero_doc: e.target.value })} placeholder="Ej. 214559" />
-          <Input label="NIT" value={draft.nit} onChange={e => patch({ nit: e.target.value })} />
-          <Input label="Razón Social" value={draft.razon_social} onChange={e => patch({ razon_social: e.target.value })} />
-        </div>
-      </Card>
-
       <Card title="Equipos">
         <EquiposSelector
           equipos={draft.equipos}
@@ -167,7 +139,7 @@ export function CrearCertificadoTab({ initialDraft }: CrearCertificadoTabProps) 
       </Card>
 
       <Card title="Mediciones">
-        <MedicionesBox value={draft.mediciones} onChange={mediciones => patch({ mediciones })} />
+        <MedicionesEditor bloques={draft.mediciones} onChange={mediciones => patch({ mediciones })} />
       </Card>
 
       <Card title="Test Funcional, Test Físico y Embalaje">
