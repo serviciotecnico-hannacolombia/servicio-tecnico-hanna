@@ -14,6 +14,7 @@ interface SaciForm {
   cliente: string
   referenciaEquipo: string
   remisionFactura: string
+  otst: string
   razonSocial: string
   nit: string
   direccion: string
@@ -30,7 +31,7 @@ interface SaciForm {
 }
 
 const FORM_VACIO: SaciForm = {
-  cliente: '', referenciaEquipo: '', remisionFactura: '',
+  cliente: '', referenciaEquipo: '', remisionFactura: '', otst: '',
   razonSocial: '', nit: '', direccion: '', ciudad: '',
   ubicacionEquipo: '', idActivoFijo: '', parametroPuntos: '',
   contactoNombre: '', contactoCorreo: '', contactoTelefono: '',
@@ -53,11 +54,12 @@ function construirTextoSaci(f: SaciForm): string {
   const bloqueFecha = f.fechaEspecial === 'si'
     ? `¿Requiere fecha especial de entrega? Sí\nEn caso afirmativo, indicar la fecha límite requerida y el motivo:\n- Fecha límite: ${f.fechaLimite}\n- Motivo: ${f.motivo}`
     : '¿Requiere fecha especial de entrega? No'
+  const bloqueOtst = f.otst.trim() ? ` y a las OTST ${f.otst.trim()}` : ''
 
   return `Título: SOLICITUD DE CALIBRACIÓN ONAC — ${f.cliente || '[NOMBRE DEL CLIENTE]'}
 
 Cordial saludo,
-Solicito amablemente realizar la gestión de calibración acreditada ONAC del equipo ${f.referenciaEquipo || '[REFERENCIA DEL EQUIPO]'} correspondiente a la ${f.remisionFactura || '[REMISIÓN / FACTURA]'}.
+Solicito amablemente realizar la gestión de calibración acreditada ONAC del equipo ${f.referenciaEquipo || '[REFERENCIA DEL EQUIPO]'} correspondiente a la ${f.remisionFactura || '[REMISIÓN / FACTURA]'}${bloqueOtst}.
 
 Datos para el certificado:
 - RAZÓN SOCIAL: ${f.razonSocial}
@@ -115,6 +117,11 @@ export function SaciTab() {
               <input value={form.remisionFactura} onChange={e => set('remisionFactura', e.target.value)} placeholder="Ej. REM-1234, REM-1235" style={INP} />
             </FG>
           </Grid2>
+          <div style={{ marginTop: 14 }}>
+            <FG label="OTST" hint="Opcional — si son varias, sepáralas por comas">
+              <input value={form.otst} onChange={e => set('otst', e.target.value)} placeholder="Ej. 41784, 41785" style={INP} />
+            </FG>
+          </div>
         </Seccion>
 
         <Seccion titulo="Datos para el certificado">
