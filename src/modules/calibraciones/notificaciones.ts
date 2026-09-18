@@ -40,3 +40,20 @@ export function notificarCambioEstado(
     console.error('No se pudo notificar el cambio de estado:', motivo)
   })
 }
+
+// Dispara el correo a Brayan al crear un pendiente en Logística — vía la
+// Edge Function logistica-notificar-pendiente. Igual que notificarCambioEstado,
+// no bloquea la creación del pendiente: los errores solo quedan en consola.
+export function notificarPendienteLogistica(cliente: string, mensaje: string) {
+  supabase.functions.invoke('logistica-notificar-pendiente', {
+    body: { cliente, mensaje },
+  }).then(async ({ error }) => {
+    if (!error) return
+    let motivo: unknown = error.message
+    const context = (error as { context?: Response }).context
+    if (context) {
+      try { motivo = (await context.clone().json()).error ?? motivo } catch { /* no era JSON */ }
+    }
+    console.error('No se pudo notificar el pendiente de logística:', motivo)
+  })
+}
