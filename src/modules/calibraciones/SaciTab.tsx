@@ -49,17 +49,26 @@ function cargarForm(): SaciForm {
   }
 }
 
+// Varios valores separados por coma ("HI98194, HI98195") cuentan como
+// plural; uno solo (o vacío, con el placeholder puesto) queda en singular.
+function esPlural(valor: string): boolean {
+  return valor.split(',').map(v => v.trim()).filter(Boolean).length > 1
+}
+
 function construirTextoSaci(f: SaciForm): string {
   const contacto = [f.contactoNombre, f.contactoCorreo, f.contactoTelefono].filter(Boolean).join(', ')
   const bloqueFecha = f.fechaEspecial === 'si'
     ? `¿Requiere fecha especial de entrega? Sí\nEn caso afirmativo, indicar la fecha límite requerida y el motivo:\n- Fecha límite: ${f.fechaLimite}\n- Motivo: ${f.motivo}`
     : '¿Requiere fecha especial de entrega? No'
-  const bloqueOtst = f.otst.trim() ? ` y a las OTST ${f.otst.trim()}` : ''
+
+  const fraseEquipo = `${esPlural(f.referenciaEquipo) ? 'de los equipos' : 'del equipo'} ${f.referenciaEquipo || '[REFERENCIA DEL EQUIPO]'}`
+  const fraseRemision = `${esPlural(f.remisionFactura) ? 'a las' : 'a la'} ${f.remisionFactura || '[REMISIÓN / FACTURA]'}`
+  const bloqueOtst = f.otst.trim() ? ` y ${esPlural(f.otst) ? 'a las OTST' : 'a la OTST'} ${f.otst.trim()}` : ''
 
   return `Título: SOLICITUD DE CALIBRACIÓN ONAC — ${f.cliente || '[NOMBRE DEL CLIENTE]'}
 
 Cordial saludo,
-Solicito amablemente realizar la gestión de calibración acreditada ONAC del equipo ${f.referenciaEquipo || '[REFERENCIA DEL EQUIPO]'} correspondiente a la ${f.remisionFactura || '[REMISIÓN / FACTURA]'}${bloqueOtst}.
+Solicito amablemente realizar la gestión de calibración acreditada ONAC ${fraseEquipo} correspondiente ${fraseRemision}${bloqueOtst}.
 
 Datos para el certificado:
 - RAZÓN SOCIAL: ${f.razonSocial}
