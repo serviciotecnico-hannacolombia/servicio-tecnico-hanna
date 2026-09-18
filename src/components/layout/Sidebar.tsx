@@ -102,14 +102,14 @@ const ALL_ITEMS_BY_KEY = new Map<ModuleKey, NavItem>(
 
 const GRUPOS_COLAPSADOS_KEY = 'sidebar-grupos-colapsados'
 
-// Por defecto todos los grupos empiezan plegados (menos ruido visual) — solo
-// si el usuario ya guardó una preferencia distinta se respeta esa.
+// Por defecto todos los grupos empiezan desplegados — solo si el usuario
+// ya guardó una preferencia distinta (colapsó alguno a mano) se respeta esa.
 function leerGruposColapsados(): Set<string> {
   try {
     const raw = localStorage.getItem(GRUPOS_COLAPSADOS_KEY)
-    return raw ? new Set(JSON.parse(raw)) : new Set(NAV_GROUPS.map(g => g.key))
+    return raw ? new Set(JSON.parse(raw)) : new Set()
   } catch {
-    return new Set(NAV_GROUPS.map(g => g.key))
+    return new Set()
   }
 }
 
