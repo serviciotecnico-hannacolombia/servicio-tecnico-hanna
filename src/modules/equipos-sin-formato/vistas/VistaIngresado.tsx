@@ -1,10 +1,24 @@
-import { CheckCircle2 } from 'lucide-react'
+import { useState } from 'react'
+import { toast } from 'sonner'
+import { CheckCircle2, Copy, Check } from 'lucide-react'
 import { Card } from '../../../components/ui/Card'
 import { linkPreIngreso, linkOtst, parseOtstCodes } from '../hooks/useEquiposSinFormato'
-import type { EquipoSinFormato } from '../../../types'
+import { generarNotificacionIngresado, copiarConFormato } from '../correo'
+import { GHOST } from '../ui'
+import type { EquipoSinFormato, EquipoSinFormatoItem } from '../../../types'
 
-export function VistaIngresado({ registro }: { registro: EquipoSinFormato }) {
+export function VistaIngresado({ registro, items }: { registro: EquipoSinFormato, items: EquipoSinFormatoItem[] }) {
   const codigos = parseOtstCodes(registro.otst)
+  const [copiado, setCopiado] = useState(false)
+
+  async function copiarNotificacion() {
+    const { text, html } = generarNotificacionIngresado(registro, items.length, codigos)
+    const ok = await copiarConFormato(text, html)
+    if (!ok) { toast.error('No se pudo copiar al portapapeles'); return }
+    toast.success('Correo de notificación copiado')
+    setCopiado(true)
+    setTimeout(() => setCopiado(false), 2200)
+  }
 
   return (
     <Card>
@@ -36,6 +50,13 @@ export function VistaIngresado({ registro }: { registro: EquipoSinFormato }) {
             ))}
           </div>
         </div>
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20 }}>
+        <button onClick={copiarNotificacion} style={{ ...GHOST, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          {copiado ? <Check size={14} /> : <Copy size={14} />}
+          {copiado ? 'Copiado' : 'Copiar correo de notificación'}
+        </button>
       </div>
     </Card>
   )

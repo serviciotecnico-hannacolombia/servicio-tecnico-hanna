@@ -2,6 +2,7 @@
 // Formato" y al reenviarlo desde el estado "Recibido" — misma lógica que
 // src/modules/calibraciones/correo.ts: no hay envío real desde el
 // servidor, solo se arma la URL mailto y se abre el cliente de correo.
+import { linkOtst } from './hooks/useEquiposSinFormato'
 import type { EquipoSinFormato } from '../../types'
 
 export const CC_SERVICIO_TECNICO = 'serviciotecnico@hannacolombia.com'
@@ -59,4 +60,55 @@ export function generarMailtoSinFormato(
   ].join('&')
 
   return `mailto:${encodeURIComponent(asesorCorreo)}?${params}`
+}
+
+// Notificación de "Ingresado" — no es un mailto: se responde dentro del
+// hilo de correo original (el mismo donde el asesor mandó el preingreso),
+// así que el botón solo copia el cuerpo al portapapeles para pegarlo ahí.
+// Puramente informativo, sin "quedo atento/a" — y con los OTST como enlaces
+// reales (no solo texto plano), para que Outlook los pegue ya clickeables.
+export function generarNotificacionIngresado(
+  sf: Pick<EquipoSinFormato, 'razon_social'>,
+  cantidadEquipos: number,
+  otstCodigos: string[],
+): { text: string, html: string } {
+  const plural = cantidadEquipos > 1
+  const sujeto = plural ? 'Los equipos' : 'El equipo'
+  const verbo = plural ? 'fueron ingresados' : 'fue ingresado'
+  const otstEtiqueta = otstCodigos.length > 1 ? 'las OTST' : 'la OTST'
+
+  const otstTexto = otstCodigos.map(c => linkOtst(c)).join(', ')
+  const otstHtml = otstCodigos.map(c => `<a href="${linkOtst(c)}">${c}</a>`).join(', ')
+
+  const text = `Buen día,\n\n${sujeto} del cliente ${sf.razon_social} ${verbo} bajo ${otstEtiqueta} ${otstTexto}.`
+  const html = `<p>Buen día,</p><p>${sujeto} del cliente ${sf.razon_social} ${verbo} bajo ${otstEtiqueta} ${otstHtml}.</p>`
+
+  return { text, html }
+}
+
+// Copia al portapapeles con formato real (HTML) además del texto plano —
+// así un enlace pegado en Outlook/Gmail queda clickeable, no como una URL
+// suelta. Si el navegador no soporta ClipboardItem (Safari viejo, contexto
+// no seguro), cae de vuelta a solo texto plano.
+export async function copiarConFormato(text: string, html: string): Promise<boolean> {
+  try {
+    if (typeof ClipboardItem !== 'undefined' && navigator.clipboard?.write) {
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          'text/plain': new Blob([text], { type: 'text/plain' }),
+          'text/html': new Blob([html], { type: 'text/html' }),
+        }),
+      ])
+      return true
+    }
+    await navigator.clipboard.writeText(text)
+    return true
+  } catch {
+    try {
+      await navigator.clipboard.writeText(text)
+      return true
+    } catch {
+      return false
+    }
+  }
 }
