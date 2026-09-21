@@ -65,8 +65,9 @@ export function generarMailtoSinFormato(
 // Notificación de "Ingresado" — no es un mailto: se responde dentro del
 // hilo de correo original (el mismo donde el asesor mandó el preingreso),
 // así que el botón solo copia el cuerpo al portapapeles para pegarlo ahí.
-// Puramente informativo, sin "quedo atento/a" — y con los OTST como enlaces
-// reales (no solo texto plano), para que Outlook los pegue ya clickeables.
+// Puramente informativo, sin "quedo atento/a" (solo el cierre "Cordialmente,")
+// — y con los OTST como enlaces reales (no solo texto plano), para que
+// Outlook los pegue ya clickeables.
 export function generarNotificacionIngresado(
   sf: Pick<EquipoSinFormato, 'razon_social'>,
   cantidadEquipos: number,
@@ -80,8 +81,8 @@ export function generarNotificacionIngresado(
   const otstTexto = otstCodigos.map(c => linkOtst(c)).join(', ')
   const otstHtml = otstCodigos.map(c => `<a href="${linkOtst(c)}">${c}</a>`).join(', ')
 
-  const text = `Buen día,\n\n${sujeto} del cliente ${sf.razon_social} ${verbo} bajo ${otstEtiqueta} ${otstTexto}.`
-  const html = `<p>Buen día,</p><p>${sujeto} del cliente ${sf.razon_social} ${verbo} bajo ${otstEtiqueta} ${otstHtml}.</p>`
+  const text = `Buen día,\n\n${sujeto} del cliente ${sf.razon_social} ${verbo} bajo ${otstEtiqueta} ${otstTexto}.\n\nCordialmente,`
+  const html = `<p>Buen día,</p><p>${sujeto} del cliente ${sf.razon_social} ${verbo} bajo ${otstEtiqueta} ${otstHtml}.</p><p>Cordialmente,</p>`
 
   return { text, html }
 }
