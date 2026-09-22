@@ -37,6 +37,7 @@ const CAPABILITY_LABELS: Record<CapabilityKey, string> = {
   gestion_codigos: 'Pestaña "Gestión" en Códigos y Partes',
   bodega_eliminar: 'Eliminar ítems de Bodega',
   calibraciones_editar: 'Crear/editar órdenes y catálogo (Calibraciones)',
+  calibraciones_ver_todas: 'Ver todas las órdenes de Calibraciones (no solo las propias)',
   ver_precios_codigos: 'Ver pestaña "Precios" en Códigos y Partes',
   tablas_mantenimiento_editar: 'Agregar/editar tablas de mantenimiento (Editor de Informes)',
   equipos_sin_formato_editar: 'Crear/editar y avanzar estados (Equipos Sin Formato)',
