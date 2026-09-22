@@ -46,6 +46,30 @@ const CAPABILITY_LABELS: Record<CapabilityKey, string> = {
 const MODULE_KEYS = Object.keys(MODULE_LABELS) as ModuleKey[]
 const CAPABILITY_KEYS = Object.keys(CAPABILITY_LABELS) as CapabilityKey[]
 
+// A qué módulo pertenece cada capacidad — a mano, no por prefijo del key,
+// porque tablas_mantenimiento_editar es de "Editor de Informes" pese al
+// nombre (el prefijo engañaría hacia mantenimiento_programado).
+const CAPABILITY_MODULE: Record<CapabilityKey, ModuleKey> = {
+  importar_csv_tarifas: 'tarifas',
+  importar_csv_codigos: 'codigos',
+  editar_codigos: 'codigos',
+  gestion_codigos: 'codigos',
+  ver_precios_codigos: 'codigos',
+  importar_csv_llamadas: 'llamadas',
+  bodega_registrar_ingreso: 'bodega',
+  bodega_eliminar: 'bodega',
+  calibraciones_editar: 'calibraciones',
+  calibraciones_ver_todas: 'calibraciones',
+  tablas_mantenimiento_editar: 'editor',
+  equipos_sin_formato_editar: 'equipos_sin_formato',
+}
+
+// Agrupa las capacidades por su módulo, en el mismo orden que MODULE_KEYS —
+// los módulos sin ninguna capacidad asociada no generan grupo.
+const CAPABILITIES_POR_MODULO: [ModuleKey, CapabilityKey[]][] = MODULE_KEYS
+  .map((moduleKey): [ModuleKey, CapabilityKey[]] => [moduleKey, CAPABILITY_KEYS.filter(key => CAPABILITY_MODULE[key] === moduleKey)])
+  .filter(([, keys]) => keys.length > 0)
+
 export function RolesMatrix() {
   const {
     roles, modulesByRole, capabilitiesByRole, isLoading,
@@ -196,18 +220,36 @@ export function RolesMatrix() {
           </Card>
 
           <Card title={`Capacidades sensibles — ${selected.name}${esRolPropio ? ' (tu rol actual)' : ''}`}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 8 }}>
-              {CAPABILITY_KEYS.map(key => (
-                <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.85rem', cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    checked={selectedCapabilities.has(key)}
-                    onChange={e => toggleCapability(key, e.target.checked)}
-                  />
-                  {CAPABILITY_LABELS[key]}
-                </label>
-              ))}
-            </div>
+            {CAPABILITIES_POR_MODULO.map(([moduleKey, keys], i) => (
+              <div
+                key={moduleKey}
+                style={{
+                  marginBottom: i < CAPABILITIES_POR_MODULO.length - 1 ? 18 : 0,
+                  paddingBottom: i < CAPABILITIES_POR_MODULO.length - 1 ? 18 : 0,
+                  borderBottom: i < CAPABILITIES_POR_MODULO.length - 1 ? '1px solid var(--border)' : 'none',
+                }}
+              >
+                <div style={{
+                  fontFamily: 'var(--mono)', fontSize: '0.68rem', fontWeight: 500,
+                  textTransform: 'uppercase', letterSpacing: '0.09em', color: 'var(--muted)',
+                  marginBottom: 10,
+                }}>
+                  {MODULE_LABELS[moduleKey]}
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 8 }}>
+                  {keys.map(key => (
+                    <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.85rem', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={selectedCapabilities.has(key)}
+                        onChange={e => toggleCapability(key, e.target.checked)}
+                      />
+                      {CAPABILITY_LABELS[key]}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ))}
           </Card>
         </div>
       ) : (
