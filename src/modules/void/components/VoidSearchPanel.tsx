@@ -20,7 +20,8 @@ export function VoidSearchPanel({ records, onSelectRecord }: VoidSearchPanelProp
       rec.referencia?.toLowerCase().includes(term) ||
       rec.void_blanco?.toLowerCase().includes(term) ||
       rec.void_gris?.toLowerCase().includes(term) ||
-      rec.nombre_equipo?.toLowerCase().includes(term)
+      rec.nombre_equipo?.toLowerCase().includes(term) ||
+      rec.observaciones?.toLowerCase().includes(term)
     )
   })
 
@@ -31,7 +32,7 @@ export function VoidSearchPanel({ records, onSelectRecord }: VoidSearchPanelProp
           🔍 Buscador general de registros
         </h3>
         <p style={{ fontSize: '0.8rem', color: 'var(--muted)', marginBottom: 12 }}>
-          Busca por ID único, número de serie, VOID blanco, VOID gris o referencia
+          Busca por ID único, número de serie, VOID blanco, VOID gris, referencia u observaciones
         </p>
         <div style={{ position: 'relative' }}>
           <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--accent)' }} />
