@@ -3,7 +3,7 @@ import { Search, Pencil, Trash2, Link2 } from 'lucide-react'
 import { Card } from '../../../components/ui/Card'
 import { Table, type Column } from '../../../components/ui/Table'
 import { useProfiles } from '../../../hooks/useProfiles'
-import { ORIGEN_LABEL, ORIGEN_COLOR, ESTADO_LABEL, ESTADO_COLOR, type TicketFabrica } from '../types'
+import { ORIGEN_LABEL, ORIGEN_COLOR, ESTADO_LABEL, ESTADO_COLOR, type TicketFabrica, type TicketOrigen, type TicketEstado } from '../types'
 
 interface TicketsTableProps {
   tickets: TicketFabrica[]
@@ -28,6 +28,8 @@ const formatNombre = (nombre: string) => nombre.replace(/^Ticket ID:\s*/i, 'TID:
 
 export function TicketsTable({ tickets, onEdit, onDelete }: TicketsTableProps) {
   const [searchTerm, setSearchTerm] = useState('')
+  const [origenFilter, setOrigenFilter] = useState<TicketOrigen | ''>('')
+  const [estadoFilter, setEstadoFilter] = useState<TicketEstado | ''>('')
   const { data: profiles = [] } = useProfiles()
 
   const profileName = (id?: string | null) => {
@@ -38,7 +40,7 @@ export function TicketsTable({ tickets, onEdit, onDelete }: TicketsTableProps) {
 
   const filteredTickets = tickets.filter(t => {
     const term = searchTerm.toLowerCase()
-    return (
+    const matchesSearch = (
       t.nombre?.toLowerCase().includes(term) ||
       t.codigo?.toLowerCase().includes(term) ||
       t.serial?.toLowerCase().includes(term) ||
@@ -46,6 +48,9 @@ export function TicketsTable({ tickets, onEdit, onDelete }: TicketsTableProps) {
       t.equipo_madre_serial?.toLowerCase().includes(term) ||
       profileName(t.creado_por).toLowerCase().includes(term)
     )
+    const matchesOrigen = !origenFilter || t.origen === origenFilter
+    const matchesEstado = !estadoFilter || t.estado === estadoFilter
+    return matchesSearch && matchesOrigen && matchesEstado
   })
 
   // Anchos en porcentaje (suman 100%): con tableLayout "fixed" el navegador
@@ -151,19 +156,41 @@ export function TicketsTable({ tickets, onEdit, onDelete }: TicketsTableProps) {
 
   return (
     <Card bodyStyle={{ padding: 0 }}>
-      <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+      <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
         <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text)' }}>
-          Tickets a Fábrica <span style={{ color: 'var(--muted)', fontWeight: 500 }}>({tickets.length})</span>
+          Tickets a Fábrica <span style={{ color: 'var(--muted)', fontWeight: 500 }}>({filteredTickets.length}/{tickets.length})</span>
         </h3>
-        <div style={{ position: 'relative', width: 280 }}>
-          <Search size={15} style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)' }} />
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            placeholder="Buscar por nombre, código, serial, equipo madre o creador..."
-            style={{ width: '100%', padding: '7px 12px 7px 34px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontFamily: 'var(--sans)', fontSize: '0.8rem' }}
-          />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <select
+            value={origenFilter}
+            onChange={e => setOrigenFilter(e.target.value as TicketOrigen | '')}
+            style={{ padding: '7px 10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontFamily: 'var(--sans)', fontSize: '0.8rem' }}
+          >
+            <option value="">Todos los orígenes</option>
+            {(Object.keys(ORIGEN_LABEL) as TicketOrigen[]).map(o => (
+              <option key={o} value={o}>{ORIGEN_LABEL[o]}</option>
+            ))}
+          </select>
+          <select
+            value={estadoFilter}
+            onChange={e => setEstadoFilter(e.target.value as TicketEstado | '')}
+            style={{ padding: '7px 10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontFamily: 'var(--sans)', fontSize: '0.8rem' }}
+          >
+            <option value="">Todos los estados</option>
+            {(Object.keys(ESTADO_LABEL) as TicketEstado[]).map(e => (
+              <option key={e} value={e}>{ESTADO_LABEL[e]}</option>
+            ))}
+          </select>
+          <div style={{ position: 'relative', width: 280 }}>
+            <Search size={15} style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)' }} />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              placeholder="Buscar por nombre, código, serial, equipo madre o creador..."
+              style={{ width: '100%', padding: '7px 12px 7px 34px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontFamily: 'var(--sans)', fontSize: '0.8rem' }}
+            />
+          </div>
         </div>
       </div>
 
