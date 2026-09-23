@@ -43,9 +43,9 @@ export function BodegaSTPage() {
   const totalIncompletos = visibleRecords.filter(r => r.estado === 'incompleto_espera_partes').length;
   const totalListos = visibleRecords.filter(r => r.estado === 'restaurado_listo').length;
   // El valor consolidado solo cuenta lo que sigue físicamente en Bodega ST:
-  // al pasar a Bodega Principal o Bodega Incompletos, el equipo ya salió y su precio deja de sumar.
+  // al pasar a Bodega Principal, Bodega Incompletos o Bodega PNC, el equipo ya salió y su precio deja de sumar.
   const valorTotal = visibleRecords
-    .filter(r => r.estado !== 'restaurado_listo' && r.estado !== 'incompleto_espera_partes')
+    .filter(r => r.estado !== 'restaurado_listo' && r.estado !== 'incompleto_espera_partes' && r.estado !== 'producto_no_conforme')
     .reduce((sum, r) => sum + (r.precio || 0), 0);
   const valorTotalFormateado = valorTotal.toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
 
