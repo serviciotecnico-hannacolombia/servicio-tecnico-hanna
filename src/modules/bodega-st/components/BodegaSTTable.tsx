@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { RegistroBodegaST, EstadoRestauracion } from '../types';
-import { Search, Wrench, AlertTriangle, CheckCircle, Clock, Pencil, Trash2 } from 'lucide-react';
+import { Search, Wrench, AlertTriangle, CheckCircle, Clock, Pencil, Trash2, Ban } from 'lucide-react';
 import { Card } from '../../../components/ui/Card';
 import { Table, type Column } from '../../../components/ui/Table';
 
@@ -20,6 +20,7 @@ const ESTADO_BADGE: Record<EstadoRestauracion, { label: string; icon: typeof Clo
   en_reparacion:             { label: 'Reparación',       icon: Wrench,        color: 'var(--accent)', bg: 'var(--accent-bg)' },
   incompleto_espera_partes:  { label: 'Falta Accesorios', icon: AlertTriangle, color: 'var(--red)',    bg: 'var(--red-bg)' },
   restaurado_listo:          { label: 'Listo',            icon: CheckCircle,   color: 'var(--green)',  bg: 'var(--green-bg)' },
+  producto_no_conforme:      { label: 'PNC',              icon: Ban,           color: 'var(--red)',    bg: 'var(--red-bg)' },
 };
 
 function EstadoBadge({ estado }: { estado: EstadoRestauracion }) {
@@ -70,6 +71,9 @@ export function BodegaSTTable({ records, onEdit, onDelete }: BodegaSTTableProps)
         }
         if (r.estado === 'incompleto_espera_partes') {
           return <span style={{ color: 'var(--red)', fontWeight: 600 }}>📦 {r.bodega_destino || 'Bodega Incompletos'}</span>;
+        }
+        if (r.estado === 'producto_no_conforme') {
+          return <span style={{ color: 'var(--red)', fontWeight: 600 }}>📦 {r.bodega_destino || 'Bodega PNC'}</span>;
         }
         return <span>{r.ubicacion_estante || '—'}</span>;
       },

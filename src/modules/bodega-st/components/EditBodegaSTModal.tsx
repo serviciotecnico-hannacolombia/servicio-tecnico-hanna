@@ -19,6 +19,7 @@ const ESTADO_OPTIONS = [
   { value: 'en_reparacion', label: '⚙️ En Reparación' },
   { value: 'incompleto_espera_partes', label: '🧩 Incompleto (Espera Accesorios/Partes)' },
   { value: 'restaurado_listo', label: '✅ Restaurado (Listo para Bodega Principal)' },
+  { value: 'producto_no_conforme', label: '🚫 Producto No Conforme (PNC)' },
 ];
 
 export function EditBodegaSTModal({ record, isOpen, onClose, onUpdate }: EditBodegaSTModalProps) {
@@ -59,8 +60,8 @@ export function EditBodegaSTModal({ record, isOpen, onClose, onUpdate }: EditBod
       estado,
       partes_requeridas: estado === 'incompleto_espera_partes' ? accesoriosFaltantes : (estado === 'en_diagnostico' ? repuestosPedir : ''),
       reparaciones_realizadas: estado === 'en_reparacion' ? piezasColocar : (estado === 'incompleto_espera_partes' ? reparacionesRealizadas : ''),
-      ubicacion_estante: (estado === 'restaurado_listo' || estado === 'incompleto_espera_partes') ? undefined : ubicacion,
-      bodega_destino: estado === 'restaurado_listo' ? 'Bodega Principal' : (estado === 'incompleto_espera_partes' ? 'Bodega Incompletos' : undefined),
+      ubicacion_estante: (estado === 'restaurado_listo' || estado === 'incompleto_espera_partes' || estado === 'producto_no_conforme') ? undefined : ubicacion,
+      bodega_destino: estado === 'restaurado_listo' ? 'Bodega Principal' : (estado === 'incompleto_espera_partes' ? 'Bodega Incompletos' : (estado === 'producto_no_conforme' ? 'Bodega PNC' : undefined)),
       observaciones,
       precio: precio ? Number(precio) : undefined
     });
@@ -96,6 +97,11 @@ export function EditBodegaSTModal({ record, isOpen, onClose, onUpdate }: EditBod
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--green-bg)', border: '1px solid var(--green)', borderRadius: 'var(--radius-sm)', padding: 12, fontSize: '0.85rem', color: 'var(--text)', fontWeight: 600 }}>
             <PackageCheck size={16} style={{ color: 'var(--green)', flexShrink: 0 }} />
             <span>Este equipo se moverá automáticamente a <strong>Bodega Principal</strong>.</span>
+          </div>
+        ) : estado === 'producto_no_conforme' ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--red-bg, rgba(239,68,68,.08))', border: '1px solid var(--red)', borderRadius: 'var(--radius-sm)', padding: 12, fontSize: '0.85rem', color: 'var(--text)' }}>
+            <PackageSearch size={16} style={{ color: 'var(--red)', flexShrink: 0 }} />
+            <span>Este equipo se moverá automáticamente a <strong>Bodega PNC</strong>.</span>
           </div>
         ) : (
           <Select label="Ubicación en Bodega ST" value={ubicacion} onChange={e => setUbicacion(e.target.value)} options={UBICACIONES_BODEGA_ST.map(loc => ({ value: loc, label: loc }))} />
