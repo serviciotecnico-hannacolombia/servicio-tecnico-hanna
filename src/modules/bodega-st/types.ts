@@ -29,6 +29,7 @@ export interface RegistroBodegaST {
   bodega_destino?: string;
   observaciones?: string;
   precio?: number;
+  entregado_logistica?: boolean;
 }
 
 export interface BodegaSTAudit {

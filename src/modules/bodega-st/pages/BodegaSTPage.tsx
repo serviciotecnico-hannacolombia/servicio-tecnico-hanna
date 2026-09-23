@@ -69,6 +69,7 @@ export function BodegaSTPage() {
       bodega_destino: newRecord.bodega_destino || null,
       observaciones: newRecord.observaciones || null,
       precio: newRecord.precio ?? null,
+      entregado_logistica: newRecord.entregado_logistica ?? false,
     });
     if (error) { toast.error('Error al guardar: ' + error.message); return; }
     invalidate();
@@ -86,12 +87,20 @@ export function BodegaSTPage() {
       bodega_destino: updated.bodega_destino || null,
       observaciones: updated.observaciones || null,
       precio: updated.precio ?? null,
+      entregado_logistica: updated.entregado_logistica ?? false,
       updated_at: new Date().toISOString(),
     }).eq('id', updated.id);
     if (error) { toast.error('Error al actualizar: ' + error.message); return; }
     invalidate();
     toast.success('Registro de Bodega ST actualizado');
     setIsModalOpen(false);
+  };
+
+  const handleToggleEntregado = async (record: RegistroBodegaST, value: boolean) => {
+    if (!record.id) return;
+    const { error } = await supabase.from('bodega_st_registros').update({ entregado_logistica: value }).eq('id', record.id);
+    if (error) { toast.error('Error al actualizar: ' + error.message); return; }
+    invalidate();
   };
 
   const handleDelete = async (record: RegistroBodegaST) => {
@@ -140,7 +149,7 @@ export function BodegaSTPage() {
       </div>
 
       <BodegaSTForm onSave={handleSaveRecord} />
-      <BodegaSTTable records={visibleRecords} onEdit={(rec) => { setSelectedRecord(rec); setIsModalOpen(true); }} onDelete={handleDelete} />
+      <BodegaSTTable records={visibleRecords} onEdit={(rec) => { setSelectedRecord(rec); setIsModalOpen(true); }} onDelete={handleDelete} onToggleEntregado={handleToggleEntregado} />
 
       <AuditHistory
         audits={audits.map(a => ({

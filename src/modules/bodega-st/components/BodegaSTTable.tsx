@@ -8,6 +8,7 @@ interface BodegaSTTableProps {
   records: RegistroBodegaST[];
   onEdit: (record: RegistroBodegaST) => void;
   onDelete: (record: RegistroBodegaST) => void;
+  onToggleEntregado: (record: RegistroBodegaST, value: boolean) => void;
 }
 
 const truncateText = (text: string | undefined | null, maxLength = 30) => {
@@ -33,7 +34,7 @@ function EstadoBadge({ estado }: { estado: EstadoRestauracion }) {
   );
 }
 
-export function BodegaSTTable({ records, onEdit, onDelete }: BodegaSTTableProps) {
+export function BodegaSTTable({ records, onEdit, onDelete, onToggleEntregado }: BodegaSTTableProps) {
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredRecords = records.filter(rec => {
@@ -66,16 +67,26 @@ export function BodegaSTTable({ records, onEdit, onDelete }: BodegaSTTableProps)
     {
       key: 'ubicacion', header: 'Ubicación',
       render: r => {
-        if (r.estado === 'restaurado_listo') {
-          return <span style={{ color: 'var(--green)', fontWeight: 600 }}>📦 {r.bodega_destino || 'Bodega Principal'}</span>;
-        }
-        if (r.estado === 'incompleto_espera_partes') {
-          return <span style={{ color: 'var(--red)', fontWeight: 600 }}>📦 {r.bodega_destino || 'Bodega Incompletos'}</span>;
-        }
-        if (r.estado === 'producto_no_conforme') {
-          return <span style={{ color: 'var(--red)', fontWeight: 600 }}>📦 {r.bodega_destino || 'Bodega PNC'}</span>;
-        }
-        return <span>{r.ubicacion_estante || '—'}</span>;
+        const destino = r.estado === 'restaurado_listo' ? (r.bodega_destino || 'Bodega Principal')
+          : r.estado === 'incompleto_espera_partes' ? (r.bodega_destino || 'Bodega Incompletos')
+          : r.estado === 'producto_no_conforme' ? (r.bodega_destino || 'Bodega PNC')
+          : null;
+        if (!destino) return <span>{r.ubicacion_estante || '—'}</span>;
+        const color = r.estado === 'restaurado_listo' ? 'var(--green)' : 'var(--red)';
+        return (
+          <div>
+            <span style={{ color, fontWeight: 600 }}>📦 {destino}</span>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 4, fontSize: '0.7rem', color: 'var(--muted)', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={!!r.entregado_logistica}
+                onChange={e => onToggleEntregado(r, e.target.checked)}
+                style={{ cursor: 'pointer' }}
+              />
+              Entregado a logística
+            </label>
+          </div>
+        );
       },
     },
     { key: 'obs', header: 'Observaciones', render: r => <span style={{ color: 'var(--muted)' }} title={r.observaciones || ''}>{truncateText(r.observaciones)}</span> },
