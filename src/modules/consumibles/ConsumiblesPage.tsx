@@ -520,7 +520,7 @@ function TabInventario({ llegadas, destapes, config }: { llegadas: ConsumibleLle
     ...l, destapado: destapedMap.has(l.id), destape: destapedMap.get(l.id),
   })).filter(r => {
     const q   = search.toLowerCase()
-    const ok  = !q || [r.nombre, r.ref, r.lote, r.responsable, r.ubicacion].some(f => f?.toLowerCase().includes(q))
+    const ok  = !q || [r.nombre, r.ref, r.lote, r.responsable, r.destape?.responsable, r.ubicacion].some(f => f?.toLowerCase().includes(q))
     const okS = statusF === 'all' || (statusF === 'stock' ? !r.destapado : r.destapado)
     const okU = !ubicF || r.ubicacion === ubicF
     const okF = (!dateFrom || (r.fecha ?? '') >= dateFrom) && (!dateTo || (r.fecha ?? '') <= dateTo)
@@ -660,7 +660,7 @@ function TabInventario({ llegadas, destapes, config }: { llegadas: ConsumibleLle
                   <td style={TMONO}>{r.lote || '—'}</td>
                   <td style={{ padding: '10px 14px' }}>{r.vol || '—'}</td>
                   <td style={{ padding: '10px 14px' }}><span style={B_EXP}>{r.venc || '—'}</span></td>
-                  <td style={{ padding: '10px 14px' }}>{r.responsable || '—'}</td>
+                  <td style={{ padding: '10px 14px' }}>{(r.destape?.responsable || r.responsable) || '—'}</td>
                   <td style={{ padding: '10px 14px' }}><span style={B_LOC}>{r.ubicacion || '—'}</span></td>
                   <td style={{ padding: '10px 14px' }}>
                     {r.destape ? (
