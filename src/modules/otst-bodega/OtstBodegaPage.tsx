@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useLayoutEffect, forwardRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import Papa from 'papaparse'
-import { Search, Warehouse, AlertTriangle, ArrowRightLeft, Mail, CheckCircle2, Download, Upload, Trash2, X, ListTodo, MapPinOff, Pencil, MoreVertical, Ban } from 'lucide-react'
+import { Search, Warehouse, AlertTriangle, ArrowRightLeft, Mail, CheckCircle2, Download, Upload, Trash2, X, ListTodo, MapPinOff, Pencil, MoreVertical, Ban, Undo2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { supabase, fetchAllRows } from '../../lib/supabase'
 import { Header } from '../../components/layout/Header'
@@ -1598,6 +1598,7 @@ function TabPendientes({ bodega, pendientes, umbral, columnas }: { bodega: OtstB
   const qc              = useQueryClient()
   const { displayName, hasCapability } = useUser()
   const canEliminar     = hasCapability('bodega_eliminar')
+  const canRegistrarIngreso = hasCapability('bodega_registrar_ingreso')
   const otstRef          = useRef<HTMLInputElement>(null)
   const [otstInput, setOtstInput] = useState('')
   const [notaInput, setNotaInput] = useState('')
@@ -1638,6 +1639,30 @@ function TabPendientes({ bodega, pendientes, umbral, columnas }: { bodega: OtstB
     const { error } = await supabase.from('otst_bodega_pendientes').delete().eq('id', id)
     if (error) { toast.error('Error: ' + error.message); return }
     qc.invalidateQueries({ queryKey: ['otst_bodega_pendientes'] })
+  }
+
+  // Reverso de "Completar" (despachar): vuelve a marcar el OTST como
+  // en_bodega, conservando la misma ubicación que ya tenía (nunca se toca
+  // al despachar) — se confirma con el usuario en el momento, y queda
+  // registrado en otst_bodega_movimientos quién lo reingresó.
+  async function reingresar(p: OtstBodegaPendiente, item: OtstBodega) {
+    const codigo = codigoUbicacion(item.columna, item.fila, item.subcolumna)
+    if (!confirm(`¿Reingresar el OTST ${p.otst} a la bodega, en la ubicación ${codigo}?`)) return
+
+    const { error } = await supabase.from('otst_bodega')
+      .update({ estado: 'en_bodega', updated_at: new Date().toISOString() })
+      .eq('id', item.id)
+    if (error) { toast.error('Error: ' + error.message); return }
+
+    const { error: movError } = await supabase.from('otst_bodega_movimientos').insert({
+      otst_id: item.id, tipo: 'reingreso', usuario: displayName,
+      ubicacion_origen: null, ubicacion_destino: codigo, motivo: null,
+    })
+    if (movError) toast.error('Se reingresó, pero falló registrar el movimiento en el historial')
+    else toast.success(`OTST reingresada a bodega (${codigo})`)
+
+    qc.invalidateQueries({ queryKey: ['otst_bodega'] })
+    qc.invalidateQueries({ queryKey: ['otst_bodega_movimientos'] })
   }
 
   const abiertos = pendientes
@@ -1789,13 +1814,20 @@ function TabPendientes({ bodega, pendientes, umbral, columnas }: { bodega: OtstB
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 12 }}>
                 {completadosPagina.map(({ p, item }) => (
-                  <div key={p.id} style={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 16px', fontSize: 12, opacity: .8 }}>
-                    <strong>OTST <OtstLink otst={p.otst} /></strong>{item ? ` (${codigoUbicacion(item.columna, item.fila, item.subcolumna)})` : ''}
-                    {p.estado === 'cancelado'
-                      ? <> — <span style={{ color: '#c0392b', fontWeight: 600 }}>✕ cancelado</span> por {p.cancelado_por || '—'} el {p.cancelado_at ? new Date(p.cancelado_at).toLocaleString() : '—'}</>
-                      : <> — despachado por {p.completado_por || '—'} el {p.completado_at ? new Date(p.completado_at).toLocaleString() : '—'}</>}
-                    {p.estado === 'cancelado' && p.motivo_cancelacion && <div style={{ marginTop: 4, color: 'var(--muted)' }}>Motivo: {p.motivo_cancelacion}</div>}
-                    {p.estado !== 'cancelado' && p.nota && <div style={{ marginTop: 4, color: 'var(--muted)' }}>{p.nota}</div>}
+                  <div key={p.id} style={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 16px', fontSize: 12, opacity: .8, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
+                    <div>
+                      <strong>OTST <OtstLink otst={p.otst} /></strong>{item ? ` (${codigoUbicacion(item.columna, item.fila, item.subcolumna)})` : ''}
+                      {p.estado === 'cancelado'
+                        ? <> — <span style={{ color: '#c0392b', fontWeight: 600 }}>✕ cancelado</span> por {p.cancelado_por || '—'} el {p.cancelado_at ? new Date(p.cancelado_at).toLocaleString() : '—'}</>
+                        : <> — despachado por {p.completado_por || '—'} el {p.completado_at ? new Date(p.completado_at).toLocaleString() : '—'}</>}
+                      {p.estado === 'cancelado' && p.motivo_cancelacion && <div style={{ marginTop: 4, color: 'var(--muted)' }}>Motivo: {p.motivo_cancelacion}</div>}
+                      {p.estado !== 'cancelado' && p.nota && <div style={{ marginTop: 4, color: 'var(--muted)' }}>{p.nota}</div>}
+                    </div>
+                    {p.estado === 'completado' && item && item.estado === 'retirado' && canRegistrarIngreso && (
+                      <IconBtn title="Reingresar a bodega" onClick={() => reingresar(p, item)}>
+                        <Undo2 size={14} color="var(--accent)" />
+                      </IconBtn>
+                    )}
                   </div>
                 ))}
               </div>
