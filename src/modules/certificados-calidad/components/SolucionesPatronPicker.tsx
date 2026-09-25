@@ -1,5 +1,6 @@
 import { Plus, Trash2 } from 'lucide-react';
 import { Button } from '../../../components/ui/Button';
+import { MonthYearInput } from './MonthYearInput';
 import type { SolucionFila, SolucionPatron } from '../types';
 
 interface SolucionesPatronPickerProps {
@@ -59,7 +60,7 @@ export function SolucionesPatronPicker({ soluciones, onChange, catalogo, categor
           <tr>
             <th style={th}>Código</th>
             <th style={th}>Lote</th>
-            <th style={th}>Fecha de Expiración</th>
+            <th style={th}>Fecha de Expiración (mes/año)</th>
             <th style={th}>Descripción</th>
             <th style={th}></th>
           </tr>
@@ -69,7 +70,7 @@ export function SolucionesPatronPicker({ soluciones, onChange, catalogo, categor
             <tr key={i}>
               <td style={{ padding: '4px 8px' }}><input style={inputStyle} value={s.codigo} onChange={e => updateRow(i, { codigo: e.target.value })} /></td>
               <td style={{ padding: '4px 8px' }}><input style={inputStyle} value={s.lote} onChange={e => updateRow(i, { lote: e.target.value })} /></td>
-              <td style={{ padding: '4px 8px' }}><input style={inputStyle} type="date" value={s.fecha_expiracion} onChange={e => updateRow(i, { fecha_expiracion: e.target.value })} /></td>
+              <td style={{ padding: '4px 8px', minWidth: 190 }}><MonthYearInput value={s.fecha_expiracion} onChange={v => updateRow(i, { fecha_expiracion: v })} /></td>
               <td style={{ padding: '4px 8px' }}><input style={inputStyle} value={s.descripcion} onChange={e => updateRow(i, { descripcion: e.target.value })} /></td>
               <td style={{ padding: '4px 8px', width: 32 }}>
                 <button onClick={() => removeRow(i)} title="Quitar" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', display: 'flex' }}>

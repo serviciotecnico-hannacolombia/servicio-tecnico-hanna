@@ -6,6 +6,7 @@ import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
 import { Modal } from '../../../components/ui/Modal';
 import { supabase } from '../../../lib/supabase';
+import { MonthYearInput } from './MonthYearInput';
 import { useSolucionesPatron, useInvalidateCertificadosCalidad } from '../hooks/useCertificadosCalidad';
 import type { SolucionPatron } from '../types';
 
@@ -101,7 +102,7 @@ export function SolucionesPatronCatalogoTab() {
           <Input label="Categoría" value={form.categoria} onChange={e => setForm({ ...form, categoria: e.target.value })} placeholder="Ej. pH, Cloro Libre" />
           <Input label="Código" value={form.codigo} onChange={e => setForm({ ...form, codigo: e.target.value })} />
           <Input label="Lote" value={form.lote} onChange={e => setForm({ ...form, lote: e.target.value })} />
-          <Input label="Fecha de Expiración" type="date" value={form.fecha_expiracion} onChange={e => setForm({ ...form, fecha_expiracion: e.target.value })} />
+          <MonthYearInput label="Fecha de Expiración" value={form.fecha_expiracion} onChange={v => setForm({ ...form, fecha_expiracion: v })} />
           <Input label="Descripción" value={form.descripcion} onChange={e => setForm({ ...form, descripcion: e.target.value })} />
           <label style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: '0.85rem' }}>
             <input type="checkbox" checked={form.activo} onChange={e => setForm({ ...form, activo: e.target.checked })} />

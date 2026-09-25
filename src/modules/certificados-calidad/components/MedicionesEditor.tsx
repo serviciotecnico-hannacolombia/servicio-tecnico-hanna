@@ -6,6 +6,7 @@ import { Input } from '../../../components/ui/Input';
 import { Modal } from '../../../components/ui/Modal';
 import { supabase } from '../../../lib/supabase';
 import { copyToClipboard } from '../utils/clipboard';
+import { MonthYearInput } from './MonthYearInput';
 import { buildBloqueHtml, buildAllBloquesHtml } from '../utils/mediciones';
 import { useInvalidateCertificadosCalidad } from '../hooks/useCertificadosCalidad';
 import type { MedicionBloque, MedicionFila } from '../types';
@@ -13,6 +14,7 @@ import type { MedicionBloque, MedicionFila } from '../types';
 interface MedicionesEditorProps {
   bloques: MedicionBloque[];
   onChange: (bloques: MedicionBloque[]) => void;
+  onRemoveBloque: (bloque: MedicionBloque) => void;
 }
 
 const inputStyle: React.CSSProperties = {
@@ -25,7 +27,7 @@ const textareaStyle: React.CSSProperties = {
   background: 'var(--surface)', color: 'var(--text)', fontFamily: 'var(--sans)', fontSize: '0.82rem', resize: 'vertical',
 };
 
-export function MedicionesEditor({ bloques, onChange }: MedicionesEditorProps) {
+export function MedicionesEditor({ bloques, onChange, onRemoveBloque }: MedicionesEditorProps) {
   const invalidate = useInvalidateCertificadosCalidad();
   const [guardando, setGuardando] = useState<number | null>(null);
   const [nuevoCodigo, setNuevoCodigo] = useState('');
@@ -46,7 +48,6 @@ export function MedicionesEditor({ bloques, onChange }: MedicionesEditorProps) {
 
   const addFila = (i: number) => updateBloque(i, { filas: [...bloques[i].filas, { valor: '', estandar: '', tolerancia: '' }] });
   const removeFila = (i: number, filaIdx: number) => updateBloque(i, { filas: bloques[i].filas.filter((_, idx) => idx !== filaIdx) });
-  const removeBloque = (i: number) => onChange(bloques.filter((_, idx) => idx !== i));
 
   const openGuardar = (i: number) => {
     setNuevoCodigo(bloques[i].titulo);
@@ -97,12 +98,16 @@ export function MedicionesEditor({ bloques, onChange }: MedicionesEditorProps) {
           <div key={i} style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: 14 }}>
             <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', marginBottom: 10 }}>
               <Input
-                label="Título (código del equipo en esta tabla)"
+                label={bloque.filas.length > 0 ? 'Título (código del equipo en esta tabla)' : 'Referencia (aparece como "Ref. ..." en el certificado)'}
                 value={bloque.titulo}
                 onChange={e => updateBloque(i, { titulo: e.target.value })}
                 wrapStyle={{ flex: 1 }}
               />
-              <button onClick={() => removeBloque(i)} title="Quitar bloque" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', display: 'flex', padding: '8px 0' }}>
+              <button
+                onClick={() => { if (window.confirm('¿Quitar este bloque de mediciones? También se des-selecciona su plantilla en Equipos.')) onRemoveBloque(bloque); }}
+                title="Quitar bloque"
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', display: 'flex', padding: '8px 0' }}
+              >
                 <X size={16} />
               </button>
             </div>
@@ -136,12 +141,28 @@ export function MedicionesEditor({ bloques, onChange }: MedicionesEditorProps) {
               <Plus size={13} /> Agregar fila
             </Button>
 
-            <div style={{ marginBottom: 10 }}>
-              <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--muted)', display: 'block', marginBottom: 5 }}>
-                Notas (texto narrativo, opcional)
-              </label>
-              <textarea style={textareaStyle} value={bloque.notas} onChange={e => updateBloque(i, { notas: e.target.value })} />
-            </div>
+            {bloque.filas.length === 0 ? (
+              // Reactivo/solución/bomba/titulador: campos separados y
+              // amigables en vez de un solo bloque de texto libre — el
+              // encabezado "Ref./Lote/Vencimiento" se arma solo al copiar.
+              <div style={{ marginBottom: 10 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 10 }}>
+                  <Input label="Lote" value={bloque.lote} onChange={e => updateBloque(i, { lote: e.target.value })} placeholder="Ej. 2249" />
+                  <MonthYearInput label="Fecha de Vencimiento" value={bloque.fecha_vencimiento} onChange={v => updateBloque(i, { fecha_vencimiento: v })} />
+                </div>
+                <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--muted)', display: 'block', marginBottom: 5 }}>
+                  Texto de certificación
+                </label>
+                <textarea style={textareaStyle} value={bloque.notas} onChange={e => updateBloque(i, { notas: e.target.value })} />
+              </div>
+            ) : (
+              <div style={{ marginBottom: 10 }}>
+                <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--muted)', display: 'block', marginBottom: 5 }}>
+                  Notas (texto narrativo, opcional)
+                </label>
+                <textarea style={textareaStyle} value={bloque.notas} onChange={e => updateBloque(i, { notas: e.target.value })} />
+              </div>
+            )}
 
             <div style={{ display: 'flex', gap: 8 }}>
               <Button variant="ghost" size="sm" onClick={() => copyToClipboard(buildBloqueHtml(bloque), 'Bloque de mediciones')}>

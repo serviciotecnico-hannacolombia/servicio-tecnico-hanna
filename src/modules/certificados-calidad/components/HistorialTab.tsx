@@ -19,7 +19,7 @@ export function HistorialTab({ onLoadDraft }: HistorialTabProps) {
   const filtrados = certificados.filter(c => {
     const q = busqueda.trim().toLowerCase();
     if (!q) return true;
-    return [c.tecnico, ...c.equipos.map(e => e.codigo), ...c.equipos.map(e => e.nombre)]
+    return [c.tecnico, ...c.mediciones.map(m => m.titulo)]
       .some(v => v?.toLowerCase().includes(q));
   });
 
@@ -35,12 +35,12 @@ export function HistorialTab({ onLoadDraft }: HistorialTabProps) {
   return (
     <Card title="Historial de Borradores" bodyStyle={{ padding: 0 }}>
       <div style={{ padding: '14px 20px' }}>
-        <Input icon={<Search size={14} />} placeholder="Buscar por equipo o técnico..." value={busqueda} onChange={e => setBusqueda(e.target.value)} />
+        <Input icon={<Search size={14} />} placeholder="Buscar por referencia o técnico..." value={busqueda} onChange={e => setBusqueda(e.target.value)} />
       </div>
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead>
           <tr style={{ borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }}>
-            {['Equipos', 'Técnico', 'Fecha', ''].map(h => (
+            {['Referencias', 'Técnico', 'Fecha', ''].map(h => (
               <th key={h} style={{ textAlign: 'left', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--muted)', padding: '8px 20px' }}>{h}</th>
             ))}
           </tr>
@@ -48,7 +48,7 @@ export function HistorialTab({ onLoadDraft }: HistorialTabProps) {
         <tbody>
           {filtrados.map(c => (
             <tr key={c.id} style={{ borderBottom: '1px solid var(--border)' }}>
-              <td style={{ padding: '8px 20px', fontSize: '0.82rem' }}>{c.equipos.map(e => e.codigo).join(', ')}</td>
+              <td style={{ padding: '8px 20px', fontSize: '0.82rem' }}>{c.mediciones.map(m => m.titulo).join(', ')}</td>
               <td style={{ padding: '8px 20px', fontSize: '0.82rem' }}>{c.tecnico}</td>
               <td style={{ padding: '8px 20px', fontSize: '0.82rem', color: 'var(--muted)' }}>{c.fecha}</td>
               <td style={{ padding: '8px 20px', display: 'flex', gap: 10 }}>
