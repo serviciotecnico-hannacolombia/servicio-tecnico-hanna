@@ -36,10 +36,11 @@ function EstadoBadge({ estado }: { estado: EstadoRestauracion }) {
 
 export function BodegaSTTable({ records, onEdit, onDelete, onToggleEntregado }: BodegaSTTableProps) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [estadoFilter, setEstadoFilter] = useState<EstadoRestauracion | ''>('');
 
   const filteredRecords = records.filter(rec => {
     const term = searchTerm.toLowerCase();
-    return (
+    const matchesSearch = (
       rec.nombre_equipo?.toLowerCase().includes(term) ||
       rec.numero_serie?.toLowerCase().includes(term) ||
       rec.referencia?.toLowerCase().includes(term) ||
@@ -47,6 +48,8 @@ export function BodegaSTTable({ records, onEdit, onDelete, onToggleEntregado }: 
       rec.ubicacion_estante?.toLowerCase().includes(term) ||
       rec.observaciones?.toLowerCase().includes(term)
     );
+    const matchesEstado = !estadoFilter || rec.estado === estadoFilter;
+    return matchesSearch && matchesEstado;
   });
 
   const columns: Column<RegistroBodegaST>[] = [
@@ -103,19 +106,31 @@ export function BodegaSTTable({ records, onEdit, onDelete, onToggleEntregado }: 
 
   return (
     <Card bodyStyle={{ padding: 0 }}>
-      <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+      <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
         <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text)' }}>
-          Inventario en Bodega ST <span style={{ color: 'var(--muted)', fontWeight: 500 }}>({records.length})</span>
+          Inventario en Bodega ST <span style={{ color: 'var(--muted)', fontWeight: 500 }}>({filteredRecords.length}/{records.length})</span>
         </h3>
-        <div style={{ position: 'relative', width: 280 }}>
-          <Search size={15} style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)' }} />
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            placeholder="Buscar por serie, modelo u observaciones..."
-            style={{ width: '100%', padding: '7px 12px 7px 34px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontFamily: 'var(--sans)', fontSize: '0.8rem' }}
-          />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <select
+            value={estadoFilter}
+            onChange={e => setEstadoFilter(e.target.value as EstadoRestauracion | '')}
+            style={{ padding: '7px 10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontFamily: 'var(--sans)', fontSize: '0.8rem' }}
+          >
+            <option value="">Todos los estados</option>
+            {(Object.keys(ESTADO_BADGE) as EstadoRestauracion[]).map(e => (
+              <option key={e} value={e}>{ESTADO_BADGE[e].label}</option>
+            ))}
+          </select>
+          <div style={{ position: 'relative', width: 280 }}>
+            <Search size={15} style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)' }} />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              placeholder="Buscar por serie, modelo u observaciones..."
+              style={{ width: '100%', padding: '7px 12px 7px 34px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontFamily: 'var(--sans)', fontSize: '0.8rem' }}
+            />
+          </div>
         </div>
       </div>
 
