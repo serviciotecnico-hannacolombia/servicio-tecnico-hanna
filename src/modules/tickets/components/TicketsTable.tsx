@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Search, Pencil, Trash2, Link2 } from 'lucide-react'
+import { Search, Pencil, Trash2, Link2, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react'
 import { Card } from '../../../components/ui/Card'
 import { Table, type Column } from '../../../components/ui/Table'
 import { useProfiles } from '../../../hooks/useProfiles'
@@ -26,10 +26,18 @@ const truncateText = (text: string | undefined | null, maxLength = 40) => {
 // se acorta solo para mostrar, sin tocar el dato guardado en la base.
 const formatNombre = (nombre: string) => nombre.replace(/^Ticket ID:\s*/i, 'TID: ')
 
+// Número del ticket sin prefijo ("TID: " o "Ticket ID: ") para ordenar.
+const numeroTid = (nombre: string) => nombre.replace(/^(Ticket ID|TID):\s*/i, '').trim()
+
+// Ciclo al hacer clic en el encabezado: por defecto → ascendente → descendente.
+type OrdenTid = 'default' | 'asc' | 'desc'
+const SIGUIENTE_ORDEN: Record<OrdenTid, OrdenTid> = { default: 'asc', asc: 'desc', desc: 'default' }
+
 export function TicketsTable({ tickets, onEdit, onDelete }: TicketsTableProps) {
   const [searchTerm, setSearchTerm] = useState('')
   const [origenFilter, setOrigenFilter] = useState<TicketOrigen | ''>('')
   const [estadoFilter, setEstadoFilter] = useState<TicketEstado | ''>('')
+  const [ordenTid, setOrdenTid] = useState<OrdenTid>('default')
   const { data: profiles = [] } = useProfiles()
 
   const profileName = (id?: string | null) => {
@@ -53,13 +61,37 @@ export function TicketsTable({ tickets, onEdit, onDelete }: TicketsTableProps) {
     return matchesSearch && matchesOrigen && matchesEstado
   })
 
+  // Comparación "numeric" para que TID 9 quede antes de TID 10.
+  const sortedTickets = ordenTid === 'default'
+    ? filteredTickets
+    : [...filteredTickets].sort((a, b) => {
+        const cmp = numeroTid(a.nombre).localeCompare(numeroTid(b.nombre), 'es', { numeric: true, sensitivity: 'base' })
+        return ordenTid === 'asc' ? cmp : -cmp
+      })
+
+  const OrdenIcon = ordenTid === 'asc' ? ArrowUp : ordenTid === 'desc' ? ArrowDown : ArrowUpDown
+
   // Anchos en porcentaje (suman 100%): con tableLayout "fixed" el navegador
   // los respeta de forma proporcional al ancho disponible, así la tabla
   // siempre cabe en pantalla sin scroll horizontal, sin importar el tamaño.
   const columns: Column<TicketFabrica>[] = [
     { key: 'numero', header: 'ID', width: '4%', render: t => <span style={{ fontFamily: 'var(--mono)', fontSize: '0.76rem', color: 'var(--muted)', whiteSpace: 'nowrap' }}>{t.numero ?? '—'}</span> },
     {
-      key: 'nombre', header: 'Nombre', width: '8%',
+      key: 'nombre', width: '8%',
+      header: (
+        <button
+          type="button"
+          onClick={() => setOrdenTid(o => SIGUIENTE_ORDEN[o])}
+          title={ordenTid === 'default' ? 'Ordenar por TID ascendente' : ordenTid === 'asc' ? 'Ordenar por TID descendente' : 'Quitar orden'}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 4, padding: 0, border: 'none', background: 'none', cursor: 'pointer',
+            font: 'inherit', letterSpacing: 'inherit', textTransform: 'inherit',
+            color: ordenTid === 'default' ? 'inherit' : 'var(--accent)',
+          }}
+        >
+          Nombre <OrdenIcon size={11} />
+        </button>
+      ),
       render: t => (
         <span
           title={t.nombre}
@@ -194,7 +226,7 @@ export function TicketsTable({ tickets, onEdit, onDelete }: TicketsTableProps) {
         </div>
       </div>
 
-      <Table columns={columns} data={filteredTickets} emptyMessage="No hay tickets registrados aún." keyExtractor={(t, i) => t.id ?? i} compact />
+      <Table columns={columns} data={sortedTickets} emptyMessage="No hay tickets registrados aún." keyExtractor={(t, i) => t.id ?? i} compact />
     </Card>
   )
 }
