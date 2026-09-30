@@ -10,7 +10,7 @@ import { useAsesores } from '../calibraciones/hooks/useCalibraciones'
 import { parseOtstCodes } from '../equipos-sin-formato/hooks/useEquiposSinFormato'
 import { useGarantias, ESTADO_LABEL_GAR, fechaObjetivoGarantia, semaforoGarantia, fmtFecha } from './hooks/useGarantias'
 import { ResponsablesConfigModal } from './ResponsablesConfigModal'
-import { INP, PRI, GHOST, EMPTY, B_ESTADO_GAR, SemaforoGarantia } from './ui'
+import { INP, PRI, GHOST, EMPTY, B_ESTADO_GAR, SemaforoGarantia, LinkPNC } from './ui'
 import type { EstadoGarantia, Garantia } from '../../types'
 
 type VistaFiltro = 'todas' | 'en_proceso' | 'vencidas' | EstadoGarantia
@@ -86,6 +86,7 @@ export function GarantiasPage() {
           <span style={{ fontWeight: 600, textDecoration: g.anulada ? 'line-through' : undefined }}>{g.cliente}</span>
           <div style={{ fontSize: 11.5, color: 'var(--muted)', fontFamily: 'var(--mono)' }}>
             {g.referencia}{g.otst ? ` · OTST ${parseOtstCodes(g.otst).join(', ')}` : ''}
+            {g.numero_pnc && <> · PNC <LinkPNC numero={g.numero_pnc} /></>}
           </div>
         </div>
       ),

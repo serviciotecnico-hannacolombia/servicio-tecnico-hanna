@@ -13,7 +13,7 @@ import {
   useGarantias, useResponsablesGarantias, useInvalidateGarantias,
   crearGarantia, editarGarantia, actualizarGarantia,
   anularGarantia, reactivarGarantia, eliminarGarantia,
-  ESTADO_LABEL_GAR, estadoInicial, flujoGarantia, fmtFecha, type GarantiaForm,
+  ESTADO_LABEL_GAR, estadoInicial, linkPnc, flujoGarantia, fmtFecha, type GarantiaForm,
 } from './hooks/useGarantias'
 import { StepperGAR } from './StepperGAR'
 import { HistorialSidebarGAR } from './HistorialSidebarGAR'
@@ -22,7 +22,7 @@ import { VistaPncPendiente } from './vistas/VistaPncPendiente'
 import { VistaNV } from './vistas/VistaNV'
 import { VistaImportacion } from './vistas/VistaImportacion'
 import { VistaInforme, VistaFinalizada } from './vistas/VistaInforme'
-import { FG, INP, PRI, GHOST, SemaforoGarantia } from './ui'
+import { FG, INP, PRI, GHOST, SemaforoGarantia, LinkPNC } from './ui'
 import type { Garantia } from '../../types'
 
 const FORM_VACIO: GarantiaForm = {
@@ -259,6 +259,9 @@ export function GarantiaDetailPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 14, marginTop: 16, padding: 14, border: '1px solid var(--border)', borderRadius: 10, background: 'var(--surface2)' }}>
             <FG label="PNC (producto no conforme)">
               <input value={form.numero_pnc} onChange={e => set('numero_pnc', e.target.value.toUpperCase())} placeholder="Opcional — si aún no existe, queda pendiente" style={INP} />
+              {linkPnc(form.numero_pnc) && (
+                <a href={linkPnc(form.numero_pnc)!} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11.5, color: 'var(--accent)', wordBreak: 'break-all' }}>{linkPnc(form.numero_pnc)}</a>
+              )}
             </FG>
             <FG label="Fecha límite de entrega" required={!!form.numero_pnc.trim()}>
               <input type="date" value={form.fecha_limite_entrega} onChange={e => set('fecha_limite_entrega', e.target.value)} style={INP} />
@@ -346,6 +349,8 @@ export function GarantiaDetailPage() {
                         <span key={c}>{i > 0 && ', '}<a href={linkOtst(c)!} target="_blank" rel="noopener noreferrer" style={{ fontWeight: 700, color: 'var(--accent)' }}>{c}</a></span>
                       ))}
                     </span>
+                    {garantia.numero_nv && <span>NV: <strong>{garantia.numero_nv}</strong></span>}
+                    {garantia.numero_pnc && <span>PNC: <LinkPNC numero={garantia.numero_pnc} /></span>}
                     <span>Asesor: <strong>{asesorNombre}</strong></span>
                     <span>Stock: <strong>{garantia.hay_stock ? 'Sí' : 'No'}</strong></span>
                     {garantia.fecha_seguimiento && <span>Seguimiento: <strong>{fmtFecha(garantia.fecha_seguimiento)}</strong></span>}

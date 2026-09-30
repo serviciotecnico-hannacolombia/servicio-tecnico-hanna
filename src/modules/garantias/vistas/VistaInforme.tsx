@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { ClipboardCheck, CheckCircle2 } from 'lucide-react'
 import { Card } from '../../../components/ui/Card'
 import { fmtFecha } from '../hooks/useGarantias'
-import { BannerEstado, PRI } from '../ui'
+import { BannerEstado, PRI, LinkPNC } from '../ui'
 import type { Garantia } from '../../../types'
 import type { VistaProps } from './tipos'
 
@@ -20,7 +20,7 @@ function Resumen({ garantia }: { garantia: Garantia }) {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 14 }}>
       {garantia.numero_nv && <Dato label="NV" valor={garantia.numero_nv} />}
-      <Dato label="PNC" valor={garantia.numero_pnc || '—'} />
+      <Dato label="PNC" valor={<LinkPNC numero={garantia.numero_pnc} />} />
       <Dato label="Fecha límite de entrega" valor={fmtFecha(garantia.fecha_limite_entrega)} />
     </div>
   )

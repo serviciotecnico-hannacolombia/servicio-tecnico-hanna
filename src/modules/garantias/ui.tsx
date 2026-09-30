@@ -2,7 +2,7 @@
 // Sin Formato y los badges de semáforo de Calibraciones.
 import { AlertTriangle, CalendarCheck } from 'lucide-react'
 import { B_VENCIDA, B_PROXIMA, B_INFO } from '../calibraciones/ui'
-import { fechaObjetivoGarantia, semaforoGarantia, fmtFecha } from './hooks/useGarantias'
+import { fechaObjetivoGarantia, semaforoGarantia, fmtFecha, linkPnc } from './hooks/useGarantias'
 import type { Garantia } from '../../types'
 
 export { FG, INP, PRI, GHOST, EMPTY } from '../equipos-sin-formato/ui'
@@ -19,6 +19,13 @@ export function BannerEstado({ icon, children, tono = 'accent' }: { icon: React.
       {icon} <span>{children}</span>
     </div>
   )
+}
+
+// Número de PNC como enlace a la intranet (mismo estilo que los OTST).
+export function LinkPNC({ numero }: { numero: string | null }) {
+  const url = linkPnc(numero)
+  if (!url) return <strong>—</strong>
+  return <a href={url} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontWeight: 700, color: 'var(--accent)' }}>{numero}</a>
 }
 
 // Badge del semáforo: vencida / próxima (≤2 días) / al día, con la fecha objetivo.

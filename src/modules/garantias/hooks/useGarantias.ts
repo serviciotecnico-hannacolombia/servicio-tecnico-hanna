@@ -139,6 +139,12 @@ export function semaforoGarantia(g: Pick<Garantia, 'estado' | 'fecha_seguimiento
   return objetivo ? nivelPorFecha(objetivo) : null
 }
 
+// Enlace a la ficha del producto no conforme en la intranet.
+export function linkPnc(numero: string | null): string | null {
+  const v = (numero || '').trim()
+  return v ? `https://intranet.hannacolombia.com/stecnico/producto_no_conforme/item/${encodeURIComponent(v)}` : null
+}
+
 export function fmtFecha(iso: string | null): string {
   if (!iso) return '—'
   const [y, m, d] = iso.slice(0, 10).split('-')

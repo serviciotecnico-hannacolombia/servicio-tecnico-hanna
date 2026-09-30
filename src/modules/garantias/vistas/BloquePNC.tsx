@@ -4,6 +4,7 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { FG, INP, PRI } from '../ui'
+import { linkPnc } from '../hooks/useGarantias'
 import type { VistaProps } from './tipos'
 
 export function BloquePNC({ garantia, puedeEditar, soloLectura, onActualizar }: VistaProps) {
@@ -26,6 +27,9 @@ export function BloquePNC({ garantia, puedeEditar, soloLectura, onActualizar }: 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14 }}>
         <FG label="PNC (producto no conforme)" required>
           <input value={pnc} onChange={e => setPnc(e.target.value.toUpperCase())} placeholder="Número de PNC registrado" style={INP} disabled={deshabilitado} />
+          {linkPnc(pnc) && (
+            <a href={linkPnc(pnc)!} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11.5, color: 'var(--accent)', wordBreak: 'break-all' }}>{linkPnc(pnc)}</a>
+          )}
         </FG>
         <FG label="Fecha límite de entrega" required>
           <input type="date" value={fechaLimite} onChange={e => setFechaLimite(e.target.value)} style={INP} disabled={deshabilitado} />
