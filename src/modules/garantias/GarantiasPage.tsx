@@ -7,7 +7,7 @@ import { Table, type Column } from '../../components/ui/Table'
 import { useUser } from '../../hooks/useUser'
 import { useProfiles } from '../../hooks/useProfiles'
 import { useAsesores } from '../calibraciones/hooks/useCalibraciones'
-import { parseOtstCodes } from '../equipos-sin-formato/hooks/useEquiposSinFormato'
+import { linkOtst, parseOtstCodes } from '../equipos-sin-formato/hooks/useEquiposSinFormato'
 import { useGarantias, ESTADO_LABEL_GAR, fechaObjetivoGarantia, semaforoGarantia, fmtFecha } from './hooks/useGarantias'
 import { ResponsablesConfigModal } from './ResponsablesConfigModal'
 import { INP, PRI, GHOST, EMPTY, B_ESTADO_GAR, SemaforoGarantia, LinkPNC } from './ui'
@@ -85,7 +85,10 @@ export function GarantiasPage() {
         <div>
           <span style={{ fontWeight: 600, textDecoration: g.anulada ? 'line-through' : undefined }}>{g.cliente}</span>
           <div style={{ fontSize: 11.5, color: 'var(--muted)', fontFamily: 'var(--mono)' }}>
-            {g.referencia}{g.otst ? ` · OTST ${parseOtstCodes(g.otst).join(', ')}` : ''}
+            {g.referencia}
+            {parseOtstCodes(g.otst).length > 0 && <> · OTST {parseOtstCodes(g.otst).map((c, i) => (
+              <span key={c}>{i > 0 && ', '}<a href={linkOtst(c)!} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontWeight: 700, color: 'var(--accent)' }}>{c}</a></span>
+            ))}</>}
             {g.numero_pnc && <> · PNC <LinkPNC numero={g.numero_pnc} /></>}
           </div>
         </div>
