@@ -521,7 +521,7 @@ const ORDEN_NIVEL: Record<NivelSemaforo, number> = { ok: 0, proxima: 1, vencida:
 function peorNivel(a: NivelSemaforo, b: NivelSemaforo): NivelSemaforo {
   return ORDEN_NIVEL[a] >= ORDEN_NIVEL[b] ? a : b
 }
-function nivelPorFecha(objetivo: string): NivelSemaforo {
+export function nivelPorFecha(objetivo: string): NivelSemaforo {
   if (objetivo < hoyISO()) return 'vencida'
   const limite = new Date()
   limite.setDate(limite.getDate() + 2)

@@ -28,6 +28,8 @@ import { OrdenCalibracionDetailPage } from './modules/calibraciones/OrdenCalibra
 import { TicketsPage } from './modules/tickets/pages/TicketsPage'
 import { EquiposSinFormatoPage } from './modules/equipos-sin-formato/EquiposSinFormatoPage'
 import { EquipoSinFormatoDetailPage } from './modules/equipos-sin-formato/EquipoSinFormatoDetailPage'
+import { GarantiasPage } from './modules/garantias/GarantiasPage'
+import { GarantiaDetailPage } from './modules/garantias/GarantiaDetailPage'
 import { NotFoundPage } from './components/NotFoundPage'
 
 function DefaultRedirect() {
@@ -68,6 +70,8 @@ export default function App() {
               <Route path="/tickets" element={<ModuleGuard moduleKey="tickets"><TicketsPage /></ModuleGuard>} />
               <Route path="/equipos-sin-formato" element={<ModuleGuard moduleKey="equipos_sin_formato"><EquiposSinFormatoPage /></ModuleGuard>} />
               <Route path="/equipos-sin-formato/:id" element={<ModuleGuard moduleKey="equipos_sin_formato"><EquipoSinFormatoDetailPage /></ModuleGuard>} />
+              <Route path="/garantias" element={<ModuleGuard moduleKey="garantias"><GarantiasPage /></ModuleGuard>} />
+              <Route path="/garantias/:id" element={<ModuleGuard moduleKey="garantias"><GarantiaDetailPage /></ModuleGuard>} />
               <Route
                 path="/admin"
                 element={
