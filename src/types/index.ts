@@ -20,13 +20,13 @@ export type ModuleKey =
   | 'llamadas' | 'bodega' | 'consumibles' | 'tarifas' | 'codigos'
   | 'editor' | 'indicadores' | 'correos' | 'reporte_st' | 'tareas'
   | 'mantenimiento_programado' | 'calibraciones' | 'void' | 'bodega_st' | 'tickets'
-  | 'equipos_sin_formato' | 'admin'
+  | 'equipos_sin_formato' | 'garantias' | 'admin'
 
 export type CapabilityKey =
   | 'importar_csv_tarifas' | 'importar_csv_codigos' | 'importar_csv_llamadas'
   | 'bodega_registrar_ingreso' | 'editar_codigos' | 'gestion_codigos' | 'bodega_eliminar'
   | 'calibraciones_editar' | 'calibraciones_ver_todas' | 'ver_precios_codigos' | 'tablas_mantenimiento_editar'
-  | 'equipos_sin_formato_editar'
+  | 'equipos_sin_formato_editar' | 'garantias_editar' | 'garantias_ver_todas'
 
 export interface Role {
   id: string
@@ -500,5 +500,50 @@ export interface LogisticaPendiente {
 export interface LogisticaPendienteOrden {
   pendiente_id: string
   orden_id: string
+  created_at: string
+}
+
+// ── Garantías ────────────────────────────────────────────────────────────────
+
+export type EstadoGarantia = 'pnc_pendiente' | 'nv' | 'importacion' | 'informe' | 'finalizada'
+
+export interface Garantia {
+  id: string
+  numero: number
+  cliente: string
+  referencia: string
+  otst: string | null
+  asesor_correo: string
+  hay_stock: boolean
+  responsables: string[]
+  estado: EstadoGarantia
+  numero_nv: string | null
+  fecha_seguimiento: string | null
+  numero_pnc: string | null
+  fecha_limite_entrega: string | null
+  estado_desde: string
+  fecha_finalizada: string | null
+  anulada: boolean
+  motivo_anulacion: string | null
+  creado_por: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface GarantiaNota {
+  id: string
+  garantia_id: string
+  usuario_id: string | null
+  texto: string
+  created_at: string
+}
+
+export interface GarantiaHistorial {
+  id: string
+  garantia_id: string
+  usuario_id: string | null
+  campo: string
+  valor_anterior: string | null
+  valor_nuevo: string | null
   created_at: string
 }

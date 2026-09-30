@@ -25,6 +25,7 @@ const MODULE_LABELS: Record<ModuleKey, string> = {
   bodega_st: 'Bodega ST (Restauración)',
   tickets: 'Tickets a Fábrica',
   equipos_sin_formato: 'Equipos Sin Formato',
+  garantias: 'Garantías',
   admin: 'Administración',
 }
 
@@ -41,6 +42,8 @@ const CAPABILITY_LABELS: Record<CapabilityKey, string> = {
   ver_precios_codigos: 'Ver pestaña "Precios" en Códigos y Partes',
   tablas_mantenimiento_editar: 'Agregar/editar tablas de mantenimiento (Editor de Informes)',
   equipos_sin_formato_editar: 'Crear/editar y avanzar estados (Equipos Sin Formato)',
+  garantias_editar: 'Crear/editar, asignar responsables y avanzar estados (Garantías)',
+  garantias_ver_todas: 'Ver todas las garantías, no solo las propias (Garantías)',
 }
 
 const MODULE_KEYS = Object.keys(MODULE_LABELS) as ModuleKey[]
@@ -62,6 +65,8 @@ const CAPABILITY_MODULE: Record<CapabilityKey, ModuleKey> = {
   calibraciones_ver_todas: 'calibraciones',
   tablas_mantenimiento_editar: 'editor',
   equipos_sin_formato_editar: 'equipos_sin_formato',
+  garantias_editar: 'garantias',
+  garantias_ver_todas: 'garantias',
 }
 
 // Agrupa las capacidades por su módulo, en el mismo orden que MODULE_KEYS —
