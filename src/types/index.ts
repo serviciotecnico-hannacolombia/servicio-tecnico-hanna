@@ -161,6 +161,19 @@ export interface IndicadorReal {
   updated_at: string
 }
 
+export interface IndicadorCalidadRevision {
+  id: string
+  anio: number
+  mes: number
+  total_pedidos: number
+  pedidos_a_tiempo: number
+  pedidos_vencidos_justificados: number
+  notas: string | null
+  actualizado_por: string | null
+  created_at: string
+  updated_at: string
+}
+
 export interface TarifaEnvio {
   id: number
   numero: number | null

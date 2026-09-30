@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../../lib/supabase'
 import { useUser } from '../../../hooks/useUser'
-import type { CategoriaIndicador, IndicadorMeta, IndicadorReal } from '../../../types'
+import type { CategoriaIndicador, IndicadorMeta, IndicadorReal, IndicadorCalidadRevision } from '../../../types'
 
 export function useIndicadores(anio: number) {
   const qc = useQueryClient()
@@ -62,11 +62,50 @@ export function useIndicadores(anio: number) {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['indicadores-metas', anio] }),
   })
 
+  const calidadQuery = useQuery({
+    queryKey: ['indicadores-calidad', anio],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('indicadores_calidad_revision')
+        .select('*')
+        .eq('anio', anio)
+        .order('mes')
+      if (error) throw error
+      return data as IndicadorCalidadRevision[]
+    },
+  })
+
+  const registrarCalidad = useMutation({
+    mutationFn: async ({
+      mes, total_pedidos, pedidos_a_tiempo, pedidos_vencidos_justificados, notas,
+    }: {
+      mes: number
+      total_pedidos: number
+      pedidos_a_tiempo: number
+      pedidos_vencidos_justificados: number
+      notas?: string | null
+    }) => {
+      const { error } = await supabase
+        .from('indicadores_calidad_revision')
+        .upsert(
+          {
+            anio, mes, total_pedidos, pedidos_a_tiempo, pedidos_vencidos_justificados,
+            notas: notas || null, actualizado_por: displayName, updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'anio,mes' }
+        )
+      if (error) throw error
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['indicadores-calidad', anio] }),
+  })
+
   return {
     metas: metasQuery.data ?? [],
     reales: realesQuery.data ?? [],
-    isLoading: metasQuery.isLoading || realesQuery.isLoading,
+    calidad: calidadQuery.data ?? [],
+    isLoading: metasQuery.isLoading || realesQuery.isLoading || calidadQuery.isLoading,
     registrarReal,
     guardarMetas,
+    registrarCalidad,
   }
 }
