@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Search, BadgeCheck, Download } from 'lucide-react'
+import { Plus, Search, BadgeCheck, Download, Users } from 'lucide-react'
 import { Header } from '../../components/layout/Header'
 import { Card } from '../../components/ui/Card'
 import { Table, type Column } from '../../components/ui/Table'
@@ -9,6 +9,7 @@ import { useProfiles } from '../../hooks/useProfiles'
 import { useAsesores } from '../calibraciones/hooks/useCalibraciones'
 import { parseOtstCodes } from '../equipos-sin-formato/hooks/useEquiposSinFormato'
 import { useGarantias, ESTADO_LABEL_GAR, fechaObjetivoGarantia, semaforoGarantia, fmtFecha } from './hooks/useGarantias'
+import { ResponsablesConfigModal } from './ResponsablesConfigModal'
 import { INP, PRI, GHOST, EMPTY, B_ESTADO_GAR, SemaforoGarantia } from './ui'
 import type { EstadoGarantia, Garantia } from '../../types'
 
@@ -22,7 +23,8 @@ const FILTROS: [VistaFiltro, string][] = [
 
 export function GarantiasPage() {
   const navigate = useNavigate()
-  const { user, hasCapability } = useUser()
+  const { user, hasCapability, isAdmin } = useUser()
+  const [configResponsables, setConfigResponsables] = useState(false)
   const puedeEditar = hasCapability('garantias_editar')
   const { data: garantias = [], isLoading } = useGarantias()
   const { data: asesores = [] } = useAsesores()
@@ -113,7 +115,12 @@ export function GarantiasPage() {
       <Header
         title="Garantías"
         subtitle="Registro y seguimiento de garantías — con stock (PNC) o por importación (NV)"
-        actions={puedeEditar ? <button onClick={() => navigate('/garantias/nueva')} style={PRI}><Plus size={14} /> Nueva garantía</button> : undefined}
+        actions={(isAdmin || puedeEditar) ? (
+          <>
+            {isAdmin && <button onClick={() => setConfigResponsables(true)} style={{ ...GHOST, display: 'inline-flex', alignItems: 'center', gap: 6 }}><Users size={14} /> Responsables</button>}
+            {puedeEditar && <button onClick={() => navigate('/garantias/nueva')} style={PRI}><Plus size={14} /> Nueva garantía</button>}
+          </>
+        ) : undefined}
       />
 
       <Card>
@@ -150,6 +157,8 @@ export function GarantiasPage() {
           <Table columns={columns} data={filtrados} keyExtractor={g => g.id} onRowClick={g => navigate(`/garantias/${g.id}`)} />
         )}
       </Card>
+
+      {configResponsables && <ResponsablesConfigModal onClose={() => setConfigResponsables(false)} />}
     </div>
   )
 }

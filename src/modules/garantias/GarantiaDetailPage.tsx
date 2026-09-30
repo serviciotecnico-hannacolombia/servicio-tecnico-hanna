@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { ArrowLeft, Pencil, Ban, RotateCcw, Trash2 } from 'lucide-react'
+import { ArrowLeft, Pencil, Ban, RotateCcw, Trash2, Settings } from 'lucide-react'
 import { Card } from '../../components/ui/Card'
 import { Modal } from '../../components/ui/Modal'
 import { Spinner } from '../../components/ui/Spinner'
@@ -10,13 +10,14 @@ import { useProfiles } from '../../hooks/useProfiles'
 import { useAsesores } from '../calibraciones/hooks/useCalibraciones'
 import { linkOtst, parseOtstCodes } from '../equipos-sin-formato/hooks/useEquiposSinFormato'
 import {
-  useGarantias, useResponsablesST, useInvalidateGarantias,
+  useGarantias, useResponsablesGarantias, useInvalidateGarantias,
   crearGarantia, editarGarantia, actualizarGarantia,
   anularGarantia, reactivarGarantia, eliminarGarantia,
   ESTADO_LABEL_GAR, estadoInicial, flujoGarantia, fmtFecha, type GarantiaForm,
 } from './hooks/useGarantias'
 import { StepperGAR } from './StepperGAR'
 import { HistorialSidebarGAR } from './HistorialSidebarGAR'
+import { ResponsablesConfigModal } from './ResponsablesConfigModal'
 import { VistaPncPendiente } from './vistas/VistaPncPendiente'
 import { VistaNV } from './vistas/VistaNV'
 import { VistaImportacion } from './vistas/VistaImportacion'
@@ -43,7 +44,8 @@ export function GarantiaDetailPage() {
 
   const { data: garantias = [], isLoading } = useGarantias()
   const { data: asesores = [] } = useAsesores()
-  const responsablesST = useResponsablesST()
+  const responsablesST = useResponsablesGarantias()
+  const [configResponsables, setConfigResponsables] = useState(false)
   const { data: profiles = [] } = useProfiles()
   const { invalidate, invalidateDetalle } = useInvalidateGarantias()
 
@@ -202,8 +204,13 @@ export function GarantiaDetailPage() {
 
         <div style={{ marginTop: 16 }}>
           <FG label="Responsables (Servicio Técnico)">
+            {isAdmin && (
+              <button type="button" onClick={() => setConfigResponsables(true)} style={{ alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: 5, padding: 0, border: 'none', background: 'none', color: 'var(--accent)', fontSize: 11.5, cursor: 'pointer', fontFamily: 'var(--sans)' }}>
+                <Settings size={12} /> Configurar quiénes aparecen aquí
+              </button>
+            )}
             {responsablesST.length === 0 ? (
-              <p style={{ fontSize: 12, color: 'var(--muted)' }}>No hay integrantes activos con rol Servicio Técnico.</p>
+              <p style={{ fontSize: 12, color: 'var(--muted)' }}>No hay responsables habilitados{isAdmin ? ' — usa "Configurar" para agregarlos.' : '. Pídele al administrador que los configure.'}</p>
             ) : (
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {responsablesST.map(p => {
@@ -368,6 +375,8 @@ export function GarantiaDetailPage() {
           <HistorialSidebarGAR garantiaId={garantia.id} />
         </div>
       )}
+
+      {configResponsables && <ResponsablesConfigModal onClose={() => setConfigResponsables(false)} />}
 
       {anulando && garantia && (
         <Modal open onClose={() => setAnulando(false)} title="Anular garantía">

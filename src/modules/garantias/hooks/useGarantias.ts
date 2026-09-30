@@ -44,23 +44,37 @@ export function useHistorialGarantia(garantiaId: string | undefined) {
   })
 }
 
-// Responsables asignables: integrantes activos del rol "Servicio Técnico".
-export function useResponsablesST() {
+// Ids de los perfiles que el Admin habilitó como responsables seleccionables
+// (tabla garantias_responsables, editable solo por Admin).
+export function useResponsablesConfig() {
   const { user } = useUser()
-  const { data: profiles = [] } = useProfiles()
-  const { data: rolST } = useQuery({
-    queryKey: ['rol_servicio_tecnico'],
+  return useQuery({
+    queryKey: ['garantias_responsables'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('roles').select('id').eq('name', 'Servicio Técnico').maybeSingle()
+      const { data, error } = await supabase.from('garantias_responsables').select('profile_id')
       if (error) throw error
-      return data as { id: string } | null
+      return (data as { profile_id: string }[]).map(r => r.profile_id)
     },
     enabled: !!user,
-    staleTime: 5 * 60_000,
   })
-  return profiles
-    .filter((p: Profile) => p.activo && rolST && p.role_id === rolST.id)
-    .sort((a, b) => (a.full_name || a.email).localeCompare(b.full_name || b.email))
+}
+
+export function ordenarPorNombre(a: Profile, b: Profile) {
+  return (a.full_name || a.email).localeCompare(b.full_name || b.email)
+}
+
+// Responsables asignables: perfiles activos habilitados por el Admin.
+export function useResponsablesGarantias() {
+  const { data: profiles = [] } = useProfiles()
+  const { data: ids = [] } = useResponsablesConfig()
+  const habilitados = new Set(ids)
+  return profiles.filter(p => p.activo && habilitados.has(p.id)).sort(ordenarPorNombre)
+}
+
+export async function setResponsableHabilitado(profileId: string, habilitado: boolean) {
+  return habilitado
+    ? supabase.from('garantias_responsables').insert({ profile_id: profileId })
+    : supabase.from('garantias_responsables').delete().eq('profile_id', profileId)
 }
 
 export function useInvalidateGarantias() {
