@@ -65,6 +65,12 @@ export function VistaCargaAlSistema({ form, catalogo, codigosSel, puedeEditar, s
           <FG label="Notas de control de calidad">
             <div style={{ ...INP, color: form.notas_control_calidad ? 'var(--text)' : 'var(--muted)' }}>{form.notas_control_calidad || '—'}</div>
           </FG>
+          <FG label="Códigos de referencia">
+            <div style={{ ...INP, color: form.codigos_referencia ? 'var(--text)' : 'var(--muted)' }}>{form.codigos_referencia || '—'}</div>
+          </FG>
+          <FG label="Metrólogo(a)">
+            <div style={{ ...INP, color: form.nombre_metrologo ? 'var(--text)' : 'var(--muted)' }}>{form.nombre_metrologo || '—'}</div>
+          </FG>
           <FG label="Fecha estimada de certificados In Situ (guía, +10 días)">
             <div style={{ ...INP, color: fechaEstimadaCertificados ? 'var(--text)' : 'var(--muted)' }}>
               {fechaEstimadaCertificados ? fmtFecha(fechaEstimadaCertificados) : '—'}

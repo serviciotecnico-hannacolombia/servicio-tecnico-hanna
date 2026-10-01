@@ -64,7 +64,7 @@ const EMPTY_ORDEN: Partial<OrdenCalibracion> = {
   fecha_salida_mantenimiento: null,
   fecha_salida_mantenimiento_real: null, nota_mantenimiento: '',
   fecha_programada_envio: null, fecha_llegada_metrologo: null, fecha_envio: null, nota_envio: '',
-  codigos_certificados: '',
+  codigos_certificados: '', codigos_referencia: '', nombre_metrologo: '',
   certificado_fecha_inicio: null, certificado_fecha_fin: null,
   fecha_salida_lab: null, fecha_retorno: null, nota_retorno: '',
   fecha_llegada_hanna: null, fecha_entrega_certificado: null,
@@ -81,6 +81,11 @@ export function OrdenCalibracionDetailPage() {
   const esNueva = id === 'nueva'
 
   const { data: ordenes = [], isLoading: cargandoOrdenes } = useOrdenesCalibracion()
+  // Nombres de metrólogos ya usados en otras órdenes — autocompletado en
+  // "En calibración" (sitio). Sin duplicados por mayúsculas/espacios.
+  const metrologosSugeridos = [...new Map(
+    ordenes.map(o => (o.nombre_metrologo || '').trim()).filter(Boolean).map(n => [n.toLowerCase().replace(/\s+/g, ' '), n] as const)
+  ).values()].sort((a, b) => a.localeCompare(b, 'es'))
   const orden = esNueva ? undefined : ordenes.find(o => o.id === id)
   const { data: catalogo = [] } = useCatalogoRvCalibr()
   const { data: asesores = [] } = useAsesores()
@@ -675,7 +680,8 @@ export function OrdenCalibracionDetailPage() {
           />
         ) : !esNueva && etapaMostrada?.key === 'en_calibracion' ? (
           <VistaEnCalibracionSitio
-            form={form} puedeEditar={puedeEditarFlujo} soloLectura={soloLectura}
+            form={form} catalogo={catalogo} codigosSel={codigosSel} metrologosSugeridos={metrologosSugeridos}
+            puedeEditar={puedeEditarFlujo} soloLectura={soloLectura}
             saving={saving} onAvanzar={avanzarEtapa}
           />
         ) : (

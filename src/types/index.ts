@@ -388,6 +388,8 @@ export interface OrdenCalibracion {
   fecha_envio: string | null
   nota_envio: string | null
   codigos_certificados: string | null
+  codigos_referencia: string | null
+  nombre_metrologo: string | null
   certificado_fecha_inicio: string | null
   certificado_fecha_fin: string | null
   fecha_salida_lab: string | null
