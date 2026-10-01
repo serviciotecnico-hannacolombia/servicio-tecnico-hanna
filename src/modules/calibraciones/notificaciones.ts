@@ -1,21 +1,25 @@
 // Dispara la notificación por correo ante un cambio de estado de una orden
 // — vía la Edge Function calibraciones-notificar, que envía directamente con
-// Resend (al asesor, con copia a Servicio Técnico). No bloquea el guardado
-// de la orden: los errores solo quedan en consola.
+// Resend (al asesor, con copia a Servicio Técnico). El contenido (lo
+// registrado en el paso, resumen y próximo paso) lo arma correoEstado.ts.
+// No bloquea el guardado de la orden: los errores solo quedan en consola.
 import { supabase } from '../../lib/supabase'
 import { ESTADO_LABEL } from './hooks/useCalibraciones'
-import type { EstadoCalibracion, OrdenCalibracion } from '../../types'
+import { contenidoCorreoEstado } from './correoEstado'
+import type { EstadoCalibracion, OrdenCalibracion, RvCalibrItem } from '../../types'
 
 export function notificarCambioEstado(
   ordenId: string,
   estadoAnterior: string | null | undefined,
   estadoNuevo: string,
-  orden: Pick<OrdenCalibracion, 'cliente' | 'numero_oc' | 'correo_asesor'>,
+  orden: Partial<OrdenCalibracion>,
+  servicios: RvCalibrItem[],
   usuario: string | null,
 ) {
   if (!orden.correo_asesor) return
 
   const label = (estado: string) => ESTADO_LABEL[estado as EstadoCalibracion] || estado
+  const contenido = contenidoCorreoEstado(estadoNuevo as EstadoCalibracion, orden, servicios)
 
   supabase.functions.invoke('calibraciones-notificar', {
     body: {
@@ -27,6 +31,7 @@ export function notificarCambioEstado(
       estadoNuevo: label(estadoNuevo),
       ordenUrl: `${window.location.origin}/calibraciones/${ordenId}`,
       usuario,
+      ...contenido,
     },
   }).then(async ({ error }) => {
     if (!error) return
