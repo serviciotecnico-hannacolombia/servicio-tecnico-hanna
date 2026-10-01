@@ -879,6 +879,8 @@ export const CAMPO_LABEL: Record<string, string> = {
   fecha_envio: 'Envío',
   nota_envio: 'Nota de envío',
   codigos_certificados: 'Códigos de certificados',
+  codigos_referencia: 'Códigos de referencia',
+  nombre_metrologo: 'Metrólogo(a)',
   certificado_fecha_inicio: 'Certificados — inicio',
   certificado_fecha_fin: 'Certificados — fin',
   fecha_salida_lab: 'Salida del laboratorio',
