@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 // Reemplaza <input type="month"> — su selector nativo hace que Tab salte del
 // mes al siguiente campo del formulario sin pasar por el año (el foco entre
 // sus dos "segmentos" internos no se comporta como un tabstop normal). Dos
@@ -12,11 +14,15 @@ const MESES = [
   { value: '10', label: 'Octubre' }, { value: '11', label: 'Noviembre' }, { value: '12', label: 'Diciembre' },
 ];
 
-function anioOptions(): number[] {
+// Incluye el año del valor actual aunque quede fuera del rango por defecto
+// (p. ej. un borrador viejo), para que el <select> no aparezca en blanco.
+function anioOptions(anioActual: string): number[] {
   const actual = new Date().getFullYear();
-  const years: number[] = [];
-  for (let y = actual - 5; y <= actual + 15; y++) years.push(y);
-  return years;
+  const years = new Set<number>();
+  for (let y = actual - 5; y <= actual + 15; y++) years.add(y);
+  const n = Number(anioActual);
+  if (anioActual && Number.isInteger(n)) years.add(n);
+  return [...years].sort((a, b) => a - b);
 }
 
 const selectStyle: React.CSSProperties = {
@@ -31,10 +37,17 @@ interface MonthYearInputProps {
 }
 
 export function MonthYearInput({ label, value, onChange }: MonthYearInputProps) {
-  const [anio, mes] = value ? value.split('-') : ['', ''];
+  // Mientras solo se ha elegido uno de los dos (mes o año), el valor hacia
+  // afuera sigue siendo "" — pero la selección parcial se recuerda aquí, si
+  // no el <select> recién elegido volvería a "Mes"/"Año" y obligaría a
+  // elegir siempre primero el año.
+  const [parcial, setParcial] = useState({ anio: '', mes: '' });
+  const [anio, mes] = value ? value.split('-') : [parcial.anio, parcial.mes];
 
-  const update = (nextAnio: string, nextMes: string) =>
+  const update = (nextAnio: string, nextMes: string) => {
+    setParcial({ anio: nextAnio, mes: nextMes });
     onChange(nextAnio && nextMes ? `${nextAnio}-${nextMes}` : '');
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
@@ -46,7 +59,7 @@ export function MonthYearInput({ label, value, onChange }: MonthYearInputProps) 
         </select>
         <select style={selectStyle} value={anio} onChange={e => update(e.target.value, mes)}>
           <option value="">Año</option>
-          {anioOptions().map(y => <option key={y} value={String(y)}>{y}</option>)}
+          {anioOptions(anio).map(y => <option key={y} value={String(y)}>{y}</option>)}
         </select>
       </div>
     </div>

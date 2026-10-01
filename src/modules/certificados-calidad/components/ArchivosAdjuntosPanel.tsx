@@ -14,11 +14,18 @@ interface ArchivosAdjuntosPanelProps {
 
 export function ArchivosAdjuntosPanel({ archivos, plantillasSeleccionadas, seleccionados, onChangeSeleccionados }: ArchivosAdjuntosPanelProps) {
   const plantillaIds = new Set(plantillasSeleccionadas.map(p => p.id));
-  const categorias = new Set(plantillasSeleccionadas.map(p => p.categoria).filter(Boolean) as string[]);
+  // Sin distinguir mayúsculas ni espacios sobrantes ("ph" = "pH "), igual
+  // que las sugerencias de Soluciones Estándar.
+  const normCat = (c: string) => c.trim().toLowerCase();
+  const categorias = new Set(plantillasSeleccionadas.map(p => p.categoria).filter(Boolean).map(c => normCat(c as string)));
 
+  // Los ya marcados se muestran siempre: si se quitaba la plantilla que los
+  // hacía relevantes, seguían copiándose a la intranet sin verse aquí ni
+  // poder desmarcarlos.
   const relevantes = archivos.filter(a =>
+    seleccionados.includes(a.id) ||
     (a.plantilla_id && plantillaIds.has(a.plantilla_id)) ||
-    (a.categoria && categorias.has(a.categoria))
+    (a.categoria && categorias.has(normCat(a.categoria)))
   );
 
   const toggle = (id: string) => {
@@ -26,11 +33,14 @@ export function ArchivosAdjuntosPanel({ archivos, plantillasSeleccionadas, selec
       onChangeSeleccionados(seleccionados.filter(s => s !== id));
       return;
     }
-    if (seleccionados.length >= MAX_ADJUNTOS) {
+    // Descarta ids de archivos que ya se borraron del repositorio (p. ej. en
+    // un borrador viejo): no se ven, pero ocupaban cupo del máximo.
+    const vigentes = seleccionados.filter(s => archivos.some(a => a.id === s));
+    if (vigentes.length >= MAX_ADJUNTOS) {
       toast.error(`Máximo ${MAX_ADJUNTOS} adjuntos (la intranet solo tiene ${MAX_ADJUNTOS} campos)`);
       return;
     }
-    onChangeSeleccionados([...seleccionados, id]);
+    onChangeSeleccionados([...vigentes, id]);
   };
 
   const handleDownload = async (archivo: ArchivoCertificado) => {
@@ -41,7 +51,7 @@ export function ArchivosAdjuntosPanel({ archivos, plantillasSeleccionadas, selec
     window.open(data.signedUrl, '_blank');
   };
 
-  if (plantillasSeleccionadas.length === 0) {
+  if (plantillasSeleccionadas.length === 0 && relevantes.length === 0) {
     return <p style={{ fontSize: '0.82rem', color: 'var(--muted)' }}>Agrega equipos arriba para ver los archivos disponibles según su categoría.</p>;
   }
 

@@ -8,6 +8,17 @@ import { supabase } from '../../../lib/supabase';
 import { useUser } from '../../../hooks/useUser';
 import { usePlantillas, useArchivosCertificado, useInvalidateCertificadosCalidad } from '../hooks/useCertificadosCalidad';
 
+// Supabase Storage rechaza claves con tildes, ñ y otros caracteres no ASCII
+// ("Invalid key"): una categoría "Oxígeno Disuelto" o un archivo
+// "Certificación pH.pdf" no se podían subir. El nombre original se sigue
+// mostrando tal cual (nombre_archivo); solo la ruta interna se limpia.
+function storageSafe(segmento: string): string {
+  return segmento
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^A-Za-z0-9._-]+/g, '_')
+    .replace(/^_+|_+$/g, '') || 'archivo';
+}
+
 export function ArchivosCatalogoTab() {
   const { user } = useUser();
   const { data: plantillas = [] } = usePlantillas();
@@ -28,7 +39,7 @@ export function ArchivosCatalogoTab() {
 
     setUploading(true);
     const carpeta = modo === 'categoria' ? categoria.trim() : plantillas.find(p => p.id === plantillaId)?.codigo || plantillaId;
-    const path = `${carpeta}/${Date.now()}-${file.name}`.replace(/\s+/g, '_');
+    const path = `${storageSafe(carpeta)}/${Date.now()}-${storageSafe(file.name)}`;
 
     const { error: uploadError } = await supabase.storage.from('certificados-calidad').upload(path, file);
     if (uploadError) { toast.error('Error al subir archivo: ' + uploadError.message); setUploading(false); if (inputRef.current) inputRef.current.value = ''; return; }
@@ -49,9 +60,11 @@ export function ArchivosCatalogoTab() {
 
   const handleDelete = async (id: string, storagePath: string) => {
     if (!window.confirm('¿Eliminar este archivo del repositorio?')) return;
-    await supabase.storage.from('certificados-calidad').remove([storagePath]);
+    // Primero el registro: si falla, el archivo sigue intacto en vez de quedar
+    // un registro apuntando a un archivo que ya no existe.
     const { error } = await supabase.from('certificados_calidad_archivos').delete().eq('id', id);
     if (error) { toast.error('Error al eliminar: ' + error.message); return; }
+    await supabase.storage.from('certificados-calidad').remove([storagePath]);
     invalidate();
     toast.success('Archivo eliminado');
   };

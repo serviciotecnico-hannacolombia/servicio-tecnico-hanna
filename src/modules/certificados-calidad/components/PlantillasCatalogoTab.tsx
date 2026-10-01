@@ -6,7 +6,7 @@ import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
 import { Modal } from '../../../components/ui/Modal';
 import { supabase } from '../../../lib/supabase';
-import { usePlantillas, useInvalidateCertificadosCalidad } from '../hooks/useCertificadosCalidad';
+import { usePlantillas, useArchivosCertificado, useInvalidateCertificadosCalidad } from '../hooks/useCertificadosCalidad';
 import type { CertificadoPlantilla, MedicionFila } from '../types';
 
 const textareaStyle: React.CSSProperties = {
@@ -45,6 +45,7 @@ const splitList = (s: string) => s.split(',').map(v => v.trim()).filter(Boolean)
 
 export function PlantillasCatalogoTab() {
   const { data: plantillas = [] } = usePlantillas();
+  const { data: archivos = [] } = useArchivosCertificado();
   const invalidate = useInvalidateCertificadosCalidad();
   const [editing, setEditing] = useState<CertificadoPlantilla | null | 'new'>(null);
   const [form, setForm] = useState<FormState>(toForm());
@@ -81,16 +82,26 @@ export function PlantillasCatalogoTab() {
       ? await supabase.from('certificados_calidad_plantillas').insert(payload)
       : await supabase.from('certificados_calidad_plantillas').update(payload).eq('id', (editing as CertificadoPlantilla).id);
     setSaving(false);
-    if (error) { toast.error('Error al guardar: ' + error.message); return; }
+    if (error) {
+      toast.error(error.code === '23505' ? `Ya existe una plantilla con el código "${payload.codigo}"` : 'Error al guardar: ' + error.message);
+      return;
+    }
     invalidate();
     toast.success('Plantilla guardada');
     close();
   };
 
   const handleDelete = async (p: CertificadoPlantilla) => {
-    if (!window.confirm(`¿Eliminar la plantilla "${p.codigo}"?`)) return;
+    // Los archivos asociados a la plantilla se borran en cascada en la base
+    // (ON DELETE CASCADE), pero el PDF en Storage no: se limpia aquí también.
+    const propios = archivos.filter(a => a.plantilla_id === p.id);
+    const aviso = propios.length
+      ? `¿Eliminar la plantilla "${p.codigo}"? También se eliminarán sus ${propios.length} archivo(s) adjunto(s).`
+      : `¿Eliminar la plantilla "${p.codigo}"?`;
+    if (!window.confirm(aviso)) return;
     const { error } = await supabase.from('certificados_calidad_plantillas').delete().eq('id', p.id);
     if (error) { toast.error('Error al eliminar: ' + error.message); return; }
+    if (propios.length) await supabase.storage.from('certificados-calidad').remove(propios.map(a => a.storage_path));
     invalidate();
     toast.success('Plantilla eliminada');
   };

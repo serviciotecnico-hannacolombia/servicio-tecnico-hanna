@@ -27,6 +27,8 @@ export function CertificadosCalidadPage() {
   const [loadKey, setLoadKey] = useState(0);
 
   const handleLoadDraft = (draft: CertificadoGenerado) => {
+    // "Crear" sigue montado con lo que el técnico tenga a medio armar.
+    if (!window.confirm('¿Cargar este borrador? Se reemplaza lo que tengas en "Crear Certificado".')) return;
     setDraftToLoad(draft);
     setLoadKey(k => k + 1);
     setTab('crear');
@@ -59,9 +61,12 @@ export function CertificadosCalidadPage() {
         ))}
       </div>
 
-      {tab === 'crear' && (
+      {/* Siempre montado (solo se oculta): el borrador vive en su estado, y
+          desmontarlo al ir a otra pestaña —p. ej. a "Archivos" a subir un
+          PDF— borraba todo lo que el técnico llevaba armado. */}
+      <div style={{ display: tab === 'crear' ? undefined : 'none' }}>
         <CrearCertificadoTab key={loadKey} initialDraft={draftToLoad} />
-      )}
+      </div>
       {tab === 'plantillas' && <PlantillasCatalogoTab />}
       {tab === 'soluciones' && <SolucionesPatronCatalogoTab />}
       {tab === 'archivos' && <ArchivosCatalogoTab />}

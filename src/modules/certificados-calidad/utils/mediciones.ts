@@ -1,14 +1,20 @@
 import type { MedicionBloque } from '../types';
 
 // Los certificados de fábrica solo traen mes y año de vencimiento (nunca un
-// día exacto), así que fecha_vencimiento se captura como "AAAA-MM" y se
-// muestra como "MM-AAAA" para no insinuar nunca un día que no está
-// garantizado — igual que en Soluciones Estándar (ver utils/intranet.ts).
-function formatMesAnio(mesAnio: string): string {
+// día exacto), así que las fechas de vencimiento se capturan como "AAAA-MM"
+// y se muestran como "MM-AAAA" para no insinuar nunca un día que no está
+// garantizado — tanto en Mediciones como en Soluciones Estándar.
+export function formatMesAnio(mesAnio: string): string {
   if (!mesAnio) return '';
   const [y, m] = mesAnio.split('-');
   if (!y || !m) return mesAnio;
   return `${m}-${y}`;
+}
+
+// Las celdas de la tabla van dentro de HTML que la intranet renderiza: un
+// valor como "<0.05 ppm" o "A&B" rompería la tabla si se pega sin escapar.
+function escapeHtml(text: string): string {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 export function buildBloqueHtml(bloque: MedicionBloque): string {
@@ -30,10 +36,10 @@ export function buildBloqueHtml(bloque: MedicionBloque): string {
   const partes: string[] = [];
   if (bloque.notas.trim()) partes.push(bloque.notas.trim());
   const filasHtml = bloque.filas
-    .map(f => `  <tr><td>${f.valor}</td><td>${f.estandar}</td><td>${f.tolerancia}</td></tr>`)
+    .map(f => `  <tr><td>${escapeHtml(f.valor)}</td><td>${escapeHtml(f.estandar)}</td><td>${escapeHtml(f.tolerancia)}</td></tr>`)
     .join('\n');
   partes.push(
-    `<table border="1" align="center">\n  <tr><th>${bloque.titulo}</th><th>Sol. Estándar</th><th>Tolerancia</th></tr>\n${filasHtml}\n</table>`
+    `<table border="1" align="center">\n  <tr><th>${escapeHtml(bloque.titulo)}</th><th>Sol. Estándar</th><th>Tolerancia</th></tr>\n${filasHtml}\n</table>`
   );
   return partes.join('\n\n');
 }

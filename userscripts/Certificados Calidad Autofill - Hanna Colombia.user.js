@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Certificados Calidad Autofill - Hanna Colombia
 // @namespace    https://intranet.hannacolombia.com/
-// @version      1.0.0
+// @version      1.0.1
 // @description  Pega en el formulario "Crear Certificado de Calidad" de la intranet lo que se copió con el botón "Copiar para Intranet" del sistema de Servicio Técnico (soluciones, mediciones, checklist, fecha, técnico y adjuntos PDF). Equipos y el número de factura se llenan solos/a mano con "Cargar Datos" de la intranet.
 // @author       Script generado para Hanna Colombia
 // @match        https://intranet.hannacolombia.com/certificados_calidad*
@@ -78,6 +78,16 @@
     return buckets;
   }
 
+  // Campos donde el técnico escribe: excluye hidden (tokens/ids internos del
+  // formulario), file, botones, radios, etc. Si un hidden caía dentro de una
+  // sección, corría una posición todas las columnas de la grilla de
+  // Soluciones o recibía un ítem extra del checklist.
+  const TIPOS_NO_EDITABLES = ['hidden', 'file', 'button', 'submit', 'reset', 'image', 'radio', 'checkbox'];
+  function esEditable(el) {
+    if (el.tagName === 'TEXTAREA') return !el.disabled && !el.readOnly;
+    return !TIPOS_NO_EDITABLES.includes((el.type || 'text').toLowerCase()) && !el.disabled && !el.readOnly;
+  }
+
   function setValue(el, value) {
     if (!el || value == null) return;
     const proto = el.tagName === 'TEXTAREA' ? window.HTMLTextAreaElement.prototype : window.HTMLInputElement.prototype;
@@ -90,8 +100,9 @@
   // Llena una tabla tipo grilla (N columnas x M filas de <input>) agrupando
   // los inputs de la sección en bloques de "columnas.length" y asignando los
   // valores de cada fila de datos en ese orden.
-  function fillGrid(inputs, columnas, filas, nombreSeccion) {
+  function fillGrid(todos, columnas, filas, nombreSeccion) {
     if (filas.length === 0) return;
+    const inputs = todos.filter(esEditable);
     const filasDisponibles = Math.floor(inputs.length / columnas.length);
     if (filasDisponibles === 0) {
       WARN(`No se encontraron campos para la sección "${nombreSeccion}". Revisa SECCIONES en el script.`);
@@ -134,7 +145,7 @@
     }
     // Los ítems "extra" (no predefinidos) van en los cuadros de texto en blanco
     // que hay debajo de los checkboxes de cada columna.
-    const vacios = bucket.inputs.filter(inp => !inp.value);
+    const vacios = bucket.inputs.filter(inp => esEditable(inp) && !inp.value);
     extras.forEach((valor, i) => {
       if (vacios[i]) setValue(vacios[i], valor);
       else WARN(`"${nombreSeccion}": no quedan cuadros en blanco para el ítem extra "${valor}" — agrégalo a mano.`);
@@ -175,24 +186,28 @@
   }
 
   // Busca un input/textarea que esté justo después (en el DOM) de un texto
-  // "Etiqueta:" — usado para Fecha y Técnico dentro de "Otros".
+  // "Etiqueta:" — usado para Fecha y Técnico dentro de "Otros". `valor` puede
+  // ser una función que recibe el input encontrado (p. ej. para elegir el
+  // formato de fecha según si es type="date" o un campo de texto).
   function fillCampoPorEtiqueta(bucketOtros, etiqueta, valor) {
-    // Dentro del bucket "otros" los inputs están en orden de aparición;
-    // buscamos el texto de la etiqueta en cualquier nodo hoja anterior a
-    // cada input para emparejarlos por cercanía.
     const candidatos = document.evaluate(
       `//*[not(*)][normalize-space(text())="${etiqueta}" or normalize-space(text())="${etiqueta}:"]`,
       document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null
     );
+    const encontrados = [];
     for (let i = 0; i < candidatos.snapshotLength; i++) {
       const el = candidatos.snapshotItem(i);
       let input = el.nextElementSibling;
       if (!input || (input.tagName !== 'INPUT' && input.tagName !== 'TEXTAREA')) {
         input = el.parentElement ? el.parentElement.querySelector('input, textarea') : null;
       }
-      if (input) { setValue(input, valor); return; }
+      if (input && esEditable(input)) encontrados.push(input);
     }
-    WARN(`No se encontró el campo "${etiqueta}" dentro de "Otros".`);
+    // "Fecha" puede aparecer también más arriba (p. ej. datos de la factura):
+    // se prefiere el campo que está dentro de la sección "Otros".
+    const input = encontrados.find(inp => bucketOtros.inputs.includes(inp)) || encontrados[0];
+    if (!input) { WARN(`No se encontró el campo "${etiqueta}" dentro de "Otros".`); return; }
+    setValue(input, typeof valor === 'function' ? valor(input) : valor);
   }
 
   async function aplicarCertificado(payload) {
@@ -210,7 +225,9 @@
     fillChecklistColumna(buckets.embalaje, payload.checklist.embalaje, payload.checklist.embalajeExtra, 'Embalaje');
     fillChecklistColumna(buckets.controlEstetico, payload.checklist.controlEstetico, payload.checklist.controlEsteticoExtra, 'Control Estético');
 
-    fillCampoPorEtiqueta(buckets.otros, 'Fecha', payload.fecha || payload.fechaDisplay);
+    // <input type="date"> exige "aaaa-mm-dd"; un campo de texto se llena con
+    // "dd/mm/aaaa", que es como lo escribiría el técnico a mano.
+    fillCampoPorEtiqueta(buckets.otros, 'Fecha', input => (input.type === 'date' ? payload.fecha : payload.fechaDisplay));
     fillCampoPorEtiqueta(buckets.otros, 'Técnico', payload.tecnico);
 
     await fillAdjuntos(buckets.archivosAdjuntos, payload.adjuntos);

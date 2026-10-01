@@ -4,22 +4,32 @@ import { FolderOpen, Trash2, Search } from 'lucide-react';
 import { Card } from '../../../components/ui/Card';
 import { Input } from '../../../components/ui/Input';
 import { supabase } from '../../../lib/supabase';
-import { useCertificadosGenerados, useInvalidateCertificadosCalidad } from '../hooks/useCertificadosCalidad';
-import type { CertificadoGenerado } from '../types';
+import { useCertificadosGenerados, usePlantillas, useInvalidateCertificadosCalidad } from '../hooks/useCertificadosCalidad';
+import type { CertificadoGenerado, CertificadoPlantilla } from '../types';
 
 interface HistorialTabProps {
   onLoadDraft: (draft: CertificadoGenerado) => void;
 }
 
+// La referencia escrita por el técnico en cada bloque; si la dejó vacía, el
+// código de la plantilla, para no mostrar una celda como ", ,".
+function referencias(c: CertificadoGenerado, plantillas: CertificadoPlantilla[]): string {
+  return (c.mediciones ?? [])
+    .map(m => m.titulo?.trim() || plantillas.find(p => p.id === m.plantilla_id)?.codigo || '')
+    .filter(Boolean)
+    .join(', ');
+}
+
 export function HistorialTab({ onLoadDraft }: HistorialTabProps) {
   const { data: certificados = [] } = useCertificadosGenerados();
+  const { data: plantillas = [] } = usePlantillas();
   const invalidate = useInvalidateCertificadosCalidad();
   const [busqueda, setBusqueda] = useState('');
 
   const filtrados = certificados.filter(c => {
     const q = busqueda.trim().toLowerCase();
     if (!q) return true;
-    return [c.tecnico, ...c.mediciones.map(m => m.titulo)]
+    return [c.tecnico, referencias(c, plantillas)]
       .some(v => v?.toLowerCase().includes(q));
   });
 
@@ -48,7 +58,7 @@ export function HistorialTab({ onLoadDraft }: HistorialTabProps) {
         <tbody>
           {filtrados.map(c => (
             <tr key={c.id} style={{ borderBottom: '1px solid var(--border)' }}>
-              <td style={{ padding: '8px 20px', fontSize: '0.82rem' }}>{c.mediciones.map(m => m.titulo).join(', ')}</td>
+              <td style={{ padding: '8px 20px', fontSize: '0.82rem' }}>{referencias(c, plantillas) || <span style={{ color: 'var(--muted)' }}>(sin referencia)</span>}</td>
               <td style={{ padding: '8px 20px', fontSize: '0.82rem' }}>{c.tecnico}</td>
               <td style={{ padding: '8px 20px', fontSize: '0.82rem', color: 'var(--muted)' }}>{c.fecha}</td>
               <td style={{ padding: '8px 20px', display: 'flex', gap: 10 }}>

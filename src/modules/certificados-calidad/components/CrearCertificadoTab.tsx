@@ -13,65 +13,8 @@ import { ChecklistPanel } from './ChecklistPanel';
 import { ArchivosAdjuntosPanel } from './ArchivosAdjuntosPanel';
 import { usePlantillas, useSolucionesPatron, useArchivosCertificado, useInvalidateCertificadosCalidad } from '../hooks/useCertificadosCalidad';
 import { copyForIntranet } from '../utils/intranet';
-import { emptyChecklist } from '../types';
-import type { CertificadoGenerado, CertificadoPlantilla, ChecklistState, EquipoFila, MedicionBloque } from '../types';
-
-const emptyEquipo = (): EquipoFila => ({ id: crypto.randomUUID(), plantilla_id: null });
-
-// Compatibilidad con borradores guardados antes de que cada bloque de
-// Mediciones quedara ligado a una fila de Equipos por id: se regeneran ids
-// y se re-vinculan los bloques existentes a su fila por plantilla_id
-// (mejor esfuerzo — son datos de historial, no algo crítico).
-function normalizeLoadedDraft(draft: CertificadoGenerado): CertificadoGenerado {
-  const usedBloqueIdx = new Set<number>();
-  const equipos = draft.equipos.map(e => ({ ...e, id: e.id || crypto.randomUUID() }));
-  const mediciones = equipos.map(e => {
-    const idx = draft.mediciones.findIndex((b, i) =>
-      !usedBloqueIdx.has(i) && (b.equipo_id === e.id || (!b.equipo_id && b.plantilla_id === e.plantilla_id))
-    );
-    if (idx === -1) return null;
-    usedBloqueIdx.add(idx);
-    const b = draft.mediciones[idx];
-    return { ...b, lote: b.lote ?? '', fecha_vencimiento: b.fecha_vencimiento ?? '', equipo_id: e.id };
-  }).filter((b): b is MedicionBloque => !!b);
-
-  return { ...draft, equipos, mediciones, adjuntos: draft.adjuntos ?? [] };
-}
-
-// El checklist se RECALCULA por completo cada vez que cambia qué plantillas
-// están elegidas — no se van acumulando marcas de plantillas anteriores. Si
-// no fuera así, cada cambio de plantilla solo suma ítems y, tras probar
-// varias, casi todo termina marcado y todas se ven "iguales". Los ítems
-// "extra" escritos a mano por el técnico no vienen de ninguna plantilla, así
-// que se conservan tal cual.
-function recomputeChecklist(equipos: EquipoFila[], plantillas: CertificadoPlantilla[], prev: ChecklistState): ChecklistState {
-  const checklist = emptyChecklist();
-  checklist.extra_test_funcional = prev.extra_test_funcional;
-  checklist.extra_embalaje = prev.extra_embalaje;
-  checklist.extra_control_estetico = prev.extra_control_estetico;
-
-  equipos.forEach(e => {
-    const plantilla = e.plantilla_id ? plantillas.find(p => p.id === e.plantilla_id) : undefined;
-    if (!plantilla) return;
-    plantilla.test_funcional_items.forEach(i => { checklist.test_funcional[i] = true; });
-    plantilla.embalaje_items.forEach(i => { checklist.embalaje[i] = true; });
-    plantilla.control_estetico_items.forEach(i => { checklist.control_estetico[i] = true; });
-  });
-
-  return checklist;
-}
-
-function emptyDraft(tecnico: string): CertificadoGenerado {
-  return {
-    equipos: [emptyEquipo()],
-    soluciones: [],
-    mediciones: [],
-    checklist: emptyChecklist(),
-    tecnico,
-    fecha: new Date().toISOString().slice(0, 10),
-    adjuntos: [],
-  };
-}
+import { emptyDraft, emptyEquipo, normalizeLoadedDraft, aplicarPlantilla, quitarEquipo, quitarBloque } from '../utils/draft';
+import type { CertificadoGenerado, MedicionBloque } from '../types';
 
 interface CrearCertificadoTabProps {
   initialDraft?: CertificadoGenerado | null;
@@ -109,70 +52,15 @@ export function CrearCertificadoTab({ initialDraft }: CrearCertificadoTabProps) 
   const patch = (p: Partial<CertificadoGenerado>) => setDraft(prev => ({ ...prev, ...p }));
 
   // Disparado por el <select> de plantilla de una fila (acción explícita del
-  // técnico): esa fila queda dueña de un único bloque de mediciones — si ya
-  // tenía uno (de una plantilla anterior), se reemplaza en vez de acumularse,
-  // y se pre-marca el checklist de la nueva plantilla.
+  // técnico) — ver aplicarPlantilla.
   const handleSelectPlantilla = (rowIndex: number, plantillaId: string) => {
     const plantilla = plantillasActivas.find(p => p.id === plantillaId);
     if (!plantilla) return;
-
-    setDraft(prev => {
-      const equipoId = prev.equipos[rowIndex].id;
-      const equipos = prev.equipos.map((e, i) => i === rowIndex ? { ...e, plantilla_id: plantillaId } : e);
-
-      const bloque: MedicionBloque = {
-        // Sin valor de ejemplo: la plantilla solo trae la estructura, la
-        // referencia real la escribe el técnico para cada certificado.
-        titulo: '',
-        filas: plantilla.filas.map(f => ({ ...f })),
-        notas: plantilla.notas_generales || '',
-        // Lote y vencimiento son del producto físico certificado, no de la
-        // plantilla reutilizable — siempre arrancan vacíos, el técnico los
-        // llena para este certificado en concreto.
-        lote: '',
-        fecha_vencimiento: '',
-        plantilla_id: plantilla.id,
-        equipo_id: equipoId,
-      };
-
-      const checklist = recomputeChecklist(equipos, plantillasActivas, prev.checklist);
-      const mediciones = [...prev.mediciones.filter(b => b.equipo_id !== equipoId), bloque];
-
-      return { ...prev, equipos, mediciones, checklist };
-    });
+    setDraft(prev => aplicarPlantilla(prev, rowIndex, plantilla, plantillasActivas));
   };
 
-  // Quita la fila y su bloque de mediciones — nunca deja un bloque huérfano
-  // en la sección de Mediciones — y recalcula el checklist sin esa plantilla.
-  const handleRemoveEquipo = (rowIndex: number) => {
-    setDraft(prev => {
-      const equipoId = prev.equipos[rowIndex].id;
-      const equipos = prev.equipos.filter((_, i) => i !== rowIndex);
-      return {
-        ...prev,
-        equipos,
-        mediciones: prev.mediciones.filter(b => b.equipo_id !== equipoId),
-        checklist: recomputeChecklist(equipos, plantillasActivas, prev.checklist),
-      };
-    });
-  };
-
-  // Simétrico al anterior: quitar el bloque desde Mediciones (la "X" de esa
-  // tarjeta) también des-selecciona la plantilla en su fila de Equipos, para
-  // que el selector no se quede apuntando a una plantilla sin bloque — si el
-  // técnico la vuelve a elegir por error, no pasaría nada (mismo valor) — y
-  // recalcula el checklist sin esa plantilla.
-  const handleRemoveBloque = (bloque: MedicionBloque) => {
-    setDraft(prev => {
-      const equipos = prev.equipos.map(e => e.id === bloque.equipo_id ? { ...e, plantilla_id: null } : e);
-      return {
-        ...prev,
-        mediciones: prev.mediciones.filter(b => b !== bloque),
-        equipos,
-        checklist: recomputeChecklist(equipos, plantillasActivas, prev.checklist),
-      };
-    });
-  };
+  const handleRemoveEquipo = (rowIndex: number) => setDraft(prev => quitarEquipo(prev, rowIndex, plantillasActivas));
+  const handleRemoveBloque = (bloque: MedicionBloque) => setDraft(prev => quitarBloque(prev, bloque, plantillasActivas));
 
   const handleNuevo = () => {
     if (!window.confirm('¿Descartar este borrador y empezar uno nuevo?')) return;
@@ -182,7 +70,7 @@ export function CrearCertificadoTab({ initialDraft }: CrearCertificadoTabProps) 
   const handleGuardar = async () => {
     if (draft.mediciones.length === 0) { toast.error('Selecciona al menos una plantilla en Equipos'); return; }
     setSaving(true);
-    const { error } = await supabase.from('certificados_calidad_generados').insert({
+    const datos = {
       equipos: draft.equipos.filter(e => e.plantilla_id),
       soluciones: draft.soluciones,
       mediciones: draft.mediciones,
@@ -190,12 +78,26 @@ export function CrearCertificadoTab({ initialDraft }: CrearCertificadoTabProps) 
       tecnico: draft.tecnico || null,
       fecha: draft.fecha || null,
       adjuntos: draft.adjuntos,
-      created_by: user?.id ?? null,
-    });
+    };
+    // Si el borrador ya está en el historial (se guardó antes o se cargó
+    // desde allí), se actualiza esa misma fila — antes cada clic en
+    // "Guardar borrador" agregaba un duplicado al historial.
+    const tabla = () => supabase.from('certificados_calidad_generados');
+    const insertar = () => tabla().insert({ ...datos, created_by: user?.id ?? null }).select('id').maybeSingle();
+    let yaExistia = !!draft.id;
+    let { data, error } = draft.id
+      ? await tabla().update(datos).eq('id', draft.id).select('id').maybeSingle()
+      : await insertar();
+    // Lo borraron del historial mientras seguía abierto aquí: se guarda de nuevo.
+    if (!error && !data && yaExistia) {
+      yaExistia = false;
+      ({ data, error } = await insertar());
+    }
     setSaving(false);
-    if (error) { toast.error('Error al guardar borrador: ' + error.message); return; }
+    if (error || !data) { toast.error('Error al guardar borrador: ' + (error?.message ?? 'sin respuesta')); return; }
+    setDraft(prev => ({ ...prev, id: data.id }));
     invalidate();
-    toast.success('Borrador guardado en el historial');
+    toast.success(yaExistia ? 'Borrador actualizado en el historial' : 'Borrador guardado en el historial');
   };
 
   return (
@@ -220,7 +122,7 @@ export function CrearCertificadoTab({ initialDraft }: CrearCertificadoTabProps) 
       </Card>
 
       <Card title="Mediciones">
-        <MedicionesEditor bloques={draft.mediciones} onChange={mediciones => patch({ mediciones })} onRemoveBloque={handleRemoveBloque} />
+        <MedicionesEditor bloques={draft.mediciones} plantillas={plantillas} onChange={mediciones => patch({ mediciones })} onRemoveBloque={handleRemoveBloque} />
       </Card>
 
       <Card title="Test Funcional, Test Físico y Embalaje">

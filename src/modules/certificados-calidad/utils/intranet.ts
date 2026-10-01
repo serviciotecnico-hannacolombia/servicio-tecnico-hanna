@@ -1,6 +1,6 @@
 import { toast } from 'sonner';
 import { supabase } from '../../../lib/supabase';
-import { buildAllBloquesHtml } from './mediciones';
+import { buildAllBloquesHtml, formatMesAnio } from './mediciones';
 import type { ArchivoCertificado, CertificadoGenerado } from '../types';
 
 // Marcador que el userscript de la intranet busca en el portapapeles para
@@ -46,17 +46,6 @@ function formatFechaDisplay(iso: string): string {
   return `${d}/${m}/${y}`;
 }
 
-// Los certificados de soluciones estándar solo traen mes y año de
-// vencimiento (nunca un día exacto), así que fecha_expiracion se captura
-// como "AAAA-MM" (<input type="month">) y se muestra como "MM-AAAA" para no
-// insinuar nunca un día que no podemos garantizar.
-function formatMesAnio(mesAnio: string): string {
-  if (!mesAnio) return '';
-  const [y, m] = mesAnio.split('-');
-  if (!y || !m) return mesAnio;
-  return `${m}-${y}`;
-}
-
 function checkedItems(record: Record<string, boolean>): string[] {
   return Object.entries(record).filter(([, v]) => v).map(([k]) => k);
 }
@@ -92,11 +81,11 @@ export async function buildIntranetPayload(draft: CertificadoGenerado, archivos:
     medicionesHtml: buildAllBloquesHtml(draft.mediciones),
     checklist: {
       testFuncional: checkedItems(draft.checklist.test_funcional),
-      testFuncionalExtra: draft.checklist.extra_test_funcional.filter(Boolean),
+      testFuncionalExtra: draft.checklist.extra_test_funcional.map(s => s.trim()).filter(Boolean),
       embalaje: checkedItems(draft.checklist.embalaje),
-      embalajeExtra: draft.checklist.extra_embalaje.filter(Boolean),
+      embalajeExtra: draft.checklist.extra_embalaje.map(s => s.trim()).filter(Boolean),
       controlEstetico: checkedItems(draft.checklist.control_estetico),
-      controlEsteticoExtra: draft.checklist.extra_control_estetico.filter(Boolean),
+      controlEsteticoExtra: draft.checklist.extra_control_estetico.map(s => s.trim()).filter(Boolean),
     },
     fecha: draft.fecha || '',
     fechaDisplay: formatFechaDisplay(draft.fecha || ''),

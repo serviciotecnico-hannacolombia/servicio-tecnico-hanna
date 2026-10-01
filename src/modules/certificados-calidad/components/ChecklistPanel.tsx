@@ -20,10 +20,19 @@ const SECTIONS: { key: SectionKey; extraKey: ExtraKey; label: string }[] = [
 function summarize(checklist: ChecklistState): string {
   return SECTIONS.map(({ key, extraKey, label }) => {
     const checked = Object.entries(checklist[key]).filter(([, v]) => v).map(([k]) => k);
-    const extras = checklist[extraKey];
+    const extras = checklist[extraKey].map(e => e.trim()).filter(Boolean);
     const items = [...checked, ...extras];
     return `${label}:\n${items.length ? items.map(i => `- ${i}`).join('\n') : '(sin ítems marcados)'}`;
   }).join('\n\n');
+}
+
+// Los ítems base más cualquier otro que traiga una plantilla (p. ej.
+// "Electrodo"): si solo se pintaran los base, esos quedaban marcados pero
+// invisibles — y se copiaban a la intranet sin que el técnico pudiera
+// desmarcarlos.
+function itemsDeSeccion(checklist: ChecklistState, key: SectionKey): string[] {
+  const base: readonly string[] = CHECKLIST_BASE[key];
+  return [...base, ...Object.keys(checklist[key]).filter(k => !base.includes(k))];
 }
 
 export function ChecklistPanel({ checklist, onChange }: ChecklistPanelProps) {
@@ -59,7 +68,7 @@ export function ChecklistPanel({ checklist, onChange }: ChecklistPanelProps) {
         {SECTIONS.map(({ key, extraKey, label }) => (
           <div key={key}>
             <h4 style={{ fontSize: '0.85rem', fontWeight: 700, marginBottom: 8, color: 'var(--text)' }}>{label}</h4>
-            {CHECKLIST_BASE[key].map(item => (
+            {itemsDeSeccion(checklist, key).map(item => (
               <label key={item} style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: '0.82rem', marginBottom: 6, cursor: 'pointer', color: 'var(--text)' }}>
                 <input type="checkbox" checked={!!checklist[key][item]} onChange={() => toggle(key, item)} />
                 {item}

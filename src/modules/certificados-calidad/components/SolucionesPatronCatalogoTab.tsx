@@ -7,7 +7,9 @@ import { Input } from '../../../components/ui/Input';
 import { Modal } from '../../../components/ui/Modal';
 import { supabase } from '../../../lib/supabase';
 import { MonthYearInput } from './MonthYearInput';
-import { useSolucionesPatron, useInvalidateCertificadosCalidad } from '../hooks/useCertificadosCalidad';
+import { usePlantillas, useSolucionesPatron, useInvalidateCertificadosCalidad } from '../hooks/useCertificadosCalidad';
+import { formatMesAnio } from '../utils/mediciones';
+import { hoyLocal } from '../utils/draft';
 import type { SolucionPatron } from '../types';
 
 type FormState = { categoria: string; codigo: string; lote: string; fecha_expiracion: string; descripcion: string; activo: boolean };
@@ -25,10 +27,19 @@ function toForm(s?: SolucionPatron | null): FormState {
 
 export function SolucionesPatronCatalogoTab() {
   const { data: soluciones = [] } = useSolucionesPatron();
+  const { data: plantillas = [] } = usePlantillas();
+  // Las sugerencias en "Crear Certificado" se emparejan por categoría con la
+  // plantilla elegida: se ofrecen las categorías existentes para no escribir
+  // una que no coincida con ninguna ("Buffers pH" en vez de "pH").
+  const categoriasPlantillas = [...new Set(plantillas.map(p => p.categoria?.trim()).filter(Boolean) as string[])].sort();
+  const mesActual = hoyLocal().slice(0, 7);
   const invalidate = useInvalidateCertificadosCalidad();
   const [editing, setEditing] = useState<SolucionPatron | null | 'new'>(null);
   const [form, setForm] = useState<FormState>(toForm());
   const [saving, setSaving] = useState(false);
+
+  // Vence a fin del mes indicado: sigue vigente durante ese mismo mes.
+  const vencida = (mesAnio: string | null) => !!mesAnio && mesAnio.slice(0, 7) < mesActual;
 
   const openNew = () => { setForm(toForm()); setEditing('new'); };
   const openEdit = (s: SolucionPatron) => { setForm(toForm(s)); setEditing(s); };
@@ -39,10 +50,10 @@ export function SolucionesPatronCatalogoTab() {
     setSaving(true);
     const payload = {
       categoria: form.categoria.trim(),
-      codigo: form.codigo || null,
-      lote: form.lote || null,
+      codigo: form.codigo.trim() || null,
+      lote: form.lote.trim() || null,
       fecha_expiracion: form.fecha_expiracion || null,
-      descripcion: form.descripcion || null,
+      descripcion: form.descripcion.trim() || null,
       activo: form.activo,
       updated_at: new Date().toISOString(),
     };
@@ -72,7 +83,7 @@ export function SolucionesPatronCatalogoTab() {
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead>
           <tr style={{ borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }}>
-            {['Categoría', 'Código', 'Lote', 'Descripción', 'Activo', ''].map(h => (
+            {['Categoría', 'Código', 'Lote', 'Vence', 'Descripción', 'Activo', ''].map(h => (
               <th key={h} style={{ textAlign: 'left', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--muted)', padding: '8px 20px' }}>{h}</th>
             ))}
           </tr>
@@ -83,6 +94,9 @@ export function SolucionesPatronCatalogoTab() {
               <td style={{ padding: '8px 20px', fontSize: '0.82rem' }}>{s.categoria}</td>
               <td style={{ padding: '8px 20px', fontFamily: 'var(--mono)', fontSize: '0.82rem' }}>{s.codigo}</td>
               <td style={{ padding: '8px 20px', fontSize: '0.82rem' }}>{s.lote}</td>
+              <td style={{ padding: '8px 20px', fontSize: '0.82rem', whiteSpace: 'nowrap', color: vencida(s.fecha_expiracion) ? 'var(--red)' : undefined }}>
+                {s.fecha_expiracion ? formatMesAnio(s.fecha_expiracion) : '—'}{vencida(s.fecha_expiracion) && ' (vencida)'}
+              </td>
               <td style={{ padding: '8px 20px', fontSize: '0.82rem', color: 'var(--muted)' }}>{s.descripcion}</td>
               <td style={{ padding: '8px 20px', fontSize: '0.82rem' }}>{s.activo ? 'Sí' : 'No'}</td>
               <td style={{ padding: '8px 20px', display: 'flex', gap: 10 }}>
@@ -92,14 +106,15 @@ export function SolucionesPatronCatalogoTab() {
             </tr>
           ))}
           {soluciones.length === 0 && (
-            <tr><td colSpan={6} style={{ padding: 20, textAlign: 'center', color: 'var(--muted)', fontSize: '0.85rem' }}>Sin soluciones registradas</td></tr>
+            <tr><td colSpan={7} style={{ padding: 20, textAlign: 'center', color: 'var(--muted)', fontSize: '0.85rem' }}>Sin soluciones registradas</td></tr>
           )}
         </tbody>
       </table>
 
       <Modal open={!!editing} onClose={close} title={editing === 'new' ? 'Nueva solución patrón' : 'Editar solución patrón'} width={480}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <Input label="Categoría" value={form.categoria} onChange={e => setForm({ ...form, categoria: e.target.value })} placeholder="Ej. pH, Cloro Libre" />
+          <Input label="Categoría" list="cc-categorias" value={form.categoria} onChange={e => setForm({ ...form, categoria: e.target.value })} placeholder="Ej. pH, Cloro Libre" />
+          <datalist id="cc-categorias">{categoriasPlantillas.map(c => <option key={c} value={c} />)}</datalist>
           <Input label="Código" value={form.codigo} onChange={e => setForm({ ...form, codigo: e.target.value })} />
           <Input label="Lote" value={form.lote} onChange={e => setForm({ ...form, lote: e.target.value })} />
           <MonthYearInput label="Fecha de Expiración" value={form.fecha_expiracion} onChange={v => setForm({ ...form, fecha_expiracion: v })} />

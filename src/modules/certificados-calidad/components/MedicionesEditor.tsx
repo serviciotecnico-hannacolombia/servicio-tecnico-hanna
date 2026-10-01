@@ -9,10 +9,11 @@ import { copyToClipboard } from '../utils/clipboard';
 import { MonthYearInput } from './MonthYearInput';
 import { buildBloqueHtml, buildAllBloquesHtml } from '../utils/mediciones';
 import { useInvalidateCertificadosCalidad } from '../hooks/useCertificadosCalidad';
-import type { MedicionBloque, MedicionFila } from '../types';
+import type { CertificadoPlantilla, MedicionBloque, MedicionFila } from '../types';
 
 interface MedicionesEditorProps {
   bloques: MedicionBloque[];
+  plantillas: CertificadoPlantilla[];
   onChange: (bloques: MedicionBloque[]) => void;
   onRemoveBloque: (bloque: MedicionBloque) => void;
 }
@@ -27,7 +28,7 @@ const textareaStyle: React.CSSProperties = {
   background: 'var(--surface)', color: 'var(--text)', fontFamily: 'var(--sans)', fontSize: '0.82rem', resize: 'vertical',
 };
 
-export function MedicionesEditor({ bloques, onChange, onRemoveBloque }: MedicionesEditorProps) {
+export function MedicionesEditor({ bloques, plantillas, onChange, onRemoveBloque }: MedicionesEditorProps) {
   const invalidate = useInvalidateCertificadosCalidad();
   const [guardando, setGuardando] = useState<number | null>(null);
   const [nuevoCodigo, setNuevoCodigo] = useState('');
@@ -49,31 +50,49 @@ export function MedicionesEditor({ bloques, onChange, onRemoveBloque }: Medicion
   const addFila = (i: number) => updateBloque(i, { filas: [...bloques[i].filas, { valor: '', estandar: '', tolerancia: '' }] });
   const removeFila = (i: number, filaIdx: number) => updateBloque(i, { filas: bloques[i].filas.filter((_, idx) => idx !== filaIdx) });
 
+  // La categoría arranca con la de la plantilla de origen: si llegaba vacía
+  // y el código ya existía, el guardado le borraba la categoría a esa
+  // plantilla (y dejaba de sugerir sus soluciones/archivos).
   const openGuardar = (i: number) => {
-    setNuevoCodigo(bloques[i].titulo);
-    setNuevaCategoria('');
+    const origen = plantillas.find(p => p.id === bloques[i].plantilla_id);
+    setNuevoCodigo(bloques[i].titulo.trim() || origen?.codigo || '');
+    setNuevaCategoria(origen?.categoria ?? '');
     setGuardando(i);
   };
 
+  const plantillaExistente = plantillas.find(p => p.codigo.trim().toLowerCase() === nuevoCodigo.trim().toLowerCase());
+
   const handleGuardarPlantilla = async () => {
     if (guardando === null) return;
-    if (!nuevoCodigo.trim()) { toast.error('Ingresa un código para la plantilla'); return; }
+    const codigo = nuevoCodigo.trim();
+    if (!codigo) { toast.error('Ingresa un código para la plantilla'); return; }
     const bloque = bloques[guardando];
+    const origen = plantillas.find(p => p.id === bloque.plantilla_id);
+    const medicion = {
+      filas: bloque.filas,
+      notas_generales: bloque.notas || null,
+      categoria: nuevaCategoria.trim() || null,
+      updated_at: new Date().toISOString(),
+    };
     setSaving(true);
-    const { error } = await supabase.from('certificados_calidad_plantillas').upsert(
-      {
-        codigo: nuevoCodigo.trim(),
-        categoria: nuevaCategoria.trim() || null,
-        filas: bloque.filas,
-        notas_generales: bloque.notas || null,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'codigo' }
-    );
+    // Si ya existe, solo se actualizan mediciones/notas/categoría (nombre,
+    // checklist y estado se respetan). Si es nueva, hereda nombre y checklist
+    // de la plantilla de la que salió el bloque — antes quedaba sin ningún
+    // ítem de Test Funcional/Embalaje.
+    const { error } = plantillaExistente
+      ? await supabase.from('certificados_calidad_plantillas').update(medicion).eq('id', plantillaExistente.id)
+      : await supabase.from('certificados_calidad_plantillas').insert({
+          ...medicion,
+          codigo,
+          nombre: origen?.nombre ?? null,
+          test_funcional_items: origen?.test_funcional_items ?? [],
+          embalaje_items: origen?.embalaje_items ?? [],
+          control_estetico_items: origen?.control_estetico_items ?? [],
+        });
     setSaving(false);
     if (error) { toast.error('Error al guardar plantilla: ' + error.message); return; }
     invalidate();
-    toast.success(`Plantilla "${nuevoCodigo.trim()}" guardada`);
+    toast.success(plantillaExistente ? `Plantilla "${plantillaExistente.codigo}" actualizada` : `Plantilla "${codigo}" creada`);
     setGuardando(null);
   };
 
@@ -179,7 +198,9 @@ export function MedicionesEditor({ bloques, onChange, onRemoveBloque }: Medicion
       <Modal open={guardando !== null} onClose={() => setGuardando(null)} title="Guardar como plantilla" width={420}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <p style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>
-            Si el código ya existe como plantilla, se actualiza con estos valores.
+            {plantillaExistente
+              ? <>Ya existe la plantilla <b>{plantillaExistente.codigo}</b>: se reemplazarán sus filas de mediciones y su texto con los de este bloque.</>
+              : 'Se creará una plantilla nueva con las filas y el texto de este bloque, y el checklist de la plantilla de origen.'}
           </p>
           <Input label="Código de la plantilla" value={nuevoCodigo} onChange={e => setNuevoCodigo(e.target.value)} />
           <Input label="Categoría" value={nuevaCategoria} onChange={e => setNuevaCategoria(e.target.value)} placeholder="Ej. pH, Cloro Libre" />
