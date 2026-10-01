@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { renderCorreo } from './render.ts'
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -12,14 +13,6 @@ function json(data: unknown, status = 200) {
     status,
     headers: { ...CORS, 'Content-Type': 'application/json' },
   })
-}
-
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
 }
 
 // Recibe un cambio de estado de una orden de calibración y envía el correo
@@ -57,22 +50,17 @@ Deno.serve(async (req) => {
     const fromEmail = Deno.env.get('RESEND_FROM_EMAIL')
     if (!fromEmail) throw new Error('RESEND_FROM_EMAIL no está configurado')
 
-    const clienteTxt = cliente ? escapeHtml(String(cliente)) : ''
-    const numeroOcTxt = numeroOc ? escapeHtml(String(numeroOc)) : ''
-    const usuarioTxt = usuario ? escapeHtml(String(usuario)) : ''
-    const estadoAnteriorTxt = estadoAnterior ? escapeHtml(String(estadoAnterior)) : ''
-    const estadoNuevoTxt = escapeHtml(String(estadoNuevo))
+    // El asunto no lleva HTML — se arma con el texto plano (Resend lo escapa).
+    const clienteTxt = cliente ? String(cliente) : ''
+    const numeroOcTxt = numeroOc ? String(numeroOc) : ''
+    const subject = `${numeroOcTxt || 'Orden de calibración'}${clienteTxt ? ' · ' + clienteTxt : ''} — ${String(estadoNuevo)}`
 
-    const subject = `${numeroOcTxt || 'Orden de calibración'}${clienteTxt ? ' · ' + clienteTxt : ''} — ${estadoNuevoTxt}`
-
-    const html = `
-      <p>La orden de calibración <strong>${numeroOcTxt || ordenId}</strong>${clienteTxt ? ` de <strong>${clienteTxt}</strong>` : ''} cambió de estado.</p>
-      <p style="font-size:16px">
-        ${estadoAnteriorTxt ? `${estadoAnteriorTxt} &rarr; ` : ''}<strong>${estadoNuevoTxt}</strong>
-      </p>
-      ${usuarioTxt ? `<p>Actualizado por: ${usuarioTxt}</p>` : ''}
-      ${ordenUrl ? `<p><a href="${escapeHtml(String(ordenUrl))}">Ver orden</a></p>` : ''}
-    `.trim()
+    // titular/detalles/proximoPaso/resumen son opcionales: si el frontend
+    // no los manda (versión anterior), el correo sale solo con el cambio.
+    const html = renderCorreo({
+      ordenId, cliente, numeroOc, estadoAnterior, estadoNuevo, ordenUrl, usuario,
+      titular: body.titular, detalles: body.detalles, proximoPaso: body.proximoPaso, resumen: body.resumen,
+    })
 
     const resp = await fetch('https://api.resend.com/emails', {
       method: 'POST',

@@ -76,7 +76,7 @@ const EMPTY_ORDEN: Partial<OrdenCalibracion> = {
 export function OrdenCalibracionDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { user, hasCapability, isAdmin } = useUser()
+  const { user, displayName, hasCapability, isAdmin } = useUser()
   const puedeEditar = hasCapability('calibraciones_editar')
   const esNueva = id === 'nueva'
 
@@ -309,7 +309,7 @@ export function OrdenCalibracionDetailPage() {
     }
 
     if (ordenId && payload.estado && payload.estado !== orden?.estado) {
-      notificarCambioEstado(ordenId, orden?.estado, payload.estado, payload, user?.email ?? null)
+      notificarCambioEstado(ordenId, orden?.estado, payload.estado, payload, catalogo.filter(c => codigosSel.has(c.codigo)), displayName || user?.email || null)
     }
 
     setSaving(false)
