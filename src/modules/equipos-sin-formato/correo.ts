@@ -2,9 +2,15 @@
 // Formato" y al reenviarlo desde el estado "Recibido" — misma lógica que
 // src/modules/calibraciones/correo.ts: no hay envío real desde el
 // servidor, solo se arma la URL mailto y se abre el cliente de correo.
+import { linkOtst } from './hooks/useEquiposSinFormato'
 import type { EquipoSinFormato } from '../../types'
 
 export const CC_SERVICIO_TECNICO = 'serviciotecnico@hannacolombia.com'
+
+// URL pública de producción — fija, en vez de window.location.origin, para
+// que el link del correo sea siempre el mismo sin importar desde dónde se
+// dispare (local, preview, producción).
+const APP_URL = 'https://servicio.tecnico.hannacolombia.com'
 
 interface ItemMailto {
   referencia: string
@@ -18,6 +24,10 @@ export function generarMailtoSinFormato(
   asesorCorreo: string,
 ): string {
   const subject = `[Sin Formato] SF-${sf.numero} - ${sf.razon_social}`
+  // Enlace al módulo en general, no al registro puntual: el ID en la URL
+  // hacía el link muy largo y feo como texto plano (el body de un mailto
+  // no admite HTML, así que nunca se ve como un link clickeable real).
+  const enlace = `${APP_URL}/equipos-sin-formato`
 
   const bloquesEquipos = items.flatMap((it, i) => [
     '',
@@ -36,6 +46,8 @@ export function generarMailtoSinFormato(
     '',
     'Agradecemos su colaboración en la revisión y en el envío del número de preingreso en respuesta a este correo, con el fin de proceder con el ingreso al sistema.',
     '',
+    `Puedes hacer seguimiento a este registro (SF-${sf.numero}) en el sistema aquí: ${enlace}`,
+    '',
     'Quedo atenta a cualquier información adicional que se requiera.',
     '',
     'Cordialmente,',
@@ -48,4 +60,56 @@ export function generarMailtoSinFormato(
   ].join('&')
 
   return `mailto:${encodeURIComponent(asesorCorreo)}?${params}`
+}
+
+// Notificación de "Ingresado" — no es un mailto: se responde dentro del
+// hilo de correo original (el mismo donde el asesor mandó el preingreso),
+// así que el botón solo copia el cuerpo al portapapeles para pegarlo ahí.
+// Puramente informativo, sin "quedo atento/a" (solo el cierre "Cordialmente,")
+// — y con los OTST como enlaces reales (no solo texto plano), para que
+// Outlook los pegue ya clickeables.
+export function generarNotificacionIngresado(
+  sf: Pick<EquipoSinFormato, 'razon_social'>,
+  cantidadEquipos: number,
+  otstCodigos: string[],
+): { text: string, html: string } {
+  const plural = cantidadEquipos > 1
+  const sujeto = plural ? 'Los equipos' : 'El equipo'
+  const verbo = plural ? 'fueron ingresados' : 'fue ingresado'
+  const otstEtiqueta = otstCodigos.length > 1 ? 'las OTST' : 'la OTST'
+
+  const otstTexto = otstCodigos.map(c => linkOtst(c)).join(', ')
+  const otstHtml = otstCodigos.map(c => `<a href="${linkOtst(c)}">${c}</a>`).join(', ')
+
+  const text = `Buen día,\n\n${sujeto} del cliente ${sf.razon_social} ${verbo} bajo ${otstEtiqueta} ${otstTexto}.\n\nCordialmente,`
+  const html = `<p>Buen día,</p><p>${sujeto} del cliente ${sf.razon_social} ${verbo} bajo ${otstEtiqueta} ${otstHtml}.</p><p>Cordialmente,</p>`
+
+  return { text, html }
+}
+
+// Copia al portapapeles con formato real (HTML) además del texto plano —
+// así un enlace pegado en Outlook/Gmail queda clickeable, no como una URL
+// suelta. Si el navegador no soporta ClipboardItem (Safari viejo, contexto
+// no seguro), cae de vuelta a solo texto plano.
+export async function copiarConFormato(text: string, html: string): Promise<boolean> {
+  try {
+    if (typeof ClipboardItem !== 'undefined' && navigator.clipboard?.write) {
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          'text/plain': new Blob([text], { type: 'text/plain' }),
+          'text/html': new Blob([html], { type: 'text/html' }),
+        }),
+      ])
+      return true
+    }
+    await navigator.clipboard.writeText(text)
+    return true
+  } catch {
+    try {
+      await navigator.clipboard.writeText(text)
+      return true
+    } catch {
+      return false
+    }
+  }
 }

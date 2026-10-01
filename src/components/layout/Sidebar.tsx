@@ -4,7 +4,7 @@ import logo from '../../assets/logo.svg'
 import {
   Phone, Package, DollarSign, Wrench, FileText, Warehouse,
   LogOut, Pencil, ShieldCheck, BarChart2, Mail, KeyRound, ChevronDown, Timer, ListTodo, CalendarClock, QrCode, Box,
-  FlaskConical, Ticket, PackageX, Star, GripVertical, FileCheck
+  FlaskConical, Ticket, PackageX, BadgeCheck, Star, GripVertical, FileCheck
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useSidebar } from './SidebarContext'
@@ -93,6 +93,7 @@ const NAV_GROUPS: NavGroup[] = [
       { to: '/mantenimiento-programado',   label: 'Mantenimiento Programado', icon: CalendarClock, moduleKey: 'mantenimiento_programado' },
       { to: '/tickets',                    label: 'Tickets a Fábrica',        icon: Ticket,        moduleKey: 'tickets' },
       { to: '/equipos-sin-formato',        label: 'Equipos Sin Formato',      icon: PackageX,      moduleKey: 'equipos_sin_formato' },
+      { to: '/garantias',                  label: 'Garantías',                icon: BadgeCheck,    moduleKey: 'garantias' },
     ],
   },
 ]
@@ -103,14 +104,14 @@ const ALL_ITEMS_BY_KEY = new Map<ModuleKey, NavItem>(
 
 const GRUPOS_COLAPSADOS_KEY = 'sidebar-grupos-colapsados'
 
-// Por defecto todos los grupos empiezan plegados (menos ruido visual) — solo
-// si el usuario ya guardó una preferencia distinta se respeta esa.
+// Por defecto todos los grupos empiezan desplegados — solo si el usuario
+// ya guardó una preferencia distinta (colapsó alguno a mano) se respeta esa.
 function leerGruposColapsados(): Set<string> {
   try {
     const raw = localStorage.getItem(GRUPOS_COLAPSADOS_KEY)
-    return raw ? new Set(JSON.parse(raw)) : new Set(NAV_GROUPS.map(g => g.key))
+    return raw ? new Set(JSON.parse(raw)) : new Set()
   } catch {
-    return new Set(NAV_GROUPS.map(g => g.key))
+    return new Set()
   }
 }
 

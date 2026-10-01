@@ -1,31 +1,46 @@
 // Vista dedicada para el estado "En calibración" (flujo de sitio: in situ /
-// sede Hanna Dorado): muestra el mismo resumen que "Visita programada" y
-// solo pide la fecha de fin de calibración antes de pasar a "Control de
-// calidad" — con un cálculo de guía (+10 días) para la fecha estimada de
-// entrega de certificados in situ.
+// sede Hanna Dorado): resumen de la orden (incluye cantidad de equipos y
+// servicios RV CALIBR) y pide la fecha de fin de calibración, los códigos
+// de calibración de referencia y el metrólogo(a) antes de pasar a "Control
+// de calidad" — con un cálculo de guía (+10 días) para la fecha estimada de
+// entrega de certificados in situ. El nombre del metrólogo se autocompleta
+// con los ya usados en otras órdenes.
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { FlaskConical } from 'lucide-react'
-import { FG, Seccion, Grid2, INP, PRI, fmtFecha } from '../ui'
+import { FG, Seccion, Grid2, INP, PRI, B_INFO, fmtFecha } from '../ui'
 import { MODALIDAD_LABEL, sumarDias } from '../hooks/useCalibraciones'
 import { linkOtst, parseOtstCodes } from './CamposCompartidos'
-import type { OrdenCalibracion } from '../../../types'
+import type { OrdenCalibracion, RvCalibrItem } from '../../../types'
 
-export function VistaEnCalibracionSitio({ form, puedeEditar, soloLectura, saving, onAvanzar }: {
+export function VistaEnCalibracionSitio({ form, catalogo, codigosSel, metrologosSugeridos, puedeEditar, soloLectura, saving, onAvanzar }: {
   form: Partial<OrdenCalibracion>
+  catalogo: RvCalibrItem[]
+  codigosSel: Set<string>
+  metrologosSugeridos: string[]
   puedeEditar: boolean
   soloLectura: boolean
   saving: boolean
   onAvanzar: (overrides: Partial<OrdenCalibracion>) => void
 }) {
   const [fechaFin, setFechaFin] = useState(form.certificado_fecha_fin || '')
+  const [codigosReferencia, setCodigosReferencia] = useState(form.codigos_referencia || '')
+  const [metrologo, setMetrologo] = useState(form.nombre_metrologo || '')
+  const serviciosSeleccionados = catalogo.filter(c => codigosSel.has(c.codigo))
   const otstCodigos = parseOtstCodes(form.otst)
   const fechaFinMostrada = soloLectura ? (form.certificado_fecha_fin || '') : fechaFin
   const fechaEstimadaCertificados = fechaFinMostrada ? sumarDias(fechaFinMostrada, 10) : null
 
   function confirmar() {
     if (!fechaFin) { toast.error('Ingresa la fecha de fin de la calibración'); return }
-    onAvanzar({ estado: 'control_calidad', certificado_fecha_fin: fechaFin })
+    if (!codigosReferencia.trim()) { toast.error('Ingresa los códigos de referencia'); return }
+    if (!metrologo.trim()) { toast.error('Ingresa el nombre del metrólogo(a)'); return }
+    onAvanzar({
+      estado: 'control_calidad',
+      certificado_fecha_fin: fechaFin,
+      codigos_referencia: codigosReferencia.trim(),
+      nombre_metrologo: metrologo.trim().replace(/\s+/g, ' '),
+    })
   }
 
   function copiarRmvFv() {
@@ -79,7 +94,23 @@ export function VistaEnCalibracionSitio({ form, puedeEditar, soloLectura, saving
               {form.fecha_llegada_metrologo ? fmtFecha(form.fecha_llegada_metrologo) : '—'}
             </div>
           </FG>
+          <FG label="Cantidad de equipos">
+            <div style={{ ...INP, color: form.cantidad_equipos ? 'var(--text)' : 'var(--muted)' }}>{form.cantidad_equipos ?? '—'}</div>
+          </FG>
         </Grid2>
+        <div style={{ marginTop: 14 }}>
+          <FG label="Servicios RV CALIBR">
+            {serviciosSeleccionados.length ? (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {serviciosSeleccionados.map(c => (
+                  <span key={c.codigo} title={c.descripcion} style={B_INFO}>{c.codigo} — {c.magnitud}</span>
+                ))}
+              </div>
+            ) : (
+              <div style={{ ...INP, color: 'var(--muted)' }}>Sin servicios seleccionados</div>
+            )}
+          </FG>
+        </div>
       </Seccion>
 
       <Seccion titulo="Calibración">
@@ -93,7 +124,31 @@ export function VistaEnCalibracionSitio({ form, puedeEditar, soloLectura, saving
               style={INP}
             />
           </FG>
+          <FG label="Nombre del metrólogo(a)" required>
+            <input
+              list="metrologos-sugeridos"
+              value={soloLectura ? (form.nombre_metrologo || '') : metrologo}
+              onChange={e => setMetrologo(e.target.value)}
+              placeholder="Escribe o elige uno ya registrado"
+              disabled={soloLectura || !puedeEditar}
+              style={INP}
+            />
+            <datalist id="metrologos-sugeridos">
+              {metrologosSugeridos.map(n => <option key={n} value={n} />)}
+            </datalist>
+          </FG>
         </Grid2>
+        <div style={{ marginTop: 14 }}>
+          <FG label="Códigos de referencia" required>
+            <input
+              value={soloLectura ? (form.codigos_referencia || '') : codigosReferencia}
+              onChange={e => setCodigosReferencia(e.target.value)}
+              placeholder="Códigos de calibración de referencia — separa varios con coma"
+              disabled={soloLectura || !puedeEditar}
+              style={INP}
+            />
+          </FG>
+        </div>
         {fechaEstimadaCertificados && (
           <div style={{ marginTop: 10, fontSize: 12, color: 'var(--muted)' }}>
             Fecha estimada de certificados In Situ (guía, +10 días): <strong style={{ color: 'var(--text)' }}>{fmtFecha(fechaEstimadaCertificados)}</strong>

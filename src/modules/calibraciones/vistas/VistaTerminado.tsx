@@ -206,6 +206,8 @@ export function VistaTerminado({ form, catalogo, codigosSel, asesorSeleccionado 
           <Dato label="Fecha inicio de calibración" valor={fmtFecha(form.certificado_fecha_inicio ?? null)} />
           <Dato label="Fecha estimada de finalización" valor={fmtFecha(form.certificado_fecha_fin ?? null)} />
           <Dato label="Códigos de certificados" valor={form.codigos_certificados} />
+          {!esLaboratorio && <Dato label="Códigos de referencia" valor={form.codigos_referencia} />}
+          {!esLaboratorio && <Dato label="Metrólogo(a)" valor={form.nombre_metrologo} />}
         </Grid2>
       </Bloque>
 

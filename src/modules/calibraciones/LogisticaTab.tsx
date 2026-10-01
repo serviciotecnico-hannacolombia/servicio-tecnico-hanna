@@ -22,6 +22,7 @@ import {
   linkOtst, parseOtstCodes, parseNumeroOC,
   sugerirOrdenesParaPendiente, esCoincidenciaFuerte, SENAL_LABEL, type SugerenciaOrden,
 } from './vistas/CamposCompartidos'
+import { notificarPendienteLogistica } from './notificaciones'
 import type { Asesor, LogisticaPendiente, OrdenCalibracion } from '../../types'
 
 // Arma el mensaje de seguimiento para un pendiente ya gestionado (asesor
@@ -49,6 +50,24 @@ function generarMensajePendiente(p: LogisticaPendiente, nombreAsesor: string | n
     cuerpo,
     '¿Me podrías ayudar con el SACI?',
   ].join('\n\n')
+}
+
+// Mensaje simple (sin saludo ni cierre) para el correo automático a Brayan
+// al crear un pendiente — solo los datos, sin observaciones porque ese
+// campo todavía no existe en el formulario de creación.
+function generarMensajeCorreoPendiente(p: { cliente: string, remision: string | null, factura: string | null, otst: string | null }): string {
+  const partes: string[] = []
+  if (p.remision) partes.push(`la RMV ${p.remision}`)
+  if (p.factura) partes.push(`la FV ${p.factura}`)
+  const pendientesTexto = partes.join(' y ')
+
+  const textoOtst = p.otst ? ` relacionada a la OTST ${p.otst}` : ''
+
+  return 'Tengo pendiente de gestión la calibración' +
+    (p.cliente ? ` del cliente ${p.cliente}` : '') +
+    ' ' +
+    (pendientesTexto ? `con ${pendientesTexto}` : 'de un caso') +
+    textoOtst
 }
 
 const ESTADOS_LOGISTICA: OrdenCalibracion['estado'][] = ['para_enviar', 'enviado', 'en_retorno']
@@ -465,17 +484,23 @@ function ModalNuevoPendiente({ onClose, onSaved }: { onClose: () => void, onSave
     if (!cliente.trim()) { toast.error('Ingresa la razón social del cliente'); return }
     if (!factura.trim() && !remision.trim()) { toast.error('Ingresa al menos la factura o la remisión'); return }
 
+    const clienteNorm = cliente.trim().toUpperCase()
+    const facturaNorm = factura.trim() || null
+    const remisionNorm = remision.trim() || null
+    const otstNorm = otst.trim() || null
+
     setSaving(true)
     const { error } = await supabase.from('calibraciones_logistica_pendientes').insert({
-      cliente: cliente.trim().toUpperCase(),
-      factura: factura.trim() || null,
-      remision: remision.trim() || null,
-      otst: otst.trim() || null,
+      cliente: clienteNorm,
+      factura: facturaNorm,
+      remision: remisionNorm,
+      otst: otstNorm,
       creado_por: user?.id ?? null,
     })
     setSaving(false)
     if (error) { toast.error('Error: ' + error.message); return }
     toast.success('Pendiente agregado')
+    notificarPendienteLogistica(clienteNorm, generarMensajeCorreoPendiente({ cliente: clienteNorm, remision: remisionNorm, factura: facturaNorm, otst: otstNorm }))
     onSaved()
     onClose()
   }

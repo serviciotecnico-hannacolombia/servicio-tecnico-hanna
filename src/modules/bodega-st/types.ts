@@ -1,4 +1,4 @@
-export type EstadoRestauracion = 'en_diagnostico' | 'en_reparacion' | 'incompleto_espera_partes' | 'restaurado_listo';
+export type EstadoRestauracion = 'en_diagnostico' | 'en_reparacion' | 'incompleto_espera_partes' | 'restaurado_listo' | 'producto_no_conforme';
 
 export const UBICACIONES_BODEGA_ST: string[] = [
   'Bodega CC 1',
@@ -10,6 +10,7 @@ export const UBICACIONES_BODEGA_ST: string[] = [
 export const BODEGAS_DESTINO: string[] = [
   'Bodega Principal',
   'Bodega Incompletos',
+  'Bodega PNC',
 ];
 
 export interface RegistroBodegaST {
@@ -28,6 +29,7 @@ export interface RegistroBodegaST {
   bodega_destino?: string;
   observaciones?: string;
   precio?: number;
+  entregado_logistica?: boolean;
 }
 
 export interface BodegaSTAudit {

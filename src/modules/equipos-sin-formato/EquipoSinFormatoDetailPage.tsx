@@ -349,7 +349,7 @@ export function EquipoSinFormatoDetailPage() {
                 ) : etapaMostrada?.key === 'preingresado' ? (
                   <VistaPreingresado registro={registro} puedeEditar={puedeAvanzar} soloLectura={soloLectura} onAvanzar={onAvanzar} />
                 ) : etapaMostrada?.key === 'ingresado' ? (
-                  <VistaIngresado registro={registro} />
+                  <VistaIngresado registro={registro} items={items} />
                 ) : null}
               </>
             )}

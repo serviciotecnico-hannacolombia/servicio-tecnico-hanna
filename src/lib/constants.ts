@@ -20,6 +20,7 @@ export const MODULE_ROUTES: { key: ModuleKey; path: string }[] = [
   { key: 'tickets',     path: '/tickets' },
   { key: 'equipos_sin_formato', path: '/equipos-sin-formato' },
   { key: 'certificados_calidad', path: '/certificados-calidad' },
+  { key: 'garantias',   path: '/garantias' },
   { key: 'admin',       path: '/admin' },
 ]
 

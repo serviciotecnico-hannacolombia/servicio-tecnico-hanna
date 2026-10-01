@@ -87,3 +87,33 @@ export function generarMailtoCertificados(
 
   return `mailto:${encodeURIComponent(correoCliente)}?${params}`
 }
+
+// Correo de seguimiento de una novedad — al asesor(a), con copia a Servicio
+// Técnico, con la lista de eventos (marca + avances, y la resolución si
+// aplica) en orden cronológico. Se dispara manual (botón "Enviar
+// seguimiento" mientras está activa) o automático al dar solución.
+export function generarMailtoNovedad(
+  correoAsesor: string, numeroOC: string, cliente: string, eventos: string[], resuelta: boolean,
+): string {
+  const subject = `${resuelta ? '[Novedad resuelta]' : '[Novedad]'} ${numeroOC || ''} ${cliente || ''}`.trim()
+
+  const body = [
+    'Buen día,',
+    '',
+    `Le compartimos el seguimiento de la novedad del equipo del cliente ${cliente || ''}:`,
+    '',
+    ...eventos,
+    '',
+    resuelta ? 'La novedad ya quedó resuelta.' : 'Quedamos atentos a cualquier información adicional.',
+    '',
+    'Cordialmente,',
+  ].join('\n')
+
+  const params = [
+    `cc=${encodeURIComponent(CC_SERVICIO_TECNICO)}`,
+    `subject=${encodeURIComponent(subject)}`,
+    `body=${encodeURIComponent(body)}`,
+  ].join('&')
+
+  return `mailto:${encodeURIComponent(correoAsesor)}?${params}`
+}

@@ -1,12 +1,11 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { renderCorreo } from './render.ts'
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const CC_SERVICIO_TECNICO = 'serviciotecnico@hannacolombia.com'
+const DESTINATARIO = 'brayan@hannacolombia.com'
 
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -15,10 +14,19 @@ function json(data: unknown, status = 200) {
   })
 }
 
-// Recibe un cambio de estado de una orden de calibración y envía el correo
-// directamente vía Resend — al asesor de la orden, con copia a Servicio
-// Técnico. La API key y el remitente viven como secrets de esta función
-// (RESEND_API_KEY, RESEND_FROM_EMAIL), nunca expuestos al navegador.
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
+// Recibe un pendiente de Logística recién creado y envía el correo
+// directamente vía Resend — a un destinatario fijo (no viene del cliente,
+// para que no se pueda mandar a otra dirección desde devtools). La API key
+// y el remitente viven como secrets del proyecto (RESEND_API_KEY,
+// RESEND_FROM_EMAIL), compartidos con calibraciones-notificar.
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
 
@@ -39,28 +47,20 @@ Deno.serve(async (req) => {
     if (rpcErr || !puedeEditar) throw new Error('Se requiere permiso de edición de calibraciones')
 
     const body = await req.json()
-    const { ordenId, cliente, numeroOc, correoAsesor, estadoAnterior, estadoNuevo, ordenUrl, usuario } = body
+    const { cliente, mensaje } = body
 
-    if (!ordenId || !correoAsesor || !estadoNuevo) {
-      throw new Error('ordenId, correoAsesor y estadoNuevo son requeridos')
-    }
+    if (!mensaje) throw new Error('mensaje es requerido')
 
     const resendApiKey = Deno.env.get('RESEND_API_KEY')
     if (!resendApiKey) throw new Error('RESEND_API_KEY no está configurado')
     const fromEmail = Deno.env.get('RESEND_FROM_EMAIL')
     if (!fromEmail) throw new Error('RESEND_FROM_EMAIL no está configurado')
 
-    // El asunto no lleva HTML — se arma con el texto plano (Resend lo escapa).
-    const clienteTxt = cliente ? String(cliente) : ''
-    const numeroOcTxt = numeroOc ? String(numeroOc) : ''
-    const subject = `${numeroOcTxt || 'Orden de calibración'}${clienteTxt ? ' · ' + clienteTxt : ''} — ${String(estadoNuevo)}`
+    const clienteTxt = cliente ? escapeHtml(String(cliente)) : ''
+    const mensajeHtml = escapeHtml(String(mensaje)).replace(/\n/g, '<br>')
 
-    // titular/detalles/proximoPaso/resumen son opcionales: si el frontend
-    // no los manda (versión anterior), el correo sale solo con el cambio.
-    const html = renderCorreo({
-      ordenId, cliente, numeroOc, estadoAnterior, estadoNuevo, ordenUrl, usuario,
-      titular: body.titular, detalles: body.detalles, proximoPaso: body.proximoPaso, resumen: body.resumen,
-    })
+    const subject = `Pendiente de gestión — ${clienteTxt || 'Sin cliente'}`
+    const html = `<p>${mensajeHtml}</p>`
 
     const resp = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -70,8 +70,7 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         from: fromEmail,
-        to: [correoAsesor],
-        cc: [CC_SERVICIO_TECNICO],
+        to: [DESTINATARIO],
         subject,
         html,
       }),

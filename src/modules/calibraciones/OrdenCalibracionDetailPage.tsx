@@ -17,7 +17,7 @@ import {
 import type { EtapaFlujo } from './hooks/useCalibraciones'
 import { FG, Seccion, Grid2, INP, PRI, GHOST, B_INFO, B_VENCIDA, B_PROXIMA, B_NOVEDAD, GRUPO_COLOR, fmtFecha, fmtCOP, fechaLocalISO } from './ui'
 import { IdentificacionFields, ReferenciasFields, linkOtst, parseOtstCodes } from './vistas/CamposCompartidos'
-import { generarMailtoOC } from './correo'
+import { generarMailtoOC, generarMailtoNovedad } from './correo'
 import { notificarCambioEstado } from './notificaciones'
 import { VistaMantenimiento } from './vistas/VistaMantenimiento'
 import { VistaVisitaProgramada } from './vistas/VistaVisitaProgramada'
@@ -64,7 +64,7 @@ const EMPTY_ORDEN: Partial<OrdenCalibracion> = {
   fecha_salida_mantenimiento: null,
   fecha_salida_mantenimiento_real: null, nota_mantenimiento: '',
   fecha_programada_envio: null, fecha_llegada_metrologo: null, fecha_envio: null, nota_envio: '',
-  codigos_certificados: '',
+  codigos_certificados: '', codigos_referencia: '', nombre_metrologo: '',
   certificado_fecha_inicio: null, certificado_fecha_fin: null,
   fecha_salida_lab: null, fecha_retorno: null, nota_retorno: '',
   fecha_llegada_hanna: null, fecha_entrega_certificado: null,
@@ -76,11 +76,16 @@ const EMPTY_ORDEN: Partial<OrdenCalibracion> = {
 export function OrdenCalibracionDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { user, hasCapability, isAdmin } = useUser()
+  const { user, displayName, hasCapability, isAdmin } = useUser()
   const puedeEditar = hasCapability('calibraciones_editar')
   const esNueva = id === 'nueva'
 
   const { data: ordenes = [], isLoading: cargandoOrdenes } = useOrdenesCalibracion()
+  // Nombres de metrólogos ya usados en otras órdenes — autocompletado en
+  // "En calibración" (sitio). Sin duplicados por mayúsculas/espacios.
+  const metrologosSugeridos = [...new Map(
+    ordenes.map(o => (o.nombre_metrologo || '').trim()).filter(Boolean).map(n => [n.toLowerCase().replace(/\s+/g, ' '), n] as const)
+  ).values()].sort((a, b) => a.localeCompare(b, 'es'))
   const orden = esNueva ? undefined : ordenes.find(o => o.id === id)
   const { data: catalogo = [] } = useCatalogoRvCalibr()
   const { data: asesores = [] } = useAsesores()
@@ -137,6 +142,45 @@ export function OrdenCalibracionDetailPage() {
     if (!uid) return 'Sistema'
     const p = profiles.find(x => x.id === uid)
     return p?.full_name || p?.email || 'Usuario'
+  }
+
+  // Marca (novedad_detalle con texto) más reciente en el historial — el
+  // inicio de la novedad actualmente activa. historial viene descendente,
+  // así que .find da la más reciente.
+  const marcaNovedadActiva = () => historial.find(h => h.campo === 'novedad_detalle' && h.valor_nuevo) ?? null
+
+  // Avances posteriores a esa marca, en orden cronológico (para el
+  // mini-timeline del card y para el cuerpo del correo de seguimiento).
+  const avancesNovedadActiva = () => {
+    const marca = marcaNovedadActiva()
+    if (!marca) return []
+    return historial
+      .filter(h => h.campo === 'novedad_avance' && h.created_at > marca.created_at)
+      .sort((a, b) => a.created_at.localeCompare(b.created_at))
+  }
+
+  // Línea de texto "• fecha hora — usuario: mensaje" para el cuerpo del
+  // correo de seguimiento — marca + avances, y opcionalmente la resolución
+  // que se acaba de enviar (todavía no está en `historial` en ese momento).
+  const eventosNovedadTexto = (resolucionExtra?: string): string[] => {
+    const marca = marcaNovedadActiva()
+    if (!marca) return []
+    const linea = (usuarioId: string | null, createdAt: string, texto: string | null) =>
+      `• ${fmtFecha(fechaLocalISO(createdAt))} ${horaLocal(createdAt)} — ${profileName(usuarioId)}: ${texto || ''}`
+    const lineas = [marca, ...avancesNovedadActiva()].map(h => linea(h.usuario_id, h.created_at, h.valor_nuevo))
+    if (resolucionExtra) lineas.push(linea(user?.id ?? null, new Date().toISOString(), resolucionExtra))
+    return lineas
+  }
+
+  function enviarCorreoNovedad(resuelta: boolean, resolucionExtra?: string) {
+    if (!orden) return
+    if (!orden.correo_asesor) {
+      toast.error('La orden no tiene correo de asesor(a) configurado — no se pudo armar el correo de novedad')
+      return
+    }
+    const eventos = eventosNovedadTexto(resolucionExtra)
+    const url = generarMailtoNovedad(orden.correo_asesor, orden.numero_oc || '', orden.cliente, eventos, resuelta)
+    window.location.href = url
   }
 
   const set = <K extends keyof OrdenCalibracion>(key: K, value: OrdenCalibracion[K]) =>
@@ -265,7 +309,7 @@ export function OrdenCalibracionDetailPage() {
     }
 
     if (ordenId && payload.estado && payload.estado !== orden?.estado) {
-      notificarCambioEstado(ordenId, orden?.estado, payload.estado, payload, user?.email ?? null)
+      notificarCambioEstado(ordenId, orden?.estado, payload.estado, payload, catalogo.filter(c => codigosSel.has(c.codigo)), displayName || user?.email || null)
     }
 
     setSaving(false)
@@ -343,7 +387,7 @@ export function OrdenCalibracionDetailPage() {
     if (!orden || !avanceNovedad.trim()) { toast.error('Escribe el avance'); return }
     setGuardandoNovedad(true)
     try {
-      await agregarAvanceNovedad(orden.id, avanceNovedad)
+      await agregarAvanceNovedad(orden.id, avanceNovedad, user?.id ?? null)
       toast.success('Avance agregado')
       invalidate.historial(orden.id)
       setAvanceNovedad('')
@@ -358,8 +402,9 @@ export function OrdenCalibracionDetailPage() {
     if (!orden || !resolucion.trim()) { toast.error('Ingresa cómo se resolvió la novedad'); return }
     setGuardandoNovedad(true)
     try {
-      await resolverNovedad(orden.id, resolucion)
+      await resolverNovedad(orden.id, resolucion, user?.id ?? null)
       toast.success('Novedad resuelta')
+      enviarCorreoNovedad(true, resolucion)
       invalidate.ordenes()
       invalidate.historial(orden.id)
       setResolviendoNovedad(false)
@@ -539,6 +584,21 @@ export function OrdenCalibracionDetailPage() {
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--yellow)', marginBottom: 4 }}>Novedad activa</div>
               <div style={{ fontSize: 13, color: 'var(--text)' }}>{orden.novedad_detalle}</div>
+              {avancesNovedadActiva().length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 12, borderLeft: '2px solid var(--yellow-border)', paddingLeft: 10 }}>
+                  {avancesNovedadActiva().map(h => (
+                    <div key={h.id} style={{ fontSize: 12 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+                        <strong style={{ color: 'var(--text)' }}>{profileName(h.usuario_id)}</strong>
+                        <span style={{ color: 'var(--muted)', fontFamily: 'var(--mono)', fontSize: 10.5, flexShrink: 0 }}>
+                          {fmtFecha(fechaLocalISO(h.created_at))} {horaLocal(h.created_at)}
+                        </span>
+                      </div>
+                      <div style={{ color: 'var(--muted)', marginTop: 2 }}>{h.valor_nuevo}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
               {puedeEditar && (
                 <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap', alignItems: 'center' }}>
                   <input
@@ -548,6 +608,7 @@ export function OrdenCalibracionDetailPage() {
                     style={{ ...INP, flex: 1, minWidth: 220 }}
                   />
                   <button onClick={confirmarAvanceNovedad} disabled={guardandoNovedad} style={GHOST}>+ Avance</button>
+                  <button onClick={() => enviarCorreoNovedad(false)} disabled={guardandoNovedad} style={GHOST}>✉ Enviar seguimiento</button>
                   <button onClick={() => setResolviendoNovedad(true)} disabled={guardandoNovedad} style={PRI}>✓ Dar solución</button>
                 </div>
               )}
@@ -619,7 +680,8 @@ export function OrdenCalibracionDetailPage() {
           />
         ) : !esNueva && etapaMostrada?.key === 'en_calibracion' ? (
           <VistaEnCalibracionSitio
-            form={form} puedeEditar={puedeEditarFlujo} soloLectura={soloLectura}
+            form={form} catalogo={catalogo} codigosSel={codigosSel} metrologosSugeridos={metrologosSugeridos}
+            puedeEditar={puedeEditarFlujo} soloLectura={soloLectura}
             saving={saving} onAvanzar={avanzarEtapa}
           />
         ) : (
@@ -838,17 +900,24 @@ export function OrdenCalibracionDetailPage() {
                             </span>
                           </div>
                           <div style={{ color: 'var(--muted)', marginTop: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                            {grupo.entradas.map(h => (
-                              <div key={h.id}>
-                                {h.campo === 'creacion' || h.campo === 'servicios' || h.campo === 'novedad_avance' || h.campo === 'novedad_resuelta' ? (
-                                  <span>{CAMPO_LABEL[h.campo]}{h.valor_nuevo ? `: ${h.valor_nuevo}` : ''}</span>
-                                ) : (
-                                  <span>
-                                    {CAMPO_LABEL[h.campo] || h.campo}: <em style={{ fontStyle: 'normal', textDecoration: 'line-through', opacity: 0.7 }}>{formatValorHistorial(h.campo, h.valor_anterior)}</em> → <strong style={{ color: 'var(--text)' }}>{formatValorHistorial(h.campo, h.valor_nuevo)}</strong>
-                                  </span>
-                                )}
-                              </div>
-                            ))}
+                            {grupo.entradas.map(h => {
+                              const contenido = h.campo === 'creacion' || h.campo === 'servicios' || h.campo === 'novedad_avance' || h.campo === 'novedad_resuelta' ? (
+                                <span>{CAMPO_LABEL[h.campo]}{h.valor_nuevo ? `: ${h.valor_nuevo}` : ''}</span>
+                              ) : (
+                                <span>
+                                  {CAMPO_LABEL[h.campo] || h.campo}: <em style={{ fontStyle: 'normal', textDecoration: 'line-through', opacity: 0.7 }}>{formatValorHistorial(h.campo, h.valor_anterior)}</em> → <strong style={{ color: 'var(--text)' }}>{formatValorHistorial(h.campo, h.valor_nuevo)}</strong>
+                                </span>
+                              )
+                              const esNovedad = h.campo === 'novedad_detalle' || h.campo === 'novedad_avance' || h.campo === 'novedad_resuelta'
+                              return (
+                                <div key={h.id} style={esNovedad ? {
+                                  background: 'var(--yellow-bg)', border: '1px solid var(--yellow-border)',
+                                  borderRadius: 6, padding: '5px 8px',
+                                } : undefined}>
+                                  {contenido}
+                                </div>
+                              )
+                            })}
                           </div>
                         </div>
                       ))}

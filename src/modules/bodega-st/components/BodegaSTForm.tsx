@@ -17,6 +17,7 @@ const ESTADO_OPTIONS = [
   { value: 'en_reparacion', label: '⚙️ En Reparación' },
   { value: 'incompleto_espera_partes', label: '🧩 Incompleto (Espera Accesorios/Partes)' },
   { value: 'restaurado_listo', label: '✅ Restaurado (Listo)' },
+  { value: 'producto_no_conforme', label: '🚫 Producto No Conforme (PNC)' },
 ];
 
 export function BodegaSTForm({ onSave }: BodegaSTFormProps) {
@@ -61,8 +62,8 @@ export function BodegaSTForm({ onSave }: BodegaSTFormProps) {
       estado,
       partes_requeridas: estado === 'incompleto_espera_partes' ? accesoriosFaltantes : (estado === 'en_diagnostico' ? repuestosPedir : ''),
       reparaciones_realizadas: estado === 'en_reparacion' ? piezasColocar : (estado === 'incompleto_espera_partes' ? reparacionesRealizadas : ''),
-      ubicacion_estante: (estado === 'restaurado_listo' || estado === 'incompleto_espera_partes') ? undefined : ubicacion,
-      bodega_destino: estado === 'restaurado_listo' ? 'Bodega Principal' : (estado === 'incompleto_espera_partes' ? 'Bodega Incompletos' : undefined),
+      ubicacion_estante: (estado === 'restaurado_listo' || estado === 'incompleto_espera_partes' || estado === 'producto_no_conforme') ? undefined : ubicacion,
+      bodega_destino: estado === 'restaurado_listo' ? 'Bodega Principal' : (estado === 'incompleto_espera_partes' ? 'Bodega Incompletos' : (estado === 'producto_no_conforme' ? 'Bodega PNC' : undefined)),
       observaciones,
       precio: precio ? Number(precio) : undefined,
       created_at: new Date().toISOString()
@@ -137,6 +138,11 @@ export function BodegaSTForm({ onSave }: BodegaSTFormProps) {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--red-bg, rgba(239,68,68,.08))', border: '1px solid var(--red)', borderRadius: 'var(--radius-sm)', padding: '10px 12px', fontSize: '0.85rem', color: 'var(--text)' }}>
               <PackageSearch size={16} style={{ color: 'var(--red)', flexShrink: 0 }} />
               <span>Se asignará automáticamente a <strong>Bodega Incompletos</strong></span>
+            </div>
+          ) : estado === 'producto_no_conforme' ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--red-bg, rgba(239,68,68,.08))', border: '1px solid var(--red)', borderRadius: 'var(--radius-sm)', padding: '10px 12px', fontSize: '0.85rem', color: 'var(--text)' }}>
+              <PackageSearch size={16} style={{ color: 'var(--red)', flexShrink: 0 }} />
+              <span>Se asignará automáticamente a <strong>Bodega PNC</strong></span>
             </div>
           ) : (
             <Select

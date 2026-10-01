@@ -32,7 +32,7 @@ function normalizeLoadedDraft(draft: CertificadoGenerado): CertificadoGenerado {
     if (idx === -1) return null;
     usedBloqueIdx.add(idx);
     const b = draft.mediciones[idx];
-    return { lote: '', fecha_vencimiento: '', ...b, equipo_id: e.id };
+    return { ...b, lote: b.lote ?? '', fecha_vencimiento: b.fecha_vencimiento ?? '', equipo_id: e.id };
   }).filter((b): b is MedicionBloque => !!b);
 
   return { ...draft, equipos, mediciones, adjuntos: draft.adjuntos ?? [] };

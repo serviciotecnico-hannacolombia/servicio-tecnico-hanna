@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { RegistroBodegaST, EstadoRestauracion } from '../types';
-import { Search, Wrench, AlertTriangle, CheckCircle, Clock, Pencil, Trash2 } from 'lucide-react';
+import { Search, Wrench, AlertTriangle, CheckCircle, Clock, Pencil, Trash2, Ban } from 'lucide-react';
 import { Card } from '../../../components/ui/Card';
 import { Table, type Column } from '../../../components/ui/Table';
 
@@ -8,6 +8,7 @@ interface BodegaSTTableProps {
   records: RegistroBodegaST[];
   onEdit: (record: RegistroBodegaST) => void;
   onDelete: (record: RegistroBodegaST) => void;
+  onToggleEntregado: (record: RegistroBodegaST, value: boolean) => void;
 }
 
 const truncateText = (text: string | undefined | null, maxLength = 30) => {
@@ -20,6 +21,7 @@ const ESTADO_BADGE: Record<EstadoRestauracion, { label: string; icon: typeof Clo
   en_reparacion:             { label: 'Reparación',       icon: Wrench,        color: 'var(--accent)', bg: 'var(--accent-bg)' },
   incompleto_espera_partes:  { label: 'Falta Accesorios', icon: AlertTriangle, color: 'var(--red)',    bg: 'var(--red-bg)' },
   restaurado_listo:          { label: 'Listo',            icon: CheckCircle,   color: 'var(--green)',  bg: 'var(--green-bg)' },
+  producto_no_conforme:      { label: 'PNC',              icon: Ban,           color: 'var(--red)',    bg: 'var(--red-bg)' },
 };
 
 function EstadoBadge({ estado }: { estado: EstadoRestauracion }) {
@@ -32,12 +34,13 @@ function EstadoBadge({ estado }: { estado: EstadoRestauracion }) {
   );
 }
 
-export function BodegaSTTable({ records, onEdit, onDelete }: BodegaSTTableProps) {
+export function BodegaSTTable({ records, onEdit, onDelete, onToggleEntregado }: BodegaSTTableProps) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [estadoFilter, setEstadoFilter] = useState<EstadoRestauracion | ''>('');
 
   const filteredRecords = records.filter(rec => {
     const term = searchTerm.toLowerCase();
-    return (
+    const matchesSearch = (
       rec.nombre_equipo?.toLowerCase().includes(term) ||
       rec.numero_serie?.toLowerCase().includes(term) ||
       rec.referencia?.toLowerCase().includes(term) ||
@@ -45,6 +48,8 @@ export function BodegaSTTable({ records, onEdit, onDelete }: BodegaSTTableProps)
       rec.ubicacion_estante?.toLowerCase().includes(term) ||
       rec.observaciones?.toLowerCase().includes(term)
     );
+    const matchesEstado = !estadoFilter || rec.estado === estadoFilter;
+    return matchesSearch && matchesEstado;
   });
 
   const columns: Column<RegistroBodegaST>[] = [
@@ -65,13 +70,26 @@ export function BodegaSTTable({ records, onEdit, onDelete }: BodegaSTTableProps)
     {
       key: 'ubicacion', header: 'Ubicación',
       render: r => {
-        if (r.estado === 'restaurado_listo') {
-          return <span style={{ color: 'var(--green)', fontWeight: 600 }}>📦 {r.bodega_destino || 'Bodega Principal'}</span>;
-        }
-        if (r.estado === 'incompleto_espera_partes') {
-          return <span style={{ color: 'var(--red)', fontWeight: 600 }}>📦 {r.bodega_destino || 'Bodega Incompletos'}</span>;
-        }
-        return <span>{r.ubicacion_estante || '—'}</span>;
+        const destino = r.estado === 'restaurado_listo' ? (r.bodega_destino || 'Bodega Principal')
+          : r.estado === 'incompleto_espera_partes' ? (r.bodega_destino || 'Bodega Incompletos')
+          : r.estado === 'producto_no_conforme' ? (r.bodega_destino || 'Bodega PNC')
+          : null;
+        if (!destino) return <span>{r.ubicacion_estante || '—'}</span>;
+        const color = r.estado === 'restaurado_listo' ? 'var(--green)' : 'var(--red)';
+        return (
+          <div>
+            <span style={{ color, fontWeight: 600 }}>📦 {destino}</span>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 4, fontSize: '0.7rem', color: 'var(--muted)', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={!!r.entregado_logistica}
+                onChange={e => onToggleEntregado(r, e.target.checked)}
+                style={{ cursor: 'pointer' }}
+              />
+              Entregado a logística
+            </label>
+          </div>
+        );
       },
     },
     { key: 'obs', header: 'Observaciones', render: r => <span style={{ color: 'var(--muted)' }} title={r.observaciones || ''}>{truncateText(r.observaciones)}</span> },
@@ -88,19 +106,31 @@ export function BodegaSTTable({ records, onEdit, onDelete }: BodegaSTTableProps)
 
   return (
     <Card bodyStyle={{ padding: 0 }}>
-      <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+      <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
         <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text)' }}>
-          Inventario en Bodega ST <span style={{ color: 'var(--muted)', fontWeight: 500 }}>({records.length})</span>
+          Inventario en Bodega ST <span style={{ color: 'var(--muted)', fontWeight: 500 }}>({filteredRecords.length}/{records.length})</span>
         </h3>
-        <div style={{ position: 'relative', width: 280 }}>
-          <Search size={15} style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)' }} />
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            placeholder="Buscar por serie, modelo u observaciones..."
-            style={{ width: '100%', padding: '7px 12px 7px 34px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontFamily: 'var(--sans)', fontSize: '0.8rem' }}
-          />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <select
+            value={estadoFilter}
+            onChange={e => setEstadoFilter(e.target.value as EstadoRestauracion | '')}
+            style={{ padding: '7px 10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontFamily: 'var(--sans)', fontSize: '0.8rem' }}
+          >
+            <option value="">Todos los estados</option>
+            {(Object.keys(ESTADO_BADGE) as EstadoRestauracion[]).map(e => (
+              <option key={e} value={e}>{ESTADO_BADGE[e].label}</option>
+            ))}
+          </select>
+          <div style={{ position: 'relative', width: 280 }}>
+            <Search size={15} style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)' }} />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              placeholder="Buscar por serie, modelo u observaciones..."
+              style={{ width: '100%', padding: '7px 12px 7px 34px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontFamily: 'var(--sans)', fontSize: '0.8rem' }}
+            />
+          </div>
         </div>
       </div>
 

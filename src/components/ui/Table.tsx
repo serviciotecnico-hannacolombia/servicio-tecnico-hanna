@@ -2,7 +2,7 @@ import type { ReactNode, CSSProperties } from 'react'
 
 export interface Column<T> {
   key: string
-  header: string
+  header: ReactNode
   render?: (row: T) => ReactNode
   width?: string
   align?: 'left' | 'center' | 'right'

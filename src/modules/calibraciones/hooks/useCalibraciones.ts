@@ -209,16 +209,16 @@ export async function marcarNovedad(ordenId: string, detalle: string) {
   if (error) throw error
 }
 
-export async function agregarAvanceNovedad(ordenId: string, mensaje: string) {
+export async function agregarAvanceNovedad(ordenId: string, mensaje: string, usuarioId: string | null) {
   const { error } = await supabase.from('ordenes_calibracion_historial').insert({
-    orden_id: ordenId, campo: 'novedad_avance', valor_nuevo: mensaje.trim(),
+    orden_id: ordenId, usuario_id: usuarioId, campo: 'novedad_avance', valor_nuevo: mensaje.trim(),
   })
   if (error) throw error
 }
 
-export async function resolverNovedad(ordenId: string, resolucion: string) {
+export async function resolverNovedad(ordenId: string, resolucion: string, usuarioId: string | null) {
   const { error: e1 } = await supabase.from('ordenes_calibracion_historial').insert({
-    orden_id: ordenId, campo: 'novedad_resuelta', valor_nuevo: resolucion.trim(),
+    orden_id: ordenId, usuario_id: usuarioId, campo: 'novedad_resuelta', valor_nuevo: resolucion.trim(),
   })
   if (e1) throw e1
   const { error: e2 } = await supabase.from('ordenes_calibracion')
@@ -521,7 +521,7 @@ const ORDEN_NIVEL: Record<NivelSemaforo, number> = { ok: 0, proxima: 1, vencida:
 function peorNivel(a: NivelSemaforo, b: NivelSemaforo): NivelSemaforo {
   return ORDEN_NIVEL[a] >= ORDEN_NIVEL[b] ? a : b
 }
-function nivelPorFecha(objetivo: string): NivelSemaforo {
+export function nivelPorFecha(objetivo: string): NivelSemaforo {
   if (objetivo < hoyISO()) return 'vencida'
   const limite = new Date()
   limite.setDate(limite.getDate() + 2)
@@ -879,6 +879,8 @@ export const CAMPO_LABEL: Record<string, string> = {
   fecha_envio: 'Envío',
   nota_envio: 'Nota de envío',
   codigos_certificados: 'Códigos de certificados',
+  codigos_referencia: 'Códigos de referencia',
+  nombre_metrologo: 'Metrólogo(a)',
   certificado_fecha_inicio: 'Certificados — inicio',
   certificado_fecha_fin: 'Certificados — fin',
   fecha_salida_lab: 'Salida del laboratorio',

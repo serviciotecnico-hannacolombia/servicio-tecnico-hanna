@@ -11,7 +11,7 @@ import { Modal } from '../../components/ui/Modal'
 import { Spinner } from '../../components/ui/Spinner'
 import { supabase } from '../../lib/supabase'
 import { useIndicadores } from './hooks/useIndicadores'
-import type { CategoriaIndicador, IndicadorMeta, IndicadorReal } from '../../types'
+import type { CategoriaIndicador, IndicadorMeta, IndicadorReal, IndicadorCalidadRevision } from '../../types'
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
@@ -28,6 +28,8 @@ const fmtCOP = (n: number) =>
   '$ ' + n.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
 
 const fmtM = (n: number) => `$${(n / 1_000_000).toFixed(1)}M`
+
+const pct1 = (n: number, d: number) => d > 0 ? Math.round((n / d) * 1000) / 10 : 0
 
 function semaforo(pct: number, hasData: boolean) {
   if (!hasData) return { color: 'var(--muted)', bg: 'var(--surface2)', border: 'var(--border)', label: '—', texto: '' }
@@ -289,6 +291,339 @@ function MetaSection({
         </div>
       </div>
     </Card>
+  )
+}
+
+function CalidadTooltip({ active, payload, label }: { active?: boolean; payload?: { dataKey: string; value: number; stroke: string }[]; label?: string }) {
+  if (!active || !payload?.length) return null
+  const oficial = payload.find(p => p.dataKey === 'oficial')?.value ?? null
+  const real     = payload.find(p => p.dataKey === 'real')?.value ?? null
+
+  return (
+    <div style={{
+      background: 'var(--surface)', border: '1px solid var(--border)',
+      borderRadius: 8, padding: '10px 14px', boxShadow: '0 4px 20px rgba(0,0,0,.12)',
+      fontSize: '0.8rem', minWidth: 150,
+    }}>
+      <div style={{ fontWeight: 700, color: 'var(--text)', marginBottom: 6, fontFamily: 'var(--mono)' }}>
+        {label}
+      </div>
+      {oficial != null && (
+        <div style={{ color: 'var(--muted)', marginBottom: 2 }}>
+          Oficial: <span style={{ fontWeight: 600, color: 'var(--text)' }}>{oficial.toFixed(1)}%</span>
+        </div>
+      )}
+      {real != null && (
+        <div style={{ color: 'var(--muted)' }}>
+          Real: <span style={{ fontWeight: 600, color: '#f59e0b' }}>{real.toFixed(1)}%</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── CalidadRevisionSection ───────────────────────────────────────────────────
+
+function CalidadRevisionSection({
+  registros, mesActual, onRegistrar,
+}: {
+  registros: IndicadorCalidadRevision[]
+  mesActual: number
+  onRegistrar: (mes: number) => void
+}) {
+  const accent = '#f59e0b'
+  const regMes = registros.find(r => r.mes === mesActual)
+  const hasData = !!regMes && regMes.total_pedidos > 0
+
+  const total       = regMes?.total_pedidos ?? 0
+  const aTiempo     = regMes?.pedidos_a_tiempo ?? 0
+  const justificados = regMes?.pedidos_vencidos_justificados ?? 0
+
+  const pctOficial = pct1(aTiempo, total)
+  const pctReal    = pct1(Math.min(aTiempo + justificados, total), total)
+
+  const semOficial = semaforo(pctOficial, hasData)
+  const semReal    = semaforo(pctReal, hasData)
+
+  const chartData = MESES_CORTO.map((mes, i) => {
+    const r = registros.find(x => x.mes === i + 1)
+    if (!r || r.total_pedidos === 0) return { mes, oficial: null, real: null }
+    return {
+      mes,
+      oficial: pct1(r.pedidos_a_tiempo, r.total_pedidos),
+      real: pct1(Math.min(r.pedidos_a_tiempo + r.pedidos_vencidos_justificados, r.total_pedidos), r.total_pedidos),
+    }
+  })
+
+  const kpiCard = (title: string, value: React.ReactNode, sub?: React.ReactNode) => (
+    <div style={{
+      flex: 1, minWidth: 130, padding: '14px 16px', borderRadius: 'var(--radius-sm)',
+      border: '1px solid var(--border)', background: 'var(--surface2)',
+    }}>
+      <div style={{
+        fontSize: '0.63rem', fontFamily: 'var(--mono)', textTransform: 'uppercase',
+        letterSpacing: '0.08em', color: 'var(--muted)', fontWeight: 500, marginBottom: 6,
+      }}>
+        {title}
+      </div>
+      <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text)', fontFamily: 'var(--mono)', lineHeight: 1.2 }}>
+        {value}
+      </div>
+      {sub && <div style={{ marginTop: 4 }}>{sub}</div>}
+    </div>
+  )
+
+  const pctCard = (title: string, pct: number, sem: ReturnType<typeof semaforo>, desc: string) => (
+    <div style={{
+      flex: 1, minWidth: 160, padding: '14px 16px', borderRadius: 'var(--radius-sm)',
+      border: `1.5px solid ${sem.border}`, background: sem.bg,
+    }}>
+      <div style={{
+        fontSize: '0.63rem', fontFamily: 'var(--mono)', textTransform: 'uppercase',
+        letterSpacing: '0.08em', color: 'var(--muted)', fontWeight: 500, marginBottom: 6,
+      }}>
+        {title}
+      </div>
+      <div style={{ fontSize: '1.6rem', fontWeight: 800, color: sem.color, fontFamily: 'var(--mono)', lineHeight: 1.1 }}>
+        {hasData ? `${pct.toFixed(1)}%` : '—'}
+      </div>
+      <div style={{ fontSize: '0.68rem', color: 'var(--muted)', marginTop: 4 }}>
+        {desc}
+      </div>
+    </div>
+  )
+
+  return (
+    <Card title="Calidad — Revisión de pedidos en 2 horas">
+      <div style={{ display: 'flex', gap: 10, marginBottom: 18, flexWrap: 'wrap' }}>
+        {kpiCard(
+          `Pedidos ${MESES_LARGO[mesActual - 1]}`,
+          hasData ? total.toLocaleString('es-CO') : 'Sin datos',
+          <button
+            onClick={() => onRegistrar(mesActual)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 4, background: 'none', border: 'none',
+              cursor: 'pointer', padding: 0, color: 'var(--muted)', fontSize: '0.7rem', fontFamily: 'var(--sans)',
+            }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = accent }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--muted)' }}
+          >
+            <Pencil size={11} /> Registrar / editar
+          </button>
+        )}
+
+        {pctCard(
+          'Indicador oficial (intranet)',
+          pctOficial,
+          semOficial,
+          `${aTiempo.toLocaleString('es-CO')} a tiempo / ${total.toLocaleString('es-CO')} total`
+        )}
+
+        {pctCard(
+          'Indicador real',
+          pctReal,
+          semReal,
+          justificados > 0
+            ? `Excluye ${justificados.toLocaleString('es-CO')} vencidos justificados (capacitaciones, acondicionamiento, etc.)`
+            : 'Sin vencidos justificados registrados'
+        )}
+      </div>
+
+      <div style={{ height: 200 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={chartData} margin={{ top: 4, right: 10, left: 0, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+            <XAxis dataKey="mes" tick={{ fontSize: 10, fill: '#94a3b8', fontFamily: 'monospace' }} axisLine={false} tickLine={false} />
+            <YAxis
+              domain={[0, 100]}
+              tickFormatter={v => `${v}%`}
+              tick={{ fontSize: 10, fill: '#94a3b8', fontFamily: 'monospace' }}
+              axisLine={false}
+              tickLine={false}
+              width={36}
+            />
+            <Tooltip content={<CalidadTooltip />} />
+            <Line type="monotone" dataKey="oficial" stroke="#94a3b8" strokeWidth={2} strokeDasharray="5 4" dot={false} name="oficial" connectNulls={false} />
+            <Line type="monotone" dataKey="real" stroke={accent} strokeWidth={2.5} dot={{ r: 4, fill: accent, stroke: '#ffffff', strokeWidth: 2 }} name="real" connectNulls={false} />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+
+      <div style={{ display: 'flex', gap: 16, justifyContent: 'center', marginTop: 6 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.72rem', color: '#94a3b8' }}>
+          <svg width="20" height="6"><line x1="0" y1="3" x2="20" y2="3" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5 4" /></svg>
+          Oficial
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.72rem', color: accent }}>
+          <svg width="20" height="6"><line x1="0" y1="3" x2="20" y2="3" stroke={accent} strokeWidth="2.5" /></svg>
+          Real
+        </div>
+      </div>
+    </Card>
+  )
+}
+
+// ─── RegistrarCalidadModal ─────────────────────────────────────────────────────
+
+function RegistrarCalidadModal({
+  open, onClose, registros, defaultMes, onSave,
+}: {
+  open: boolean
+  onClose: () => void
+  registros: IndicadorCalidadRevision[]
+  defaultMes: number
+  onSave: (vals: {
+    mes: number
+    total_pedidos: number
+    pedidos_a_tiempo: number
+    pedidos_vencidos_justificados: number
+    notas?: string | null
+  }) => Promise<void>
+}) {
+  const [mesSel, setMesSel]   = useState(defaultMes)
+  const [total, setTotal]     = useState('')
+  const [aTiempo, setATiempo] = useState('')
+  const [justificados, setJustificados] = useState('')
+  const [notas, setNotas]     = useState('')
+  const [saving, setSaving]   = useState(false)
+
+  const cargarMes = (mes: number) => {
+    const r = registros.find(x => x.mes === mes)
+    setTotal(r ? String(r.total_pedidos) : '')
+    setATiempo(r ? String(r.pedidos_a_tiempo) : '')
+    setJustificados(r ? String(r.pedidos_vencidos_justificados) : '')
+    setNotas(r?.notas ?? '')
+  }
+
+  useEffect(() => {
+    if (!open) return
+    setMesSel(defaultMes)
+    cargarMes(defaultMes)
+  }, [open, defaultMes])
+
+  const handleMesChange = (mes: number) => {
+    setMesSel(mes)
+    cargarMes(mes)
+  }
+
+  const totalN        = parseInt(total || '0', 10) || 0
+  const aTiempoN       = parseInt(aTiempo || '0', 10) || 0
+  const justificadosN  = parseInt(justificados || '0', 10) || 0
+  const pctOficialPrev = totalN > 0 ? pct1(aTiempoN, totalN) : null
+  const pctRealPrev    = totalN > 0 ? pct1(Math.min(aTiempoN + justificadosN, totalN), totalN) : null
+
+  const handleSave = async () => {
+    if (!total || totalN <= 0) { toast.error('Ingresa el total de pedidos del mes'); return }
+    if (aTiempoN + justificadosN > totalN) {
+      toast.error('A tiempo + vencidos justificados no puede superar el total de pedidos')
+      return
+    }
+    setSaving(true)
+    try {
+      await onSave({
+        mes: mesSel,
+        total_pedidos: totalN,
+        pedidos_a_tiempo: aTiempoN,
+        pedidos_vencidos_justificados: justificadosN,
+        notas: notas || null,
+      })
+      toast.success('Indicador de calidad registrado')
+      onClose()
+    } catch {
+      toast.error('Error al guardar')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const fieldLabel: CSSProperties = {
+    fontSize: '0.8rem', fontWeight: 600, color: 'var(--muted)', display: 'block', marginBottom: 6,
+  }
+  const fieldInput: CSSProperties = {
+    width: '100%', padding: '9px 12px', borderRadius: 'var(--radius-sm)',
+    border: '1.5px solid var(--border)', background: 'var(--surface)',
+    color: 'var(--text)', fontSize: '0.875rem', fontFamily: 'var(--mono)',
+    boxSizing: 'border-box',
+  }
+
+  return (
+    <Modal open={open} onClose={onClose} title="Registrar calidad — Revisión de pedidos" width={440}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+        <div>
+          <label style={fieldLabel}>Mes</label>
+          <select
+            value={mesSel}
+            onChange={e => handleMesChange(Number(e.target.value))}
+            style={{ ...fieldInput, cursor: 'pointer' }}
+          >
+            {MESES_LARGO.map((mes, i) => (
+              <option key={i + 1} value={i + 1}>
+                {mes}{registros.find(r => r.mes === i + 1) ? ' ✓' : ''}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label style={fieldLabel}>Total de pedidos del mes</label>
+          <input
+            type="text" inputMode="numeric" value={total}
+            onChange={e => setTotal(e.target.value.replace(/[^0-9]/g, ''))}
+            placeholder="Ej: 320" style={{ ...fieldInput, fontSize: '1rem' }}
+          />
+        </div>
+
+        <div>
+          <label style={fieldLabel}>Pedidos revisados dentro de 2 horas</label>
+          <input
+            type="text" inputMode="numeric" value={aTiempo}
+            onChange={e => setATiempo(e.target.value.replace(/[^0-9]/g, ''))}
+            placeholder="Ej: 260" style={{ ...fieldInput, fontSize: '1rem' }}
+          />
+        </div>
+
+        <div>
+          <label style={fieldLabel}>Pedidos vencidos por causa justificada</label>
+          <input
+            type="text" inputMode="numeric" value={justificados}
+            onChange={e => setJustificados(e.target.value.replace(/[^0-9]/g, ''))}
+            placeholder="Ej: 40 (capacitaciones, acondicionamiento de equipos, etc.)"
+            style={{ ...fieldInput, fontSize: '1rem' }}
+          />
+        </div>
+
+        <div>
+          <label style={fieldLabel}>Notas (opcional)</label>
+          <input
+            type="text" value={notas} onChange={e => setNotas(e.target.value)}
+            placeholder="Ej: 15 por capacitación SACI, 25 por acondicionamiento de equipos"
+            style={{ ...fieldInput, fontFamily: 'var(--sans)', fontSize: '0.8rem' }}
+          />
+        </div>
+
+        {pctOficialPrev != null && (
+          <div style={{
+            display: 'flex', gap: 10, padding: '10px 12px', borderRadius: 'var(--radius-sm)',
+            background: 'var(--surface2)', border: '1px solid var(--border)', fontSize: '0.78rem',
+          }}>
+            <span style={{ color: 'var(--muted)' }}>
+              Oficial: <strong style={{ color: 'var(--text)', fontFamily: 'var(--mono)' }}>{pctOficialPrev.toFixed(1)}%</strong>
+            </span>
+            <span style={{ color: 'var(--muted)' }}>
+              Real: <strong style={{ color: '#f59e0b', fontFamily: 'var(--mono)' }}>{pctRealPrev?.toFixed(1)}%</strong>
+            </span>
+          </div>
+        )}
+
+        <div style={{ display: 'flex', gap: 8 }}>
+          <Button variant="ghost" onClick={onClose} style={{ flex: 1 }}>Cancelar</Button>
+          <Button onClick={handleSave} disabled={saving || !total} style={{ flex: 2 }}>
+            {saving ? 'Guardando…' : 'Guardar'}
+          </Button>
+        </div>
+      </div>
+    </Modal>
   )
 }
 
@@ -668,8 +1003,9 @@ export function IndicadoresPage() {
     cat: typeof CATS[0]
     defaultMes: number
   } | null>(null)
+  const [registrarCalidadMes, setRegistrarCalidadMes] = useState<number | null>(null)
 
-  const { metas, reales, isLoading, registrarReal, guardarMetas } = useIndicadores(anio)
+  const { metas, reales, calidad, isLoading, registrarReal, guardarMetas, registrarCalidad } = useIndicadores(anio)
 
   const metasDe  = (cat: CategoriaIndicador) => metas.filter(m => m.categoria === cat).sort((a, b) => a.mes - b.mes)
   const realesDe = (cat: CategoriaIndicador) => reales.filter(r => r.categoria === cat)
@@ -725,34 +1061,42 @@ export function IndicadoresPage() {
         <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
           <Spinner size={32} />
         </div>
-      ) : metas.length === 0 ? (
-        <Card>
-          <div style={{
-            display: 'flex', flexDirection: 'column', alignItems: 'center',
-            padding: '60px 20px', gap: 14, color: 'var(--muted)', textAlign: 'center',
-          }}>
-            <BarChart2 size={40} strokeWidth={1.5} />
-            <p style={{ margin: 0, fontSize: '0.95rem' }}>
-              No hay metas configuradas para <strong>{anio}</strong>
-            </p>
-            <Button onClick={() => setGestionarOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Settings size={14} />
-              Configurar metas para {anio}
-            </Button>
-          </div>
-        </Card>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-          {CATS.map(cat => (
-            <MetaSection
-              key={cat.key}
-              cat={cat}
-              metas={metasDe(cat.key)}
-              reales={realesDe(cat.key)}
-              mesActual={mesActual}
-              onRegistrar={mes => setRegistrarModal({ cat, defaultMes: mes })}
-            />
-          ))}
+          {metas.length === 0 ? (
+            <Card>
+              <div style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center',
+                padding: '60px 20px', gap: 14, color: 'var(--muted)', textAlign: 'center',
+              }}>
+                <BarChart2 size={40} strokeWidth={1.5} />
+                <p style={{ margin: 0, fontSize: '0.95rem' }}>
+                  No hay metas configuradas para <strong>{anio}</strong>
+                </p>
+                <Button onClick={() => setGestionarOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Settings size={14} />
+                  Configurar metas para {anio}
+                </Button>
+              </div>
+            </Card>
+          ) : (
+            CATS.map(cat => (
+              <MetaSection
+                key={cat.key}
+                cat={cat}
+                metas={metasDe(cat.key)}
+                reales={realesDe(cat.key)}
+                mesActual={mesActual}
+                onRegistrar={mes => setRegistrarModal({ cat, defaultMes: mes })}
+              />
+            ))
+          )}
+
+          <CalidadRevisionSection
+            registros={calidad}
+            mesActual={mesActual}
+            onRegistrar={mes => setRegistrarCalidadMes(mes)}
+          />
         </div>
       )}
 
@@ -768,6 +1112,17 @@ export function IndicadoresPage() {
           onSave={async (mes, valor_real) =>
             registrarReal.mutateAsync({ categoria: registrarModal.cat.key, mes, valor_real })
           }
+        />
+      )}
+
+      {/* Modal: registrar calidad de revisión */}
+      {registrarCalidadMes != null && (
+        <RegistrarCalidadModal
+          open
+          onClose={() => setRegistrarCalidadMes(null)}
+          registros={calidad}
+          defaultMes={registrarCalidadMes}
+          onSave={vals => registrarCalidad.mutateAsync(vals)}
         />
       )}
 

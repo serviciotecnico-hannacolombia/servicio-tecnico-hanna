@@ -1,21 +1,25 @@
 // Dispara la notificación por correo ante un cambio de estado de una orden
 // — vía la Edge Function calibraciones-notificar, que envía directamente con
-// Resend (al asesor, con copia a Servicio Técnico). No bloquea el guardado
-// de la orden: los errores solo quedan en consola.
+// Resend (al asesor, con copia a Servicio Técnico). El contenido (lo
+// registrado en el paso, resumen y próximo paso) lo arma correoEstado.ts.
+// No bloquea el guardado de la orden: los errores solo quedan en consola.
 import { supabase } from '../../lib/supabase'
 import { ESTADO_LABEL } from './hooks/useCalibraciones'
-import type { EstadoCalibracion, OrdenCalibracion } from '../../types'
+import { contenidoCorreoEstado } from './correoEstado'
+import type { EstadoCalibracion, OrdenCalibracion, RvCalibrItem } from '../../types'
 
 export function notificarCambioEstado(
   ordenId: string,
   estadoAnterior: string | null | undefined,
   estadoNuevo: string,
-  orden: Pick<OrdenCalibracion, 'cliente' | 'numero_oc' | 'correo_asesor'>,
+  orden: Partial<OrdenCalibracion>,
+  servicios: RvCalibrItem[],
   usuario: string | null,
 ) {
   if (!orden.correo_asesor) return
 
   const label = (estado: string) => ESTADO_LABEL[estado as EstadoCalibracion] || estado
+  const contenido = contenidoCorreoEstado(estadoNuevo as EstadoCalibracion, orden, servicios)
 
   supabase.functions.invoke('calibraciones-notificar', {
     body: {
@@ -27,6 +31,7 @@ export function notificarCambioEstado(
       estadoNuevo: label(estadoNuevo),
       ordenUrl: `${window.location.origin}/calibraciones/${ordenId}`,
       usuario,
+      ...contenido,
     },
   }).then(async ({ error }) => {
     if (!error) return
@@ -38,5 +43,22 @@ export function notificarCambioEstado(
       try { motivo = (await context.clone().json()).error ?? motivo } catch { /* no era JSON */ }
     }
     console.error('No se pudo notificar el cambio de estado:', motivo)
+  })
+}
+
+// Dispara el correo a Brayan al crear un pendiente en Logística — vía la
+// Edge Function logistica-notificar-pendiente. Igual que notificarCambioEstado,
+// no bloquea la creación del pendiente: los errores solo quedan en consola.
+export function notificarPendienteLogistica(cliente: string, mensaje: string) {
+  supabase.functions.invoke('logistica-notificar-pendiente', {
+    body: { cliente, mensaje },
+  }).then(async ({ error }) => {
+    if (!error) return
+    let motivo: unknown = error.message
+    const context = (error as { context?: Response }).context
+    if (context) {
+      try { motivo = (await context.clone().json()).error ?? motivo } catch { /* no era JSON */ }
+    }
+    console.error('No se pudo notificar el pendiente de logística:', motivo)
   })
 }

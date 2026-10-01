@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { Search, Pencil, Trash2, Link2 } from 'lucide-react'
+import { Search, Pencil, Trash2, Link2, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react'
 import { Card } from '../../../components/ui/Card'
 import { Table, type Column } from '../../../components/ui/Table'
 import { useProfiles } from '../../../hooks/useProfiles'
-import { ORIGEN_LABEL, ORIGEN_COLOR, ESTADO_LABEL, ESTADO_COLOR, type TicketFabrica } from '../types'
+import { ORIGEN_LABEL, ORIGEN_COLOR, ESTADO_LABEL, ESTADO_COLOR, type TicketFabrica, type TicketOrigen, type TicketEstado } from '../types'
 
 interface TicketsTableProps {
   tickets: TicketFabrica[]
@@ -26,8 +26,18 @@ const truncateText = (text: string | undefined | null, maxLength = 40) => {
 // se acorta solo para mostrar, sin tocar el dato guardado en la base.
 const formatNombre = (nombre: string) => nombre.replace(/^Ticket ID:\s*/i, 'TID: ')
 
+// Número del ticket sin prefijo ("TID: " o "Ticket ID: ") para ordenar.
+const numeroTid = (nombre: string) => nombre.replace(/^(Ticket ID|TID):\s*/i, '').trim()
+
+// Ciclo al hacer clic en el encabezado: por defecto → ascendente → descendente.
+type OrdenTid = 'default' | 'asc' | 'desc'
+const SIGUIENTE_ORDEN: Record<OrdenTid, OrdenTid> = { default: 'asc', asc: 'desc', desc: 'default' }
+
 export function TicketsTable({ tickets, onEdit, onDelete }: TicketsTableProps) {
   const [searchTerm, setSearchTerm] = useState('')
+  const [origenFilter, setOrigenFilter] = useState<TicketOrigen | ''>('')
+  const [estadoFilter, setEstadoFilter] = useState<TicketEstado | ''>('')
+  const [ordenTid, setOrdenTid] = useState<OrdenTid>('default')
   const { data: profiles = [] } = useProfiles()
 
   const profileName = (id?: string | null) => {
@@ -38,7 +48,7 @@ export function TicketsTable({ tickets, onEdit, onDelete }: TicketsTableProps) {
 
   const filteredTickets = tickets.filter(t => {
     const term = searchTerm.toLowerCase()
-    return (
+    const matchesSearch = (
       t.nombre?.toLowerCase().includes(term) ||
       t.codigo?.toLowerCase().includes(term) ||
       t.serial?.toLowerCase().includes(term) ||
@@ -46,7 +56,20 @@ export function TicketsTable({ tickets, onEdit, onDelete }: TicketsTableProps) {
       t.equipo_madre_serial?.toLowerCase().includes(term) ||
       profileName(t.creado_por).toLowerCase().includes(term)
     )
+    const matchesOrigen = !origenFilter || t.origen === origenFilter
+    const matchesEstado = !estadoFilter || t.estado === estadoFilter
+    return matchesSearch && matchesOrigen && matchesEstado
   })
+
+  // Comparación "numeric" para que TID 9 quede antes de TID 10.
+  const sortedTickets = ordenTid === 'default'
+    ? filteredTickets
+    : [...filteredTickets].sort((a, b) => {
+        const cmp = numeroTid(a.nombre).localeCompare(numeroTid(b.nombre), 'es', { numeric: true, sensitivity: 'base' })
+        return ordenTid === 'asc' ? cmp : -cmp
+      })
+
+  const OrdenIcon = ordenTid === 'asc' ? ArrowUp : ordenTid === 'desc' ? ArrowDown : ArrowUpDown
 
   // Anchos en porcentaje (suman 100%): con tableLayout "fixed" el navegador
   // los respeta de forma proporcional al ancho disponible, así la tabla
@@ -54,7 +77,21 @@ export function TicketsTable({ tickets, onEdit, onDelete }: TicketsTableProps) {
   const columns: Column<TicketFabrica>[] = [
     { key: 'numero', header: 'ID', width: '4%', render: t => <span style={{ fontFamily: 'var(--mono)', fontSize: '0.76rem', color: 'var(--muted)', whiteSpace: 'nowrap' }}>{t.numero ?? '—'}</span> },
     {
-      key: 'nombre', header: 'Nombre', width: '8%',
+      key: 'nombre', width: '8%',
+      header: (
+        <button
+          type="button"
+          onClick={() => setOrdenTid(o => SIGUIENTE_ORDEN[o])}
+          title={ordenTid === 'default' ? 'Ordenar por TID ascendente' : ordenTid === 'asc' ? 'Ordenar por TID descendente' : 'Quitar orden'}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 4, padding: 0, border: 'none', background: 'none', cursor: 'pointer',
+            font: 'inherit', letterSpacing: 'inherit', textTransform: 'inherit',
+            color: ordenTid === 'default' ? 'inherit' : 'var(--accent)',
+          }}
+        >
+          Nombre <OrdenIcon size={11} />
+        </button>
+      ),
       render: t => (
         <span
           title={t.nombre}
@@ -151,23 +188,45 @@ export function TicketsTable({ tickets, onEdit, onDelete }: TicketsTableProps) {
 
   return (
     <Card bodyStyle={{ padding: 0 }}>
-      <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+      <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
         <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text)' }}>
-          Tickets a Fábrica <span style={{ color: 'var(--muted)', fontWeight: 500 }}>({tickets.length})</span>
+          Tickets a Fábrica <span style={{ color: 'var(--muted)', fontWeight: 500 }}>({filteredTickets.length}/{tickets.length})</span>
         </h3>
-        <div style={{ position: 'relative', width: 280 }}>
-          <Search size={15} style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)' }} />
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            placeholder="Buscar por nombre, código, serial, equipo madre o creador..."
-            style={{ width: '100%', padding: '7px 12px 7px 34px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontFamily: 'var(--sans)', fontSize: '0.8rem' }}
-          />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <select
+            value={origenFilter}
+            onChange={e => setOrigenFilter(e.target.value as TicketOrigen | '')}
+            style={{ padding: '7px 10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontFamily: 'var(--sans)', fontSize: '0.8rem' }}
+          >
+            <option value="">Todos los orígenes</option>
+            {(Object.keys(ORIGEN_LABEL) as TicketOrigen[]).map(o => (
+              <option key={o} value={o}>{ORIGEN_LABEL[o]}</option>
+            ))}
+          </select>
+          <select
+            value={estadoFilter}
+            onChange={e => setEstadoFilter(e.target.value as TicketEstado | '')}
+            style={{ padding: '7px 10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontFamily: 'var(--sans)', fontSize: '0.8rem' }}
+          >
+            <option value="">Todos los estados</option>
+            {(Object.keys(ESTADO_LABEL) as TicketEstado[]).map(e => (
+              <option key={e} value={e}>{ESTADO_LABEL[e]}</option>
+            ))}
+          </select>
+          <div style={{ position: 'relative', width: 280 }}>
+            <Search size={15} style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)' }} />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              placeholder="Buscar por nombre, código, serial, equipo madre o creador..."
+              style={{ width: '100%', padding: '7px 12px 7px 34px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontFamily: 'var(--sans)', fontSize: '0.8rem' }}
+            />
+          </div>
         </div>
       </div>
 
-      <Table columns={columns} data={filteredTickets} emptyMessage="No hay tickets registrados aún." keyExtractor={(t, i) => t.id ?? i} compact />
+      <Table columns={columns} data={sortedTickets} emptyMessage="No hay tickets registrados aún." keyExtractor={(t, i) => t.id ?? i} compact />
     </Card>
   )
 }
