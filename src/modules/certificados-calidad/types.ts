@@ -26,7 +26,16 @@ export interface MedicionBloque {
   // como máximo un bloque: si cambia de plantilla, este bloque se reemplaza
   // en vez de acumularse; si se quita la fila, el bloque se elimina con ella.
   equipo_id: string;
+  // Título de la 2.ª columna de la tabla ("Sol. Estándar" o, en
+  // termómetros, "Equ. Patrón"). Opcional por borradores viejos.
+  encabezado_patron?: string;
+  // Bloques sin tabla (reactivos): código del producto ("HI 93735-01"), que
+  // reemplaza "[código]" en el texto — la Referencia lleva el nombre
+  // ("Reactivo Dureza Total..."), como en los certificados reales.
+  codigo?: string;
 }
+
+export const ENCABEZADO_PATRON_DEFAULT = 'Sol. Estándar';
 
 export interface CertificadoPlantilla {
   id: string;
@@ -39,6 +48,10 @@ export interface CertificadoPlantilla {
   control_estetico_items: string[];
   notas_generales: string | null;
   activo: boolean;
+  // Ver migración 20261001b: título de la 2.ª columna de la tabla y códigos
+  // del catálogo de Soluciones Patrón que se precargan al elegir la plantilla.
+  encabezado_patron?: string;
+  patrones?: string[];
   created_at?: string;
   updated_at?: string;
 }
@@ -102,6 +115,8 @@ export interface ChecklistState {
   extra_control_estetico: string[];
 }
 
+// Los checkboxes que existen en el formulario de la intranet. Cualquier otro
+// ítem (p. ej. "Reactivo." o "Dos cubetas.") va en los cuadros de texto.
 export const CHECKLIST_BASE = {
   test_funcional: ['Interruptor ON/OFF', 'LCD', 'Sonido', 'Hora/reloj', 'Teclado', 'Memoria', 'Medición', 'USB', 'Batería', 'Calibración'],
   embalaje: ['Instrumento', 'Sonda', 'Caja', 'Accesorios', 'Cable USB', 'Manual de Instrucciones', 'Soluciones'],

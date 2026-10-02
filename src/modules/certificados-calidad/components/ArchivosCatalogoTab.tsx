@@ -72,6 +72,20 @@ export function ArchivosCatalogoTab() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <Card title="Cargar Archivo al Repositorio">
+        {/* Los COA de las soluciones estándar se adjuntan solos desde la
+            documentación de Hanna al pegar en la intranet: subirlos aquí
+            también los adjuntaría dos veces (y la intranet solo tiene 5
+            campos "Adjunto"). */}
+        <div style={{
+          fontSize: '0.8rem', color: 'var(--text)', background: 'var(--surface2)', border: '1px solid var(--border)',
+          borderRadius: 'var(--radius-sm)', padding: '10px 12px', marginBottom: 14, lineHeight: 1.5,
+        }}>
+          <strong>Solo para documentos que no están en la documentación de Hanna.</strong> Los COA de las soluciones
+          estándar se adjuntan solos al pegar en la intranet (los busca por código y lote en documentation.hannainst.com):
+          no los subas aquí o quedarían adjuntos dos veces. Úsalo para el certificado de calibración del termómetro patrón,
+          documentos de reactivos, COA de lotes que aún no aparecen en esa página u otros documentos fijos. Si al pegar el
+          resumen dice que una solución no tiene COA publicado, ese es el documento que conviene subir aquí.
+        </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 14 }}>
           <Select
             label="Asociar a"

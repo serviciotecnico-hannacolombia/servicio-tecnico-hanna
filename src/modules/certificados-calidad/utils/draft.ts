@@ -1,5 +1,5 @@
-import { emptyChecklist } from '../types';
-import type { CertificadoGenerado, CertificadoPlantilla, ChecklistState, EquipoFila, MedicionBloque } from '../types';
+import { emptyChecklist, ENCABEZADO_PATRON_DEFAULT } from '../types';
+import type { CertificadoGenerado, CertificadoPlantilla, ChecklistState, EquipoFila, MedicionBloque, SolucionFila, SolucionPatron } from '../types';
 
 export const emptyEquipo = (): EquipoFila => ({ id: crypto.randomUUID(), plantilla_id: null });
 
@@ -92,7 +92,32 @@ export function bloqueDesdePlantilla(plantilla: CertificadoPlantilla, equipoId: 
     fecha_vencimiento: '',
     plantilla_id: plantilla.id,
     equipo_id: equipoId,
+    encabezado_patron: plantilla.encabezado_patron || ENCABEZADO_PATRON_DEFAULT,
+    codigo: '',
   };
+}
+
+// "HI 7004/1L" = "hi7004/1l": los códigos se escriben con y sin espacios.
+export const normCodigo = (c: string) => c.replace(/\s+/g, '').toUpperCase();
+
+// Agrega a Soluciones Estándar las del catálogo cuyo código está en
+// `codigos` (activas, con su lote y vencimiento vigentes), en ese orden, sin
+// repetir las que ya están. Si un código tiene varias activas, se usa la que
+// vence más tarde.
+export function agregarPatrones(soluciones: SolucionFila[], codigos: string[], catalogo: SolucionPatron[]): SolucionFila[] {
+  const yaEstan = new Set(soluciones.map(s => normCodigo(s.codigo)).filter(Boolean));
+  const nuevas: SolucionFila[] = [];
+  codigos.forEach(codigo => {
+    const clave = normCodigo(codigo);
+    if (!clave || yaEstan.has(clave)) return;
+    const s = catalogo
+      .filter(p => p.activo && p.codigo && normCodigo(p.codigo) === clave)
+      .sort((a, b) => (b.fecha_expiracion ?? '').localeCompare(a.fecha_expiracion ?? ''))[0];
+    if (!s) return;
+    yaEstan.add(clave);
+    nuevas.push({ codigo: s.codigo || '', lote: s.lote || '', fecha_expiracion: s.fecha_expiracion || '', descripcion: s.descripcion || '' });
+  });
+  return nuevas.length ? [...soluciones, ...nuevas] : soluciones;
 }
 
 // La fila `rowIndex` pasa a usar `plantilla`: queda dueña de un único bloque
@@ -100,8 +125,10 @@ export function bloqueDesdePlantilla(plantilla: CertificadoPlantilla, equipoId: 
 // en vez de acumularse — y el checklist se recalcula. Los bloques quedan en
 // el mismo orden que las filas de Equipos (si no, cambiar la plantilla de la
 // primera fila mandaba su tabla al final de lo que se pega en la intranet).
+// También precarga las soluciones patrón de la plantilla (ver agregarPatrones).
 export function aplicarPlantilla(
   draft: CertificadoGenerado, rowIndex: number, plantilla: CertificadoPlantilla, plantillas: CertificadoPlantilla[],
+  catalogo: SolucionPatron[] = [],
 ): CertificadoGenerado {
   const equipoId = draft.equipos[rowIndex].id;
   const equipos = draft.equipos.map((e, i) => i === rowIndex ? { ...e, plantilla_id: plantilla.id } : e);
@@ -109,7 +136,13 @@ export function aplicarPlantilla(
   const mediciones = equipos
     .map(e => e.id === equipoId ? nuevo : draft.mediciones.find(b => b.equipo_id === e.id))
     .filter((b): b is MedicionBloque => !!b);
-  return { ...draft, equipos, mediciones, checklist: recomputeChecklist(equipos, plantillas, draft.checklist) };
+  return {
+    ...draft,
+    equipos,
+    mediciones,
+    soluciones: agregarPatrones(draft.soluciones, plantilla.patrones ?? [], catalogo),
+    checklist: recomputeChecklist(equipos, plantillas, draft.checklist),
+  };
 }
 
 // Quita la fila y su bloque de mediciones — nunca deja un bloque huérfano

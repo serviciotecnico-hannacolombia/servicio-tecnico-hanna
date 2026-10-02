@@ -7,7 +7,7 @@ import { Input } from '../../../components/ui/Input';
 import { Modal } from '../../../components/ui/Modal';
 import { supabase } from '../../../lib/supabase';
 import { usePlantillas, useArchivosCertificado, useInvalidateCertificadosCalidad } from '../hooks/useCertificadosCalidad';
-import type { CertificadoPlantilla, MedicionFila } from '../types';
+import { ENCABEZADO_PATRON_DEFAULT, type CertificadoPlantilla, type MedicionFila } from '../types';
 
 const textareaStyle: React.CSSProperties = {
   width: '100%', minHeight: 70, padding: '8px 12px', border: '1px solid var(--border)',
@@ -24,6 +24,7 @@ type FormState = {
   codigo: string; nombre: string; categoria: string;
   filas: MedicionFila[]; notas_generales: string;
   test_funcional_items: string; embalaje_items: string; control_estetico_items: string;
+  encabezado_patron: string; patrones: string;
   activo: boolean;
 };
 
@@ -37,6 +38,8 @@ function toForm(p?: CertificadoPlantilla | null): FormState {
     test_funcional_items: (p?.test_funcional_items ?? []).join(', '),
     embalaje_items: (p?.embalaje_items ?? []).join(', '),
     control_estetico_items: (p?.control_estetico_items ?? []).join(', '),
+    encabezado_patron: p?.encabezado_patron ?? ENCABEZADO_PATRON_DEFAULT,
+    patrones: (p?.patrones ?? []).join(', '),
     activo: p?.activo ?? true,
   };
 }
@@ -75,6 +78,8 @@ export function PlantillasCatalogoTab() {
       test_funcional_items: splitList(form.test_funcional_items),
       embalaje_items: splitList(form.embalaje_items),
       control_estetico_items: splitList(form.control_estetico_items),
+      encabezado_patron: form.encabezado_patron.trim() || ENCABEZADO_PATRON_DEFAULT,
+      patrones: splitList(form.patrones),
       activo: form.activo,
       updated_at: new Date().toISOString(),
     };
@@ -151,8 +156,19 @@ export function PlantillasCatalogoTab() {
 
           <div>
             <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--muted)', display: 'block', marginBottom: 5 }}>
-              Mediciones — filas de la tabla (Valor / Sol. Estándar / Tolerancia)
+              Mediciones — filas de la tabla (Valor / {form.encabezado_patron || ENCABEZADO_PATRON_DEFAULT} / Tolerancia)
             </label>
+            <Input
+              label="Título de la 2.ª columna"
+              list="cc-encabezados-plantilla"
+              value={form.encabezado_patron}
+              onChange={e => setForm({ ...form, encabezado_patron: e.target.value })}
+              wrapStyle={{ maxWidth: 240, marginBottom: 8 }}
+            />
+            <datalist id="cc-encabezados-plantilla">
+              <option value="Sol. Estándar" />
+              <option value="Equ. Patrón" />
+            </datalist>
             {form.filas.length > 0 && (
               <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 6 }}>
                 <thead>
@@ -186,6 +202,12 @@ export function PlantillasCatalogoTab() {
             <textarea style={textareaStyle} value={form.notas_generales} onChange={e => setForm({ ...form, notas_generales: e.target.value })} />
           </div>
 
+          <Input
+            label="Soluciones patrón a precargar (códigos del catálogo, separados por comas)"
+            value={form.patrones}
+            onChange={e => setForm({ ...form, patrones: e.target.value })}
+            placeholder="HI 7004/1L, HI 7007/1L, HI 7010L/C"
+          />
           <Input label="Test Funcional (separado por comas)" value={form.test_funcional_items} onChange={e => setForm({ ...form, test_funcional_items: e.target.value })} placeholder="LCD, Teclado, Memoria" />
           <Input label="Embalaje (separado por comas)" value={form.embalaje_items} onChange={e => setForm({ ...form, embalaje_items: e.target.value })} placeholder="Instrumento, Caja, Manual de Instrucciones" />
           <Input label="Control Estético (separado por comas)" value={form.control_estetico_items} onChange={e => setForm({ ...form, control_estetico_items: e.target.value })} placeholder="Estética del instrumento" />

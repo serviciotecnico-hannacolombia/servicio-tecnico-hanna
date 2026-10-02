@@ -1,11 +1,12 @@
 // ==UserScript==
 // @name         Certificados Calidad Autofill - Hanna Colombia
 // @namespace    https://intranet.hannacolombia.com/
-// @version      1.0.1
-// @description  Pega en el formulario "Crear Certificado de Calidad" de la intranet lo que se copió con el botón "Copiar para Intranet" del sistema de Servicio Técnico (soluciones, mediciones, checklist, fecha, técnico y adjuntos PDF). Equipos y el número de factura se llenan solos/a mano con "Cargar Datos" de la intranet.
+// @version      1.2.0
+// @description  Pega en el formulario "Crear Certificado de Calidad" de la intranet lo que se copió con el botón "Copiar para Intranet" del sistema de Servicio Técnico (soluciones, mediciones, checklist, fecha, técnico, adjuntos PDF y COA de las soluciones estándar). Equipos y el número de factura se llenan con "Cargar Datos" de la intranet — úsalo antes de pegar: de ahí se toman código, nombre y serie del equipo que no se escribieron en el sistema.
 // @author       Script generado para Hanna Colombia
 // @match        https://intranet.hannacolombia.com/certificados_calidad*
-// @grant        none
+// @grant        GM_xmlhttpRequest
+// @connect      www.documentation.hannainst.com
 // @run-at       document-idle
 // ==/UserScript==
 
@@ -28,6 +29,10 @@
   const ADJUNTO_URL_TTL_MIN = 5; // debe coincidir con ADJUNTO_URL_TTL_SEGUNDOS del lado de la app
   const LOG = (...args) => console.log('[Certificados Autofill]', ...args);
   const WARN = (...args) => console.warn('[Certificados Autofill]', ...args);
+  // Avisos para el técnico: además de la consola, se muestran en el resumen
+  // que aparece al terminar de pegar (antes solo quedaban en F12).
+  let avisos = [];
+  const AVISO = msg => { WARN(msg); avisos.push(msg); };
 
   // Encabezados de sección tal como aparecen en la página (barra gris) y las
   // 3 columnas del bloque "Test funcional, test físico y embalaje", que
@@ -105,17 +110,80 @@
     const inputs = todos.filter(esEditable);
     const filasDisponibles = Math.floor(inputs.length / columnas.length);
     if (filasDisponibles === 0) {
-      WARN(`No se encontraron campos para la sección "${nombreSeccion}". Revisa SECCIONES en el script.`);
+      AVISO(`No se encontraron campos para la sección "${nombreSeccion}". Revisa SECCIONES en el script.`);
       return;
     }
     if (filas.length > filasDisponibles) {
-      WARN(`"${nombreSeccion}" tiene ${filas.length} filas pero el formulario solo mostró ${filasDisponibles}. Las que sobran quedan sin copiar — agrégalas a mano.`);
+      AVISO(`"${nombreSeccion}" tiene ${filas.length} filas pero el formulario solo mostró ${filasDisponibles}. Las que sobran quedan sin copiar — agrégalas a mano.`);
     }
     filas.slice(0, filasDisponibles).forEach((fila, i) => {
       columnas.forEach((campo, j) => {
-        setValue(inputs[i * columnas.length + j], fila[campo] || '');
+        const input = inputs[i * columnas.length + j];
+        const valor = typeof campo === 'function' ? campo(fila, input) : fila[campo];
+        setValue(input, valor || '');
       });
     });
+  }
+
+  // Fecha de expiración de una solución: el formato depende del tipo de
+  // campo que tenga la intranet ("05-2027" en texto, "2027-05" en un
+  // <input type="month">, primer día del mes en un <input type="date">).
+  function fechaExpiracionPara(fila, input) {
+    const iso = fila.fechaExpiracionIso || '';
+    if (input && input.type === 'month') return iso;
+    if (input && input.type === 'date') return iso ? `${iso}-01` : '';
+    return fila.fechaExpiracion;
+  }
+
+  // ---- COA (certificados de análisis) de documentation.hannainst.com ----
+  // Esa página no acepta consultas desde otros sitios (sin CORS), por eso se
+  // usa GM_xmlhttpRequest de Tampermonkey. Busca por código y lote; ambos
+  // filtros son "contiene", así que se exige que el lote coincida exacto.
+  const COA_BASE = 'https://www.documentation.hannainst.com';
+
+  function gmRequest(opts) {
+    return new Promise((resolve, reject) => {
+      if (typeof GM_xmlhttpRequest !== 'function') {
+        reject(new Error('GM_xmlhttpRequest no disponible (¿falta @grant en el userscript?)'));
+        return;
+      }
+      GM_xmlhttpRequest({
+        ...opts,
+        onload: r => (r.status >= 200 && r.status < 300 ? resolve(r) : reject(new Error(`HTTP ${r.status}`))),
+        onerror: () => reject(new Error('error de red')),
+        ontimeout: () => reject(new Error('tiempo de espera agotado')),
+        timeout: 30000,
+      });
+    });
+  }
+
+  // "HI 7004/1L" → "HI7004" (el sitio lo guarda como "HI7004-1L"); el lote
+  // "SC0149/26" → "SC0149-26".
+  function coaCodigoBase(codigo) { return codigo.replace(/\s+/g, '').split('/')[0].toUpperCase(); }
+  function coaLote(lote) { return lote.trim().replace(/\//g, '-').toUpperCase(); }
+
+  async function buscarCoa({ codigo, lote }) {
+    const params = new URLSearchParams({
+      draw: '1', start: '0', length: '50', code: coaCodigoBase(codigo), lot: coaLote(lote), location: 'view',
+    });
+    const r = await gmRequest({
+      method: 'GET',
+      url: `${COA_BASE}/coa-certificate?${params}`,
+      headers: { 'X-Requested-With': 'XMLHttpRequest', Accept: 'application/json' },
+    });
+    const filas = (JSON.parse(r.responseText).data || []).filter(f => String(f.lot).toUpperCase() === coaLote(lote));
+    if (!filas.length) return null;
+    // Preferir español si el sitio lo tiene; si no, el más reciente.
+    filas.sort((a, b) => (b.region === 'ES') - (a.region === 'ES') || String(b.date).localeCompare(String(a.date)));
+    return filas[0];
+  }
+
+  async function descargarCoa(coa) {
+    const encontrado = await buscarCoa(coa);
+    if (!encontrado) return null;
+    const r = await gmRequest({ method: 'GET', url: `${COA_BASE}/coa-certificate/download/${encontrado.id}`, responseType: 'blob' });
+    const nombre = `COA ${encontrado.code} lote ${encontrado.lot}.pdf`;
+    return new File([r.response], nombre, { type: 'application/pdf' });
   }
 
   function getCheckboxLabelText(checkbox) {
@@ -141,14 +209,14 @@
       }
     });
     if (marcados.length && matched < marcados.length) {
-      WARN(`"${nombreSeccion}": se marcaron ${matched}/${marcados.length} ítems del checklist. Revisa si el texto de algún checkbox no coincide exactamente.`);
+      AVISO(`"${nombreSeccion}": se marcaron ${matched}/${marcados.length} ítems del checklist. Revisa si el texto de algún checkbox no coincide exactamente.`);
     }
     // Los ítems "extra" (no predefinidos) van en los cuadros de texto en blanco
     // que hay debajo de los checkboxes de cada columna.
     const vacios = bucket.inputs.filter(inp => esEditable(inp) && !inp.value);
     extras.forEach((valor, i) => {
       if (vacios[i]) setValue(vacios[i], valor);
-      else WARN(`"${nombreSeccion}": no quedan cuadros en blanco para el ítem extra "${valor}" — agrégalo a mano.`);
+      else AVISO(`"${nombreSeccion}": no quedan cuadros en blanco para el ítem extra "${valor}" — agrégalo a mano.`);
     });
   }
 
@@ -157,32 +225,143 @@
   // FileList armado con DataTransfer — es la técnica estándar que también
   // usan las herramientas de testing automatizado (Cypress, Playwright,
   // etc.) para simular la selección de un archivo.
-  async function fillAdjuntos(bucket, adjuntos) {
+  // Primero los COA de las soluciones estándar y luego los archivos elegidos
+  // en el sistema, cada uno en el siguiente campo "Adjunto" libre.
+  async function fillAdjuntos(bucket, adjuntos, coas) {
     const fileInputs = bucket.inputs.filter(el => el.tagName === 'INPUT' && el.type === 'file');
-    if (!adjuntos || adjuntos.length === 0) return;
+    const tareas = [
+      ...(coas || []).map(c => ({
+        etiqueta: `COA ${c.codigo} lote ${c.lote}`,
+        obtener: async () => {
+          const file = await descargarCoa(c);
+          // Normal en termómetros/equipos patrón y reactivos: no tienen COA allí.
+          if (!file) throw new Error('sin COA publicado en documentation.hannainst.com (normal en equipos patrón y reactivos)');
+          return file;
+        },
+      })),
+      ...(adjuntos || []).map(a => ({
+        etiqueta: a.nombre,
+        obtener: async () => {
+          const resp = await fetch(a.url);
+          if (!resp.ok) throw new Error(`HTTP ${resp.status} (¿pasaron más de ${ADJUNTO_URL_TTL_MIN} min desde que copiaste?)`);
+          const blob = await resp.blob();
+          return new File([blob], a.nombre, { type: blob.type || 'application/pdf' });
+        },
+      })),
+    ];
+    if (tareas.length === 0) return;
     if (fileInputs.length === 0) {
-      WARN('No se encontraron campos de tipo archivo en "Archivos Adjuntos". Revisa el texto de esa sección en SECCIONES.');
+      AVISO('No se encontraron los campos "Adjunto" en "Archivos Adjuntos" — adjunta los PDF a mano.');
       return;
     }
-    if (adjuntos.length > fileInputs.length) {
-      WARN(`Hay ${adjuntos.length} adjuntos pero el formulario solo tiene ${fileInputs.length} campos "Adjunto". Los que sobran quedan sin adjuntar — súbelos a mano.`);
-    }
-    for (let i = 0; i < Math.min(adjuntos.length, fileInputs.length); i++) {
-      const { nombre, url } = adjuntos[i];
+
+    let campo = 0;
+    for (const tarea of tareas) {
+      if (campo >= fileInputs.length) {
+        AVISO(`Sin campo "Adjunto" libre para "${tarea.etiqueta}" — adjúntalo a mano.`);
+        continue;
+      }
       try {
-        const resp = await fetch(url);
-        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-        const blob = await resp.blob();
-        const file = new File([blob], nombre, { type: blob.type || 'application/pdf' });
+        const file = await tarea.obtener();
         const dt = new DataTransfer();
         dt.items.add(file);
-        fileInputs[i].files = dt.files;
-        fileInputs[i].dispatchEvent(new Event('change', { bubbles: true }));
-        LOG(`Adjunto "${nombre}" cargado en el campo ${i + 1}.`);
+        fileInputs[campo].files = dt.files;
+        fileInputs[campo].dispatchEvent(new Event('change', { bubbles: true }));
+        LOG(`"${file.name}" adjuntado en el campo ${campo + 1}.`);
+        campo++;
       } catch (e) {
-        WARN(`No se pudo descargar/adjuntar "${nombre}" (¿la URL firmada ya expiró? tienes ${ADJUNTO_URL_TTL_MIN} min desde que copiaste):`, e);
+        AVISO(`${tarea.etiqueta}: ${e.message}`);
       }
     }
+  }
+
+  // ---- Datos de la tabla Equipos ----
+  // "Cargar Datos" llena equipos[n][codigo|nombre|serie] desde la factura.
+  // Lo que el técnico dejó vacío en el sistema (Ref., código y lote de un
+  // reactivo; título de una tabla) llega como {{EQUIPO<k>.campo}} y se
+  // completa aquí con la fila de Equipos de ese bloque.
+  const MARCADOR_EQUIPO = /\{\{EQUIPO(\d+)\.(codigo|nombre|serie)\}\}/g;
+  const tieneMarcadores = texto => /\{\{EQUIPO\d+\.(codigo|nombre|serie)\}\}/.test(texto || '');
+  const normCodigo = c => (c || '').replace(/\s+/g, '').toUpperCase();
+
+  function leerEquiposIntranet() {
+    const filas = [];
+    for (let n = 1; document.querySelector(`input[name="equipos[${n}][codigo]"]`); n++) {
+      const val = campo => normalize((document.querySelector(`input[name="equipos[${n}][${campo}]"]`) || {}).value);
+      if (val('codigo')) filas.push({ codigo: val('codigo'), nombre: val('nombre'), serie: val('serie') });
+    }
+    return filas;
+  }
+
+  // Cada bloque de Mediciones corresponde a un equipo: primero se empareja
+  // por código (la "pista" del bloque: código del producto, título escrito o
+  // plantilla del equipo); los que queden, por orden, pero solo si quedan
+  // tantos bloques como filas — si no, no se adivina.
+  function emparejarBloques(bloques, equipos) {
+    const asignados = bloques.map(() => null);
+    const usadas = new Set();
+    bloques.forEach((b, k) => {
+      const pista = normCodigo(b && b.pista);
+      if (!pista) return;
+      const i = equipos.findIndex((e, j) => !usadas.has(j) && normCodigo(e.codigo) === pista);
+      if (i >= 0) { asignados[k] = equipos[i]; usadas.add(i); }
+    });
+    const bloquesLibres = asignados.map((a, k) => (a ? -1 : k)).filter(k => k >= 0);
+    const filasLibres = equipos.map((e, j) => (usadas.has(j) ? -1 : j)).filter(j => j >= 0);
+    if (bloquesLibres.length === filasLibres.length) {
+      bloquesLibres.forEach((k, x) => { asignados[k] = equipos[filasLibres[x]]; });
+    }
+    return asignados;
+  }
+
+  function completarDesdeEquipos(texto, bloques) {
+    if (!tieneMarcadores(texto)) return texto;
+    const asignados = emparejarBloques(bloques || [], leerEquiposIntranet());
+    const faltantes = [];
+    const resultado = texto.replace(MARCADOR_EQUIPO, (m, n, campo) => {
+      const equipo = asignados[Number(n) - 1];
+      if (equipo && equipo[campo]) return equipo[campo];
+      faltantes.push(`bloque ${n} (${campo})`);
+      return '[COMPLETAR]';
+    });
+    if (faltantes.length) {
+      AVISO(`Mediciones: no se pudo saber qué equipo de la tabla Equipos corresponde a ${faltantes.join(', ')} — quedó "[COMPLETAR]" en el texto, corrígelo a mano.`);
+    }
+    return resultado;
+  }
+
+  // Resumen al terminar de pegar: verde si todo salió bien, ámbar con la
+  // lista de lo que hay que revisar. No bloquea la página como un alert().
+  function mostrarResumen(lista) {
+    const previo = document.getElementById('hanna-cert-autofill-resumen');
+    if (previo) previo.remove();
+    const caja = document.createElement('div');
+    caja.id = 'hanna-cert-autofill-resumen';
+    Object.assign(caja.style, {
+      position: 'fixed', top: '56px', right: '12px', zIndex: 9999, maxWidth: '420px',
+      padding: '12px 34px 12px 14px', borderRadius: '8px', fontSize: '13px', fontFamily: 'Arial, sans-serif',
+      lineHeight: '1.4', boxShadow: '0 2px 8px rgba(0,0,0,.2)',
+      background: lista.length ? '#fff4e5' : '#e8f5e9', color: lista.length ? '#663c00' : '#1b5e20',
+      border: `1px solid ${lista.length ? '#ffb74d' : '#81c784'}`,
+    });
+    const titulo = document.createElement('strong');
+    titulo.textContent = lista.length ? 'Certificado pegado — revisa:' : '✔ Certificado pegado';
+    caja.appendChild(titulo);
+    if (lista.length) {
+      const ul = document.createElement('ul');
+      ul.style.margin = '6px 0 0';
+      ul.style.paddingLeft = '18px';
+      lista.forEach(t => { const li = document.createElement('li'); li.textContent = t; ul.appendChild(li); });
+      caja.appendChild(ul);
+    }
+    const cerrar = document.createElement('button');
+    cerrar.type = 'button';
+    cerrar.textContent = '×';
+    Object.assign(cerrar.style, { position: 'absolute', top: '4px', right: '8px', border: 'none', background: 'none', fontSize: '18px', cursor: 'pointer', color: 'inherit' });
+    cerrar.addEventListener('click', () => caja.remove());
+    caja.appendChild(cerrar);
+    document.body.appendChild(caja);
+    if (!lista.length) setTimeout(() => caja.remove(), 5000);
   }
 
   // Busca un input/textarea que esté justo después (en el DOM) de un texto
@@ -206,20 +385,27 @@
     // "Fecha" puede aparecer también más arriba (p. ej. datos de la factura):
     // se prefiere el campo que está dentro de la sección "Otros".
     const input = encontrados.find(inp => bucketOtros.inputs.includes(inp)) || encontrados[0];
-    if (!input) { WARN(`No se encontró el campo "${etiqueta}" dentro de "Otros".`); return; }
+    if (!input) { AVISO(`No se encontró el campo "${etiqueta}" dentro de "Otros".`); return; }
     setValue(input, typeof valor === 'function' ? valor(input) : valor);
   }
 
+  // Devuelve false si no pegó nada (falta "Cargar Datos").
   async function aplicarCertificado(payload) {
+    // Sin la tabla Equipos cargada no hay de dónde sacar lo que el técnico
+    // dejó vacío: mejor no pegar nada a medias.
+    if (tieneMarcadores(payload.medicionesHtml) && leerEquiposIntranet().length === 0) {
+      alert('Primero carga la factura con "Cargar Datos": algunos datos de Mediciones (código, nombre o serie del equipo) se toman de la tabla Equipos.\n\nLuego vuelve a pulsar "Pegar desde Servicio Técnico" (el certificado sigue copiado).');
+      return false;
+    }
     const buckets = mapCamposPorSeccion();
 
     // Equipos NO se pega: la intranet ya los carga sola al hacer "Cargar Datos"
     // con el número de factura.
-    fillGrid(buckets.soluciones.inputs, ['codigo', 'lote', 'fechaExpiracion', 'descripcion'], payload.soluciones, 'Soluciones');
+    fillGrid(buckets.soluciones.inputs, ['codigo', 'lote', fechaExpiracionPara, 'descripcion'], payload.soluciones, 'Soluciones');
 
     const textarea = buckets.mediciones.inputs.find(el => el.tagName === 'TEXTAREA');
-    if (textarea) setValue(textarea, payload.medicionesHtml);
-    else WARN('No se encontró el textarea de "Mediciones".');
+    if (textarea) setValue(textarea, completarDesdeEquipos(payload.medicionesHtml, payload.bloques));
+    else AVISO('No se encontró el textarea de "Mediciones".');
 
     fillChecklistColumna(buckets.testFuncional, payload.checklist.testFuncional, payload.checklist.testFuncionalExtra, 'Test Funcional');
     fillChecklistColumna(buckets.embalaje, payload.checklist.embalaje, payload.checklist.embalajeExtra, 'Embalaje');
@@ -230,9 +416,10 @@
     fillCampoPorEtiqueta(buckets.otros, 'Fecha', input => (input.type === 'date' ? payload.fecha : payload.fechaDisplay));
     fillCampoPorEtiqueta(buckets.otros, 'Técnico', payload.tecnico);
 
-    await fillAdjuntos(buckets.archivosAdjuntos, payload.adjuntos);
+    await fillAdjuntos(buckets.archivosAdjuntos, payload.adjuntos, payload.coas);
 
     LOG('Certificado pegado:', payload);
+    return true;
   }
 
   async function handleClick(e) {
@@ -260,9 +447,14 @@
 
     const textoOriginal = btn.textContent;
     btn.disabled = true;
-    btn.textContent = (payload.adjuntos && payload.adjuntos.length) ? '⏳ Pegando y adjuntando PDFs...' : '⏳ Pegando...';
+    const conAdjuntos = (payload.adjuntos && payload.adjuntos.length) || (payload.coas && payload.coas.length);
+    btn.textContent = conAdjuntos ? '⏳ Pegando y adjuntando PDFs...' : '⏳ Pegando...';
+    avisos = [];
     try {
-      await aplicarCertificado(payload);
+      if (await aplicarCertificado(payload)) mostrarResumen(avisos);
+    } catch (err) {
+      WARN('Error pegando el certificado:', err);
+      alert('Ocurrió un error pegando el certificado: ' + err.message + '\nRevisa la consola (F12) para más detalle.');
     } finally {
       btn.disabled = false;
       btn.textContent = textoOriginal;

@@ -14,7 +14,7 @@ const TABS: { key: TabKey; label: string; icon: typeof FilePlus2 }[] = [
   { key: 'crear', label: 'Crear Certificado', icon: FilePlus2 },
   { key: 'plantillas', label: 'Plantillas de Referencia', icon: LayoutList },
   { key: 'soluciones', label: 'Soluciones Patrón', icon: FlaskConical },
-  { key: 'archivos', label: 'Archivos', icon: Paperclip },
+  { key: 'archivos', label: 'Otros adjuntos (no COA)', icon: Paperclip },
   { key: 'historial', label: 'Historial', icon: History },
 ];
 
@@ -62,7 +62,7 @@ export function CertificadosCalidadPage() {
       </div>
 
       {/* Siempre montado (solo se oculta): el borrador vive en su estado, y
-          desmontarlo al ir a otra pestaña —p. ej. a "Archivos" a subir un
+          desmontarlo al ir a otra pestaña —p. ej. a "Otros adjuntos" a subir un
           PDF— borraba todo lo que el técnico llevaba armado. */}
       <div style={{ display: tab === 'crear' ? undefined : 'none' }}>
         <CrearCertificadoTab key={loadKey} initialDraft={draftToLoad} />

@@ -31,6 +31,7 @@ export function CrearCertificadoTab({ initialDraft }: CrearCertificadoTabProps) 
     initialDraft ? normalizeLoadedDraft(initialDraft) : emptyDraft(displayName)
   );
   const [saving, setSaving] = useState(false);
+  const [adjuntarCoa, setAdjuntarCoa] = useState(true);
 
   const plantillasActivas = useMemo(() => plantillas.filter(p => p.activo), [plantillas]);
 
@@ -56,7 +57,7 @@ export function CrearCertificadoTab({ initialDraft }: CrearCertificadoTabProps) 
   const handleSelectPlantilla = (rowIndex: number, plantillaId: string) => {
     const plantilla = plantillasActivas.find(p => p.id === plantillaId);
     if (!plantilla) return;
-    setDraft(prev => aplicarPlantilla(prev, rowIndex, plantilla, plantillasActivas));
+    setDraft(prev => aplicarPlantilla(prev, rowIndex, plantilla, plantillasActivas, solucionesCatalogo));
   };
 
   const handleRemoveEquipo = (rowIndex: number) => setDraft(prev => quitarEquipo(prev, rowIndex, plantillasActivas));
@@ -136,20 +137,30 @@ export function CrearCertificadoTab({ initialDraft }: CrearCertificadoTabProps) 
         </div>
       </Card>
 
-      <Card title="Archivos Adjuntos Disponibles">
+      <Card title="Archivos Adjuntos">
         <ArchivosAdjuntosPanel
           archivos={archivos}
           plantillasSeleccionadas={plantillasSeleccionadas}
           seleccionados={draft.adjuntos}
           onChangeSeleccionados={adjuntos => patch({ adjuntos })}
         />
+        <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: '0.82rem', color: 'var(--text)', marginTop: 14, cursor: 'pointer' }}>
+          <input type="checkbox" checked={adjuntarCoa} onChange={e => setAdjuntarCoa(e.target.checked)} style={{ marginTop: 2 }} />
+          <span>
+            Adjuntar el COA (certificado de análisis) de cada solución estándar
+            <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted)' }}>
+              El userscript de la intranet lo busca por código y lote en documentation.hannainst.com y lo adjunta solo.
+              Los equipos patrón (termómetros) y reactivos no tienen COA allí.
+            </span>
+          </span>
+        </label>
       </Card>
 
       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
         <Button variant="ghost" onClick={handleNuevo}>
           <RotateCcw size={15} /> Nuevo borrador
         </Button>
-        <Button variant="ghost" onClick={() => copyForIntranet(draft, archivos)}>
+        <Button variant="ghost" onClick={() => copyForIntranet(draft, archivos, { adjuntarCoa, plantillas })}>
           <ClipboardCopy size={15} /> Copiar para Intranet
         </Button>
         <Button onClick={handleGuardar} disabled={saving}>

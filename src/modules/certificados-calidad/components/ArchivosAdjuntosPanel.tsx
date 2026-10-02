@@ -56,13 +56,14 @@ export function ArchivosAdjuntosPanel({ archivos, plantillasSeleccionadas, selec
   }
 
   if (relevantes.length === 0) {
-    return <p style={{ fontSize: '0.82rem', color: 'var(--muted)' }}>No hay archivos cargados para los equipos/categorías seleccionados.</p>;
+    return <p style={{ fontSize: '0.82rem', color: 'var(--muted)' }}>No hay otros adjuntos (no COA) cargados para los equipos/categorías seleccionados.</p>;
   }
 
   return (
     <div>
       <p style={{ fontSize: '0.8rem', color: 'var(--muted)', marginBottom: 10 }}>
-        Marca hasta {MAX_ADJUNTOS} archivos para incluir en este certificado — se copiarán junto con los demás datos hacia la intranet.
+        Otros adjuntos (no COA): marca los que quieras incluir — se copian junto con los demás datos hacia la intranet,
+        después de los COA. La intranet tiene {MAX_ADJUNTOS} campos "Adjunto" en total.
       </p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         {relevantes.map(a => (

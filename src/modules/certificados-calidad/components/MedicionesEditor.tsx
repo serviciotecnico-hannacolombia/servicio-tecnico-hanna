@@ -7,9 +7,9 @@ import { Modal } from '../../../components/ui/Modal';
 import { supabase } from '../../../lib/supabase';
 import { copyToClipboard } from '../utils/clipboard';
 import { MonthYearInput } from './MonthYearInput';
-import { buildBloqueHtml, buildAllBloquesHtml } from '../utils/mediciones';
+import { buildBloqueHtml, buildAllBloquesHtml, esBloqueDeProducto } from '../utils/mediciones';
 import { useInvalidateCertificadosCalidad } from '../hooks/useCertificadosCalidad';
-import type { CertificadoPlantilla, MedicionBloque, MedicionFila } from '../types';
+import { ENCABEZADO_PATRON_DEFAULT, type CertificadoPlantilla, type MedicionBloque, type MedicionFila } from '../types';
 
 interface MedicionesEditorProps {
   bloques: MedicionBloque[];
@@ -17,6 +17,10 @@ interface MedicionesEditorProps {
   onChange: (bloques: MedicionBloque[]) => void;
   onRemoveBloque: (bloque: MedicionBloque) => void;
 }
+
+// Al pegar en la intranet, lo que quede vacío se toma de la tabla Equipos
+// que llena "Cargar Datos" (ver marcadorEquipo en utils/mediciones).
+const VACIO_DESDE_INTRANET = 'Vacío = se toma de Equipos en la intranet';
 
 const inputStyle: React.CSSProperties = {
   width: '100%', padding: '6px 8px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)',
@@ -72,6 +76,7 @@ export function MedicionesEditor({ bloques, plantillas, onChange, onRemoveBloque
       filas: bloque.filas,
       notas_generales: bloque.notas || null,
       categoria: nuevaCategoria.trim() || null,
+      encabezado_patron: bloque.encabezado_patron?.trim() || ENCABEZADO_PATRON_DEFAULT,
       updated_at: new Date().toISOString(),
     };
     setSaving(true);
@@ -88,6 +93,7 @@ export function MedicionesEditor({ bloques, plantillas, onChange, onRemoveBloque
           test_funcional_items: origen?.test_funcional_items ?? [],
           embalaje_items: origen?.embalaje_items ?? [],
           control_estetico_items: origen?.control_estetico_items ?? [],
+          patrones: origen?.patrones ?? [],
         });
     setSaving(false);
     if (error) { toast.error('Error al guardar plantilla: ' + error.message); return; }
@@ -106,6 +112,11 @@ export function MedicionesEditor({ bloques, plantillas, onChange, onRemoveBloque
         </div>
       )}
 
+      <datalist id="cc-encabezados">
+        <option value="Sol. Estándar" />
+        <option value="Equ. Patrón" />
+      </datalist>
+
       {bloques.length === 0 && (
         <p style={{ fontSize: '0.82rem', color: 'var(--muted)' }}>
           Elige una plantilla en la tabla de Equipos para traer aquí su estructura de mediciones.
@@ -117,11 +128,29 @@ export function MedicionesEditor({ bloques, plantillas, onChange, onRemoveBloque
           <div key={i} style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: 14 }}>
             <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', marginBottom: 10 }}>
               <Input
-                label={bloque.filas.length > 0 ? 'Título (código del equipo en esta tabla)' : 'Referencia (aparece como "Ref. ..." en el certificado)'}
+                label={bloque.filas.length > 0 ? 'Título (código del equipo en esta tabla)' : 'Referencia (nombre del producto, aparece como "Ref. ...")'}
                 value={bloque.titulo}
                 onChange={e => updateBloque(i, { titulo: e.target.value })}
+                placeholder={bloque.filas.length > 0 || esBloqueDeProducto(bloque) ? VACIO_DESDE_INTRANET : undefined}
                 wrapStyle={{ flex: 1 }}
               />
+              {bloque.filas.length > 0 ? (
+                <Input
+                  label="2.ª columna"
+                  list="cc-encabezados"
+                  value={bloque.encabezado_patron ?? ENCABEZADO_PATRON_DEFAULT}
+                  onChange={e => updateBloque(i, { encabezado_patron: e.target.value })}
+                  wrapStyle={{ width: 150 }}
+                />
+              ) : (
+                <Input
+                  label="Código (reemplaza [código])"
+                  value={bloque.codigo ?? ''}
+                  onChange={e => updateBloque(i, { codigo: e.target.value })}
+                  placeholder={esBloqueDeProducto(bloque) ? VACIO_DESDE_INTRANET : 'Ej. HI 93735-01'}
+                  wrapStyle={{ width: 200 }}
+                />
+              )}
               <button
                 onClick={() => { if (window.confirm('¿Quitar este bloque de mediciones? También se des-selecciona su plantilla en Equipos.')) onRemoveBloque(bloque); }}
                 title="Quitar bloque"
@@ -135,7 +164,7 @@ export function MedicionesEditor({ bloques, plantillas, onChange, onRemoveBloque
               <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 8 }}>
                 <thead>
                   <tr>
-                    {['Valor', 'Sol. Estándar', 'Tolerancia', ''].map(h => (
+                    {['Valor', bloque.encabezado_patron || ENCABEZADO_PATRON_DEFAULT, 'Tolerancia', ' '].map(h => (
                       <th key={h} style={{ textAlign: 'left', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--muted)', padding: '4px 6px' }}>{h}</th>
                     ))}
                   </tr>
@@ -166,7 +195,7 @@ export function MedicionesEditor({ bloques, plantillas, onChange, onRemoveBloque
               // encabezado "Ref./Lote/Vencimiento" se arma solo al copiar.
               <div style={{ marginBottom: 10 }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 10 }}>
-                  <Input label="Lote" value={bloque.lote} onChange={e => updateBloque(i, { lote: e.target.value })} placeholder="Ej. 2249" />
+                  <Input label="Lote" value={bloque.lote} onChange={e => updateBloque(i, { lote: e.target.value })} placeholder={esBloqueDeProducto(bloque) ? 'Vacío = serie en Equipos de la intranet' : 'Ej. 2249'} />
                   <MonthYearInput label="Fecha de Vencimiento" value={bloque.fecha_vencimiento} onChange={v => updateBloque(i, { fecha_vencimiento: v })} />
                 </div>
                 <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--muted)', display: 'block', marginBottom: 5 }}>
