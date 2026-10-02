@@ -3,7 +3,7 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import logo from '../../assets/logo.svg'
 import {
   Phone, Package, DollarSign, Wrench, FileText, Warehouse,
-  LogOut, Pencil, ShieldCheck, BarChart2, Mail, KeyRound, ChevronDown, Timer, ListTodo, CalendarClock, QrCode, Box,
+  LogOut, Pencil, ShieldCheck, BarChart2, KeyRound, ChevronDown, Timer, ListTodo, CalendarClock, QrCode, Box,
   FlaskConical, Ticket, PackageX, BadgeCheck, Star, GripVertical, FileCheck
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -77,7 +77,6 @@ const NAV_GROUPS: NavGroup[] = [
       { to: '/reporte-st',  label: 'Reporte ST',          icon: Timer,     moduleKey: 'reporte_st'  },
       { to: '/editor',      label: 'Editor de Informes', icon: FileText,  moduleKey: 'editor'      },
       { to: '/indicadores', label: 'Indicadores',        icon: BarChart2, moduleKey: 'indicadores' },
-      { to: '/correos',     label: 'Correos',            icon: Mail,      moduleKey: 'correos'     },
     ],
   },
   {

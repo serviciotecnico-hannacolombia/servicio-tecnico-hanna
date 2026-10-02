@@ -1,7 +1,6 @@
 // Genera los mailto: para los dos correos que se disparan dentro del flujo
-// de calibraciones — misma lógica que el módulo de Correos
-// (src/modules/formatos/correos): no hay envío real desde el servidor, solo
-// se arma la URL mailto y se abre el cliente de correo del usuario.
+// de calibraciones: no hay envío real desde el servidor, solo se arma la
+// URL mailto y se abre el cliente de correo del usuario.
 import { MODALIDAD_LABEL } from './hooks/useCalibraciones'
 import { parseOtstCodes } from './vistas/CamposCompartidos'
 import { fmtFecha } from './ui'
