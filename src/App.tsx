@@ -17,7 +17,6 @@ import { CodigosPage } from './modules/codigos/CodigosPage'
 import { EditorPage } from './modules/editor/EditorPage'
 import { AdminPage } from './modules/admin/AdminPage'
 import { IndicadoresPage } from './modules/indicadores/IndicadoresPage'
-import { FormatosPage } from './modules/formatos/FormatosPage'
 import { ReporteSTPage } from './modules/reporte-st/ReporteSTPage'
 import { TareasPage } from './modules/tareas/TareasPage'
 import { MantenimientoProgramadoPage } from './modules/mantenimiento-programado/MantenimientoProgramadoPage'
@@ -63,7 +62,6 @@ export default function App() {
               <Route path="/codigos"     element={<ModuleGuard moduleKey="codigos"><CodigosPage /></ModuleGuard>} />
               <Route path="/editor"      element={<ModuleGuard moduleKey="editor"><EditorPage /></ModuleGuard>} />
               <Route path="/indicadores" element={<ModuleGuard moduleKey="indicadores"><IndicadoresPage /></ModuleGuard>} />
-              <Route path="/correos"     element={<ModuleGuard moduleKey="correos"><FormatosPage /></ModuleGuard>} />
               <Route path="/reporte-st"  element={<ModuleGuard moduleKey="reporte_st"><ReporteSTPage /></ModuleGuard>} />
               <Route path="/tareas"     element={<ModuleGuard moduleKey="tareas"><TareasPage /></ModuleGuard>} />
               <Route path="/mantenimiento-programado" element={<ModuleGuard moduleKey="mantenimiento_programado"><MantenimientoProgramadoPage /></ModuleGuard>} />

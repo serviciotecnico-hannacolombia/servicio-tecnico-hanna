@@ -18,7 +18,7 @@ export interface CorreoDestinatario {
 
 export type ModuleKey =
   | 'llamadas' | 'bodega' | 'consumibles' | 'tarifas' | 'codigos'
-  | 'editor' | 'indicadores' | 'correos' | 'reporte_st' | 'tareas'
+  | 'editor' | 'indicadores' | 'reporte_st' | 'tareas'
   | 'mantenimiento_programado' | 'calibraciones' | 'void' | 'bodega_st' | 'tickets'
   | 'equipos_sin_formato' | 'certificados_calidad' | 'garantias' | 'admin'
 
