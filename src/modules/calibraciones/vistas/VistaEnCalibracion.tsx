@@ -1,11 +1,13 @@
 // Vista dedicada para el estado "En calibración" (flujo de laboratorio
 // externo): resume lo ya capturado en "Enviado" (proveedor, recepción,
 // fechas del certificado) y solo pide la fecha de retorno — preseleccionada
-// hoy — y la nota de retorno antes de pasar a "En retorno".
+// hoy — y la nota de retorno antes de pasar a "En retorno". La fecha
+// estimada de finalización se puede reprogramar aquí sin avanzar de etapa
+// (la mide el semáforo en este estado; el cambio queda en el historial).
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { FlaskConical } from 'lucide-react'
-import { FG, Seccion, Grid2, INP, PRI, fmtFecha } from '../ui'
+import { FG, Seccion, Grid2, INP, PRI, GHOST, fmtFecha } from '../ui'
 import { hoyISO } from '../hooks/useCalibraciones'
 import type { OrdenCalibracion } from '../../../types'
 
@@ -18,11 +20,22 @@ export function VistaEnCalibracion({ form, puedeEditar, soloLectura, saving, onA
 }) {
   const [fechaRetorno, setFechaRetorno] = useState(() => form.fecha_retorno || hoyISO())
   const [notaRetorno, setNotaRetorno] = useState(form.nota_retorno || '')
+  const [fechaFin, setFechaFin] = useState(form.certificado_fecha_fin || '')
+  const fechaFinCambiada = fechaFin !== (form.certificado_fecha_fin || '')
+
+  function guardarFechaFin() {
+    if (!fechaFin) { toast.error('Ingresa la fecha estimada de finalización'); return }
+    onAvanzar({ certificado_fecha_fin: fechaFin })
+  }
 
   function confirmar() {
     if (!fechaRetorno) { toast.error('Ingresa la fecha de retorno'); return }
     if (!notaRetorno.trim()) { toast.error('Ingresa la nota de retorno'); return }
-    onAvanzar({ estado: 'en_retorno', fecha_retorno: fechaRetorno, nota_retorno: notaRetorno.trim() })
+    onAvanzar({
+      estado: 'en_retorno', fecha_retorno: fechaRetorno, nota_retorno: notaRetorno.trim(),
+      // Si se editó la fecha estimada y no se guardó aparte, se guarda al avanzar.
+      ...(fechaFinCambiada && fechaFin ? { certificado_fecha_fin: fechaFin } : {}),
+    })
   }
 
   return (
@@ -49,9 +62,20 @@ export function VistaEnCalibracion({ form, puedeEditar, soloLectura, saving, onA
             </div>
           </FG>
           <FG label="Fecha estimada de finalización">
-            <div style={{ ...INP, color: form.certificado_fecha_fin ? 'var(--text)' : 'var(--muted)' }}>
-              {form.certificado_fecha_fin ? fmtFecha(form.certificado_fecha_fin) : '—'}
-            </div>
+            {soloLectura || !puedeEditar ? (
+              <div style={{ ...INP, color: form.certificado_fecha_fin ? 'var(--text)' : 'var(--muted)' }}>
+                {form.certificado_fecha_fin ? fmtFecha(form.certificado_fecha_fin) : '—'}
+              </div>
+            ) : (
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input type="date" value={fechaFin} onChange={e => setFechaFin(e.target.value)} style={INP} />
+                {fechaFinCambiada && (
+                  <button onClick={guardarFechaFin} disabled={saving} style={{ ...GHOST, whiteSpace: 'nowrap' }}>
+                    {saving ? 'Guardando…' : 'Guardar'}
+                  </button>
+                )}
+              </div>
+            )}
           </FG>
         </Grid2>
         <div style={{ marginTop: 14 }}>
