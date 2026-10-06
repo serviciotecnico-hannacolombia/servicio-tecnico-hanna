@@ -26,6 +26,7 @@ const MODULE_LABELS: Record<ModuleKey, string> = {
   equipos_sin_formato: 'Equipos Sin Formato',
   certificados_calidad: 'Certificados de Calidad',
   garantias: 'Garantías',
+  mant_in_situ: 'Mant. In Situ',
   admin: 'Administración',
 }
 
@@ -44,6 +45,7 @@ const CAPABILITY_LABELS: Record<CapabilityKey, string> = {
   equipos_sin_formato_editar: 'Crear/editar y avanzar estados (Equipos Sin Formato)',
   garantias_editar: 'Crear/editar, asignar responsables y avanzar estados (Garantías)',
   garantias_ver_todas: 'Ver todas las garantías, no solo las propias (Garantías)',
+  mant_in_situ_editar: 'Configurar precios, tiempos, vehículo y peajes (Mant. In Situ)',
 }
 
 const MODULE_KEYS = Object.keys(MODULE_LABELS) as ModuleKey[]
@@ -67,6 +69,7 @@ const CAPABILITY_MODULE: Record<CapabilityKey, ModuleKey> = {
   equipos_sin_formato_editar: 'equipos_sin_formato',
   garantias_editar: 'garantias',
   garantias_ver_todas: 'garantias',
+  mant_in_situ_editar: 'mant_in_situ',
 }
 
 // Agrupa las capacidades por su módulo, en el mismo orden que MODULE_KEYS —
