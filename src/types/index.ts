@@ -20,13 +20,13 @@ export type ModuleKey =
   | 'llamadas' | 'bodega' | 'consumibles' | 'tarifas' | 'codigos'
   | 'editor' | 'indicadores' | 'reporte_st' | 'tareas'
   | 'mantenimiento_programado' | 'calibraciones' | 'void' | 'bodega_st' | 'tickets'
-  | 'equipos_sin_formato' | 'certificados_calidad' | 'garantias' | 'admin'
+  | 'equipos_sin_formato' | 'certificados_calidad' | 'garantias' | 'mant_in_situ' | 'admin'
 
 export type CapabilityKey =
   | 'importar_csv_tarifas' | 'importar_csv_codigos' | 'importar_csv_llamadas'
   | 'bodega_registrar_ingreso' | 'editar_codigos' | 'gestion_codigos' | 'bodega_eliminar'
   | 'calibraciones_editar' | 'calibraciones_ver_todas' | 'ver_precios_codigos' | 'tablas_mantenimiento_editar'
-  | 'equipos_sin_formato_editar' | 'garantias_editar' | 'garantias_ver_todas'
+  | 'equipos_sin_formato_editar' | 'garantias_editar' | 'garantias_ver_todas' | 'mant_in_situ_editar'
 
 export interface Role {
   id: string
@@ -548,4 +548,83 @@ export interface GarantiaHistorial {
   valor_anterior: string | null
   valor_nuevo: string | null
   created_at: string
+}
+
+// ── Mant. In Situ ────────────────────────────────────────────────────────────
+
+export interface MantInSituConfig {
+  id: number
+  jornada_horas: number
+  costo_km: number
+  rendimiento_km_galon: number
+  precio_galon: number
+  margen_recorrido_pct: number
+  descripcion_servicio: string
+  origen_nombre: string
+  origen_direccion: string
+  origen_lat: number | null
+  origen_lng: number | null
+  rutas_consultadas_at: string | null
+  updated_at: string
+}
+
+export interface MantInSituCodigo {
+  codigo: string
+  precio: number
+  horas: number
+  updated_at: string
+}
+
+export interface MantInSituEquipoExcepcion {
+  referencia: string
+  horas: number | null
+  precio: number | null
+  descripcion_servicio: string | null
+  updated_at: string
+}
+
+export interface MantInSituPeaje {
+  id: string
+  nombre: string
+  fuente: string | null
+  tarifa_categoria_i: number
+  lat: number | null
+  lng: number | null
+  sector: string | null
+  sentido: string | null
+  actualizado: string | null
+  updated_at?: string
+}
+
+export interface MantInSituRevisionPeajes {
+  checkedAt?: string
+  effectiveFrom?: string
+  station?: string
+  categoryI?: number
+  note?: string
+  sources?: { label: string, url: string }[]
+}
+
+export interface MantInSituDestino {
+  codigo: string
+  departamento: string
+  municipio: string
+  lat: number | null
+  lng: number | null
+  ida_km: number | null
+  ida_min: number | null
+  regreso_km: number | null
+  regreso_min: number | null
+  peaje_manual_valor: number | null
+  peaje_manual_motivo: string | null
+  revision_peajes: MantInSituRevisionPeajes | null
+  activo: boolean
+  updated_at?: string
+}
+
+export interface MantInSituDestinoPeaje {
+  destino_codigo: string
+  peaje_id: string
+  sentido: 'ida' | 'regreso'
+  revision_requerida: boolean
 }

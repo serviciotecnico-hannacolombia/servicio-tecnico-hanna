@@ -4,7 +4,7 @@ import logo from '../../assets/logo.svg'
 import {
   Phone, Package, DollarSign, Wrench, FileText, Warehouse,
   LogOut, Pencil, ShieldCheck, BarChart2, KeyRound, ChevronDown, Timer, ListTodo, CalendarClock, QrCode, Box,
-  FlaskConical, Ticket, PackageX, BadgeCheck, Star, GripVertical, FileCheck
+  FlaskConical, Ticket, PackageX, BadgeCheck, MapPinned, Star, GripVertical, FileCheck
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useSidebar } from './SidebarContext'
@@ -90,6 +90,7 @@ const NAV_GROUPS: NavGroup[] = [
     key: 'estrategico', label: 'Estratégico', items: [
       { to: '/calibraciones',              label: 'Calibraciones',            icon: FlaskConical,  moduleKey: 'calibraciones' },
       { to: '/mantenimiento-programado',   label: 'Mantenimiento Programado', icon: CalendarClock, moduleKey: 'mantenimiento_programado' },
+      { to: '/mant-in-situ',               label: 'Mant. In Situ',            icon: MapPinned,     moduleKey: 'mant_in_situ' },
       { to: '/tickets',                    label: 'Tickets a Fábrica',        icon: Ticket,        moduleKey: 'tickets' },
       { to: '/equipos-sin-formato',        label: 'Equipos Sin Formato',      icon: PackageX,      moduleKey: 'equipos_sin_formato' },
       { to: '/garantias',                  label: 'Garantías',                icon: BadgeCheck,    moduleKey: 'garantias' },
