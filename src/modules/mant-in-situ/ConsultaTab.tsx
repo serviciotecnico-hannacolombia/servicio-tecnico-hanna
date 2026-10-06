@@ -19,6 +19,10 @@ function norm(v: string) {
 
 const fmtDecimal = (n: number) => n.toLocaleString('es-CO', { maximumFractionDigits: 1 })
 
+// IVA de Colombia — solo se muestra en el resumen para WhatsApp; en la
+// interfaz los valores son antes de IVA.
+const IVA_PCT = 19
+
 export function ConsultaTab({ destino, setDestino, items, setItems, avisoOmitido, setAvisoOmitido }: {
   destino: string
   setDestino: (v: string) => void
@@ -65,6 +69,7 @@ export function ConsultaTab({ destino, setDestino, items, setItems, avisoOmitido
   // detalle de cómo se calcula. *negrita* y _cursiva_ son formato de WhatsApp.
   async function copiarWhatsApp() {
     if (!r?.listo || !r.destino) return
+    const iva = Math.round(r.totalRedondeado * IVA_PCT / 100)
     const recortar = (t: string) => t.length > 60 ? t.slice(0, 57).trimEnd() + '…' : t
     const lineas = [
       '*Mantenimiento in situ — HANNA Servicio Técnico*',
@@ -78,7 +83,9 @@ export function ConsultaTab({ destino, setDestino, items, setItems, avisoOmitido
           : `• ${f.referencia}${nombre}: ${fmtCOP(f.totalRedondeado)}`
       }),
       '',
-      `*Total estimado: ${fmtCOP(r.totalRedondeado)}*`,
+      `Subtotal (antes de IVA): ${fmtCOP(r.totalRedondeado)}`,
+      `IVA (${IVA_PCT} %): ${fmtCOP(iva)}`,
+      `*Total con IVA: ${fmtCOP(r.totalRedondeado + iva)}*`,
       `🗓️ Duración estimada: ${r.dias} ${r.dias === 1 ? 'día' : 'días'}`,
       '',
       '_Valores estimados, sujetos a la cotización formal._',
@@ -86,6 +93,18 @@ export function ConsultaTab({ destino, setDestino, items, setItems, avisoOmitido
     try {
       await navigator.clipboard.writeText(lineas.join('\n'))
       toast.success('Resumen copiado — pégalo en WhatsApp')
+    } catch {
+      toast.error('No se pudo copiar al portapapeles')
+    }
+  }
+
+  // Copia solo el total estimado (antes de IVA) como número, listo para
+  // pegar en el ERP.
+  async function copiarValor() {
+    if (!r?.listo) return
+    try {
+      await navigator.clipboard.writeText(String(r.totalRedondeado))
+      toast.success(`${fmtCOP(r.totalRedondeado)} copiado`)
     } catch {
       toast.error('No se pudo copiar al portapapeles')
     }
@@ -262,9 +281,14 @@ export function ConsultaTab({ destino, setDestino, items, setItems, avisoOmitido
               {r.listo && r.totalRedondeado !== r.total && <> Valor exacto: {fmtCOP(r.total)}.</>}
             </div>
             {r.listo && (
-              <button onClick={copiarWhatsApp} style={{ ...PRI, width: '100%', justifyContent: 'center', marginTop: 12, background: '#1f9d55' }}>
-                <MessageCircle size={14} /> Copiar resumen para WhatsApp
-              </button>
+              <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                <button onClick={copiarValor} title="Copia el total estimado (antes de IVA) como número" style={{ ...GHOST, flex: '0 0 auto', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <Copy size={14} /> Copiar valor
+                </button>
+                <button onClick={copiarWhatsApp} title="Incluye el IVA" style={{ ...PRI, flex: 1, justifyContent: 'center', background: '#1f9d55' }}>
+                  <MessageCircle size={14} /> Resumen para WhatsApp
+                </button>
+              </div>
             )}
           </div>
 
