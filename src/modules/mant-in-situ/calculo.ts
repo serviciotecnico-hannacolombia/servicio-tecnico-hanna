@@ -8,7 +8,9 @@
 //   peajes      = (peaje manual ó peajes de ida + regreso) × días
 // Bogotá solo cobra el servicio. Los extras (vehículo + combustible +
 // peajes) se reparten entre los equipos en proporción a su precio base,
-// con redondeo que conserva el total exacto.
+// con redondeo que conserva el total exacto. Para mostrar y compartir, el
+// valor por equipo se redondea al millar más cercano (por unidad, luego ×
+// cantidad) y el total redondeado es la suma de esas filas.
 import type { EquipoInSitu } from './hooks/useMantInSitu'
 import type { MantInSituConfig, MantInSituDestino, MantInSituDestinoPeaje, MantInSituPeaje } from '../../types'
 
@@ -65,7 +67,9 @@ export interface FilaCalculo {
   base: number            // precio × cantidad
   horas: number           // horas × cantidad
   transporte: number      // parte del desplazamiento
-  total: number
+  total: number           // exacto (base + transporte)
+  unitarioRedondeado: number   // valor por unidad redondeado a miles
+  totalRedondeado: number      // unitarioRedondeado × cantidad
   valido: boolean
 }
 
@@ -85,7 +89,8 @@ export interface ResultadoCalculo {
   peajes: number
   peaje: PeajesVisita
   extras: number
-  total: number
+  total: number               // exacto
+  totalRedondeado: number     // suma de los valores por equipo redondeados
   listo: boolean
   errores: string[]
   esBogota: boolean
@@ -114,6 +119,8 @@ export function calcular(
       horas: e?.horas ? e.horas * i.cantidad : 0,
       transporte: 0,
       total: 0,
+      unitarioRedondeado: 0,
+      totalRedondeado: 0,
       valido: !!e?.completo,
     }
   })
@@ -142,13 +149,23 @@ export function calcular(
 
   const extras = vehiculo + combustible + totalPeajes
   const partes = repartir(extras, filas.map(f => f.base))
-  filas.forEach((f, i) => { f.transporte = partes[i]; f.total = f.base + partes[i] })
+  filas.forEach((f, i) => {
+    f.transporte = partes[i]
+    f.total = f.base + partes[i]
+    f.unitarioRedondeado = redondearMiles(f.total / f.cantidad)
+    f.totalRedondeado = f.unitarioRedondeado * f.cantidad
+  })
 
   return {
     destino, filas, base, horas, dias, horasViaje, horasViajeTotal: horasViaje * dias, horasDisponibles,
     kmVisita, km, vehiculo, combustible, peajes: totalPeajes, peaje, extras, total: base + extras,
+    totalRedondeado: filas.reduce((s, f) => s + f.totalRedondeado, 0),
     listo: errores.length === 0, errores, esBogota,
   }
+}
+
+export function redondearMiles(v: number): number {
+  return Math.round(v / 1000) * 1000
 }
 
 // Reparto de las horas de mantenimiento por día (la última jornada lleva el resto).

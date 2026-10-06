@@ -3,7 +3,7 @@
 // El cálculo vive en calculo.ts (misma fórmula que el HTML original).
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { Search, Plus, Minus, Trash2, FileText, Copy, MapPinned, AlertTriangle, CalendarDays } from 'lucide-react'
+import { Search, Plus, Minus, Trash2, FileText, Copy, MapPinned, AlertTriangle, CalendarDays, MessageCircle } from 'lucide-react'
 import { Card } from '../../components/ui/Card'
 import { Modal } from '../../components/ui/Modal'
 import { Spinner } from '../../components/ui/Spinner'
@@ -58,6 +58,37 @@ export function ConsultaTab({ destino, setDestino, items, setItems, avisoOmitido
   }
   function quitar(ref: string) {
     setItems(prev => prev.filter(i => i.referencia !== ref))
+  }
+
+  // Resumen para enviar por WhatsApp: solo destino, valor por equipo
+  // (redondeado, con desplazamiento incluido), total y duración — sin el
+  // detalle de cómo se calcula. *negrita* y _cursiva_ son formato de WhatsApp.
+  async function copiarWhatsApp() {
+    if (!r?.listo || !r.destino) return
+    const recortar = (t: string) => t.length > 60 ? t.slice(0, 57).trimEnd() + '…' : t
+    const lineas = [
+      '*Mantenimiento in situ — HANNA Servicio Técnico*',
+      `📍 Destino: ${r.destino.municipio}`,
+      '',
+      '*Equipos*',
+      ...r.filas.map(f => {
+        const nombre = f.equipo?.nombre ? ` — ${recortar(f.equipo.nombre)}` : ''
+        return f.cantidad > 1
+          ? `• ${f.referencia}${nombre} (x${f.cantidad}): ${fmtCOP(f.unitarioRedondeado)} c/u → ${fmtCOP(f.totalRedondeado)}`
+          : `• ${f.referencia}${nombre}: ${fmtCOP(f.totalRedondeado)}`
+      }),
+      '',
+      `*Total estimado: ${fmtCOP(r.totalRedondeado)}*`,
+      `🗓️ Duración estimada: ${r.dias} ${r.dias === 1 ? 'día' : 'días'}`,
+      '',
+      '_Valores estimados, sujetos a la cotización formal._',
+    ]
+    try {
+      await navigator.clipboard.writeText(lineas.join('\n'))
+      toast.success('Resumen copiado — pégalo en WhatsApp')
+    } catch {
+      toast.error('No se pudo copiar al portapapeles')
+    }
   }
 
   async function copiarDescripcion() {
@@ -174,9 +205,10 @@ export function ConsultaTab({ destino, setDestino, items, setItems, avisoOmitido
                       <button onClick={() => fijarCantidad(f.referencia, f.cantidad + 1)} title="Sumar" style={{ ...GHOST, padding: '5px 8px' }}><Plus size={12} /></button>
                     </div>
                     <div style={{ textAlign: 'right', minWidth: 110 }}>
-                      <div style={{ fontWeight: 700, fontSize: 13 }}>{r.listo ? fmtCOP(f.total) : '—'}</div>
+                      <div style={{ fontWeight: 700, fontSize: 13 }}>{r.listo ? fmtCOP(f.totalRedondeado) : '—'}</div>
                       <div style={{ fontSize: 10.5, color: 'var(--muted)' }}>
-                        {r.listo ? (f.transporte ? `incluye ${fmtCOP(f.transporte)} de desplazamiento` : `total por ${f.cantidad}`) : 'Se completa al calcular'}
+                        {!r.listo ? 'Se completa al calcular'
+                          : <>{f.cantidad > 1 && <>{fmtCOP(f.unitarioRedondeado)} c/u · </>}servicio {fmtCOP(f.base)}{f.transporte > 0 && <> + desplaz. {fmtCOP(f.transporte)}</>}</>}
                       </div>
                     </div>
                     <div style={{ display: 'flex', gap: 4 }}>
@@ -224,8 +256,16 @@ export function ConsultaTab({ destino, setDestino, items, setItems, avisoOmitido
 
           <div style={{ marginTop: 14 }}>
             <div style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.6px', fontFamily: 'var(--mono)' }}>Total estimado</div>
-            <div style={{ fontSize: 26, fontWeight: 800, color: r.listo ? 'var(--accent)' : 'var(--muted)' }}>{r.listo ? fmtCOP(r.total) : '—'}</div>
-            <div style={{ fontSize: 11.5, color: 'var(--muted)' }}>Los precios de cada equipo incluyen su parte del desplazamiento.</div>
+            <div style={{ fontSize: 26, fontWeight: 800, color: r.listo ? 'var(--accent)' : 'var(--muted)' }}>{r.listo ? fmtCOP(r.totalRedondeado) : '—'}</div>
+            <div style={{ fontSize: 11.5, color: 'var(--muted)' }}>
+              Los precios de cada equipo incluyen su parte del desplazamiento, redondeados a miles.
+              {r.listo && r.totalRedondeado !== r.total && <> Valor exacto: {fmtCOP(r.total)}.</>}
+            </div>
+            {r.listo && (
+              <button onClick={copiarWhatsApp} style={{ ...PRI, width: '100%', justifyContent: 'center', marginTop: 12, background: '#1f9d55' }}>
+                <MessageCircle size={14} /> Copiar resumen para WhatsApp
+              </button>
+            )}
           </div>
 
           {errores.length > 0 && (
