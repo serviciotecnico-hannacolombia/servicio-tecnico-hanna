@@ -1,7 +1,7 @@
 // Datos del módulo Mant. In Situ. El catálogo de equipos es codigos_inet
 // (módulo Códigos); este módulo aporta precio/horas por código, excepciones
 // por referencia, configuración del vehículo y las rutas con sus peajes.
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase, fetchAllRows } from '../../../lib/supabase'
 import { useUser } from '../../../hooks/useUser'
 import type {
@@ -38,6 +38,17 @@ export function useCodigosInSitu() {
     queryFn: () => fetchAllRows<MantInSituCodigo>('mant_in_situ_codigos', q => q.order('codigo')),
     enabled: !!user,
   })
+}
+
+// ── Invalidación tras importar ───────────────────────────────────────────────
+
+export function useInvalidarMantInSitu() {
+  const qc = useQueryClient()
+  return () => {
+    for (const k of ['mant_in_situ_config', 'mant_in_situ_codigos', 'mant_in_situ_equipos', 'mant_in_situ_destinos']) {
+      qc.invalidateQueries({ queryKey: [k] })
+    }
+  }
 }
 
 function useExcepcionesInSitu() {
@@ -102,6 +113,8 @@ export interface EquipoInSitu {
   precioIndividual: boolean      // el precio viene de la excepción, no del código
   tieneExcepcion: boolean
   completo: boolean              // tiene código, horas y precio válidos
+  codigoInet: string             // código de mantenimiento tal como está en Códigos (puede no ser válido)
+  excepcion: MantInSituEquipoExcepcion | null
 }
 
 // Combina codigos_inet + excepciones + precio/horas del código. Las
@@ -136,10 +149,12 @@ export function useEquiposInSitu() {
       precioIndividual: exc?.precio != null,
       tieneExcepcion: !!exc,
       completo: !!cod && horas != null && precio != null,
+      codigoInet: (i.codigo_mantenimiento || '').trim(),
+      excepcion: exc ?? null,
     }
   })
 
-  return { equipos, isLoading, error }
+  return { equipos, isLoading, error, codigos: codigos.data ?? [] }
 }
 
 // ── Formato ─────────────────────────────────────────────────────────────────

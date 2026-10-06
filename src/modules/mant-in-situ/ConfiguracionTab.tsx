@@ -1,5 +1,6 @@
-// Configuración (solo con mant_in_situ_editar). Fase 1: solo lectura de los
-// datos migrados del HTML — la edición llega en la fase 2.
+// Configuración (solo con mant_in_situ_editar). Fase 1: se ve en la app y
+// se actualiza en bloque por CSV (descargar → editar → importar con vista
+// previa, ver importaciones.ts); la edición fila a fila llega en la fase 2.
 import { useMemo, useState } from 'react'
 import { Search } from 'lucide-react'
 import { Card } from '../../components/ui/Card'
@@ -10,6 +11,10 @@ import {
   fmtCOP, fmtHoras, fmtMinutos, CODIGO_BOGOTA, type EquipoInSitu,
 } from './hooks/useMantInSitu'
 import { FG, INP, EMPTY, B_CHIP, B_ALERTA } from './ui'
+import { CsvAcciones } from './CsvAcciones'
+import {
+  exportarEquipos, planEquipos, exportarCodigos, planCodigos, exportarDestinos, planDestinos, exportarPeajes, planPeajes,
+} from './importaciones'
 import type { MantInSituCodigo, MantInSituDestino } from '../../types'
 
 type SubTab = 'equipos' | 'precios' | 'jornada' | 'peajes'
@@ -31,7 +36,7 @@ export function ConfiguracionTab() {
           }}>{label}</button>
         ))}
         <p style={{ fontSize: 11, color: 'var(--muted)', padding: '10px 12px 4px', lineHeight: 1.5 }}>
-          Solo lectura por ahora — la edición llega en la siguiente fase.
+          Para actualizar en bloque usa Descargar CSV → edita → Importar CSV. La edición fila a fila llega en la siguiente fase.
         </p>
       </Card>
       {sub === 'equipos' ? <EquiposPanel /> : sub === 'precios' ? <PreciosPanel /> : sub === 'jornada' ? <JornadaPanel /> : <PeajesPanel />}
@@ -44,7 +49,8 @@ export function ConfiguracionTab() {
 type FiltroPendiente = 'todos' | 'pendientes' | 'excepciones'
 
 function EquiposPanel() {
-  const { equipos, isLoading } = useEquiposInSitu()
+  const { equipos, codigos, isLoading } = useEquiposInSitu()
+  const { data: config } = useConfigInSitu()
   const [busqueda, setBusqueda] = useState('')
   const [filtro, setFiltro] = useState<FiltroPendiente>('todos')
 
@@ -75,7 +81,18 @@ function EquiposPanel() {
   const pendientes = equipos.filter(e => !e.completo).length
   return (
     <Card>
-      <h3 style={{ fontSize: 15, fontWeight: 700 }}>Equipos y descripciones de servicio</h3>
+      <EncabezadoPanel titulo="Equipos y descripciones de servicio" acciones={
+        <CsvAcciones
+          titulo="Equipos y servicios"
+          onExportar={() => exportarEquipos(equipos)}
+          planificar={csv => planEquipos(csv, equipos, codigos, config?.descripcion_servicio ?? '')}
+          ayuda={<>
+            Solo se actualizan referencias que ya existen en <strong>Códigos</strong>; una referencia desconocida es un error (no se crean equipos).
+            Las referencias que no vienen en el archivo no se tocan. Celda vacía = usar el valor del código (código, horas, precio) o la descripción general.
+            Las columnas equipo, familia, codigo_en_codigos y *_efectivo(s) son solo de consulta y se ignoran.
+          </>}
+        />
+      } />
       <p style={{ fontSize: 12, color: 'var(--muted)', margin: '4px 0 14px' }}>
         Catálogo desde <strong>Códigos</strong> ({equipos.length} referencias). Sin precio individual se usa el del código. {pendientes > 0 && <>· <span style={{ color: 'var(--red)' }}>{pendientes} sin código, horas o precio válido</span></>}
       </p>
@@ -115,7 +132,14 @@ function PreciosPanel() {
   if (isLoading) return <Card><Spinner size={24} /></Card>
   return (
     <Card>
-      <h3 style={{ fontSize: 15, fontWeight: 700 }}>Precios base por mantenimiento</h3>
+      <EncabezadoPanel titulo="Precios base por mantenimiento" acciones={
+        <CsvAcciones
+          titulo="Precios base"
+          onExportar={() => exportarCodigos(codigos)}
+          planificar={csv => planCodigos(csv, codigos)}
+          ayuda={<>Solo se actualizan códigos que ya existen (no se crean nuevos). Precio sin decimales y horas mayores a 0, ambos obligatorios.</>}
+        />
+      } />
       <p style={{ fontSize: 12, color: 'var(--muted)', margin: '4px 0 14px' }}>Se aplican a las referencias sin precio individual.</p>
       <Table columns={columns} data={codigos} keyExtractor={c => c.codigo} />
     </Card>
@@ -178,7 +202,27 @@ function PeajesPanel() {
 
   return (
     <Card>
-      <h3 style={{ fontSize: 15, fontWeight: 700 }}>Peajes por visita y destino</h3>
+      <EncabezadoPanel titulo="Peajes por visita y destino" acciones={
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-end' }}>
+          <span style={{ fontSize: 10.5, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.5px', fontFamily: 'var(--mono)' }}>Destinos (km, min, peaje manual)</span>
+          <CsvAcciones
+            titulo="Destinos"
+            onExportar={() => exportarDestinos(data.destinos)}
+            planificar={csv => planDestinos(csv, data.destinos)}
+            ayuda={<>
+              Solo se actualizan municipios que ya existen (por código DANE). Celda vacía en km/min = ruta pendiente de revisión.
+              peaje_manual_valor vacío = usar los peajes de la ruta; 0 = ruta confirmada sin cobro. activo: si / no.
+            </>}
+          />
+          <span style={{ fontSize: 10.5, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.5px', fontFamily: 'var(--mono)', marginTop: 4 }}>Tarifas de peajes</span>
+          <CsvAcciones
+            titulo="Tarifas de peajes"
+            onExportar={() => exportarPeajes(data.peajes)}
+            planificar={csv => planPeajes(csv, data.peajes)}
+            ayuda={<>Solo se actualizan peajes que ya existen (por nombre). Tarifa categoría I sin decimales; actualizado en AAAA-MM-DD o DD/MM/AAAA. Sector, sentido y fuente se ignoran.</>}
+          />
+        </div>
+      } />
       <p style={{ fontSize: 12, color: 'var(--muted)', margin: '4px 0 14px' }}>Una visita incluye ida y regreso. Los peajes se multiplican por las visitas necesarias, no por equipos.</p>
       <FG label="Destino a revisar">
         <select value={sel?.codigo || ''} onChange={e => setCodigo(e.target.value)} style={INP}>
@@ -224,5 +268,14 @@ function PeajesPanel() {
         </>
       )}
     </Card>
+  )
+}
+
+function EncabezadoPanel({ titulo, acciones }: { titulo: string, acciones: React.ReactNode }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
+      <h3 style={{ fontSize: 15, fontWeight: 700 }}>{titulo}</h3>
+      {acciones}
+    </div>
   )
 }
