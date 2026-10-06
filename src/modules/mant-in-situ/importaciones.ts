@@ -12,7 +12,8 @@
 import { supabase } from '../../lib/supabase'
 import { descargarCSV, leerNumero, leerSiNo, texto, type CsvLeido } from './csv'
 import type { EquipoInSitu } from './hooks/useMantInSitu'
-import type { MantInSituCodigo, MantInSituDestino, MantInSituEquipoExcepcion, MantInSituPeaje } from '../../types'
+import { asignarCodigoInSitu, excepcionActual, guardarExcepciones, type ExcepcionEquipo } from './acciones'
+import type { MantInSituCodigo, MantInSituDestino, MantInSituPeaje } from '../../types'
 
 export interface CambioCampo { campo: string, antes: string, despues: string }
 export interface Cambio { clave: string, detalle?: string, campos: CambioCampo[] }
@@ -27,14 +28,6 @@ export interface PlanImportacion {
 }
 
 const fmt = (v: unknown) => v == null || v === '' ? '(vacío)' : String(v)
-const LOTE = 500
-
-function lotes<T>(items: T[]): T[][] {
-  const out: T[][] = []
-  for (let i = 0; i < items.length; i += LOTE) out.push(items.slice(i, i + LOTE))
-  return out
-}
-
 function normRef(v: string): string {
   return v.trim().toUpperCase().replace(/\s+/g, ' ')
 }
@@ -59,17 +52,19 @@ function clavesDeFilas(csv: CsvLeido, columnaClave: string, errores: ErrorFila[]
 
 // ── Equipos y servicios ─────────────────────────────────────────────────────
 
-const COLS_EQUIPOS = ['referencia', 'equipo', 'familia', 'codigo_en_codigos', 'codigo_mantenimiento', 'horas', 'precio_individual', 'descripcion_servicio', 'codigo_efectivo', 'horas_efectivas', 'precio_efectivo']
-const EDITABLES_EQUIPOS = ['codigo_mantenimiento', 'horas', 'precio_individual', 'descripcion_servicio']
+const COLS_EQUIPOS = ['referencia', 'equipo', 'familia', 'codigo_normal', 'codigo_in_situ', 'horas', 'precio_individual', 'descripcion_servicio', 'horas_efectivas', 'precio_efectivo']
+const EDITABLES_EQUIPOS = ['codigo_in_situ', 'horas', 'precio_individual', 'descripcion_servicio']
 
 export function exportarEquipos(equipos: EquipoInSitu[]) {
   descargarCSV('equipos', COLS_EQUIPOS, equipos.map(e => [
-    e.referencia, e.nombre, e.familia, e.codigoInet,
-    e.excepcion?.codigo_mantenimiento ?? '', e.excepcion?.horas ?? '', e.excepcion?.precio ?? '', e.excepcion?.descripcion_servicio ?? '',
-    e.codigo ?? '', e.horas ?? '', e.precio ?? '',
+    e.referencia, e.nombre, e.familia, e.codigoNormal, e.codigo ?? '',
+    e.excepcion?.horas ?? '', e.excepcion?.precio ?? '', e.excepcion?.descripcion_servicio ?? '',
+    e.horas ?? '', e.precio ?? '',
   ]))
 }
 
+// codigo_in_situ se escribe en codigos_inet (vía RPC, agrupado por código);
+// horas / precio / descripción son excepciones de mant_in_situ_equipos.
 export function planEquipos(csv: CsvLeido, equipos: EquipoInSitu[], codigos: MantInSituCodigo[], descripcionGeneral: string): PlanImportacion {
   const errores: ErrorFila[] = []
   const porRef = new Map(equipos.map(e => [normRef(e.referencia), e]))
@@ -78,8 +73,8 @@ export function planEquipos(csv: CsvLeido, equipos: EquipoInSitu[], codigos: Man
   const claves = clavesDeFilas(csv, 'referencia', errores, normRef)
 
   const cambios: Cambio[] = []
-  const upserts: Omit<MantInSituEquipoExcepcion, 'updated_at'>[] = []
-  const borrar: string[] = []
+  const asignaciones = new Map<string | null, string[]>()   // código in situ (null = quitar) → referencias
+  const excepciones = new Map<string, ExcepcionEquipo>()
   let sinCambio = 0
 
   csv.filas.forEach((f, i) => {
@@ -89,23 +84,18 @@ export function planEquipos(csv: CsvLeido, equipos: EquipoInSitu[], codigos: Man
     const eq = porRef.get(clave)
     if (!eq) { errores.push({ fila, mensaje: `${clave} no existe en Códigos — este archivo no crea equipos.` }); return }
 
-    const actual = eq.excepcion
-    const nuevo = {
-      codigo_mantenimiento: actual?.codigo_mantenimiento ?? null,
-      horas: actual?.horas ?? null,
-      precio: actual?.precio ?? null,
-      descripcion_servicio: actual?.descripcion_servicio ?? null,
-    }
+    const actual = excepcionActual(eq)
+    const nuevo = { ...actual }
+    let codigoNuevo = eq.codigo
     let filaOk = true
 
-    if (presentes.includes('codigo_mantenimiento')) {
-      const v = texto(f.codigo_mantenimiento)
-      if (!v) nuevo.codigo_mantenimiento = null
+    if (presentes.includes('codigo_in_situ')) {
+      const v = texto(f.codigo_in_situ)
+      if (!v) codigoNuevo = null
       else {
         const canon = codigoCanonico.get(v.toUpperCase())
-        if (!canon) { errores.push({ fila, mensaje: `${clave}: el código "${v}" no existe en Precios base.` }); filaOk = false }
-        // Igual al de Códigos → no hace falta excepción.
-        else nuevo.codigo_mantenimiento = canon.toUpperCase() === eq.codigoInet.toUpperCase() ? null : canon
+        if (!canon) { errores.push({ fila, mensaje: `${clave}: el código in situ "${v}" no existe en Precios base.` }); filaOk = false }
+        else codigoNuevo = canon
       }
     }
     if (presentes.includes('horas')) {
@@ -125,35 +115,32 @@ export function planEquipos(csv: CsvLeido, equipos: EquipoInSitu[], codigos: Man
     if (!filaOk) return
 
     const campos: CambioCampo[] = []
-    const comparar = (campo: string, a: unknown, b: unknown) => { if ((a ?? null) !== (b ?? null)) campos.push({ campo, antes: fmt(a), despues: fmt(b) }) }
-    comparar('Código', actual?.codigo_mantenimiento, nuevo.codigo_mantenimiento)
-    comparar('Horas', actual?.horas, nuevo.horas)
-    comparar('Precio individual', actual?.precio, nuevo.precio)
-    if ((actual?.descripcion_servicio ?? null) !== nuevo.descripcion_servicio) {
-      campos.push({ campo: 'Descripción', antes: actual?.descripcion_servicio ? 'personalizada' : 'general', despues: nuevo.descripcion_servicio ? 'personalizada' : 'general' })
+    if (codigoNuevo !== eq.codigo) {
+      campos.push({ campo: 'Código in situ', antes: eq.codigo ?? 'sin asignar', despues: codigoNuevo ?? 'sin asignar' })
+      asignaciones.set(codigoNuevo, [...(asignaciones.get(codigoNuevo) ?? []), eq.referencia])
+    }
+    const cambiaExc = (campo: string, a: unknown, b: unknown) => { if ((a ?? null) !== (b ?? null)) campos.push({ campo, antes: fmt(a), despues: fmt(b) }) }
+    cambiaExc('Horas', actual.horas, nuevo.horas)
+    cambiaExc('Precio individual', actual.precio, nuevo.precio)
+    if (actual.descripcion_servicio !== nuevo.descripcion_servicio) {
+      campos.push({ campo: 'Descripción', antes: actual.descripcion_servicio ? 'personalizada' : 'general', despues: nuevo.descripcion_servicio ? 'personalizada' : 'general' })
     }
     if (!campos.length) { sinCambio++; return }
-
     cambios.push({ clave: eq.referencia, detalle: eq.nombre, campos })
-    const vacia = Object.values(nuevo).every(v => v == null)
-    if (vacia) borrar.push(eq.referencia)
-    else upserts.push({ referencia: eq.referencia, ...nuevo })
+    if (actual.horas !== nuevo.horas || actual.precio !== nuevo.precio || actual.descripcion_servicio !== nuevo.descripcion_servicio) {
+      excepciones.set(eq.referencia, nuevo)
+    }
   })
 
   return {
     cambios, sinCambio, errores,
     camposIgnorados: EDITABLES_EQUIPOS.filter(c => !presentes.includes(c)),
     aplicar: async () => {
-      const ahora = new Date().toISOString()
-      for (const lote of lotes(upserts)) {
-        const { error } = await supabase.from('mant_in_situ_equipos').upsert(lote.map(u => ({ ...u, updated_at: ahora })), { onConflict: 'referencia' })
-        if (error) return error.message
+      for (const [codigo, refs] of asignaciones) {
+        const error = await asignarCodigoInSitu(refs, codigo)
+        if (error) return error
       }
-      for (const lote of lotes(borrar)) {
-        const { error } = await supabase.from('mant_in_situ_equipos').delete().in('referencia', lote)
-        if (error) return error.message
-      }
-      return null
+      return excepciones.size ? guardarExcepciones(excepciones) : null
     },
   }
 }

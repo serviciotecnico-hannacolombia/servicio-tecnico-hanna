@@ -577,7 +577,6 @@ export interface MantInSituCodigo {
 
 export interface MantInSituEquipoExcepcion {
   referencia: string
-  codigo_mantenimiento: string | null
   horas: number | null
   precio: number | null
   descripcion_servicio: string | null

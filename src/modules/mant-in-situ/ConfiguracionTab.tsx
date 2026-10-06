@@ -1,21 +1,19 @@
-// Configuración (solo con mant_in_situ_editar). Fase 1: se ve en la app y
-// se actualiza en bloque por CSV (descargar → editar → importar con vista
-// previa, ver importaciones.ts); la edición fila a fila llega en la fase 2.
-import { useMemo, useState } from 'react'
-import { Search } from 'lucide-react'
+// Configuración (solo con mant_in_situ_editar). Equipos se edita en bloque
+// (selección + acciones), Precios base y Jornada en la misma pantalla, y
+// todo se puede actualizar también por CSV con vista previa (importaciones.ts).
+// Destinos y peajes: se ven aquí y se actualizan por CSV.
+import { useState } from 'react'
 import { Card } from '../../components/ui/Card'
-import { Table, type Column } from '../../components/ui/Table'
 import { Spinner } from '../../components/ui/Spinner'
-import {
-  useConfigInSitu, useCodigosInSitu, useDestinosInSitu, useEquiposInSitu,
-  fmtCOP, fmtHoras, fmtMinutos, CODIGO_BOGOTA, type EquipoInSitu,
-} from './hooks/useMantInSitu'
-import { FG, INP, EMPTY, B_CHIP, B_ALERTA } from './ui'
+import { useDestinosInSitu, fmtCOP, fmtMinutos, CODIGO_BOGOTA } from './hooks/useMantInSitu'
+import { FG, INP, B_ALERTA } from './ui'
 import { CsvAcciones } from './CsvAcciones'
-import {
-  exportarEquipos, planEquipos, exportarCodigos, planCodigos, exportarDestinos, planDestinos, exportarPeajes, planPeajes,
-} from './importaciones'
-import type { MantInSituCodigo, MantInSituDestino } from '../../types'
+import { exportarDestinos, planDestinos, exportarPeajes, planPeajes } from './importaciones'
+import { EquiposPanel } from './config/EquiposPanel'
+import { PreciosPanel } from './config/PreciosPanel'
+import { JornadaPanel } from './config/JornadaPanel'
+import { EncabezadoPanel } from './config/EncabezadoPanel'
+import type { MantInSituDestino } from '../../types'
 
 type SubTab = 'equipos' | 'precios' | 'jornada' | 'peajes'
 
@@ -36,153 +34,11 @@ export function ConfiguracionTab() {
           }}>{label}</button>
         ))}
         <p style={{ fontSize: 11, color: 'var(--muted)', padding: '10px 12px 4px', lineHeight: 1.5 }}>
-          Para actualizar en bloque usa Descargar CSV → edita → Importar CSV. La edición fila a fila llega en la siguiente fase.
+          Cambios en bloque: selecciona en la tabla y aplica, o usa Descargar CSV → edita → Importar CSV.
         </p>
       </Card>
       {sub === 'equipos' ? <EquiposPanel /> : sub === 'precios' ? <PreciosPanel /> : sub === 'jornada' ? <JornadaPanel /> : <PeajesPanel />}
     </div>
-  )
-}
-
-// ── Equipos y servicios ─────────────────────────────────────────────────────
-
-type FiltroPendiente = 'todos' | 'pendientes' | 'excepciones'
-
-function EquiposPanel() {
-  const { equipos, codigos, isLoading } = useEquiposInSitu()
-  const { data: config } = useConfigInSitu()
-  const [busqueda, setBusqueda] = useState('')
-  const [filtro, setFiltro] = useState<FiltroPendiente>('todos')
-
-  const filtrados = useMemo(() => {
-    const q = busqueda.toLowerCase().trim()
-    return equipos
-      .filter(e => filtro === 'todos' || (filtro === 'pendientes' ? !e.completo : e.tieneExcepcion))
-      .filter(e => !q || [e.referencia, e.nombre, e.codigo, e.familia].some(v => (v || '').toLowerCase().includes(q)))
-  }, [equipos, busqueda, filtro])
-
-  const columns: Column<EquipoInSitu>[] = [
-    { key: 'ref', header: 'Referencia', width: '130px', render: e => <span style={{ fontFamily: 'var(--mono)', fontWeight: 700, fontSize: 12.5 }}>{e.referencia}</span> },
-    {
-      key: 'nombre', header: 'Equipo',
-      render: e => <div><div style={{ fontSize: 12.5 }}>{e.nombre}</div><div style={{ fontSize: 11, color: 'var(--muted)' }}>{e.familia}</div></div>,
-    },
-    { key: 'codigo', header: 'Código', width: '150px', render: e => e.codigo ? <span style={B_CHIP}>{e.codigo}</span> : <span style={B_ALERTA}>Sin código</span> },
-    { key: 'horas', header: 'Horas', width: '70px', align: 'right', render: e => e.horas != null ? fmtHoras(e.horas) : '—' },
-    {
-      key: 'precio', header: 'Precio base', width: '130px', align: 'right',
-      render: e => <span title={e.precioIndividual ? 'Precio individual' : 'Precio del código'}>{fmtCOP(e.precio)}{e.precioIndividual ? ' *' : ''}</span>,
-    },
-    { key: 'exc', header: '', width: '90px', render: e => e.tieneExcepcion ? <span style={B_CHIP} title="Tiene valores propios distintos a Códigos o al código de mantenimiento">Excepción</span> : null },
-  ]
-
-  if (isLoading) return <Card><Spinner size={24} /></Card>
-
-  const pendientes = equipos.filter(e => !e.completo).length
-  return (
-    <Card>
-      <EncabezadoPanel titulo="Equipos y descripciones de servicio" acciones={
-        <CsvAcciones
-          titulo="Equipos y servicios"
-          onExportar={() => exportarEquipos(equipos)}
-          planificar={csv => planEquipos(csv, equipos, codigos, config?.descripcion_servicio ?? '')}
-          ayuda={<>
-            Solo se actualizan referencias que ya existen en <strong>Códigos</strong>; una referencia desconocida es un error (no se crean equipos).
-            Las referencias que no vienen en el archivo no se tocan. Celda vacía = usar el valor del código (código, horas, precio) o la descripción general.
-            Las columnas equipo, familia, codigo_en_codigos y *_efectivo(s) son solo de consulta y se ignoran.
-          </>}
-        />
-      } />
-      <p style={{ fontSize: 12, color: 'var(--muted)', margin: '4px 0 14px' }}>
-        Catálogo desde <strong>Códigos</strong> ({equipos.length} referencias). Sin precio individual se usa el del código. {pendientes > 0 && <>· <span style={{ color: 'var(--red)' }}>{pendientes} sin código, horas o precio válido</span></>}
-      </p>
-      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 12 }}>
-        <div style={{ position: 'relative', flex: 1, minWidth: 220 }}>
-          <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)', pointerEvents: 'none' }} />
-          <input value={busqueda} onChange={e => setBusqueda(e.target.value)} placeholder="Referencia, nombre, familia o código" style={{ ...INP, paddingLeft: 34 }} />
-        </div>
-        <select value={filtro} onChange={e => setFiltro(e.target.value as FiltroPendiente)} style={{ ...INP, width: 'auto' }}>
-          <option value="todos">Todos los equipos</option>
-          <option value="pendientes">Con información pendiente</option>
-          <option value="excepciones">Con excepción</option>
-        </select>
-      </div>
-      {filtrados.length === 0
-        ? <div style={EMPTY}><p>Sin resultados</p></div>
-        : <Table columns={columns} data={filtrados.slice(0, 300)} keyExtractor={e => e.referencia} compact />}
-      {filtrados.length > 300 && <p style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 8 }}>Mostrando 300 de {filtrados.length}. Usa el buscador para acotar.</p>}
-    </Card>
-  )
-}
-
-// ── Precios base ────────────────────────────────────────────────────────────
-
-function PreciosPanel() {
-  const { data: codigos = [], isLoading } = useCodigosInSitu()
-  const { equipos } = useEquiposInSitu()
-  const usoPorCodigo = new Map<string, number>()
-  for (const e of equipos) if (e.codigo) usoPorCodigo.set(e.codigo, (usoPorCodigo.get(e.codigo) || 0) + 1)
-
-  const columns: Column<MantInSituCodigo>[] = [
-    { key: 'codigo', header: 'Código de mantenimiento', render: c => <span style={{ fontFamily: 'var(--mono)', fontWeight: 700 }}>{c.codigo}</span> },
-    { key: 'horas', header: 'Horas estándar', width: '130px', align: 'right', render: c => fmtHoras(c.horas) },
-    { key: 'precio', header: 'Precio base', width: '150px', align: 'right', render: c => <strong>{fmtCOP(c.precio)}</strong> },
-    { key: 'uso', header: 'Referencias', width: '110px', align: 'right', render: c => usoPorCodigo.get(c.codigo) || 0 },
-  ]
-  if (isLoading) return <Card><Spinner size={24} /></Card>
-  return (
-    <Card>
-      <EncabezadoPanel titulo="Precios base por mantenimiento" acciones={
-        <CsvAcciones
-          titulo="Precios base"
-          onExportar={() => exportarCodigos(codigos)}
-          planificar={csv => planCodigos(csv, codigos)}
-          ayuda={<>Solo se actualizan códigos que ya existen (no se crean nuevos). Precio sin decimales y horas mayores a 0, ambos obligatorios.</>}
-        />
-      } />
-      <p style={{ fontSize: 12, color: 'var(--muted)', margin: '4px 0 14px' }}>Se aplican a las referencias sin precio individual.</p>
-      <Table columns={columns} data={codigos} keyExtractor={c => c.codigo} />
-    </Card>
-  )
-}
-
-// ── Jornada y vehículo ──────────────────────────────────────────────────────
-
-function JornadaPanel() {
-  const { data: config, isLoading } = useConfigInSitu()
-  if (isLoading) return <Card><Spinner size={24} /></Card>
-  if (!config) return <Card><p style={{ color: 'var(--muted)' }}>Falta la configuración inicial — aplica la migración del módulo.</p></Card>
-
-  const campos: [string, string][] = [
-    ['Jornada laboral', fmtHoras(config.jornada_horas) + ' por día'],
-    ['Uso y desgaste del vehículo', fmtCOP(config.costo_km) + ' por km'],
-    ['Rendimiento del vehículo', `${config.rendimiento_km_galon} km por galón`],
-    ['Precio del combustible', fmtCOP(config.precio_galon) + ' por galón'],
-    ['Margen del recorrido por sentido', `${config.margen_recorrido_pct} %`],
-  ]
-  return (
-    <Card>
-      <h3 style={{ fontSize: 15, fontWeight: 700 }}>Jornada y desplazamiento</h3>
-      <p style={{ fontSize: 12, color: 'var(--muted)', margin: '4px 0 14px' }}>La ida y el regreso se reservan cada día antes de asignar horas de mantenimiento.</p>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
-        {campos.map(([label, valor]) => (
-          <FG key={label} label={label}><div style={INP}>{valor}</div></FG>
-        ))}
-      </div>
-      <div style={{ marginTop: 16, padding: '12px 14px', borderRadius: 10, background: 'var(--surface2)', border: '1px solid var(--border)', fontSize: 12.5, lineHeight: 1.6 }}>
-        <strong>Origen fijo: {config.origen_nombre}</strong><br />
-        {config.origen_direccion}<br />
-        <span style={{ color: 'var(--muted)' }}>
-          Dentro de Bogotá se cobra únicamente el servicio. Fuera de Bogotá se suman vehículo, combustible y peajes por visita.
-          {config.rutas_consultadas_at && <> Distancias a la cabecera municipal consultadas en OSRM el {new Date(config.rutas_consultadas_at).toLocaleDateString('es-CO')}; no incluyen tráfico en tiempo real.</>}
-        </span>
-      </div>
-      <div style={{ marginTop: 16 }}>
-        <FG label="Descripción general del servicio (para el cliente)">
-          <textarea readOnly value={config.descripcion_servicio} rows={8} style={{ ...INP, resize: 'vertical', lineHeight: 1.55 }} />
-        </FG>
-      </div>
-    </Card>
   )
 }
 
@@ -202,7 +58,7 @@ function PeajesPanel() {
 
   return (
     <Card>
-      <EncabezadoPanel titulo="Peajes por visita y destino" acciones={
+      <EncabezadoPanel titulo="Peajes por visita y destino" subtitulo="Una visita incluye ida y regreso. Los peajes se multiplican por las visitas necesarias, no por equipos." acciones={
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-end' }}>
           <span style={{ fontSize: 10.5, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.5px', fontFamily: 'var(--mono)' }}>Destinos (km, min, peaje manual)</span>
           <CsvAcciones
@@ -223,7 +79,6 @@ function PeajesPanel() {
           />
         </div>
       } />
-      <p style={{ fontSize: 12, color: 'var(--muted)', margin: '4px 0 14px' }}>Una visita incluye ida y regreso. Los peajes se multiplican por las visitas necesarias, no por equipos.</p>
       <FG label="Destino a revisar">
         <select value={sel?.codigo || ''} onChange={e => setCodigo(e.target.value)} style={INP}>
           {destinos.map(d => <option key={d.codigo} value={d.codigo}>{d.municipio}</option>)}
@@ -268,14 +123,5 @@ function PeajesPanel() {
         </>
       )}
     </Card>
-  )
-}
-
-function EncabezadoPanel({ titulo, acciones }: { titulo: string, acciones: React.ReactNode }) {
-  return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
-      <h3 style={{ fontSize: 15, fontWeight: 700 }}>{titulo}</h3>
-      {acciones}
-    </div>
   )
 }

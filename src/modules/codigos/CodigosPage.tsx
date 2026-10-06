@@ -25,6 +25,8 @@ interface CodInetItem {
   descripcion: string
   codigo_mantenimiento: string
   codigo_calibracion: string | null
+  // Solo lectura aquí: lo asigna el módulo Mant. In Situ (RPC mant_in_situ_asignar_codigo).
+  codigo_mantenimiento_insitu?: string | null
 }
 
 interface AccesorioItem {
@@ -82,7 +84,7 @@ function useCodigosData() {
 
   const inetQuery = useQuery<CodInetItem[]>({
     queryKey: ['codigos-inet'],
-    queryFn: () => fetchAllRows<CodInetItem>('codigos_inet', 'codigo, familia, descripcion, codigo_mantenimiento, codigo_calibracion', 'codigo'),
+    queryFn: () => fetchAllRows<CodInetItem>('codigos_inet', 'codigo, familia, descripcion, codigo_mantenimiento, codigo_calibracion, codigo_mantenimiento_insitu', 'codigo'),
     staleTime: 10 * 60 * 1000,
   })
 
@@ -498,6 +500,18 @@ function TabEquipos({ items }: { items: CodInetItem[] }) {
 
           <div style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 10 }}>
             {fieldRow('Mantenimiento', mant, !!mant, 'mant')}
+            <div title="Se asigna desde el módulo Mant. In Situ" style={{
+              display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 'var(--radius-sm)',
+              border: '1.5px dashed var(--border)', background: 'var(--surface2)',
+            }}>
+              <span style={{ fontSize: '0.7rem', fontFamily: 'var(--mono)', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--muted)', width: 130, flexShrink: 0 }}>
+                Mant. In Situ
+              </span>
+              <span style={{ fontFamily: 'var(--mono)', fontSize: '0.9rem', flex: 1, color: result?.codigo_mantenimiento_insitu ? 'var(--text)' : 'var(--muted)', fontStyle: result?.codigo_mantenimiento_insitu ? 'normal' : 'italic' }}>
+                {result?.codigo_mantenimiento_insitu || 'Sin asignar'}
+              </span>
+              <span style={{ fontSize: '0.68rem', color: 'var(--muted)', fontFamily: 'var(--mono)' }}>se edita en Mant. In Situ</span>
+            </div>
             {fieldRow('Calibración', calib, !!calib, 'calib')}
           </div>
         </div>
@@ -1285,17 +1299,26 @@ function TabGestion({ items, spItems, accItems }: { items: CodInetItem[], spItem
     if (!csvRows?.length) return
     setImporting(true)
     try {
-      if (importMode === 'replace') {
-        setImportMsg('Eliminando registros existentes…')
-        const { error } = await supabase.from('codigos_inet').delete().not('codigo', 'is', null)
-        if (error) throw error
-      }
       const BATCH = 500
       for (let i = 0; i < csvRows.length; i += BATCH) {
         const batch = csvRows.slice(i, i + BATCH) as CodInetItem[]
         const { error } = await supabase.from('codigos_inet').upsert(batch, { onConflict: 'codigo' })
         if (error) throw error
         setImportMsg(`Importando… ${Math.min(i + BATCH, csvRows.length)} / ${csvRows.length}`)
+      }
+      // "Reemplazar todo" = la tabla queda igual al CSV, pero sin borrar y
+      // reinsertar todo: se borran solo las referencias que no vienen. Así
+      // las que siguen conservan su id, created_at y el código in situ que
+      // asigna Mant. In Situ (columna que este CSV no trae).
+      if (importMode === 'replace') {
+        setImportMsg('Eliminando los equipos que no vienen en el CSV…')
+        const enCsv = new Set(csvRows.map(r => r.codigo))
+        const actuales = await fetchAllRows<{ codigo: string }>('codigos_inet', 'codigo', 'codigo')
+        const sobran = actuales.map(r => r.codigo).filter(c => !enCsv.has(c))
+        for (let i = 0; i < sobran.length; i += BATCH) {
+          const { error } = await supabase.from('codigos_inet').delete().in('codigo', sobran.slice(i, i + BATCH))
+          if (error) throw error
+        }
       }
       await qc.invalidateQueries({ queryKey: ['codigos-inet'] })
       toast.success(`${csvRows.length} equipos importados correctamente`)
@@ -1518,11 +1541,11 @@ function TabGestion({ items, spItems, accItems }: { items: CodInetItem[], spItem
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
         {/* Cabecera */}
         <div style={{
-          display: 'grid', gridTemplateColumns: '160px 110px 1fr 150px 150px 60px',
+          display: 'grid', gridTemplateColumns: '160px 110px 1fr 140px 140px 140px 60px',
           padding: '10px 16px', borderBottom: '1px solid var(--border)',
           background: 'var(--surface2)',
         }}>
-          {['Código', 'Familia', 'Descripción', 'Mant.', 'Calib.', ''].map((h, i) => (
+          {['Código', 'Familia', 'Descripción', 'Mant.', 'Mant. In Situ', 'Calib.', ''].map((h, i) => (
             <span key={i} style={{ fontSize: '0.68rem', fontFamily: 'var(--mono)', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--muted)' }}>{h}</span>
           ))}
         </div>
@@ -1536,7 +1559,7 @@ function TabGestion({ items, spItems, accItems }: { items: CodInetItem[], spItem
             <div
               key={r.codigo}
               style={{
-                display: 'grid', gridTemplateColumns: '160px 110px 1fr 150px 150px 60px',
+                display: 'grid', gridTemplateColumns: '160px 110px 1fr 140px 140px 140px 60px',
                 padding: '11px 16px', alignItems: 'center',
                 borderBottom: i < pageItems.length - 1 ? '1px solid var(--border)' : 'none',
                 background: i % 2 === 0 ? 'var(--surface)' : 'var(--surface2)',
@@ -1547,6 +1570,9 @@ function TabGestion({ items, spItems, accItems }: { items: CodInetItem[], spItem
               <span style={{ fontSize: '0.8rem', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: 8 }}>{r.descripcion || '—'}</span>
               <span style={{ fontFamily: 'var(--mono)', fontSize: '0.75rem', color: r.codigo_mantenimiento ? 'var(--text)' : 'var(--muted)', fontStyle: r.codigo_mantenimiento ? 'normal' : 'italic' }}>
                 {r.codigo_mantenimiento || 'No aplica'}
+              </span>
+              <span title="Se asigna desde Mant. In Situ" style={{ fontFamily: 'var(--mono)', fontSize: '0.75rem', color: r.codigo_mantenimiento_insitu ? 'var(--text)' : 'var(--muted)', fontStyle: r.codigo_mantenimiento_insitu ? 'normal' : 'italic' }}>
+                {r.codigo_mantenimiento_insitu || '—'}
               </span>
               <span style={{ fontFamily: 'var(--mono)', fontSize: '0.75rem', color: r.codigo_calibracion ? 'var(--text)' : 'var(--muted)', fontStyle: r.codigo_calibracion ? 'normal' : 'italic' }}>
                 {r.codigo_calibracion || 'No aplica'}
@@ -1677,7 +1703,7 @@ HI 9814,Multiparámetro,ORP + pH,9814-01,`}
                 <label style={{ fontSize: '0.72rem', fontFamily: 'var(--mono)', textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--muted)' }}>
                   Modo de importación
                 </label>
-                {([['upsert', 'Actualizar / Agregar', 'Inserta los nuevos equipos y actualiza los existentes. No borra nada.'], ['replace', 'Reemplazar todo', 'Elimina TODOS los equipos actuales y los sustituye por los del CSV.']] as const).map(([val, lbl, desc]) => (
+                {([['upsert', 'Actualizar / Agregar', 'Inserta los nuevos equipos y actualiza los existentes. No borra nada.'], ['replace', 'Reemplazar todo', 'Deja la tabla igual al CSV: actualiza los que vienen y elimina los que no vienen.']] as const).map(([val, lbl, desc]) => (
                   <label key={val} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', padding: '10px 12px', borderRadius: 8, border: `1.5px solid ${importMode === val ? 'var(--accent)' : 'var(--border)'}`, background: importMode === val ? 'var(--accent-bg)' : 'var(--surface2)' }}>
                     <input type="radio" name="importMode" value={val} checked={importMode === val} onChange={() => setImportMode(val)} style={{ marginTop: 2 }} />
                     <div>
@@ -1691,7 +1717,7 @@ HI 9814,Multiparámetro,ORP + pH,9814-01,`}
 
             {importMode === 'replace' && csvRows && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderRadius: 8, background: '#fef3c7', border: '1px solid #fbbf24', color: '#92400e', fontSize: '0.78rem' }}>
-                <AlertTriangle size={15} /> Esta acción eliminará permanentemente todos los equipos actuales antes de importar.
+                <AlertTriangle size={15} /> Se eliminarán permanentemente los equipos que no estén en el CSV. Los que sí estén se actualizan y conservan su código Mant. In Situ.
               </div>
             )}
 

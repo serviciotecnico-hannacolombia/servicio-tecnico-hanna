@@ -1,6 +1,9 @@
 // Datos del módulo Mant. In Situ. El catálogo de equipos es codigos_inet
-// (módulo Códigos); este módulo aporta precio/horas por código, excepciones
-// por referencia, configuración del vehículo y las rutas con sus peajes.
+// (módulo Códigos). Cada referencia tiene su código normal y su código IN
+// SITU (codigos_inet.codigo_mantenimiento_insitu, que solo se escribe desde
+// este módulo vía la RPC mant_in_situ_asignar_codigo). Este módulo aporta
+// el catálogo de códigos in situ (precio/horas), excepciones por referencia
+// (horas/precio/descripción), configuración del vehículo y rutas/peajes.
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase, fetchAllRows } from '../../../lib/supabase'
 import { useUser } from '../../../hooks/useUser'
@@ -16,6 +19,7 @@ interface CodigoInet {
   familia: string | null
   descripcion: string | null
   codigo_mantenimiento: string | null
+  codigo_mantenimiento_insitu: string | null
 }
 
 export function useConfigInSitu() {
@@ -45,7 +49,7 @@ export function useCodigosInSitu() {
 export function useInvalidarMantInSitu() {
   const qc = useQueryClient()
   return () => {
-    for (const k of ['mant_in_situ_config', 'mant_in_situ_codigos', 'mant_in_situ_equipos', 'mant_in_situ_destinos']) {
+    for (const k of ['mant_in_situ_config', 'mant_in_situ_codigos', 'mant_in_situ_equipos', 'mant_in_situ_destinos', 'mant_in_situ_codigos_inet', 'codigos-inet']) {
       qc.invalidateQueries({ queryKey: [k] })
     }
   }
@@ -63,13 +67,13 @@ function useExcepcionesInSitu() {
 function useCodigosInet() {
   const { user } = useUser()
   return useQuery({
-    queryKey: ['codigos_inet', 'mant_in_situ'],
+    queryKey: ['mant_in_situ_codigos_inet'],
     queryFn: async () => {
       const PAGE = 1000
       let all: CodigoInet[] = []
       for (let from = 0; ; from += PAGE) {
         const { data, error } = await supabase.from('codigos_inet')
-          .select('codigo, familia, descripcion, codigo_mantenimiento').order('codigo').range(from, from + PAGE - 1)
+          .select('codigo, familia, descripcion, codigo_mantenimiento, codigo_mantenimiento_insitu').order('codigo').range(from, from + PAGE - 1)
         if (error) throw error
         all = all.concat(data as CodigoInet[])
         if (data.length < PAGE) break
@@ -106,20 +110,20 @@ export interface EquipoInSitu {
   referencia: string
   nombre: string
   familia: string
-  codigo: string | null          // código de mantenimiento efectivo (null = sin código válido)
+  codigo: string | null          // código IN SITU asignado (null = sin asignar → pendiente)
   horas: number | null
   precio: number | null
   descripcionServicio: string
   precioIndividual: boolean      // el precio viene de la excepción, no del código
   tieneExcepcion: boolean
   completo: boolean              // tiene código, horas y precio válidos
-  codigoInet: string             // código de mantenimiento tal como está en Códigos (puede no ser válido)
+  codigoNormal: string           // código de mantenimiento normal (Códigos) — solo informativo
   excepcion: MantInSituEquipoExcepcion | null
 }
 
-// Combina codigos_inet + excepciones + precio/horas del código. Las
-// referencias cuyo código no existe en mant_in_situ_codigos (ej. "SIN
-// CÓDIGO") quedan con codigo = null y completo = false.
+// Combina codigos_inet + excepciones + precio/horas del código in situ.
+// Sin código in situ asignado la referencia queda pendiente: el precio in
+// situ nunca se toma del código normal.
 export function useEquiposInSitu() {
   const inet = useCodigosInet()
   const excepciones = useExcepcionesInSitu()
@@ -134,8 +138,7 @@ export function useEquiposInSitu() {
 
   const equipos: EquipoInSitu[] = (inet.data ?? []).map(i => {
     const exc = porReferencia.get(i.codigo)
-    const codigoCandidato = (exc?.codigo_mantenimiento || i.codigo_mantenimiento || '').trim()
-    const cod = porCodigo.get(codigoCandidato)
+    const cod = i.codigo_mantenimiento_insitu ? porCodigo.get(i.codigo_mantenimiento_insitu) : undefined
     const horas = exc?.horas ?? cod?.horas ?? null
     const precio = exc?.precio ?? cod?.precio ?? null
     return {
@@ -149,7 +152,7 @@ export function useEquiposInSitu() {
       precioIndividual: exc?.precio != null,
       tieneExcepcion: !!exc,
       completo: !!cod && horas != null && precio != null,
-      codigoInet: (i.codigo_mantenimiento || '').trim(),
+      codigoNormal: (i.codigo_mantenimiento || '').trim(),
       excepcion: exc ?? null,
     }
   })
