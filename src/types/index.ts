@@ -593,6 +593,7 @@ export interface MantInSituPeaje {
   sector: string | null
   sentido: string | null
   actualizado: string | null
+  updated_at?: string
 }
 
 export interface MantInSituRevisionPeajes {
@@ -618,6 +619,7 @@ export interface MantInSituDestino {
   peaje_manual_motivo: string | null
   revision_peajes: MantInSituRevisionPeajes | null
   activo: boolean
+  updated_at?: string
 }
 
 export interface MantInSituDestinoPeaje {

@@ -3,7 +3,7 @@
 // mensaje de error o null.
 import { supabase } from '../../lib/supabase'
 import type { EquipoInSitu } from './hooks/useMantInSitu'
-import type { MantInSituConfig, MantInSituEquipoExcepcion } from '../../types'
+import type { MantInSituConfig, MantInSituDestino, MantInSituEquipoExcepcion } from '../../types'
 
 const LOTE = 500
 
@@ -73,6 +73,22 @@ export async function crearCodigo(datos: { codigo: string, precio: number, horas
 // Las referencias que lo tenían quedan sin asignar (ON DELETE SET NULL).
 export async function eliminarCodigo(codigo: string): Promise<string | null> {
   const { error } = await supabase.from('mant_in_situ_codigos').delete().eq('codigo', codigo)
+  return error?.message ?? null
+}
+
+// ── Destinos y peajes ───────────────────────────────────────────────────────
+
+export type DatosDestino = Pick<MantInSituDestino, 'ida_km' | 'ida_min' | 'regreso_km' | 'regreso_min' | 'peaje_manual_valor' | 'peaje_manual_motivo' | 'activo'>
+
+export async function guardarDestino(codigo: string, datos: DatosDestino): Promise<string | null> {
+  const { error } = await supabase.from('mant_in_situ_destinos')
+    .update({ ...datos, updated_at: new Date().toISOString() }).eq('codigo', codigo)
+  return error?.message ?? null
+}
+
+export async function guardarPeaje(id: string, datos: { tarifa_categoria_i: number, actualizado: string | null }): Promise<string | null> {
+  const { error } = await supabase.from('mant_in_situ_peajes')
+    .update({ ...datos, updated_at: new Date().toISOString() }).eq('id', id)
   return error?.message ?? null
 }
 
