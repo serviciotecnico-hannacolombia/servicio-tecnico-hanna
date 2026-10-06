@@ -14,6 +14,16 @@
 --   · destinos / peajes     → rutas desde HANNA El Dorado y peajes por
 --                             sentido
 --
+-- Fórmula del cotizador (la del HTML, a implementar en la fase 2):
+--   horas_viaje  = (ida_min + regreso_min) / 60 × (1 + margen%)
+--   km_visita    = (ida_km + regreso_km) × (1 + margen%)
+--   días         = ⌈horas_mantenimiento / (jornada − horas_viaje)⌉
+--   vehículo     = km_visita × días × costo_km
+--   combustible  = km_visita × días ÷ rendimiento × precio_galon
+--   peajes       = (peaje_manual_valor ó suma de peajes ida + regreso) × días
+--   Bogotá (11001) solo cobra el servicio. Los extras se reparten entre
+--   los equipos en proporción a su precio base.
+--
 -- Acceso: consulta ST, Ventas, Jefe de Ventas, Líderes y Admin; configura
 -- quien tenga mant_in_situ_editar (ST y Admin).
 -- ============================================================
