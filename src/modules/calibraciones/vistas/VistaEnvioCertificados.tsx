@@ -1,10 +1,13 @@
 // Vista dedicada para el estado "Envío de certificados": muestra lo ya
 // capturado en "Control de calidad" y pide la entrega del certificado
 // (fecha y carta del certificado) antes de cerrar la orden como "Terminado".
+// La fecha estimada de finalización se puede reprogramar aquí sin avanzar
+// de etapa — es la que mide el semáforo en este estado, y el cambio queda
+// en el historial.
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { FileCheck2 } from 'lucide-react'
-import { FG, Seccion, Grid2, INP, PRI, fmtFecha } from '../ui'
+import { FG, Seccion, Grid2, INP, PRI, GHOST, fmtFecha } from '../ui'
 import { generarMailtoCertificados } from '../correo'
 import type { OrdenCalibracion } from '../../../types'
 
@@ -19,13 +22,20 @@ export function VistaEnvioCertificados({ form, puedeEditar, soloLectura, saving,
   const [cartaCertificado, setCartaCertificado] = useState(form.carta_certificado || '')
   const [contacto, setContacto] = useState('')
   const [genero, setGenero] = useState<'M' | 'F'>('M')
+  const [fechaFin, setFechaFin] = useState(form.certificado_fecha_fin || '')
+  const fechaFinCambiada = fechaFin !== (form.certificado_fecha_fin || '')
+
+  function guardarFechaFin() {
+    if (!fechaFin) { toast.error('Ingresa la fecha estimada de finalización'); return }
+    onAvanzar({ certificado_fecha_fin: fechaFin })
+  }
 
   function confirmar() {
     if (!fechaEntrega) { toast.error('Ingresa la fecha de entrega del certificado'); return }
     if (!cartaCertificado.trim()) { toast.error('Ingresa la carta del certificado'); return }
 
     // Antes de cerrar la orden, se abre el correo con los certificados al
-    // cliente — misma plantilla que Correos → Certificados de Calibración.
+    // cliente.
     if (form.correo_cliente?.trim()) {
       const url = generarMailtoCertificados(
         form.correo_cliente.trim(), form.correo_asesor, form.numero_oc || '', form.cliente || '', contacto, genero,
@@ -39,6 +49,8 @@ export function VistaEnvioCertificados({ form, puedeEditar, soloLectura, saving,
       estado: 'terminado',
       fecha_entrega_certificado: fechaEntrega,
       carta_certificado: cartaCertificado.trim(),
+      // Si se editó la fecha estimada y no se guardó aparte, se guarda al cerrar.
+      ...(fechaFinCambiada && fechaFin ? { certificado_fecha_fin: fechaFin } : {}),
     })
   }
 
@@ -72,9 +84,20 @@ export function VistaEnvioCertificados({ form, puedeEditar, soloLectura, saving,
             </div>
           </FG>
           <FG label="Fecha estimada de finalización">
-            <div style={{ ...INP, color: form.certificado_fecha_fin ? 'var(--text)' : 'var(--muted)' }}>
-              {form.certificado_fecha_fin ? fmtFecha(form.certificado_fecha_fin) : '—'}
-            </div>
+            {soloLectura || !puedeEditar ? (
+              <div style={{ ...INP, color: form.certificado_fecha_fin ? 'var(--text)' : 'var(--muted)' }}>
+                {form.certificado_fecha_fin ? fmtFecha(form.certificado_fecha_fin) : '—'}
+              </div>
+            ) : (
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input type="date" value={fechaFin} onChange={e => setFechaFin(e.target.value)} style={INP} />
+                {fechaFinCambiada && (
+                  <button onClick={guardarFechaFin} disabled={saving} style={{ ...GHOST, whiteSpace: 'nowrap' }}>
+                    {saving ? 'Guardando…' : 'Guardar'}
+                  </button>
+                )}
+              </div>
+            )}
           </FG>
           <FG label="Fecha de llegada">
             <div style={{ ...INP, color: form.fecha_llegada_hanna ? 'var(--text)' : 'var(--muted)' }}>
