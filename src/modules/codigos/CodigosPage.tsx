@@ -50,12 +50,22 @@ interface CatalogoItem {
 
 // PostgREST limita cada respuesta a 1000 filas por defecto — sin paginar, cualquier
 // catálogo más grande que eso se corta en silencio y el resto nunca llega al cliente.
-// La primera página trae el total (`count: 'exact'`), y con eso el resto de páginas
-// se piden todas en paralelo en vez de una tras otra — para codigos_accesorios
-// (~11k filas) eso baja de ~12 viajes secuenciales a solo 2 tandas de red.
-async function fetchAllRows<T>(table: string, select: string, orderCol: string): Promise<T[]> {
+// La primera página trae el total (`count: 'exact'`) y el resto se pide en tandas
+// de PARALELO páginas: todas a la vez (11 para codigos_accesorios) saturaban la
+// base y las páginas altas caían por timeout (500).
+// `desempate` es una columna única: ordenar solo por una columna repetida
+// (ej. equipo_codigo) no garantiza el mismo orden entre consultas, y con
+// OFFSET eso puede saltar o duplicar filas entre páginas.
+const PARALELO = 3
+
+async function fetchAllRows<T>(table: string, select: string, orderCol: string, desempate?: string): Promise<T[]> {
   const PAGE = 1000
-  const first = await supabase.from(table).select(select, { count: 'exact' }).order(orderCol).range(0, PAGE - 1)
+  const consulta = (opciones?: { count: 'exact' }) => {
+    let q = supabase.from(table).select(select, opciones).order(orderCol)
+    if (desempate && desempate !== orderCol) q = q.order(desempate)
+    return q
+  }
+  const first = await consulta({ count: 'exact' }).range(0, PAGE - 1)
   if (first.error) throw first.error
   const all: T[] = [...(first.data as T[])]
   const total = first.count ?? all.length
@@ -63,10 +73,8 @@ async function fetchAllRows<T>(table: string, select: string, orderCol: string):
   const pageStarts: number[] = []
   for (let from = PAGE; from < total; from += PAGE) pageStarts.push(from)
 
-  if (pageStarts.length) {
-    const pages = await Promise.all(pageStarts.map(from =>
-      supabase.from(table).select(select).order(orderCol).range(from, from + PAGE - 1)
-    ))
+  for (let i = 0; i < pageStarts.length; i += PARALELO) {
+    const pages = await Promise.all(pageStarts.slice(i, i + PARALELO).map(from => consulta().range(from, from + PAGE - 1)))
     for (const { data, error } of pages) {
       if (error) throw error
       all.push(...(data as T[]))
@@ -78,7 +86,7 @@ async function fetchAllRows<T>(table: string, select: string, orderCol: string):
 function useCodigosData() {
   const spQuery = useQuery<SpPriceItem[]>({
     queryKey: ['codigos-sp-price'],
-    queryFn: () => fetchAllRows<SpPriceItem>('codigos_sp_price', 'id, code, product, description, precio_a_cobrar', 'product'),
+    queryFn: () => fetchAllRows<SpPriceItem>('codigos_sp_price', 'id, code, product, description, precio_a_cobrar', 'product', 'id'),
     staleTime: 10 * 60 * 1000,
   })
 
@@ -90,7 +98,7 @@ function useCodigosData() {
 
   const accQuery = useQuery<AccesorioItem[]>({
     queryKey: ['codigos-accesorios'],
-    queryFn: () => fetchAllRows<AccesorioItem>('codigos_accesorios', 'id, equipo_codigo, accesorio_codigo, descripcion, descripcion_es, origen, usuario, created_at', 'equipo_codigo'),
+    queryFn: () => fetchAllRows<AccesorioItem>('codigos_accesorios', 'id, equipo_codigo, accesorio_codigo, descripcion, descripcion_es, origen, usuario, created_at', 'equipo_codigo', 'id'),
     staleTime: 10 * 60 * 1000,
   })
 
@@ -2042,10 +2050,12 @@ export function CodigosPage() {
         <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
           <Spinner size={32} />
         </div>
-      ) : error ? (
+      ) : error || !data ? (
+        // Sin `data` (alguna consulta falló o sigue reintentando) no se pintan
+        // las pestañas: antes se caía con "reading 'codInet'" de undefined.
         <Card>
           <div style={{ textAlign: 'center', padding: '48px 20px', color: 'var(--muted)' }}>
-            <p style={{ marginBottom: 16 }}>Error al cargar el catálogo.</p>
+            <p style={{ marginBottom: 16 }}>{error ? 'Error al cargar el catálogo.' : 'No se pudo completar la carga del catálogo.'}</p>
             <Button onClick={() => refetch()}>Reintentar</Button>
           </div>
         </Card>
@@ -2063,9 +2073,9 @@ export function CodigosPage() {
             {canGestion && tabBtn('gestion', '⚙️', 'Gestión')}
           </div>
 
-          {tab === 'equipos' && <TabEquipos items={data!.codInet.items} />}
+          {tab === 'equipos' && <TabEquipos items={data.codInet.items} />}
           {tab === 'accesorios' && <TabAccesorios items={accItems} catalogo={catalogoItems} spItems={spItems} />}
-          {tab === 'precios' && canVerPrecios && <TabPrecios items={data!.spPrice.items} />}
+          {tab === 'precios' && canVerPrecios && <TabPrecios items={data.spPrice.items} />}
           {tab === 'gestion' && canGestion && <TabGestion items={inetItems} spItems={spItems} accItems={accItems} />}
         </>
       )}
