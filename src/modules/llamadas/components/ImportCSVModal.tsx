@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import { Upload, Download } from 'lucide-react'
 import { Modal } from '../../../components/ui/Modal'
 import { Button } from '../../../components/ui/Button'
+import { parseCsvLlamadas, type CsvRowLlamada } from '../parseCsvLlamadas'
 
 const EJEMPLO_FILAS = [
   ['34156', 'Distraves S.A.', 'Juan Pérez', 'SI'],
@@ -20,42 +21,13 @@ function descargarEjemplo() {
   URL.revokeObjectURL(url)
 }
 
-interface CsvRow {
-  otst: string
-  cliente: string
-  ingeniero: string
-  garantia: 'SI' | 'NO'
-}
+type CsvRow = CsvRowLlamada
 
 interface Props {
   open: boolean
   onClose: () => void
   existing: number
   onImport: (rows: CsvRow[], replace: boolean) => Promise<void>
-}
-
-function parseCSV(text: string): CsvRow[] {
-  const lines = text.trim().split(/\r?\n/)
-  if (lines.length < 2) return []
-  // Skip header row
-  return lines.slice(1).map(line => {
-    // Handle quoted fields (e.g. "EMPRESA, SAS")
-    const cols: string[] = []
-    let cur = '', inQ = false
-    for (const ch of line) {
-      if (ch === '"') { inQ = !inQ }
-      else if (ch === ',' && !inQ) { cols.push(cur.trim()); cur = '' }
-      else cur += ch
-    }
-    cols.push(cur.trim())
-    const g = (cols[3] ?? '').toLowerCase().trim()
-    return {
-      otst:      (cols[0] ?? '').trim(),
-      cliente:   (cols[1] ?? '').trim(),
-      ingeniero: (cols[2] ?? '').trim(),
-      garantia:  ((g === 'si' || g === 'sí' || g === 'yes') ? 'SI' : 'NO') as 'SI' | 'NO',
-    }
-  }).filter(r => r.otst)
 }
 
 export function ImportCSVModal({ open, onClose, existing, onImport }: Props) {
@@ -70,7 +42,7 @@ export function ImportCSVModal({ open, onClose, existing, onImport }: Props) {
     if (!file) return
     setFileName(file.name)
     const reader = new FileReader()
-    reader.onload = ev => setRows(parseCSV(ev.target?.result as string))
+    reader.onload = ev => setRows(parseCsvLlamadas(ev.target?.result as string))
     reader.readAsText(file, 'UTF-8')
   }
 
@@ -147,7 +119,7 @@ export function ImportCSVModal({ open, onClose, existing, onImport }: Props) {
               </table>
             </div>
             <p style={{ fontSize: '0.68rem', color: 'var(--muted)', marginTop: 8 }}>
-              Primera fila = encabezados (se ignora al importar). El orden de las columnas debe ser exactamente ese. "¿En garantía?" acepta SI/NO/SÍ/YES.
+              Primera fila = encabezados. Se acepta separado por coma o por punto y coma (export de la intranet / Excel), y las columnas se reconocen por su encabezado. "¿En garantía?" acepta SI/NO/SÍ/YES.
             </p>
           </div>
         )}
