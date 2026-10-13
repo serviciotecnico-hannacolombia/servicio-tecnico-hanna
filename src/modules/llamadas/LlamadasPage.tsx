@@ -12,6 +12,7 @@ import { Avatar } from '../../components/ui/Avatar'
 import { AddLlamadaModal } from './components/AddLlamadaModal'
 import { ImportCSVModal } from './components/ImportCSVModal'
 import { HistorialSection } from './components/HistorialSection'
+import { SeguimientoEjecutivoSection } from './components/SeguimientoEjecutivoSection'
 import { DespacharModal } from './components/DespacharModal'
 import { useLlamadasDiario } from './hooks/useLlamadasDiario'
 import { useDespacharOtst, usePendientesOtst } from './hooks/useDespacharOtst'
@@ -20,7 +21,7 @@ import { useProfiles } from '../../hooks/useProfiles'
 import { INTRANET_URL } from '../../lib/constants'
 import type { LlamadaDiario, EstadoLlamada } from '../../types'
 
-type Tab = 'hoy' | 'historial'
+type Tab = 'hoy' | 'historial' | 'ejecutivo'
 
 
 const PUNTOS: Record<string, number> = { 'CIERRE': 3, 'CONTACTADO': 2, 'SIN CONTACTO': 1 }
@@ -98,7 +99,7 @@ export function LlamadasPage() {
   const [filtroEstado, setFiltroEstado] = useState<'all' | 'pending' | 'done'>('all')
   const [filtroGarantia, setFiltroGarantia] = useState(false)
   const [filtroIngeniero, setFiltroIngeniero] = useState<string | null>(null)
-  const { displayName, hasCapability } = useUser()
+  const { displayName, hasCapability, isAdmin } = useUser()
   const canImportarCSV = hasCapability('importar_csv_llamadas')
   const { data: profiles = [] } = useProfiles()
   const { data: llamadas = [], isLoading, importCSV, addLlamada, updateEstado, togglePrioridad, marcarVaciosNoLlamado, deleteLlamada, archivarDia, limpiarDia } = useLlamadasDiario()
@@ -344,7 +345,7 @@ export function LlamadasPage() {
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: 2, marginBottom: 18, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: 4, width: 'fit-content', boxShadow: 'var(--shadow)' }}>
-        {(['hoy', 'historial'] as Tab[]).map(t => (
+        {(['hoy', 'historial', ...(isAdmin ? ['ejecutivo'] as const : [])] as Tab[]).map(t => (
           <button key={t} onClick={() => setTab(t)} style={{
             padding: '7px 22px', borderRadius: 'calc(var(--radius-sm) - 2px)', border: 'none',
             background: tab === t ? 'linear-gradient(135deg, var(--accent), var(--accent2))' : 'transparent',
@@ -355,7 +356,8 @@ export function LlamadasPage() {
             display: 'flex', alignItems: 'center', gap: 6,
           }}>
             {t === 'hoy' ? <>📞 Diario <span style={{ background: tab === t ? 'rgba(255,255,255,.25)' : 'var(--surface2)', color: tab === t ? '#fff' : 'var(--muted)', padding: '1px 7px', borderRadius: 10, fontFamily: 'var(--mono)', fontSize: '0.7rem' }}>{llamadas.length}</span></>
-              : <>📊 Histórico</>}
+              : t === 'historial' ? <>📊 Histórico</>
+              : <>🧭 Seguimiento ejecutivo</>}
           </button>
         ))}
       </div>
@@ -610,6 +612,8 @@ export function LlamadasPage() {
       )}
 
       {tab === 'historial' && <HistorialSection llamadasHoy={llamadas} />}
+
+      {tab === 'ejecutivo' && isAdmin && <SeguimientoEjecutivoSection llamadasHoy={llamadas} />}
 
       {/* Modals */}
       <ImportCSVModal

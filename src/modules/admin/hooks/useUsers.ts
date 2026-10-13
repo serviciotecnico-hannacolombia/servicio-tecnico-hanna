@@ -35,6 +35,17 @@ export function useUsers() {
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
   })
 
+  const toggleEjecutivo = useMutation({
+    mutationFn: async ({ id, es_ejecutivo }: { id: string; es_ejecutivo: boolean }) => {
+      const { error } = await supabase.from('profiles').update({ es_ejecutivo }).eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEY })
+      qc.invalidateQueries({ queryKey: ['profiles'] })
+    },
+  })
+
   const createUser = useMutation({
     mutationFn: async (payload: { email: string; full_name: string; role_id: string; password: string }) => {
       const { data, error } = await supabase.functions.invoke('manage-users', {
@@ -57,5 +68,5 @@ export function useUsers() {
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
   })
 
-  return { users, isLoading, updateRole, toggleActivo, createUser, deleteUser }
+  return { users, isLoading, updateRole, toggleActivo, toggleEjecutivo, createUser, deleteUser }
 }

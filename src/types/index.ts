@@ -43,6 +43,7 @@ export interface Profile {
   avatar_emoji: string | null
   avatar_color: string | null
   favoritos_modulos: string[]
+  es_ejecutivo: boolean
   created_at: string
 }
 
@@ -425,6 +426,21 @@ export interface OrdenCalibracionHistorial {
   valor_anterior: string | null
   valor_nuevo: string | null
   created_at: string
+}
+
+// Fila del RPC seguimiento_ejecutivo_calibraciones: cambio del historial
+// de una orden + datos básicos de la orden, para el reporte del ejecutivo.
+export interface SeguimientoCalibracionRow {
+  id: string
+  orden_id: string
+  campo: string
+  valor_anterior: string | null
+  valor_nuevo: string | null
+  created_at: string
+  numero_oc: string | null
+  cliente: string
+  estado_actual: EstadoCalibracion
+  anulada: boolean
 }
 
 export interface Asesor {
