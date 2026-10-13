@@ -46,6 +46,7 @@ export function TareasPage() {
     })
 
   async function toggleCompletada(t: Tarea) {
+    if (t.creado_por !== user?.id && t.asignado_a !== user?.id) return
     const nuevoEstado: EstadoTarea = t.estado === 'pendiente' ? 'completada' : 'pendiente'
     const { error } = await supabase.from('tareas').update({
       estado: nuevoEstado,
@@ -71,7 +72,7 @@ export function TareasPage() {
     <div>
       <Header
         title="Tareas"
-        subtitle="Tareas personales — creadas por ti o asignadas a ti"
+        subtitle="Tareas públicas y privadas — consulta las compartidas en Todas"
         actions={<button onClick={() => setModal({})} style={PRI}><Plus size={14} style={{ verticalAlign: -2 }} /> Nueva tarea</button>}
       />
 
@@ -111,20 +112,26 @@ export function TareasPage() {
               const vencida = estaVencida(t)
               const proxima = venceManana(t)
               const soyCreador = t.creado_por === user?.id
+              const soyParticipante = soyCreador || t.asignado_a === user?.id
               return (
                 <div key={t.id} style={{
                   display: 'flex', alignItems: 'flex-start', gap: 12, padding: '12px 16px',
                   border: `1px solid ${vencida ? 'var(--red-border)' : proxima ? 'var(--yellow-border)' : 'var(--border)'}`,
                   background: vencida ? 'var(--red-bg)' : proxima ? 'var(--yellow-bg)' : 'var(--surface2)', borderRadius: 10,
                 }}>
-                  <button onClick={() => toggleCompletada(t)} title={t.estado === 'pendiente' ? 'Marcar completada' : 'Reabrir'}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: t.estado === 'completada' ? 'var(--green)' : 'var(--muted)' }}>
+                  <button disabled={!soyParticipante} onClick={() => toggleCompletada(t)}
+                    title={!soyParticipante ? 'Solo el creador y el asignado pueden cambiar el estado' : t.estado === 'pendiente' ? 'Marcar completada' : 'Reabrir'}
+                    aria-label={t.estado === 'completada' ? 'Reabrir tarea' : 'Marcar tarea completada'}
+                    style={{ background: 'none', border: 'none', cursor: soyParticipante ? 'pointer' : 'default', padding: 2, color: t.estado === 'completada' ? 'var(--green)' : 'var(--muted)' }}>
                     {t.estado === 'completada' ? <CheckCircle2 size={20} /> : <Circle size={20} />}
                   </button>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                       <span style={{ fontSize: 14, fontWeight: 600, textDecoration: t.estado === 'completada' ? 'line-through' : 'none', color: t.estado === 'completada' ? 'var(--muted)' : 'var(--text)' }}>
                         {t.titulo}
+                      </span>
+                      <span style={{ ...B_PROXIMA, background: 'var(--surface)', color: 'var(--muted)', borderColor: 'var(--border)' }}>
+                        {t.privada ? 'Privada' : 'Pública'}
                       </span>
                       {vencida && <span style={B_VENCIDA}><AlertTriangle size={11} style={{ verticalAlign: -1, marginRight: 3 }} />Vencida</span>}
                       {!vencida && proxima && <span style={B_PROXIMA}><AlertTriangle size={11} style={{ verticalAlign: -1, marginRight: 3 }} />Vence mañana</span>}
@@ -174,6 +181,7 @@ function ModalTarea({ tarea, activos, miId, onClose, onSaved }: {
   onClose: () => void, onSaved: () => void,
 }) {
   const [titulo, setTitulo] = useState(tarea?.titulo || '')
+  const [privada, setPrivada] = useState(tarea?.privada ?? true)
   const [descripcion, setDescripcion] = useState(tarea?.descripcion || '')
   const [asignadoA, setAsignadoA] = useState(tarea?.asignado_a || miId)
   const [vencimiento, setVencimiento] = useState(tarea?.fecha_vencimiento || '')
@@ -184,6 +192,7 @@ function ModalTarea({ tarea, activos, miId, onClose, onSaved }: {
     setSaving(true)
     if (tarea) {
       const { error } = await supabase.from('tareas').update({
+        privada,
         titulo: titulo.trim(), descripcion: descripcion.trim() || null,
         asignado_a: asignadoA, fecha_vencimiento: vencimiento || null,
         updated_at: new Date().toISOString(),
@@ -193,6 +202,7 @@ function ModalTarea({ tarea, activos, miId, onClose, onSaved }: {
       toast.success('Tarea actualizada')
     } else {
       const { error } = await supabase.from('tareas').insert({
+        privada,
         titulo: titulo.trim(), descripcion: descripcion.trim() || null,
         creado_por: miId, asignado_a: asignadoA, fecha_vencimiento: vencimiento || null, estado: 'pendiente',
       })
@@ -206,6 +216,23 @@ function ModalTarea({ tarea, activos, miId, onClose, onSaved }: {
 
   return (
     <Modal open onClose={onClose} title={tarea ? `Editar tarea` : 'Nueva tarea'}>
+      <div style={{ marginBottom: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <button type="button" role="switch" aria-checked={privada} aria-labelledby="tarea-privacidad-label"
+            aria-describedby="tarea-privacidad-ayuda" onClick={() => setPrivada(v => !v)}
+            style={{ width: 44, height: 26, padding: 3, borderRadius: 999, border: '1px solid var(--border2)',
+              background: privada ? 'var(--accent)' : 'var(--surface2)', cursor: 'pointer', flexShrink: 0,
+              transition: 'background 160ms ease' }}>
+            <span aria-hidden="true" style={{ display: 'block', width: 18, height: 18, borderRadius: '50%',
+              background: privada ? '#fff' : 'var(--muted)', transform: `translateX(${privada ? 18 : 0}px)`,
+              transition: 'transform 160ms ease' }} />
+          </button>
+          <span id="tarea-privacidad-label" style={{ fontSize: 13, fontWeight: 600 }}>Tarea privada</span>
+        </div>
+        <p id="tarea-privacidad-ayuda" style={{ marginTop: 5, fontSize: 12, color: 'var(--muted)' }}>
+          {privada ? 'Solo la ven el creador y la persona asignada.' : 'La ven todos los usuarios activos con acceso a Tareas.'}
+        </p>
+      </div>
       <FG label="Título">
         <input value={titulo} onChange={e => setTitulo(e.target.value)} placeholder="Ej. Llamar al proveedor X" style={INP} autoFocus />
       </FG>

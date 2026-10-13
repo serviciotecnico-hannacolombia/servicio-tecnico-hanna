@@ -3,8 +3,8 @@ import { supabase, fetchAllRows } from '../../../lib/supabase'
 import { useUser } from '../../../hooks/useUser'
 import type { Tarea } from '../../../types'
 
-// RLS ya limita las filas a las creadas por mí o asignadas a mí — nunca
-// tareas entre otros dos usuarios.
+// RLS devuelve las públicas y las privadas creadas por mí o asignadas a mí,
+// siempre que mi usuario esté activo y tenga acceso al módulo.
 export function useTareas() {
   const { user } = useUser()
   return useQuery({
@@ -18,7 +18,10 @@ export function useTareas() {
 export function useInvalidateTareas() {
   const qc = useQueryClient()
   const { user } = useUser()
-  return () => qc.invalidateQueries({ queryKey: ['tareas', user?.id] })
+  return () => Promise.all([
+    qc.invalidateQueries({ queryKey: ['tareas', user?.id] }),
+    qc.invalidateQueries({ queryKey: ['tareas_badge', user?.id] }),
+  ])
 }
 
 function hoyISO(): string { return new Date().toISOString().slice(0, 10) }
@@ -51,6 +54,7 @@ export function useTareasBadgeCount(): { asignadas: number, vencidas: number } {
       const { data, error } = await supabase
         .from('tareas').select('asignado_a, creado_por, fecha_vencimiento, estado')
         .eq('estado', 'pendiente')
+        .or(`asignado_a.eq.${user!.id},creado_por.eq.${user!.id}`)
       if (error) throw error
       return data as Pick<Tarea, 'asignado_a' | 'creado_por' | 'fecha_vencimiento' | 'estado'>[]
     },
