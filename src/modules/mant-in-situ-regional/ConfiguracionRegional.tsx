@@ -78,8 +78,18 @@ export function ConfiguracionRegional({ sede }: { sede: SedeRegional }) {
     </Card>}
     {panel==='destinos' && <><Card style={{overflow:'visible'}}><GestorPeajes key={sede.id} data={data} sede={sede}/></Card>
     <Card style={{overflow: 'visible'}}><h3 style={{ marginBottom: 12 }}>Actualizar peajes mediante CSV</h3>
-      <p style={{ marginBottom: 12 }}>Descarga los destinos de {sede.nombre}, completa el total de ida y regreso y la fuente. Solo se importan filas con un total informado; 0 confirma una ruta sin cobro.</p>
-      <Button onClick={() => descargarCSV('peajes-regionales-'+sede.id,['sede','codigo_destino','municipio','total_peajes_cop','fuente'],data.destinos.filter(d=>d.codigo!==sede.codigo).map(d=>[sede.id,d.codigo,d.municipio,d.peajes_confirmados?d.peaje_manual_valor:null,d.peaje_manual_motivo]))}>Descargar plantilla con destinos</Button>
+      <p style={{ marginBottom: 12 }}>Descarga los destinos de {sede.nombre}, edita los nombres y valores de hasta tres peajes de ida y tres de regreso. Pon «sí» en actualizar solo en las ciudades que quieras guardar y añade una observación. Sin peajes, el sentido vale 0. El total manual, si está informado, prevalece sobre el detalle.</p>
+      <Button onClick={()=>descargarCSV('peajes-por-ciudad-'+sede.id,['actualizar','sede','codigo_destino','municipio','ida_1_nombre','ida_1_valor','ida_2_nombre','ida_2_valor','ida_3_nombre','ida_3_valor','regreso_1_nombre','regreso_1_valor','regreso_2_nombre','regreso_2_valor','regreso_3_nombre','regreso_3_valor','total_manual_cop','observacion'],data.destinos.filter(d=>d.codigo!==sede.codigo).map(d=>{
+        let detalle:{ida:{nombre:string;valor:string}[];regreso:{nombre:string;valor:string}[];observacion:string}|null=null
+        try{if(d.peaje_manual_motivo?.startsWith('detalle_peajes:'))detalle=JSON.parse(d.peaje_manual_motivo.slice(15))}catch{/* usar los datos de ruta */}
+        const fila:(string|number|null|undefined)[]=['no',sede.id,d.codigo,d.municipio]
+        for(const sentido of ['ida','regreso'] as const){
+          const peajes=detalle?.[sentido]??data.pasos.filter(p=>p.destino_codigo===d.codigo&&p.sentido===sentido).map(p=>({nombre:p.peaje_id,valor:String(data.peajes.find(t=>t.nombre===p.peaje_id)?.tarifa_categoria_i??'')}))
+          for(let i=0;i<3;i++)fila.push(peajes[i]?.nombre??'',peajes[i]?.valor??'')
+        }
+        fila.push(d.peajes_confirmados&&!detalle?d.peaje_manual_valor:null,detalle?.observacion??d.peaje_manual_motivo??'')
+        return fila
+      }))}>Descargar CSV por ciudad</Button>
       <ImportarPeajes sede={sede} destinos={data.destinos} />
     </Card></>}
     {panel==='tarifas' && <Card style={{overflow:'visible'}}><GestorPeajes key={sede.id} data={data} sede={sede}/></Card>}
