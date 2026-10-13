@@ -5,67 +5,62 @@ import { Button } from '../../components/ui/Button'
 import { FG, INP } from '../mant-in-situ/ui'
 import { fmtCOP } from '../mant-in-situ/hooks/useMantInSitu'
 import { SelectorBuscable } from './SelectorBuscable'
-import { useInvalidarRegional, type useRegional, type SedeRegional } from './datos'
+import { useInvalidarRegional, type useRegional, type SedeRegional, type DestinoRegional } from './datos'
 
 type Datos=NonNullable<ReturnType<typeof useRegional>['data']>
+type Fila={nombre:string;valor:string}
+type Detalle={ida:Fila[];regreso:Fila[];observacion:string}
+const PREFIJO='detalle_peajes:'
+function cargar(data:Datos,d:DestinoRegional):Detalle {
+  if(d.peaje_manual_motivo?.startsWith(PREFIJO)) {
+    try {const v=JSON.parse(d.peaje_manual_motivo.slice(PREFIJO.length));if(['ida','regreso'].every(k=>Array.isArray(v[k])&&v[k].every((r:Fila)=>typeof r.nombre==='string'&&typeof r.valor==='string'))&&typeof v.observacion==='string')return v} catch { /* usar datos existentes */ }
+  }
+  const filas=(s:string)=>data.pasos.filter(p=>p.destino_codigo===d.codigo&&p.sentido===s).map(p=>({nombre:p.peaje_id,valor:String(data.peajes.find(t=>t.nombre===p.peaje_id)?.tarifa_categoria_i??'')}))
+  return {ida:filas('ida'),regreso:filas('regreso'),observacion:d.peaje_manual_motivo??''}
+}
 export function GestorPeajes({data,sede}:{data:Datos;sede:SedeRegional}) {
-  const [nombre,setNombre]=useState(''),[nuevo,setNuevo]=useState(false),[valor,setValor]=useState(''),[fuente,setFuente]=useState('')
-  const [seleccion,setSeleccion]=useState<string[]>([]),[buscar,setBuscar]=useState(''),[saving,setSaving]=useState(false)
-  const invalidar=useInvalidarRegional()
+  const [codigo,setCodigo]=useState(''),[soloPendientes,setSoloPendientes]=useState(false)
   const hoy=new Date().toLocaleDateString('en-CA',{timeZone:'America/Bogota'})
   const rutas=data.destinos.filter(d=>d.codigo!==sede.codigo)
-  const pendientes=rutas.filter(d=>!d.peajes_confirmados&&(!d.peajes_ruta_verificados||data.pasos.some(s=>s.destino_codigo===d.codigo&&data.peajes.some(p=>p.nombre===s.peaje_id&&p.vigencia_hasta&&p.vigencia_hasta<hoy))))
-  const peajeActual=data.peajes.find(p=>p.nombre===nombre)
-  const clavesActuales=data.pasos.filter(p=>p.peaje_id===nombre).map(p=>p.destino_codigo+'/'+p.sentido)
-  const sinGuardar=!!nombre&&(nuevo||Number(valor)!==Number(peajeActual?.tarifa_categoria_i)||seleccion.length!==clavesActuales.length||seleccion.some(k=>!clavesActuales.includes(k)))
-  function elegir(n:string) {
-    const p=data.peajes.find(p=>p.nombre===n)
-    setNombre(n);setValor(String(p?.tarifa_categoria_i??''));setFuente(p?.fuente_revision??p?.fuente??'')
-    setSeleccion(data.pasos.filter(p=>p.peaje_id===n).map(p=>`${p.destino_codigo}/${p.sentido}`))
-  }
+  const pendiente=(d:DestinoRegional)=>!d.peajes_confirmados&&(!d.peajes_ruta_verificados||data.pasos.some(s=>s.destino_codigo===d.codigo&&data.peajes.some(p=>p.nombre===s.peaje_id&&p.vigencia_hasta&&p.vigencia_hasta<hoy)))
+  const pendientes=rutas.filter(pendiente)
+  const visibles=soloPendientes?pendientes:rutas
+  const destino=visibles.find(d=>d.codigo===codigo)??visibles[0]
+  return <>
+    <h3>Peajes por ciudad — {sede.nombre}</h3>
+    <p className="regional-note">Elige la ciudad, revisa los peajes de ida y regreso y guarda. Los datos actuales se conservan hasta guardar; una lista vacía significa 0 COP para ese sentido.</p>
+    <div className="regional-table-toolbar"><strong>{pendientes.length} de {rutas.length} rutas pendientes</strong><label><input type="checkbox" checked={soloPendientes} onChange={e=>{setSoloPendientes(e.target.checked);setCodigo('')}}/> Mostrar solo pendientes</label></div>
+    <FG label="Ciudad o municipio"><SelectorBuscable style={INP} value={destino?.codigo??''} onChange={e=>setCodigo(e.target.value)}>{visibles.map(d=><option key={d.codigo} value={d.codigo}>{d.municipio} — {d.departamento} · {pendiente(d)?'Pendiente':'Confirmada'}</option>)}</SelectorBuscable></FG>
+    {destino?<Editor key={destino.codigo+'-'+destino.updated_at} data={data} destino={destino} pendiente={pendiente(destino)}/>:<p className="regional-empty">No hay rutas pendientes en esta sede.</p>}
+  </>
+}
+function Editor({data,destino,pendiente}:{data:Datos;destino:DestinoRegional;pendiente:boolean}) {
+  const [detalle,setDetalle]=useState<Detalle>(()=>cargar(data,destino)),[saving,setSaving]=useState(false),[confirmado,setConfirmado]=useState(false)
+  const [usarTotal,setUsarTotal]=useState(destino.peajes_confirmados&&!destino.peaje_manual_motivo?.startsWith(PREFIJO)),[totalAnterior,setTotalAnterior]=useState(String(destino.peaje_manual_valor??''))
+  const invalidar=useInvalidarRegional()
+  const total=(s:'ida'|'regreso')=>detalle[s].reduce((n,f)=>n+(Number(f.valor)||0),0)
+  const modificar=(s:'ida'|'regreso',i:number,c:Partial<Fila>)=>{setConfirmado(false);setDetalle(d=>({...d,[s]:d[s].map((f,j)=>j===i?{...f,...c}:f)}))}
   async function guardar() {
-    if(!nombre.trim()||!valor.trim()||!Number.isSafeInteger(Number(valor))||Number(valor)<0||!fuente.trim()){toast.error('Ingresa nombre, valor entero no negativo y fuente');return}
-    if(nuevo&&data.peajes.some(p=>p.nombre.toLocaleLowerCase()===nombre.trim().toLocaleLowerCase())){toast.error('El peaje ya existe; selecciónalo en la lista');return}
+    const filas=[...detalle.ida,...detalle.regreso]
+    if(!confirmado||!detalle.observacion.trim()){toast.error('Añade una observación y confirma que revisaste la ruta');return}
+    if(usarTotal?(!totalAnterior.trim()||!Number.isSafeInteger(Number(totalAnterior))||Number(totalAnterior)<0):filas.some(f=>!f.nombre.trim()||!f.valor.trim()||!Number.isSafeInteger(Number(f.valor))||Number(f.valor)<0)){toast.error('Revisa los nombres y valores de los peajes');return}
+    if(!usarTotal&&(['ida','regreso'] as const).some(s=>new Set(detalle[s].map(f=>f.nombre.trim().toLocaleLowerCase())).size!==detalle[s].length)){toast.error('Un peaje no puede repetirse dentro del mismo sentido');return}
     setSaving(true)
     try {
-      const campos={tarifa_categoria_i:Number(valor),fuente_revision:fuente.trim(),actualizado:hoy,vigencia_hasta:null}
-      const {error}=nuevo?await supabase.from('mant_regional_peajes').insert({nombre:nombre.trim(),...campos}):await supabase.from('mant_regional_peajes').update(campos).eq('nombre',nombre)
-      if(error)throw error
-      if(nuevo){setNuevo(false);setNombre(nombre.trim())}
-      const actuales=data.pasos.filter(p=>p.peaje_id===nombre)
-      const agregar=seleccion.filter(k=>!actuales.some(p=>`${p.destino_codigo}/${p.sentido}`===k))
-      if(agregar.length){const {error}=await supabase.from('mant_regional_pasos').upsert(agregar.map(k=>{const [destino_codigo,sentido]=k.split('/');return {sede_id:sede.id,destino_codigo,sentido,peaje_nombre:nombre.trim()}}));if(error)throw error}
-      for(const p of actuales.filter(p=>!seleccion.includes(`${p.destino_codigo}/${p.sentido}`))){const {error}=await supabase.from('mant_regional_pasos').delete().eq('sede_id',sede.id).eq('peaje_nombre',nombre).eq('destino_codigo',p.destino_codigo).eq('sentido',p.sentido);if(error)throw error}
-      const afectados=[...new Set([...agregar.map(k=>k.split('/')[0]),...actuales.filter(p=>!seleccion.includes(p.destino_codigo+'/'+p.sentido)).map(p=>p.destino_codigo)])]
-      if(afectados.length){const {error}=await supabase.from('mant_regional_destinos').update({peajes_ruta_verificados:false,updated_at:new Date().toISOString()}).eq('sede_id',sede.id).in('codigo',afectados);if(error)throw error}
-      setNuevo(false);toast.success('Peaje y destinos guardados. Confirma las rutas pendientes después de revisarlas completas.')
-    } catch {toast.error('No se completó el guardado. Revisa los datos actualizados antes de reintentar.')}
-    finally {await invalidar();setSaving(false)}
-  }
-  async function confirmar(codigo:string) {
-    setSaving(true)
-    try {
-      const {data:rows,error}=await supabase.from('mant_regional_destinos').update({peajes_ruta_verificados:true,revision_ruta:{pendientes:[],revision_manual:'Ruta completa confirmada manualmente desde configuración',fecha:hoy},updated_at:new Date().toISOString()}).eq('sede_id',sede.id).eq('codigo',codigo).select('codigo')
+      const valor=usarTotal?Number(totalAnterior):total('ida')+total('regreso')
+      const {data:rows,error}=await supabase.from('mant_regional_destinos').update({peaje_manual_valor:valor,peaje_manual_motivo:usarTotal?detalle.observacion:PREFIJO+JSON.stringify(detalle),peajes_confirmados:true,updated_at:new Date().toISOString()}).eq('sede_id',destino.sede_id).eq('codigo',destino.codigo).select('codigo')
       if(error||rows?.length!==1)throw error
-      await invalidar();toast.success('Ruta confirmada con sus peajes actuales')
-    } catch {toast.error('No se pudo confirmar la ruta')}
+      await invalidar();toast.success('Peajes de esta ciudad guardados y confirmados')
+    } catch {toast.error('No se pudo guardar la ruta. Tus cambios siguen en el formulario.')}
     finally {setSaving(false)}
   }
-  return <>
-    <h3>Peajes y destinos — {sede.nombre}</h3>
-    <p className="regional-note">Edita el valor de una estación y marca dónde se cobra en ida y regreso. La tarifa es común al peaje; las rutas corresponden a la sede elegida. Se conservan los otros peajes y ajustes manuales por destino.</p>
-    <div className="regional-table-toolbar"><strong>{pendientes.length} rutas pendientes</strong><Button disabled={saving} variant="ghost" onClick={()=>{setNuevo(v=>!v);elegir('')}}>{nuevo?'Elegir peaje existente':'+ Agregar peaje'}</Button></div>
-    <div className="regional-table-filters">
-      <FG label="Peaje">{nuevo?<input style={INP} value={nombre} onChange={e=>setNombre(e.target.value)} placeholder="Nombre de la estación"/>:<SelectorBuscable style={INP} value={nombre} onChange={e=>elegir(e.target.value)}><option value="">Selecciona un peaje</option>{data.peajes.map(p=><option key={p.nombre}>{p.nombre}</option>)}</SelectorBuscable>}</FG>
-      <FG label="Valor por paso, categoría I (COP)"><input style={INP} type="number" min={0} value={valor} onChange={e=>setValor(e.target.value)}/></FG>
-      <FG label="Fuente o motivo de revisión"><input style={INP} value={fuente} onChange={e=>setFuente(e.target.value)}/></FG>
-    </div>
-    <input style={INP} placeholder="Buscar municipio o departamento" aria-label="Filtrar destinos del peaje" value={buscar} onChange={e=>setBuscar(e.target.value)}/>
-    <div className="regional-table-scroll" style={{marginTop:12}}><table className="regional-table"><thead><tr><th>Destino</th><th>Ida</th><th>Regreso</th><th>Situación</th></tr></thead><tbody>{rutas.filter(d=>`${d.municipio} ${d.departamento}`.toLocaleLowerCase().includes(buscar.toLocaleLowerCase())).map(d=><tr key={d.codigo}><td>{d.municipio}<small>{d.departamento}</small></td>{(['ida','regreso'] as const).map(s=>{const key=`${d.codigo}/${s}`;return <td key={s}><input type="checkbox" disabled={!nombre||saving} aria-label={`${d.municipio}: ${s}`} checked={seleccion.includes(key)} onChange={e=>setSeleccion(v=>e.target.checked?[...v,key]:v.filter(k=>k!==key))}/></td>})}<td>{d.peajes_confirmados?'Total manual confirmado':pendientes.includes(d)?'Pendiente de revisar':'Ruta confirmada'}</td></tr>)}</tbody></table></div>
-    <Button disabled={saving||!nombre} onClick={guardar} style={{marginTop:12}}>Guardar peaje y destinos</Button>
-    {sinGuardar&&<p className="regional-note">Guarda los cambios del peaje antes de confirmar una ruta completa.</p>}
-    <h4 style={{margin:'24px 0 12px'}}>Rutas que necesitan revisión</h4>
-    {!pendientes.length&&<p className="regional-note">No hay rutas pendientes para esta sede.</p>}
-    {pendientes.map(d=><div key={d.codigo} style={{borderTop:'1px solid var(--border)',padding:'12px 0'}}><strong>{d.municipio} — {d.departamento}</strong><p className="regional-note">{d.revision_ruta?.pendientes?.map(p=>`${p.nombre}: ${p.sentido} (${p.motivo})`).join(' · ')||'Revisar tarifa o vigencia de los peajes.'}</p>{(['ida','regreso'] as const).map(s=><p className="regional-note" key={s}>{s==='ida'?'Ida':'Regreso'}: {data.pasos.filter(p=>p.destino_codigo===d.codigo&&p.sentido===s).map(p=>`${p.peaje_id} (${fmtCOP(Number(data.peajes.find(t=>t.nombre===p.peaje_id)?.tarifa_categoria_i??0))})`).join(', ')||'Sin peajes asignados'}</p>)}<label className="regional-note"><input type="checkbox" disabled={saving||sinGuardar} checked={false} onChange={()=>void confirmar(d.codigo)}/> Revisé la ruta completa y confirmo los peajes asignados de ida y regreso</label></div>)}
-  </>
+  return <fieldset disabled={saving} style={{border:0,padding:0,marginTop:18,minWidth:0}}>
+    <p className="regional-note">{pendiente?'Esta ruta necesita revisión.':'Esta ruta ya está confirmada.'} {pendiente&&destino.revision_ruta?.pendientes?.map(p=>p.nombre+' ('+p.sentido+'): '+p.motivo).join(' · ')}</p>
+    {destino.peajes_confirmados&&!destino.peaje_manual_motivo?.startsWith(PREFIJO)&&<label className="regional-note"><input type="checkbox" checked={usarTotal} onChange={e=>{setUsarTotal(e.target.checked);setConfirmado(false)}}/> Conservar el total manual existente en lugar de usar los peajes detallados</label>}
+    {usarTotal?<FG label="Total manual de ida y regreso (COP)"><input style={INP} type="number" min={0} value={totalAnterior} onChange={e=>{setTotalAnterior(e.target.value);setConfirmado(false)}}/></FG>:<div className="regional-peajes-sentidos">{(['ida','regreso'] as const).map(s=><section key={s}><h4>{s==='ida'?'Ida':'Regreso'} · {fmtCOP(total(s))}</h4>{!detalle[s].length&&<p className="regional-note">Sin peajes: 0 COP. Agrega uno si aplica.</p>}{detalle[s].map((f,i)=><div className="regional-peaje-fila" key={i}><FG label={'Peaje '+(i+1)}><input style={INP} list={'peajes-'+s} value={f.nombre} placeholder="Elige o escribe el nombre" onChange={e=>{const p=data.peajes.find(p=>p.nombre===e.target.value);modificar(s,i,{nombre:e.target.value,...(p?{valor:String(p.tarifa_categoria_i)}:{})})}}/><datalist id={'peajes-'+s}>{data.peajes.map(p=><option key={p.nombre}>{p.nombre}</option>)}</datalist></FG><FG label="Valor (COP)"><input style={INP} type="number" min={0} value={f.valor} onChange={e=>modificar(s,i,{valor:e.target.value})}/></FG><Button variant="ghost" onClick={()=>{setConfirmado(false);setDetalle(d=>({...d,[s]:d[s].filter((_,j)=>j!==i)}))}}>No aplica</Button></div>)}<Button variant="ghost" disabled={detalle[s].length>=Math.max(3,cargar(data,destino)[s].length)} onClick={()=>{setConfirmado(false);setDetalle(d=>({...d,[s]:[...d[s],{nombre:'',valor:''}]}))}}>+ Agregar peaje</Button></section>)}</div>}
+    <div style={{marginTop:16}}><FG label="Observación o fuente de revisión"><textarea style={INP} value={detalle.observacion} onChange={e=>{setConfirmado(false);setDetalle(d=>({...d,observacion:e.target.value}))}}/></FG></div>
+    <p><strong>Total por visita: {fmtCOP(usarTotal?Number(totalAnterior)||0:total('ida')+total('regreso'))}</strong></p>
+    <label className="regional-note"><input type="checkbox" checked={confirmado} onChange={e=>setConfirmado(e.target.checked)}/> Revisé ida y regreso; los sentidos sin peajes tienen valor cero</label>
+    <div style={{marginTop:12}}><Button disabled={saving||!confirmado} onClick={guardar}>Guardar y confirmar esta ciudad</Button></div>
+  </fieldset>
 }

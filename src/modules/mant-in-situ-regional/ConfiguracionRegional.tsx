@@ -11,7 +11,7 @@ import { Card } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
 import { Spinner } from '../../components/ui/Spinner'
 import { FG, INP } from '../mant-in-situ/ui'
-import { useRegional, useInvalidarRegional, type SedeRegional, type CodigoRegional, type DestinoRegional } from './datos'
+import { useRegional, useInvalidarRegional, type SedeRegional, type CodigoRegional } from './datos'
 
 export function ConfiguracionRegional({ sede }: { sede: SedeRegional }) {
   const consulta = useRegional(sede)
@@ -20,7 +20,6 @@ export function ConfiguracionRegional({ sede }: { sede: SedeRegional }) {
   const [nueva,setNueva]=useState(false),[nombreEquipo,setNombreEquipo]=useState(''),[familiaEquipo,setFamiliaEquipo]=useState('')
   const [panel,setPanel]=useState('equipos')
   const [codigo, setCodigo] = useState('')
-  const [destino, setDestino] = useState('')
   const [referencia, setReferencia] = useState('')
   const [codigoEquipo, setCodigoEquipo] = useState('')
   const [saving, setSaving] = useState(false)
@@ -29,7 +28,6 @@ export function ConfiguracionRegional({ sede }: { sede: SedeRegional }) {
   if (!consulta.data || consulta.error) return <Card style={{overflow: 'visible'}}>No se pudo cargar la configuración regional.</Card>
   const data = consulta.data
   const codigoSel = data.codigos.find(c => c.codigo === codigo) ?? data.codigos[0]
-  const destinoSel = data.destinos.find(d => d.codigo === destino) ?? data.destinos.find(d => d.codigo !== sede.codigo)
 
   async function asignar() {
     const ref = referencia.trim().toUpperCase().replace(/\s+/g,' ')
@@ -78,13 +76,7 @@ export function ConfiguracionRegional({ sede }: { sede: SedeRegional }) {
     {panel==='jornada' && <Card style={{overflow: 'visible'}}><h3 style={{ marginBottom: 12 }}>Jornada, vehículo y combustible</h3>
       <Jornada key={JSON.stringify(data.config)} sede={sede} config={data.config} />
     </Card>}
-    {panel==='destinos' && <><Card style={{overflow: 'visible'}}><Button variant="ghost" onClick={()=>setPanel('tarifas')} style={{marginBottom:12}}>Ver peajes pendientes y editar destinos por sentido</Button><h3 style={{ marginBottom: 12 }}>Peajes por ruta y ajustes manuales</h3>
-      <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>Los peajes se calculan por la ruta precalculada de ida y regreso. Un total manual confirmado reemplaza ese cálculo, sin sumarlo dos veces.</p>
-      <FG label="Destino"><SelectorBuscable style={INP} value={destinoSel?.codigo ?? ''} onChange={e => setDestino(e.target.value)}>
-        {data.destinos.filter(d => d.codigo !== sede.codigo).map(d => <option key={d.codigo} value={d.codigo}>{d.municipio} — {d.departamento}</option>)}
-      </SelectorBuscable></FG>
-      {destinoSel && <Peajes key={`${destinoSel.codigo}-${destinoSel.updated_at}`} destino={destinoSel} />}
-    </Card>
+    {panel==='destinos' && <><Card style={{overflow:'visible'}}><GestorPeajes key={sede.id} data={data} sede={sede}/></Card>
     <Card style={{overflow: 'visible'}}><h3 style={{ marginBottom: 12 }}>Actualizar peajes mediante CSV</h3>
       <p style={{ marginBottom: 12 }}>Descarga los destinos de {sede.nombre}, completa el total de ida y regreso y la fuente. Solo se importan filas con un total informado; 0 confirma una ruta sin cobro.</p>
       <Button onClick={() => descargarCSV('peajes-regionales-'+sede.id,['sede','codigo_destino','municipio','total_peajes_cop','fuente'],data.destinos.filter(d=>d.codigo!==sede.codigo).map(d=>[sede.id,d.codigo,d.municipio,d.peajes_confirmados?d.peaje_manual_valor:null,d.peaje_manual_motivo]))}>Descargar plantilla con destinos</Button>
@@ -136,27 +128,4 @@ function Jornada({ sede, config }: { sede: SedeRegional, config: NonNullable<Ret
   return <><div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>{CAMPOS.map(([campo, label]) => <FG key={campo} label={label}>
     <input type="number" min={0} step="any" style={INP} value={valores[campo]} onChange={e => setValores(v => ({ ...v, [campo]: e.target.value }))} />
   </FG>)}</div><Button disabled={saving} onClick={guardar} style={{ marginTop: 12 }}>Guardar jornada y vehículo</Button></>
-}
-
-function Peajes({ destino }: { destino: DestinoRegional }) {
-  const [total, setTotal] = useState(destino.peaje_manual_valor == null ? '' : String(destino.peaje_manual_valor))
-  const [motivo, setMotivo] = useState(destino.peaje_manual_motivo ?? '')
-  const [confirmado, setConfirmado] = useState(destino.peajes_confirmados)
-  const [saving, setSaving] = useState(false)
-  const invalidar = useInvalidarRegional()
-  async function guardar() {
-    if ((total.trim() && (!Number.isFinite(Number(total)) || Number(total) < 0)) || (confirmado && (!total.trim() || !motivo.trim()))) { toast.error('Para confirmar, ingresa el total (0 si no hay cobro) y la fuente o motivo'); return }
-    setSaving(true)
-    const { error } = await supabase.from('mant_regional_destinos').update({ peaje_manual_valor: total.trim() ? Number(total) : null,
-      peaje_manual_motivo: motivo.trim() || null, peajes_confirmados: confirmado, updated_at: new Date().toISOString() }).eq('sede_id', destino.sede_id).eq('codigo', destino.codigo)
-    setSaving(false)
-    if (error) { toast.error(error.message); return }
-    await invalidar(); toast.success('Peajes regionales guardados')
-  }
-  return <div style={{ marginTop: 12 }}>
-    <FG label="Total de peajes por visita, ida y regreso (COP)"><input type="number" min={0} style={INP} value={total} onChange={e => { setTotal(e.target.value); setConfirmado(false) }} /></FG>
-    <div style={{ marginTop: 12 }}><FG label="Fuente, fecha de revisión y motivo"><textarea style={INP} value={motivo} onChange={e => { setMotivo(e.target.value); setConfirmado(false) }} /></FG></div>
-    <label style={{ display: 'flex', gap: 8, marginTop: 12, fontSize: 13 }}><input type="checkbox" checked={confirmado} onChange={e => setConfirmado(e.target.checked)} /> Confirmé los peajes de esta ruta en ambos sentidos</label>
-    <Button disabled={saving} onClick={guardar} style={{ marginTop: 12 }}>Guardar peajes</Button>
-  </div>
 }
