@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { descargarCSV } from '../mant-in-situ/csv'
+import { ImportarPeajes } from './ImportarPeajes'
 import { toast } from 'sonner'
 import { supabase } from '../../lib/supabase'
 import { Card } from '../../components/ui/Card'
@@ -65,6 +67,11 @@ export function ConfiguracionRegional({ sede }: { sede: SedeRegional }) {
         {data.destinos.filter(d => d.codigo !== sede.codigo).map(d => <option key={d.codigo} value={d.codigo}>{d.municipio} — {d.departamento}</option>)}
       </select></FG>
       {destinoSel && <Peajes key={`${destinoSel.codigo}-${destinoSel.updated_at}`} destino={destinoSel} />}
+    </Card>
+    <Card><h3 style={{ marginBottom: 12 }}>Actualizar peajes mediante CSV</h3>
+      <p style={{ marginBottom: 12 }}>Descarga los destinos de {sede.nombre}, completa el total de ida y regreso y la fuente. Solo se importan filas con un total informado; 0 confirma una ruta sin cobro.</p>
+      <Button onClick={() => descargarCSV('peajes-regionales-'+sede.id,['sede','codigo_destino','municipio','total_peajes_cop','fuente'],data.destinos.filter(d=>d.codigo!==sede.codigo).map(d=>[sede.id,d.codigo,d.municipio,d.peajes_confirmados?d.peaje_manual_valor:null,d.peaje_manual_motivo]))}>Descargar plantilla con destinos</Button>
+      <ImportarPeajes sede={sede} destinos={data.destinos} />
     </Card>
     <Card><h3 style={{ marginBottom: 12 }}>Peajes extraídos del HTML — referencia</h3>
       <p style={{ color: 'var(--muted)', fontSize: 12 }}>Tarifas históricas categoría I. La cercanía geográfica no confirma que el peaje esté en la ruta ni que su tarifa siga vigente. Usa una fuente revisada para confirmar cada total.</p>
