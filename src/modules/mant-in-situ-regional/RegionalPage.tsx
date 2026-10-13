@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Trash2, Copy, MapPinned, Search, CalendarDays, Settings } from 'lucide-react'
+import { Plus, Trash2, Copy, MapPinned, Search, CalendarDays, Settings, MessageCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import { Header } from '../../components/layout/Header'
 import { Card } from '../../components/ui/Card'
@@ -13,6 +13,7 @@ import { FG, INP } from '../mant-in-situ/ui'
 import { useSedesRegionales, useRegional, type SedeRegional } from './datos'
 import { ConfiguracionRegional } from './ConfiguracionRegional'
 import './regional.css'
+import { Link } from 'react-router-dom'
 
 export function RegionalPage() {
   const { data: sedes = [], isLoading, error } = useSedesRegionales()
@@ -22,7 +23,7 @@ export function RegionalPage() {
   const [configurar, setConfigurar] = useState(false)
   return <div className="regional-page">
     <Header title={`Mant. In Situ — ${sede?.nombre ?? 'Regional'}`} subtitle="Servicio desde la oficina regional — hasta 110 km por carretera, sin vuelos"
-      actions={<nav className="regional-tabs" aria-label="Vista regional"><button aria-pressed={!configurar} onClick={()=>setConfigurar(false)}>Consulta</button>{hasCapability('mant_in_situ_regional_editar') && <button aria-pressed={configurar} onClick={()=>setConfigurar(true)}><Settings size={14} /> Configuración</button>}</nav>} />
+      actions={<div className="regional-header-actions"><Link className="regional-link" to="/mant-in-situ">Mant. In Situ Bogotá</Link><nav className="regional-tabs" aria-label="Vista regional"><button aria-pressed={!configurar} onClick={()=>setConfigurar(false)}>Consulta</button>{hasCapability('mant_in_situ_regional_editar') && <button aria-pressed={configurar} onClick={()=>setConfigurar(true)}><Settings size={14} /> Configuración</button>}</nav></div>} />
     {isLoading ? <Spinner /> : error ? <Card>No se pudo cargar la información regional. Verifica las migraciones y vuelve a intentar.</Card>
       : !sede ? <Card>No hay sedes regionales configuradas.</Card> : <>
         <Card><FG label="Oficina de origen"><select style={INP} value={sede.id} onChange={e => setSedeId(e.target.value)}>
@@ -80,6 +81,23 @@ function ConsultaRegional({ sede }: { sede: SedeRegional }) {
       ].join('\n'))
       toast.success('Resumen copiado')
     } catch { toast.error('No fue posible copiar el resumen') }
+  }
+  async function copiarValor() {
+    if (!valido) return
+    try { await navigator.clipboard.writeText(String(resultado.totalRedondeado)); toast.success('Valor copiado') }
+    catch { toast.error('No fue posible copiar el valor') }
+  }
+  async function copiarWhatsApp() {
+    if (!valido || !destino) return
+    const iva=Math.round(resultado.totalRedondeado*0.19)
+    const lineas=['*Mantenimiento in situ regional — HANNA Servicio Técnico*',
+      '📍 Sede: '+sede.nombre+' · Destino: '+destino.municipio,'','*Equipos*',
+      ...resultado.filas.map(f=>'• '+f.referencia+(f.equipo?.nombre?' — '+f.equipo.nombre:'')+' (x'+f.cantidad+'): '+fmtCOP(f.unitarioRedondeado)+' c/u → '+fmtCOP(f.totalRedondeado)),
+      '', 'Subtotal (antes de IVA): '+fmtCOP(resultado.totalRedondeado), 'IVA (19 %): '+fmtCOP(iva),
+      '*Total con IVA: '+fmtCOP(resultado.totalRedondeado+iva)+'*',
+      '🗓️ Duración estimada: '+resultado.dias+' día(s)', '', '_Valores estimados, sujetos a la cotización formal._']
+    try { await navigator.clipboard.writeText(lineas.join('\n')); toast.success('Resumen copiado — pégalo en WhatsApp') }
+    catch { toast.error('No fue posible copiar el resumen') }
   }
   return <div className="regional-consulta">
     <section className="regional-main">
@@ -148,7 +166,8 @@ function ConsultaRegional({ sede }: { sede: SedeRegional }) {
         ...peajesCaducados.map(p=>`${p.nombre}: venció la vigencia de su tarifa/exención`),
       ].join(', ') || 'asociación de casetas a la ruta'}. Revisa únicamente estas excepciones en Configuración regional.</p>}
       {!!resultado.errores.length && <p style={{ marginTop: 12, color: 'var(--muted)', fontSize: 12 }}>{resultado.errores.join(' ')}</p>}
-      <Button disabled={!valido} onClick={copiar} style={{ marginTop: 14 }}><Copy size={14} /> Copiar resumen de cotización</Button>
+      <div className="regional-copy-actions"><Button variant="ghost" disabled={!valido} onClick={copiarValor}><Copy size={14} /> Copiar valor</Button><Button className="regional-whatsapp" disabled={!valido} onClick={copiarWhatsApp}><MessageCircle size={14} /> Resumen para WhatsApp</Button></div>
+      <details className="regional-details"><summary>Más opciones</summary><Button disabled={!valido} variant="ghost" onClick={copiar}>Copiar cotización sin IVA</Button></details>
       <p className="regional-note">El resumen se actualiza automáticamente. La cotización formal se realiza en el ERP.</p>
     </Card>
     </aside>
