@@ -5,8 +5,8 @@ import type { MantInSituConfig, MantInSituDestino, MantInSituPeaje } from '../..
 import type { EquipoInSitu } from '../mant-in-situ/hooks/useMantInSitu'
 
 export interface SedeRegional { id: string, nombre: string, codigo: string, direccion: string, lat: number, lng: number, fuente: string }
-export interface CodigoRegional { sede_id: string, codigo: string, precio: number, horas: number }
-export interface EquipoRegional { sede_id: string, referencia: string, codigo: string, horas: number | null, precio: number | null, descripcion_servicio: string | null }
+export interface CodigoRegional { codigo: string, precio: number, horas: number }
+export interface EquipoRegional { referencia: string, codigo: string, horas: number | null, precio: number | null, descripcion_servicio: string | null }
 export interface DestinoRegional extends MantInSituDestino { sede_id: string, peajes_confirmados: boolean, consultado_at: string }
 interface Instrumento { codigo: string, descripcion: string | null, familia: string | null }
 
@@ -23,8 +23,8 @@ export function useRegional(sede: SedeRegional | undefined) {
       const id = sede!.id
       const [configResult, codigos, asignaciones, destinos, peajes, instrumentos] = await Promise.all([
         supabase.from('mant_regional_config').select('*').eq('sede_id', id).single(),
-        fetchAllRows<CodigoRegional>('mant_regional_codigos', q => q.eq('sede_id', id).order('codigo')),
-        fetchAllRows<EquipoRegional>('mant_regional_equipos', q => q.eq('sede_id', id).order('referencia')),
+        fetchAllRows<CodigoRegional>('mant_regional_servicios', q => q.order('codigo')),
+        fetchAllRows<EquipoRegional>('mant_regional_referencias', q => q.order('referencia')),
         fetchAllRows<DestinoRegional>('mant_regional_destinos', q => q.eq('sede_id', id).order('municipio')),
         fetchAllRows<MantInSituPeaje>('mant_regional_peajes', q => q.order('nombre')),
         fetchAllRows<Instrumento>('codigos_inet', q => q.order('codigo')),

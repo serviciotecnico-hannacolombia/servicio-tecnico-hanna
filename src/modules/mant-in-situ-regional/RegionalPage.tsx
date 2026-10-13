@@ -78,7 +78,7 @@ function ConsultaRegional({ sede }: { sede: SedeRegional }) {
   }
   return <div style={{ display: 'grid', gap: 16 }}>
     <Card>
-      <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 14 }}>Precios regionales inicializados con los de Bogotá, pendientes del Excel regional. Se configuran por sede y no modifican Bogotá.</p>
+      <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 14 }}>Precio base común para las cinco sedes regionales. El desplazamiento depende de la oficina y el destino; Bogotá conserva su propio catálogo.</p>
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 180 }}><FG label="Departamento"><select style={INP} value={departamento} onChange={e => { setDepartamento(e.target.value); setCodigoDestino('') }}>
           <option value="">Todos los departamentos disponibles</option>
@@ -114,7 +114,11 @@ function ConsultaRegional({ sede }: { sede: SedeRegional }) {
         ['Peajes', resultado.peajes], ['Total antes de IVA', resultado.totalRedondeado]].map(([label, valor]) => <div key={label} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0' }}>
         <span>{label}</span><strong>{(label === 'Peajes' || label === 'Total antes de IVA') && pendientePeajes ? 'Pendiente de confirmar' : fmtCOP(Number(valor))}</strong>
       </div>)}
-      <p style={{ marginTop: 10, color: 'var(--muted)', fontSize: 12 }}>{fmtHoras(resultado.horas)} de servicio · {resultado.dias} jornada(s). Sin vuelos, hotel ni alimentación.</p>
+      <p style={{ marginTop: 10, color: 'var(--muted)', fontSize: 12 }}>
+        Servicio: {fmtHoras(resultado.horas)} · Recorrido total: {fmtHoras(resultado.horasViajeTotal)} ·
+        {' '}Tiempo total: {fmtHoras(resultado.horas + resultado.horasViajeTotal)} · {resultado.dias} jornada(s).
+        Sin vuelos, hotel ni alimentación.
+      </p>
       {valido && resultado.filas.map(f => <p key={f.referencia} style={{ marginTop: 8 }}>{f.referencia}: {fmtCOP(f.unitarioRedondeado)} c/u · total {fmtCOP(f.totalRedondeado)}</p>)}
       {pendientePeajes && <p role="alert" style={{ marginTop: 12, color: 'var(--red)' }}>Confirma los peajes de ida y regreso de este destino en Configuración regional antes de usar la cotización.</p>}
       {!!resultado.errores.length && <p style={{ marginTop: 12, color: 'var(--muted)', fontSize: 12 }}>{resultado.errores.join(' ')}</p>}

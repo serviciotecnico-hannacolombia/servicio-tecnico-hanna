@@ -1,0 +1,24 @@
+{
+  "moneda": "COP",
+  "ambito": "Precio base común a las cinco sedes regionales",
+  "horas_tester": 1,
+  "reactor_precio": 900000,
+  "codigos": {
+    "MANFT.02": 550000,
+    "MANTMC.02": 550000,
+    "MANPOI.02": 550000,
+    "MANTOD.02": 550000,
+    "MANTCT.02": 550000,
+    "MANMINTI.02": 550000,
+    "MANTCHECKER.01": 390000,
+    "MANMUL.02": 700000,
+    "MANSAMPLER.02": 2000000,
+    "MANTIT.02": 2000000,
+    "MANTIRIS.02": 900000,
+    "MANT.TESTER.01": 390000,
+    "MANTCONTROL.02": 675000,
+    "MANTPCA.02": 1200000,
+    "MANTBL12X.02": 675000,
+    "MANTR.02": 900000
+  }
+}

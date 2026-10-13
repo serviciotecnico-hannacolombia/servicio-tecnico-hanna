@@ -22,7 +22,22 @@ Ejemplos precalculados: Cali–Yumbo 18,4259 km de ida y 14,9121 km de vuelta; P
 
 ## Precio y peajes
 
-Los precios, tiempos, asignaciones y excepciones iniciales se copian desde las tablas actuales de Bogotá **al ejecutar la migración de datos**. No hay sincronización posterior. Cada sede tiene sus códigos y sus asignaciones de equipos. El precio real regional queda pendiente del Excel; los 550.000 COP usados en las pruebas son un ejemplo, no una tarifa aplicada.
+Las migraciones b/c copian provisionalmente precios, tiempos y asignaciones desde Bogotá. La migración e consolida un catálogo regional común para las cinco sedes (`mant_regional_servicios` y `mant_regional_referencias`), incorpora el Excel y elimina las copias provisionales por sede. La jornada, vehículo, combustible y peajes permanecen por sede. No hay sincronización posterior con los precios de Bogotá.
+
+Se extrajeron 792 referencias aplicables y 15 códigos del Excel `Precio de mantenimiento In situ (2).xlsx`, hoja Hoja1. Sus precios de la columna Costo(2025) se confirmaron explícitamente con el usuario y se guardaron por separado en `supabase/data/mant-regional-precios-confirmados.json`. Se conservan los tiempos existentes; MANT.TESTER.01, que no estaba en el catálogo de Bogotá, usa 1 hora como los Checkers. Los 15 HI 968XX se incorporan a Bogotá con MANFT.02, conservando su precio existente y sin sobrescribir códigos ya asignados.
+
+| Código regional | Precio base COP |
+|---|---:|
+| MANFT.02, MANTMC.02, MANPOI.02, MANTOD.02, MANTCT.02, MANMINTI.02 | 550.000 |
+| MANTCHECKER.01, MANT.TESTER.01 | 390.000 |
+| MANMUL.02 | 700.000 |
+| MANSAMPLER.02, MANTIT.02 | 2.000.000 |
+| MANTIRIS.02 | 900.000 |
+| MANTCONTROL.02, MANTBL12X.02 | 675.000 |
+| MANTPCA.02 | 1.200.000 |
+| MANTR.02 (HI 839800-01/-02) | 900.000 |
+
+HI 839800-01/-02 aparecen como No aplica en el Excel, pero se recuperan de la asignación actual de Bogotá. El precio regional aprobado es 900.000 COP, los tiempos y la descripción se conservan; Bogotá mantiene su precio. Los códigos originales sin precio nuevo confirmado en el Excel conservan su valor provisional copiado. Si hubo asignaciones divergentes entre sedes antes de la consolidación, la migración se detiene y requiere unificarlas; no elige silenciosamente una sede.
 
 En la ciudad de la sede solo se cobra servicio base. Para los demás municipios se usa el motor existente con la ciudad base seleccionada: horas disponibles después del viaje, jornadas necesarias, vehículo, combustible y peajes por visita. No hay vuelos, hotel ni alimentación.
 
@@ -30,7 +45,7 @@ Las tarifas de peajes del HTML son históricas. Ni cercanía al punto ni rutas a
 
 ## Aplicación de migraciones
 
-Aplicar `20261013b_mant_in_situ_regional.sql` y después `20261013c_mant_in_situ_regional_datos.sql`, una vez cada una, desde Supabase SQL Editor. Ambas usan transacciones. Requieren las tablas actuales del módulo In Situ y la columna `codigos_inet.codigo_mantenimiento_insitu` ya migradas. Revisar que el módulo de Bogotá tenga configuración y precios antes de ejecutarlas. Si falla una consulta en una transacción, ejecutar `ROLLBACK` antes de reintentar.
+Aplicar, en orden, `20261013b_mant_in_situ_regional.sql`, `20261013c_mant_in_situ_regional_datos.sql`, `20261013d_refractometros_in_situ.sql` y `20261013e_regional_catalogo_excel.sql`, una vez cada una, desde Supabase SQL Editor. Si b/c ya fueron aplicadas, ejecutar solamente d/e. Todas usan transacciones y se aplican antes de desplegar el frontend actualizado. Requieren las tablas actuales del módulo In Situ y la columna `codigos_inet.codigo_mantenimiento_insitu` ya migradas. Revisar que el módulo de Bogotá tenga configuración y precios antes de ejecutarlas. Si falla una consulta en una transacción, ejecutar `ROLLBACK` antes de reintentar.
 
 No se ha aplicado SQL a producción desde este trabajo. No ejecutar los scripts de extracción para instalar el módulo: los datos ya están incluidos en las migraciones.
 
@@ -39,7 +54,7 @@ No se ha aplicado SQL a producción desde este trabajo. No ejecutar los scripts 
 Para regenerar rutas se requiere acceso de red y el HTML fuente: `node scripts/preparar-regional.mjs "ruta/al/archivo.html"`. Después ejecutar `node scripts/generar-migracion-regional.mjs` y revisar el diff. Los scripts solo se usan durante mantenimiento de datos; no forman parte del frontend. Respeta las pausas incluidas entre consultas al servicio público.
 
 - `node --test src/modules/mant-in-situ-regional/regional.test.mjs`: cobertura, ejemplos, cálculo regional y regresión de Bogotá.
-- `node scripts/validar-migracion-regional.mjs "ruta/a/pglite/dist/index.js"`: migraciones reales sobre PostgreSQL embebido con fixtures; restricciones, permisos y aislamiento por sede. Requiere `@electric-sql/pglite` instalado aparte; no modifica producción.
+- `node scripts/validar-migracion-regional.mjs "ruta/a/pglite/dist/index.js"`: migraciones b/c/d/e reales sobre PostgreSQL embebido con fixtures; restricciones, permisos, precios regionales comunes, refractómetros y reactores, conservando precios de Bogotá. Requiere `@electric-sql/pglite` instalado aparte; no modifica producción.
 - `npm run build` y lint de los archivos modificados.
 
-Después de aplicar las migraciones: entrar con un rol de consulta y otro de edición; probar cambio de sede, departamento, municipio y equipo, confirmar un destino sin peajes y uno con peajes, y modificar un precio en Cali verificando que Pereira y Bogotá conserven sus valores.
+Después de aplicar las migraciones: volver a iniciar sesión, abrir Estratégico o el enlace Regional desde Mant. In Situ. Entrar con un rol de consulta y otro de edición; probar cambio de sede, departamento, municipio y equipo, confirmar un destino sin peajes y uno con peajes, y modificar un precio regional verificando que todas las sedes lo compartan mientras Bogotá conserva el suyo.

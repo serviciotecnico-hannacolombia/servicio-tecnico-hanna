@@ -30,16 +30,16 @@ export function ConfiguracionRegional({ sede }: { sede: SedeRegional }) {
       const { data: instrumento, error: consultaError } = await supabase.from('codigos_inet').select('codigo').eq('codigo', ref).maybeSingle()
       if (consultaError) throw consultaError
       if (!instrumento) { toast.error('La referencia no existe en el catálogo de equipos'); return }
-      const { error } = await supabase.from('mant_regional_equipos').upsert({ sede_id: sede.id, referencia: ref, codigo: codigoEquipo }, { onConflict: 'sede_id,referencia' })
+      const { error } = await supabase.from('mant_regional_referencias').upsert({ referencia: ref, codigo: codigoEquipo }, { onConflict: 'referencia' })
       if (error) throw error
       await invalidar()
-      toast.success('Código regional asignado; Bogotá no cambia')
+      toast.success('Código asignado para todas las sedes regionales')
     } catch (e) { toast.error(e instanceof Error ? e.message : 'No se pudo asignar el código') }
     finally { setSaving(false) }
   }
   return <div style={{ display: 'grid', gap: 16 }}>
-    <Card><h3>Precios base — {sede.nombre}</h3>
-      <p style={{ margin: '10px 0', fontSize: 12, color: 'var(--muted)' }}>Valores iniciales copiados una sola vez. Editar aquí no cambia Bogotá ni las otras sedes. Se reemplazarán por el Excel regional cuando esté disponible.</p>
+    <Card><h3>Precios base regionales — catálogo común</h3>
+      <p style={{ margin: '10px 0', fontSize: 12, color: 'var(--muted)' }}>Los servicios tienen el mismo precio base en las cinco sedes. Editar aquí actualiza todas las sedes regionales; los precios de Bogotá se mantienen independientes.</p>
       <FG label="Código de servicio"><select style={INP} value={codigoSel?.codigo ?? ''} onChange={e => setCodigo(e.target.value)}>
         {data.codigos.map(c => <option key={c.codigo}>{c.codigo}</option>)}
       </select></FG>
@@ -85,7 +85,7 @@ function Precio({ codigo }: { codigo: CodigoRegional }) {
   async function guardar() {
     if (!Number.isFinite(Number(precio)) || !Number.isFinite(Number(horas)) || Number(precio) <= 0 || Number(horas) <= 0) { toast.error('Precio y horas deben ser mayores a cero'); return }
     setSaving(true)
-    const { error } = await supabase.from('mant_regional_codigos').update({ precio: Number(precio), horas: Number(horas), updated_at: new Date().toISOString() }).eq('sede_id', codigo.sede_id).eq('codigo', codigo.codigo)
+      const { error } = await supabase.from('mant_regional_servicios').update({ precio: Number(precio), horas: Number(horas), updated_at: new Date().toISOString() }).eq('codigo', codigo.codigo)
     setSaving(false)
     if (error) { toast.error(error.message); return }
     await invalidar(); toast.success('Precio regional guardado')
@@ -93,7 +93,7 @@ function Precio({ codigo }: { codigo: CodigoRegional }) {
   return <div style={{ marginTop: 12 }}><div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
     <FG label="Precio base (COP)"><input type="number" style={INP} min={1} value={precio} onChange={e => setPrecio(e.target.value)} /></FG>
     <FG label="Horas de servicio"><input type="number" style={INP} min={0.01} step="any" value={horas} onChange={e => setHoras(e.target.value)} /></FG>
-  </div><Button disabled={saving} onClick={guardar} style={{ marginTop: 12 }}>Guardar precio de esta sede</Button></div>
+  </div><Button disabled={saving} onClick={guardar} style={{ marginTop: 12 }}>Guardar precio regional común</Button></div>
 }
 
 const CAMPOS = [

@@ -3,6 +3,7 @@
 // configuración en el navegador: ahora todo vive en la base de datos y solo
 // la consulta en curso se recuerda en el navegador de cada usuario.
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Header } from '../../components/layout/Header'
 import { useUser } from '../../hooks/useUser'
 import { ConsultaTab, type ItemConsulta } from './ConsultaTab'
@@ -33,7 +34,7 @@ function leerConsulta(): ConsultaGuardada {
 }
 
 export function MantInSituPage() {
-  const { hasCapability } = useUser()
+  const { hasCapability, hasModule } = useUser()
   const puedeConfigurar = hasCapability('mant_in_situ_editar')
   const [tab, setTab] = useState<Tab>('consulta')
   const [inicial] = useState(leerConsulta)
@@ -55,12 +56,15 @@ export function MantInSituPage() {
       <Header
         title="Mant. In Situ"
         subtitle="Precio del mantenimiento en las instalaciones del cliente — Bogotá y alrededores"
-        actions={puedeConfigurar ? (
+        actions={<div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          {hasModule('mant_in_situ_regional') && <Link to="/mant-in-situ-regional" style={{ ...tabStyle(false), color: 'var(--accent)', border: '1px solid var(--border)', textDecoration: 'none' }}>Mant. In Situ Regional</Link>}
+          {puedeConfigurar && (
           <div style={{ display: 'inline-flex', gap: 4, background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 9, padding: 3 }}>
             <button onClick={() => setTab('consulta')} style={tabStyle(tab === 'consulta')}>Consulta</button>
             <button onClick={() => setTab('configuracion')} style={tabStyle(tab === 'configuracion')}>⚙ Configuración</button>
           </div>
-        ) : undefined}
+          )}
+        </div>}
       />
 
       {tab === 'configuracion' && puedeConfigurar
