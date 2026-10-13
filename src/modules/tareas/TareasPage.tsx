@@ -131,7 +131,7 @@ export function TareasPage() {
                         {t.titulo}
                       </span>
                       <span style={{ ...B_PROXIMA, background: 'var(--surface)', color: 'var(--muted)', borderColor: 'var(--border)' }}>
-                        {t.privada ? 'Privada' : 'Pública'}
+                        {(t.privada ?? true) ? 'Privada' : 'Pública'}
                       </span>
                       {vencida && <span style={B_VENCIDA}><AlertTriangle size={11} style={{ verticalAlign: -1, marginRight: 3 }} />Vencida</span>}
                       {!vencida && proxima && <span style={B_PROXIMA}><AlertTriangle size={11} style={{ verticalAlign: -1, marginRight: 3 }} />Vence mañana</span>}
