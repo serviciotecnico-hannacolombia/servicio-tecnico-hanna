@@ -77,6 +77,20 @@ Seguimiento de PNC, nota de venta, importación, informe y finalización, con re
 ### Mantenimiento In Situ
 Cálculo del servicio por equipos y destino, considerando horas de trabajo, desplazamiento, combustible, peajes y precios configurables.
 
+### Mantenimiento In Situ Regional
+Cotizador independiente en `/mant-in-situ-regional` para Barranquilla, Bucaramanga, Cali, Medellín y Pereira. Elige oficina, departamento, municipio y equipos. Solo ofrece cabeceras municipales a un máximo de 60 km **viales de ida desde la oficina**, antes del margen de recorrido; Bogotá queda fuera. En la ciudad de la sede se cobra únicamente el precio base. En otros municipios se suman vehículo/depreciación, combustible y peajes por jornada. No incluye vuelos, alojamiento ni alimentación.
+
+Precios, asignaciones de equipos y parámetros se copian inicialmente desde el módulo de Bogotá a tablas regionales independientes por sede, y se pueden configurar sin modificar Bogotá ni las otras sedes. Los precios son provisionales hasta incorporar el Excel regional. Las rutas se consultaron una sola vez con OpenStreetMap/OSRM y quedaron versionadas: no se consultan mapas durante una cotización. Son rutas a la cabecera municipal, no a una dirección específica del cliente.
+
+El catálogo de peajes extraído del HTML es una referencia histórica, no una asignación automática a rutas. Antes de cotizar fuera de la ciudad sede, quien tenga permiso debe confirmar el total de ida y regreso (también 0 si no hay cobro), con fuente y fecha de revisión.
+
+Para habilitar el módulo, ejecutar una sola vez, en orden y antes de desplegar el frontend:
+
+1. `supabase/migrations/20261013b_mant_in_situ_regional.sql` (tablas y permisos).
+2. `supabase/migrations/20261013c_mant_in_situ_regional_datos.sql` (oficinas, rutas, referencias de peajes y copias iniciales).
+
+Las migraciones conceden inicialmente acceso regional a los roles con acceso a Mant. In Situ y edición regional a los roles que ya pueden configurar ese módulo. Después se administran de forma independiente en Roles. Las nuevas tablas son `mant_regional_*`. Ver fuentes, criterios y reproducción del cálculo en [la documentación regional](docs/mant-in-situ-regional.md).
+
 ---
 
 ## Stack

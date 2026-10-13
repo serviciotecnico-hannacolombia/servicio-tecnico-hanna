@@ -91,6 +91,7 @@ const NAV_GROUPS: NavGroup[] = [
       { to: '/calibraciones',              label: 'Calibraciones',            icon: FlaskConical,  moduleKey: 'calibraciones' },
       { to: '/mantenimiento-programado',   label: 'Mantenimiento Programado', icon: CalendarClock, moduleKey: 'mantenimiento_programado' },
       { to: '/mant-in-situ',               label: 'Mant. In Situ',            icon: MapPinned,     moduleKey: 'mant_in_situ' },
+      { to: '/mant-in-situ-regional',      label: 'Mant. In Situ Regional',   icon: MapPinned,     moduleKey: 'mant_in_situ_regional' },
       { to: '/tickets',                    label: 'Tickets a Fábrica',        icon: Ticket,        moduleKey: 'tickets' },
       { to: '/equipos-sin-formato',        label: 'Equipos Sin Formato',      icon: PackageX,      moduleKey: 'equipos_sin_formato' },
       { to: '/garantias',                  label: 'Garantías',                icon: BadgeCheck,    moduleKey: 'garantias' },

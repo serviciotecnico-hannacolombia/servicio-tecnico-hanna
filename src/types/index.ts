@@ -20,13 +20,13 @@ export type ModuleKey =
   | 'llamadas' | 'bodega' | 'consumibles' | 'tarifas' | 'codigos'
   | 'editor' | 'indicadores' | 'reporte_st' | 'tareas'
   | 'mantenimiento_programado' | 'calibraciones' | 'void' | 'bodega_st' | 'tickets'
-  | 'equipos_sin_formato' | 'certificados_calidad' | 'garantias' | 'mant_in_situ' | 'admin'
+  | 'equipos_sin_formato' | 'certificados_calidad' | 'garantias' | 'mant_in_situ' | 'mant_in_situ_regional' | 'admin'
 
 export type CapabilityKey =
   | 'importar_csv_tarifas' | 'importar_csv_codigos' | 'importar_csv_llamadas'
   | 'bodega_registrar_ingreso' | 'editar_codigos' | 'gestion_codigos' | 'bodega_eliminar'
   | 'calibraciones_editar' | 'calibraciones_ver_todas' | 'ver_precios_codigos' | 'tablas_mantenimiento_editar'
-  | 'equipos_sin_formato_editar' | 'garantias_editar' | 'garantias_ver_todas' | 'mant_in_situ_editar'
+  | 'equipos_sin_formato_editar' | 'garantias_editar' | 'garantias_ver_todas' | 'mant_in_situ_editar' | 'mant_in_situ_regional_editar'
 
 export interface Role {
   id: string
