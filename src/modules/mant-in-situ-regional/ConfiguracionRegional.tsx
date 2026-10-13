@@ -1,3 +1,4 @@
+import { GestorPeajes } from './GestorPeajes'
 import { useUser } from '../../hooks/useUser'
 import { SelectorBuscable } from './SelectorBuscable'
 import { useState } from 'react'
@@ -10,7 +11,6 @@ import { Card } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
 import { Spinner } from '../../components/ui/Spinner'
 import { FG, INP } from '../mant-in-situ/ui'
-import { fmtCOP } from '../mant-in-situ/hooks/useMantInSitu'
 import { useRegional, useInvalidarRegional, type SedeRegional, type CodigoRegional, type DestinoRegional } from './datos'
 
 export function ConfiguracionRegional({ sede }: { sede: SedeRegional }) {
@@ -78,7 +78,7 @@ export function ConfiguracionRegional({ sede }: { sede: SedeRegional }) {
     {panel==='jornada' && <Card style={{overflow: 'visible'}}><h3 style={{ marginBottom: 12 }}>Jornada, vehículo y combustible</h3>
       <Jornada key={JSON.stringify(data.config)} sede={sede} config={data.config} />
     </Card>}
-    {panel==='destinos' && <><Card style={{overflow: 'visible'}}><h3 style={{ marginBottom: 12 }}>Peajes por ruta y ajustes manuales</h3>
+    {panel==='destinos' && <><Card style={{overflow: 'visible'}}><Button variant="ghost" onClick={()=>setPanel('tarifas')} style={{marginBottom:12}}>Ver peajes pendientes y editar destinos por sentido</Button><h3 style={{ marginBottom: 12 }}>Peajes por ruta y ajustes manuales</h3>
       <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>Los peajes se calculan por la ruta precalculada de ida y regreso. Un total manual confirmado reemplaza ese cálculo, sin sumarlo dos veces.</p>
       <FG label="Destino"><SelectorBuscable style={INP} value={destinoSel?.codigo ?? ''} onChange={e => setDestino(e.target.value)}>
         {data.destinos.filter(d => d.codigo !== sede.codigo).map(d => <option key={d.codigo} value={d.codigo}>{d.municipio} — {d.departamento}</option>)}
@@ -90,16 +90,7 @@ export function ConfiguracionRegional({ sede }: { sede: SedeRegional }) {
       <Button onClick={() => descargarCSV('peajes-regionales-'+sede.id,['sede','codigo_destino','municipio','total_peajes_cop','fuente'],data.destinos.filter(d=>d.codigo!==sede.codigo).map(d=>[sede.id,d.codigo,d.municipio,d.peajes_confirmados?d.peaje_manual_valor:null,d.peaje_manual_motivo]))}>Descargar plantilla con destinos</Button>
       <ImportarPeajes sede={sede} destinos={data.destinos} />
     </Card></>}
-    {panel==='tarifas' && <Card style={{overflow: 'visible'}}><h3 style={{ marginBottom: 12 }}>Tarifas de peajes del HTML — referencia</h3>
-      <EditarTarifa peajes={data.peajes} />
-      <p style={{ color: 'var(--muted)', fontSize: 12 }}>Tarifas históricas categoría I. La cercanía geográfica no confirma que el peaje esté en la ruta ni que su tarifa siga vigente. Usa una fuente revisada para confirmar cada total.</p>
-      <div style={{ maxHeight: 320, overflow: 'auto', marginTop: 12 }}>
-        {data.peajes.map(p => <div key={p.nombre} style={{ display: 'flex', gap: 12, justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
-          <div><strong>{p.nombre}</strong><p style={{ fontSize: 11, color: 'var(--muted)' }}>{p.sector} · {p.sentido} · {p.fuente} · {p.actualizado ?? 'Sin fecha'}</p></div>
-          <span style={{ whiteSpace: 'nowrap' }}>{fmtCOP(Number(p.tarifa_categoria_i))}</span>
-        </div>)}
-      </div>
-    </Card>}
+    {panel==='tarifas' && <Card style={{overflow:'visible'}}><GestorPeajes key={sede.id} data={data} sede={sede}/></Card>}
   </div></div>
 }
 
@@ -168,18 +159,4 @@ function Peajes({ destino }: { destino: DestinoRegional }) {
     <label style={{ display: 'flex', gap: 8, marginTop: 12, fontSize: 13 }}><input type="checkbox" checked={confirmado} onChange={e => setConfirmado(e.target.checked)} /> Confirmé los peajes de esta ruta en ambos sentidos</label>
     <Button disabled={saving} onClick={guardar} style={{ marginTop: 12 }}>Guardar peajes</Button>
   </div>
-}
-
-function EditarTarifa({peajes}:{peajes:NonNullable<ReturnType<typeof useRegional>['data']>['peajes']}) {
-  const [nombre,setNombre]=useState(''),[valor,setValor]=useState(''),[fuente,setFuente]=useState(''),[saving,setSaving]=useState(false)
-  const invalidar=useInvalidarRegional()
-  async function guardar() {
-    if(!nombre||!valor.trim()||!Number.isFinite(Number(valor))||Number(valor)<0||!fuente.trim()){toast.error('Selecciona un peaje, precio válido y fuente');return}
-    setSaving(true)
-    const {data,error}=await supabase.from('mant_regional_peajes').update({tarifa_categoria_i:Number(valor),fuente_revision:fuente.trim(),actualizado:new Date().toISOString().slice(0,10),vigencia_hasta:null}).eq('nombre',nombre).select('nombre')
-    setSaving(false)
-    if(error||data?.length!==1){toast.error('No se pudo guardar la tarifa');return}
-    await invalidar();toast.success('Tarifa regional actualizada')
-  }
-  return <div className="regional-table-filters"><FG label="Peaje"><SelectorBuscable style={INP} value={nombre} onChange={e=>{const p=peajes.find(p=>p.nombre===e.target.value);setNombre(e.target.value);setValor(String(p?.tarifa_categoria_i??''));setFuente(p?.fuente_revision??p?.fuente??'')}}><option value="">Selecciona un peaje</option>{peajes.map(p=><option key={p.nombre}>{p.nombre}</option>)}</SelectorBuscable></FG><FG label="Tarifa categoría I (COP)"><input style={INP} type="number" min={0} value={valor} onChange={e=>setValor(e.target.value)}/></FG><FG label="Fuente de revisión"><input style={INP} value={fuente} onChange={e=>setFuente(e.target.value)}/></FG><Button disabled={saving} onClick={guardar}>Guardar tarifa</Button></div>
 }
