@@ -2,6 +2,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase, fetchAllRows } from '../../../lib/supabase'
 import { useUser } from '../../../hooks/useUser'
 import type { Tarea } from '../../../types'
+import { esUrgente } from '../plazos'
+export { estaVencida, venceHoy, venceManana, esPrioritaria, esUrgente } from '../plazos'
 
 // RLS devuelve las públicas y las privadas creadas por mí o asignadas a mí,
 // siempre que mi usuario esté activo y tenga acceso al módulo.
@@ -24,29 +26,8 @@ export function useInvalidateTareas() {
   ])
 }
 
-function hoyISO(): string { return new Date().toISOString().slice(0, 10) }
-function mananaISO(): string {
-  const d = new Date(); d.setDate(d.getDate() + 1)
-  return d.toISOString().slice(0, 10)
-}
-
-export function estaVencida(t: Pick<Tarea, 'fecha_vencimiento' | 'estado'>): boolean {
-  return t.estado === 'pendiente' && !!t.fecha_vencimiento && t.fecha_vencimiento < hoyISO()
-}
-
-export function venceManana(t: Pick<Tarea, 'fecha_vencimiento' | 'estado'>): boolean {
-  return t.estado === 'pendiente' && t.fecha_vencimiento === mananaISO()
-}
-
-// Urgente = le falta un día para vencer, o ya está vencida.
-export function esUrgente(t: Pick<Tarea, 'fecha_vencimiento' | 'estado'>): boolean {
-  return estaVencida(t) || venceManana(t)
-}
-
-// Badge del sidebar: cuántas tareas tengo asignadas (pendientes, en total) y
-// cuántas de las mías (asignadas a mí o creadas por mí para otros) están a un
-// día de vencer o ya vencieron.
-export function useTareasBadgeCount(): { asignadas: number, vencidas: number } {
+// Un único total de pendientes relacionadas conmigo; urgentes es un subconjunto.
+export function useTareasBadgeCount(): { pendientes: number, urgentes: number } {
   const { user, hasModule } = useUser()
   const { data } = useQuery({
     queryKey: ['tareas_badge', user?.id],
@@ -61,9 +42,9 @@ export function useTareasBadgeCount(): { asignadas: number, vencidas: number } {
     enabled: !!user && hasModule('tareas'),
     refetchInterval: 60_000,
   })
-  if (!data || !user) return { asignadas: 0, vencidas: 0 }
+  if (!data || !user) return { pendientes: 0, urgentes: 0 }
   return {
-    asignadas: data.filter(t => t.asignado_a === user.id).length,
-    vencidas: data.filter(t => (t.asignado_a === user.id || t.creado_por === user.id) && esUrgente(t)).length,
+    pendientes: data.length,
+    urgentes: data.filter(t => esUrgente(t)).length,
   }
 }

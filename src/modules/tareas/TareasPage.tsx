@@ -7,10 +7,10 @@ import { Card } from '../../components/ui/Card'
 import { Modal } from '../../components/ui/Modal'
 import { useUser } from '../../hooks/useUser'
 import { useProfiles } from '../../hooks/useProfiles'
-import { useTareas, useInvalidateTareas, estaVencida, venceManana, esUrgente } from './hooks/useTareas'
+import { useTareas, useInvalidateTareas, estaVencida, venceHoy, venceManana, esPrioritaria, esUrgente } from './hooks/useTareas'
 import type { Tarea, EstadoTarea } from '../../types'
 
-type Vista = 'asignadas' | 'creadas' | 'todas'
+type Vista = 'asignadas' | 'creadas' | 'todas' | 'prioritarias'
 type EstadoFiltro = 'pendiente' | 'completada' | 'todas'
 
 function fmtFecha(iso: string | null): string {
@@ -35,11 +35,13 @@ export function TareasPage() {
   const profileName = (id: string) => profiles.find(p => p.id === id)?.full_name || profiles.find(p => p.id === id)?.email || '—'
 
   const rows = tareas
-    .filter(t => vista === 'todas' || (vista === 'asignadas' ? t.asignado_a === user?.id : t.creado_por === user?.id))
+    .filter(t => vista === 'todas' || (vista === 'prioritarias'
+      ? (t.asignado_a === user?.id || t.creado_por === user?.id) && esPrioritaria(t)
+      : vista === 'asignadas' ? t.asignado_a === user?.id : t.creado_por === user?.id))
     .filter(t => estadoFiltro === 'todas' || t.estado === estadoFiltro)
     .filter(t => !search.trim() || t.titulo.toLowerCase().includes(search.toLowerCase().trim()))
     .sort((a, b) => {
-      const rank = (t: Tarea) => estaVencida(t) ? 0 : venceManana(t) ? 1 : t.estado === 'pendiente' ? 2 : 3
+      const rank = (t: Tarea) => estaVencida(t) ? 0 : venceHoy(t) ? 1 : venceManana(t) ? 2 : t.estado === 'pendiente' ? 3 : 4
       const av = rank(a), bv = rank(b)
       if (av !== bv) return av - bv
       return (a.fecha_vencimiento || '9999').localeCompare(b.fecha_vencimiento || '9999')
@@ -77,7 +79,7 @@ export function TareasPage() {
       />
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 20 }}>
-        <Stat label="Urgentes (vencen mañana o vencidas)" value={pendientesCount} color="var(--red)" />
+        <Stat label="Urgentes (vencidas, hoy o mañana)" value={pendientesCount} color="var(--red)" />
         <Stat label="Asignadas a mí" value={tareas.filter(t => t.asignado_a === user?.id && t.estado === 'pendiente').length} color="var(--accent)" />
         <Stat label="Creadas por mí" value={tareas.filter(t => t.creado_por === user?.id).length} color="var(--purple)" />
       </div>
@@ -85,8 +87,8 @@ export function TareasPage() {
       <Card>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', marginBottom: 14 }}>
           <div style={{ display: 'flex', gap: 4, background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 9, padding: 3 }}>
-            {([['asignadas', 'Asignadas a mí'], ['creadas', 'Creadas por mí'], ['todas', 'Todas']] as [Vista, string][]).map(([v, label]) => (
-              <button key={v} onClick={() => setVista(v)} style={{
+            {([['asignadas', 'Asignadas a mí'], ['creadas', 'Creadas por mí'], ['prioritarias', 'Prioritarias (hoy y vencidas)'], ['todas', 'Todas']] as [Vista, string][]).map(([v, label]) => (
+              <button key={v} onClick={() => { setVista(v); if (v === 'prioritarias') setEstadoFiltro('pendiente') }} style={{
                 padding: '6px 12px', border: 'none', borderRadius: 7, cursor: 'pointer', fontSize: 12,
                 fontWeight: vista === v ? 600 : 500, fontFamily: 'var(--sans)',
                 background: vista === v ? 'var(--accent)' : 'transparent',
@@ -94,7 +96,7 @@ export function TareasPage() {
               }}>{label}</button>
             ))}
           </div>
-          <select value={estadoFiltro} onChange={e => setEstadoFiltro(e.target.value as EstadoFiltro)} style={INP}>
+          <select disabled={vista === 'prioritarias'} value={estadoFiltro} onChange={e => setEstadoFiltro(e.target.value as EstadoFiltro)} style={INP}>
             <option value="pendiente">Pendientes</option>
             <option value="completada">Completadas</option>
             <option value="todas">Todas</option>
@@ -110,14 +112,15 @@ export function TareasPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {rows.map(t => {
               const vencida = estaVencida(t)
+              const hoy = venceHoy(t)
               const proxima = venceManana(t)
               const soyCreador = t.creado_por === user?.id
               const soyParticipante = soyCreador || t.asignado_a === user?.id
               return (
                 <div key={t.id} style={{
                   display: 'flex', alignItems: 'flex-start', gap: 12, padding: '12px 16px',
-                  border: `1px solid ${vencida ? 'var(--red-border)' : proxima ? 'var(--yellow-border)' : 'var(--border)'}`,
-                  background: vencida ? 'var(--red-bg)' : proxima ? 'var(--yellow-bg)' : 'var(--surface2)', borderRadius: 10,
+                  border: `1px solid ${vencida ? 'var(--red-border)' : hoy || proxima ? 'var(--yellow-border)' : 'var(--border)'}`,
+                  background: vencida ? 'var(--red-bg)' : hoy || proxima ? 'var(--yellow-bg)' : 'var(--surface2)', borderRadius: 10,
                 }}>
                   <button disabled={!soyParticipante} onClick={() => toggleCompletada(t)}
                     title={!soyParticipante ? 'Solo el creador y el asignado pueden cambiar el estado' : t.estado === 'pendiente' ? 'Marcar completada' : 'Reabrir'}
@@ -134,6 +137,7 @@ export function TareasPage() {
                         {(t.privada ?? true) ? 'Privada' : 'Pública'}
                       </span>
                       {vencida && <span style={B_VENCIDA}><AlertTriangle size={11} style={{ verticalAlign: -1, marginRight: 3 }} />Vencida</span>}
+                      {hoy && <span style={B_PROXIMA}><AlertTriangle size={11} style={{ verticalAlign: -1, marginRight: 3 }} />Vence hoy</span>}
                       {!vencida && proxima && <span style={B_PROXIMA}><AlertTriangle size={11} style={{ verticalAlign: -1, marginRight: 3 }} />Vence mañana</span>}
                     </div>
                     {t.descripcion && <p style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 4 }}>{t.descripcion}</p>}

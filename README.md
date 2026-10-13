@@ -58,7 +58,7 @@ Preparación de certificados con plantillas de mediciones, soluciones patrón, c
 Registro de equipos y eventos de mantenimiento, periodicidad y próxima fecha de servicio. Permite incorporar información del equipo mediante QR.
 
 ### Tareas
-Asignación de tareas a usuarios, fechas de vencimiento y seguimiento de pendientes y completadas. Son privadas por defecto: solo las ven el creador y el asignado. El creador puede hacerlas públicas al crear o editar; aparecen en **Todas** para los usuarios activos con acceso a Tareas. Solo el creador puede editar o eliminar, y el creador y el asignado pueden completar o reabrir.
+Asignación de tareas a usuarios, fechas de vencimiento y seguimiento de pendientes y completadas. Son privadas por defecto: solo las ven el creador y el asignado. El creador puede hacerlas públicas al crear o editar; aparecen en **Todas** para los usuarios activos con acceso a Tareas. Solo el creador puede editar o eliminar, y el creador y el asignado pueden completar o reabrir. La vista **Prioritarias (hoy y vencidas)** reúne las pendientes relacionadas con el usuario que vencen hoy o ya vencieron. Los plazos usan la fecha de Colombia; el menú muestra un único total de pendientes, con alerta si alguna vence hoy, mañana o está vencida.
 
 ### Reporte ST
 Procesamiento de archivos CSV para analizar tiempos de servicio, horas hábiles, cumplimiento y excepciones, con exportación a Excel.
