@@ -254,6 +254,19 @@ export function LoginPage() {
             onMouseUp={e => { (e.currentTarget as HTMLElement).style.transform = '' }}
           >
             @Foxanti
+          </a>
+          {' · '}
+          <a
+            href="https://github.com/lato719"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: 'inherit', opacity: 0.65, textDecoration: 'none', transition: 'opacity .2s' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '1' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '0.65' }}
+            onMouseDown={e => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.94)' }}
+            onMouseUp={e => { (e.currentTarget as HTMLElement).style.transform = '' }}
+          >
+            @lato719
           </a>{' '}
           <span className="bat-icon" aria-hidden="true" />
         </div>

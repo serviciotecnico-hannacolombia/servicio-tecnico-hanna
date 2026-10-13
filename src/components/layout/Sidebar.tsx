@@ -647,6 +647,31 @@ export function Sidebar() {
               }}
             >
               @Foxanti
+            </a>
+            {' · '}
+            <a
+              href="https://github.com/lato719"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: 'inherit', opacity: 0.45, textDecoration: 'none', transition: 'opacity .2s, transform .2s', display: 'inline-block' }}
+              onMouseEnter={e => {
+                const el = e.currentTarget as HTMLElement
+                el.style.opacity = '0.85'
+                el.style.transform = 'scale(1.06)'
+              }}
+              onMouseLeave={e => {
+                const el = e.currentTarget as HTMLElement
+                el.style.opacity = '0.45'
+                el.style.transform = 'scale(1)'
+              }}
+              onMouseDown={e => {
+                (e.currentTarget as HTMLElement).style.transform = 'scale(0.94)'
+              }}
+              onMouseUp={e => {
+                (e.currentTarget as HTMLElement).style.transform = 'scale(1.06)'
+              }}
+            >
+              @lato719
             </a>{' '}
             <span className="bat-icon" aria-hidden="true" />
           </div>
