@@ -25,9 +25,9 @@ export function RegionalPage() {
   return <div className="regional-page">
     <Header title={`Mant. In Situ — ${sede?.nombre ?? 'Regional'}`} subtitle="Servicio desde la oficina regional — hasta 110 km por carretera, sin vuelos"
       actions={<div className="regional-header-actions"><Link className="regional-link" to="/mant-in-situ">Mant. In Situ Bogotá</Link><nav className="regional-tabs" aria-label="Vista regional"><button aria-pressed={!configurar} onClick={()=>setConfigurar(false)}>Consulta</button>{hasCapability('mant_in_situ_regional_editar') && <button aria-pressed={configurar} onClick={()=>setConfigurar(true)}><Settings size={14} /> Configuración</button>}</nav></div>} />
-    {isLoading ? <Spinner /> : error ? <Card>No se pudo cargar la información regional. Verifica las migraciones y vuelve a intentar.</Card>
-      : !sede ? <Card>No hay sedes regionales configuradas.</Card> : <>
-        <Card><FG label="Oficina de origen"><SelectorBuscable style={INP} value={sede.id} onChange={e => setSedeId(e.target.value)}>
+    {isLoading ? <Spinner /> : error ? <Card style={{overflow: 'visible'}}>No se pudo cargar la información regional. Verifica las migraciones y vuelve a intentar.</Card>
+      : !sede ? <Card style={{overflow: 'visible'}}>No hay sedes regionales configuradas.</Card> : <>
+        <Card style={{overflow: 'visible'}}><FG label="Oficina de origen"><SelectorBuscable style={INP} value={sede.id} onChange={e => setSedeId(e.target.value)}>
           {sedes.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
         </SelectorBuscable></FG>
       <p style={{ marginTop: 10, color: 'var(--muted)', fontSize: 13 }}><MapPinned size={14} /> {sede.direccion}</p>
@@ -48,7 +48,7 @@ function ConsultaRegional({ sede }: { sede: SedeRegional }) {
   const [buscar, setBuscar] = useState('')
   const [items, setItems] = useState<ItemCalculo[]>([])
   if (isLoading) return <Spinner />
-  if (error || !data) return <Card>No se pudo cargar la configuración de {sede.nombre}.</Card>
+  if (error || !data) return <Card style={{overflow: 'visible'}}>No se pudo cargar la configuración de {sede.nombre}.</Card>
   const destinos = data.destinos.filter(d => d.activo)
   const departamentos = [...new Set(destinos.map(d => d.departamento))].sort()
   const destino = destinos.find(d => d.codigo === codigoDestino)
@@ -106,7 +106,7 @@ function ConsultaRegional({ sede }: { sede: SedeRegional }) {
   }
   return <div className="regional-consulta">
     <section className="regional-main">
-    <Card>
+    <Card style={{overflow: 'visible'}}>
       <h3 className="regional-step"><span>1</span> ¿Dónde se realizará el servicio?</h3>
       <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 14 }}>Precio base común para las cinco sedes regionales. El desplazamiento depende de la oficina y el destino; Bogotá conserva su propio catálogo.</p>
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
@@ -125,7 +125,7 @@ function ConsultaRegional({ sede }: { sede: SedeRegional }) {
         {' '}Ruta precalculada oficina → cabecera municipal; no representa la dirección específica del cliente.
       </p>}
     </Card>
-    <Card>
+    <Card style={{overflow: 'visible'}}>
       <h3 className="regional-step"><span>2</span> Equipos a atender</h3>
       <div className="regional-search"><Search size={17} /><FG label="Buscar equipo"><input style={INP} value={buscar} onChange={e => setBuscar(e.target.value)} placeholder="Buscar por referencia o nombre — ej. HI 5522" /></FG></div>
       {sugerencias.map(e => <button key={e.referencia} onClick={() => agregar(e.referencia)} style={{ ...INP, textAlign: 'left', marginTop: 5, cursor: 'pointer' }}>
@@ -144,7 +144,7 @@ function ConsultaRegional({ sede }: { sede: SedeRegional }) {
     </Card>
     </section>
     <aside className="regional-summary">
-    <Card>
+    <Card style={{overflow: 'visible'}}>
       <div className="regional-summary-heading"><h3>Resumen de precios</h3><span className={valido?'regional-status ready':'regional-status'}>{valido?'Precio disponible':pendientePeajes?'Revisar peajes':'Completa la consulta'}</span></div>
       <p className="regional-destino">{destino?.municipio ?? 'Selecciona un destino'}</p>
       {[['Servicio base', resultado.base], ['Vehículo / depreciación', resultado.vehiculo], ['Combustible', resultado.combustible],

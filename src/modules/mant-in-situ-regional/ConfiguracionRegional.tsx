@@ -22,7 +22,7 @@ export function ConfiguracionRegional({ sede }: { sede: SedeRegional }) {
   const [saving, setSaving] = useState(false)
   const invalidar = useInvalidarRegional()
   if (consulta.isLoading) return <Spinner />
-  if (!consulta.data || consulta.error) return <Card>No se pudo cargar la configuración regional.</Card>
+  if (!consulta.data || consulta.error) return <Card style={{overflow: 'visible'}}>No se pudo cargar la configuración regional.</Card>
   const data = consulta.data
   const codigoSel = data.codigos.find(c => c.codigo === codigo) ?? data.codigos[0]
   const destinoSel = data.destinos.find(d => d.codigo === destino) ?? data.destinos.find(d => d.codigo !== sede.codigo)
@@ -42,15 +42,15 @@ export function ConfiguracionRegional({ sede }: { sede: SedeRegional }) {
     } catch (e) { toast.error(e instanceof Error ? e.message : 'No se pudo asignar el código') }
     finally { setSaving(false) }
   }
-  return <div className="regional-config-layout"><Card><nav className="regional-config-nav" aria-label="Configuración regional">{[['equipos','Equipos y servicios'],['precios','Precios base'],['jornada','Jornada y vehículo'],['destinos','Peajes por destino'],['tarifas','Tarifas de peajes']].map(([key,label])=><button key={key} aria-pressed={panel===key} onClick={()=>setPanel(key)}>{label}</button>)}<p>Edita en pantalla o importa los peajes por CSV con vista previa. Los precios base son comunes a las cinco sedes.</p></nav></Card><div className="regional-config-content">
-    {panel==='precios' && <Card><h3>Precios base regionales — catálogo común</h3>
+  return <div className="regional-config-layout"><Card style={{overflow: 'visible'}}><nav className="regional-config-nav" aria-label="Configuración regional">{[['equipos','Equipos y servicios'],['precios','Precios base'],['jornada','Jornada y vehículo'],['destinos','Peajes por destino'],['tarifas','Tarifas de peajes']].map(([key,label])=><button key={key} aria-pressed={panel===key} onClick={()=>setPanel(key)}>{label}</button>)}<p>Edita en pantalla o importa los peajes por CSV con vista previa. Los precios base son comunes a las cinco sedes.</p></nav></Card><div className="regional-config-content">
+    {panel==='precios' && <Card style={{overflow: 'visible'}}><h3>Precios base regionales — catálogo común</h3>
       <p style={{ margin: '10px 0', fontSize: 12, color: 'var(--muted)' }}>Los servicios tienen el mismo precio base en las cinco sedes. Editar aquí actualiza todas las sedes regionales; los precios de Bogotá se mantienen independientes.</p>
       <FG label="Código de servicio"><SelectorBuscable style={INP} value={codigoSel?.codigo ?? ''} onChange={e => setCodigo(e.target.value)}>
         {data.codigos.map(c => <option key={c.codigo}>{c.codigo}</option>)}
       </SelectorBuscable></FG>
       {codigoSel && <Precio key={`${sede.id}-${codigoSel.codigo}-${codigoSel.precio}-${codigoSel.horas}`} codigo={codigoSel} />}
     </Card>}
-    {panel==='equipos' && <Card><h3 style={{ marginBottom: 12 }}>Equipos y servicios</h3>
+    {panel==='equipos' && <Card style={{overflow: 'visible'}}><h3 style={{ marginBottom: 12 }}>Equipos y servicios</h3>
       <EquiposRegionalesPanel data={data} onEditar={(ref,cod)=>{setReferencia(ref);setCodigoEquipo(cod)}} />
       <h4 style={{margin:'20px 0 12px'}}>Editar asignación de equipo</h4>
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
@@ -63,22 +63,22 @@ export function ConfiguracionRegional({ sede }: { sede: SedeRegional }) {
       </div>
       <Button disabled={saving} onClick={asignar} style={{ marginTop: 12 }}>Guardar asignación</Button>
     </Card>}
-    {panel==='jornada' && <Card><h3 style={{ marginBottom: 12 }}>Jornada, vehículo y combustible</h3>
+    {panel==='jornada' && <Card style={{overflow: 'visible'}}><h3 style={{ marginBottom: 12 }}>Jornada, vehículo y combustible</h3>
       <Jornada key={JSON.stringify(data.config)} sede={sede} config={data.config} />
     </Card>}
-    {panel==='destinos' && <><Card><h3 style={{ marginBottom: 12 }}>Peajes por ruta y ajustes manuales</h3>
+    {panel==='destinos' && <><Card style={{overflow: 'visible'}}><h3 style={{ marginBottom: 12 }}>Peajes por ruta y ajustes manuales</h3>
       <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>Los peajes se calculan por la ruta precalculada de ida y regreso. Un total manual confirmado reemplaza ese cálculo, sin sumarlo dos veces.</p>
       <FG label="Destino"><SelectorBuscable style={INP} value={destinoSel?.codigo ?? ''} onChange={e => setDestino(e.target.value)}>
         {data.destinos.filter(d => d.codigo !== sede.codigo).map(d => <option key={d.codigo} value={d.codigo}>{d.municipio} — {d.departamento}</option>)}
       </SelectorBuscable></FG>
       {destinoSel && <Peajes key={`${destinoSel.codigo}-${destinoSel.updated_at}`} destino={destinoSel} />}
     </Card>
-    <Card><h3 style={{ marginBottom: 12 }}>Actualizar peajes mediante CSV</h3>
+    <Card style={{overflow: 'visible'}}><h3 style={{ marginBottom: 12 }}>Actualizar peajes mediante CSV</h3>
       <p style={{ marginBottom: 12 }}>Descarga los destinos de {sede.nombre}, completa el total de ida y regreso y la fuente. Solo se importan filas con un total informado; 0 confirma una ruta sin cobro.</p>
       <Button onClick={() => descargarCSV('peajes-regionales-'+sede.id,['sede','codigo_destino','municipio','total_peajes_cop','fuente'],data.destinos.filter(d=>d.codigo!==sede.codigo).map(d=>[sede.id,d.codigo,d.municipio,d.peajes_confirmados?d.peaje_manual_valor:null,d.peaje_manual_motivo]))}>Descargar plantilla con destinos</Button>
       <ImportarPeajes sede={sede} destinos={data.destinos} />
     </Card></>}
-    {panel==='tarifas' && <Card><h3 style={{ marginBottom: 12 }}>Tarifas de peajes del HTML — referencia</h3>
+    {panel==='tarifas' && <Card style={{overflow: 'visible'}}><h3 style={{ marginBottom: 12 }}>Tarifas de peajes del HTML — referencia</h3>
       <EditarTarifa peajes={data.peajes} />
       <p style={{ color: 'var(--muted)', fontSize: 12 }}>Tarifas históricas categoría I. La cercanía geográfica no confirma que el peaje esté en la ruta ni que su tarifa siga vigente. Usa una fuente revisada para confirmar cada total.</p>
       <div style={{ maxHeight: 320, overflow: 'auto', marginTop: 12 }}>
