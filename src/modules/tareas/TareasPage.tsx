@@ -1,16 +1,17 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { Plus, Pencil, Trash2, CheckCircle2, Circle, AlertTriangle, ListTodo } from 'lucide-react'
+import { Plus, Pencil, Trash2, CheckCircle2, Circle, AlertTriangle, ListTodo, Download } from 'lucide-react'
+import { ExportTareasModal } from './ExportTareasModal'
 import { supabase } from '../../lib/supabase'
 import { Header } from '../../components/layout/Header'
 import { Card } from '../../components/ui/Card'
 import { Modal } from '../../components/ui/Modal'
 import { useUser } from '../../hooks/useUser'
 import { useProfiles } from '../../hooks/useProfiles'
-import { useTareas, useInvalidateTareas, estaVencida, venceManana, esUrgente } from './hooks/useTareas'
+import { useTareas, useInvalidateTareas, estaVencida, venceHoy, venceManana, esPrioritaria, esUrgente } from './hooks/useTareas'
 import type { Tarea, EstadoTarea } from '../../types'
 
-type Vista = 'asignadas' | 'creadas' | 'todas'
+type Vista = 'asignadas' | 'creadas' | 'todas' | 'prioritarias'
 type EstadoFiltro = 'pendiente' | 'completada' | 'todas'
 
 function fmtFecha(iso: string | null): string {
@@ -30,22 +31,26 @@ export function TareasPage() {
   const [search, setSearch] = useState('')
   const [modal, setModal] = useState<{ tarea?: Tarea } | null>(null)
   const [eliminando, setEliminando] = useState<Tarea | null>(null)
+  const [exportando, setExportando] = useState(false)
 
   const activos = profiles.filter(p => p.activo)
   const profileName = (id: string) => profiles.find(p => p.id === id)?.full_name || profiles.find(p => p.id === id)?.email || '—'
 
   const rows = tareas
-    .filter(t => vista === 'todas' || (vista === 'asignadas' ? t.asignado_a === user?.id : t.creado_por === user?.id))
+    .filter(t => vista === 'todas' || (vista === 'prioritarias'
+      ? (t.asignado_a === user?.id || t.creado_por === user?.id) && esPrioritaria(t)
+      : vista === 'asignadas' ? t.asignado_a === user?.id : t.creado_por === user?.id))
     .filter(t => estadoFiltro === 'todas' || t.estado === estadoFiltro)
     .filter(t => !search.trim() || t.titulo.toLowerCase().includes(search.toLowerCase().trim()))
     .sort((a, b) => {
-      const rank = (t: Tarea) => estaVencida(t) ? 0 : venceManana(t) ? 1 : t.estado === 'pendiente' ? 2 : 3
+      const rank = (t: Tarea) => estaVencida(t) ? 0 : venceHoy(t) ? 1 : venceManana(t) ? 2 : t.estado === 'pendiente' ? 3 : 4
       const av = rank(a), bv = rank(b)
       if (av !== bv) return av - bv
       return (a.fecha_vencimiento || '9999').localeCompare(b.fecha_vencimiento || '9999')
     })
 
   async function toggleCompletada(t: Tarea) {
+    if (t.creado_por !== user?.id && t.asignado_a !== user?.id) return
     const nuevoEstado: EstadoTarea = t.estado === 'pendiente' ? 'completada' : 'pendiente'
     const { error } = await supabase.from('tareas').update({
       estado: nuevoEstado,
@@ -71,12 +76,15 @@ export function TareasPage() {
     <div>
       <Header
         title="Tareas"
-        subtitle="Tareas personales — creadas por ti o asignadas a ti"
-        actions={<button onClick={() => setModal({})} style={PRI}><Plus size={14} style={{ verticalAlign: -2 }} /> Nueva tarea</button>}
+        subtitle="Tareas públicas y privadas — consulta las compartidas en Todas"
+        actions={<div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button disabled={isLoading} onClick={() => setExportando(true)} style={GHOST}><Download size={14} style={{ verticalAlign: -2 }} /> Reporte CSV</button>
+          <button onClick={() => setModal({})} style={PRI}><Plus size={14} style={{ verticalAlign: -2 }} /> Nueva tarea</button>
+        </div>}
       />
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 20 }}>
-        <Stat label="Urgentes (vencen mañana o vencidas)" value={pendientesCount} color="var(--red)" />
+        <Stat label="Urgentes (vencidas, hoy o mañana)" value={pendientesCount} color="var(--red)" />
         <Stat label="Asignadas a mí" value={tareas.filter(t => t.asignado_a === user?.id && t.estado === 'pendiente').length} color="var(--accent)" />
         <Stat label="Creadas por mí" value={tareas.filter(t => t.creado_por === user?.id).length} color="var(--purple)" />
       </div>
@@ -84,8 +92,8 @@ export function TareasPage() {
       <Card>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', marginBottom: 14 }}>
           <div style={{ display: 'flex', gap: 4, background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 9, padding: 3 }}>
-            {([['asignadas', 'Asignadas a mí'], ['creadas', 'Creadas por mí'], ['todas', 'Todas']] as [Vista, string][]).map(([v, label]) => (
-              <button key={v} onClick={() => setVista(v)} style={{
+            {([['asignadas', 'Asignadas a mí'], ['creadas', 'Creadas por mí'], ['prioritarias', 'Prioritarias (hoy y vencidas)'], ['todas', 'Todas']] as [Vista, string][]).map(([v, label]) => (
+              <button key={v} onClick={() => { setVista(v); if (v === 'prioritarias') setEstadoFiltro('pendiente') }} style={{
                 padding: '6px 12px', border: 'none', borderRadius: 7, cursor: 'pointer', fontSize: 12,
                 fontWeight: vista === v ? 600 : 500, fontFamily: 'var(--sans)',
                 background: vista === v ? 'var(--accent)' : 'transparent',
@@ -93,7 +101,7 @@ export function TareasPage() {
               }}>{label}</button>
             ))}
           </div>
-          <select value={estadoFiltro} onChange={e => setEstadoFiltro(e.target.value as EstadoFiltro)} style={INP}>
+          <select disabled={vista === 'prioritarias'} value={estadoFiltro} onChange={e => setEstadoFiltro(e.target.value as EstadoFiltro)} style={INP}>
             <option value="pendiente">Pendientes</option>
             <option value="completada">Completadas</option>
             <option value="todas">Todas</option>
@@ -109,16 +117,20 @@ export function TareasPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {rows.map(t => {
               const vencida = estaVencida(t)
+              const hoy = venceHoy(t)
               const proxima = venceManana(t)
               const soyCreador = t.creado_por === user?.id
+              const soyParticipante = soyCreador || t.asignado_a === user?.id
               return (
                 <div key={t.id} style={{
                   display: 'flex', alignItems: 'flex-start', gap: 12, padding: '12px 16px',
-                  border: `1px solid ${vencida ? 'var(--red-border)' : proxima ? 'var(--yellow-border)' : 'var(--border)'}`,
-                  background: vencida ? 'var(--red-bg)' : proxima ? 'var(--yellow-bg)' : 'var(--surface2)', borderRadius: 10,
+                  border: `1px solid ${vencida ? 'var(--red-border)' : hoy || proxima ? 'var(--yellow-border)' : 'var(--border)'}`,
+                  background: vencida ? 'var(--red-bg)' : hoy || proxima ? 'var(--yellow-bg)' : 'var(--surface2)', borderRadius: 10,
                 }}>
-                  <button onClick={() => toggleCompletada(t)} title={t.estado === 'pendiente' ? 'Marcar completada' : 'Reabrir'}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: t.estado === 'completada' ? 'var(--green)' : 'var(--muted)' }}>
+                  <button disabled={!soyParticipante} onClick={() => toggleCompletada(t)}
+                    title={!soyParticipante ? 'Solo el creador y el asignado pueden cambiar el estado' : t.estado === 'pendiente' ? 'Marcar completada' : 'Reabrir'}
+                    aria-label={t.estado === 'completada' ? 'Reabrir tarea' : 'Marcar tarea completada'}
+                    style={{ background: 'none', border: 'none', cursor: soyParticipante ? 'pointer' : 'default', padding: 2, color: t.estado === 'completada' ? 'var(--green)' : 'var(--muted)' }}>
                     {t.estado === 'completada' ? <CheckCircle2 size={20} /> : <Circle size={20} />}
                   </button>
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -126,7 +138,11 @@ export function TareasPage() {
                       <span style={{ fontSize: 14, fontWeight: 600, textDecoration: t.estado === 'completada' ? 'line-through' : 'none', color: t.estado === 'completada' ? 'var(--muted)' : 'var(--text)' }}>
                         {t.titulo}
                       </span>
+                      <span style={{ ...B_PROXIMA, background: 'var(--surface)', color: 'var(--muted)', borderColor: 'var(--border)' }}>
+                        {(t.privada ?? true) ? 'Privada' : 'Pública'}
+                      </span>
                       {vencida && <span style={B_VENCIDA}><AlertTriangle size={11} style={{ verticalAlign: -1, marginRight: 3 }} />Vencida</span>}
+                      {hoy && <span style={B_PROXIMA}><AlertTriangle size={11} style={{ verticalAlign: -1, marginRight: 3 }} />Vence hoy</span>}
                       {!vencida && proxima && <span style={B_PROXIMA}><AlertTriangle size={11} style={{ verticalAlign: -1, marginRight: 3 }} />Vence mañana</span>}
                     </div>
                     {t.descripcion && <p style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 4 }}>{t.descripcion}</p>}
@@ -148,6 +164,11 @@ export function TareasPage() {
           </div>
         )}
       </Card>
+
+      {exportando && <ExportTareasModal tareas={tareas} nombre={id => {
+        const perfil = profiles.find(p => p.id === id)
+        return perfil?.full_name || perfil?.email || id
+      }} onClose={() => setExportando(false)} />}
 
       {modal && (
         <ModalTarea
@@ -174,6 +195,7 @@ function ModalTarea({ tarea, activos, miId, onClose, onSaved }: {
   onClose: () => void, onSaved: () => void,
 }) {
   const [titulo, setTitulo] = useState(tarea?.titulo || '')
+  const [privada, setPrivada] = useState(tarea?.privada ?? true)
   const [descripcion, setDescripcion] = useState(tarea?.descripcion || '')
   const [asignadoA, setAsignadoA] = useState(tarea?.asignado_a || miId)
   const [vencimiento, setVencimiento] = useState(tarea?.fecha_vencimiento || '')
@@ -184,6 +206,7 @@ function ModalTarea({ tarea, activos, miId, onClose, onSaved }: {
     setSaving(true)
     if (tarea) {
       const { error } = await supabase.from('tareas').update({
+        privada,
         titulo: titulo.trim(), descripcion: descripcion.trim() || null,
         asignado_a: asignadoA, fecha_vencimiento: vencimiento || null,
         updated_at: new Date().toISOString(),
@@ -193,6 +216,7 @@ function ModalTarea({ tarea, activos, miId, onClose, onSaved }: {
       toast.success('Tarea actualizada')
     } else {
       const { error } = await supabase.from('tareas').insert({
+        privada,
         titulo: titulo.trim(), descripcion: descripcion.trim() || null,
         creado_por: miId, asignado_a: asignadoA, fecha_vencimiento: vencimiento || null, estado: 'pendiente',
       })
@@ -206,6 +230,23 @@ function ModalTarea({ tarea, activos, miId, onClose, onSaved }: {
 
   return (
     <Modal open onClose={onClose} title={tarea ? `Editar tarea` : 'Nueva tarea'}>
+      <div style={{ marginBottom: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <button type="button" role="switch" aria-checked={privada} aria-labelledby="tarea-privacidad-label"
+            aria-describedby="tarea-privacidad-ayuda" onClick={() => setPrivada(v => !v)}
+            style={{ width: 44, height: 26, padding: 3, borderRadius: 999, border: '1px solid var(--border2)',
+              background: privada ? 'var(--accent)' : 'var(--surface2)', cursor: 'pointer', flexShrink: 0,
+              transition: 'background 160ms ease' }}>
+            <span aria-hidden="true" style={{ display: 'block', width: 18, height: 18, borderRadius: '50%',
+              background: privada ? '#fff' : 'var(--muted)', transform: `translateX(${privada ? 18 : 0}px)`,
+              transition: 'transform 160ms ease' }} />
+          </button>
+          <span id="tarea-privacidad-label" style={{ fontSize: 13, fontWeight: 600 }}>Tarea privada</span>
+        </div>
+        <p id="tarea-privacidad-ayuda" style={{ marginTop: 5, fontSize: 12, color: 'var(--muted)' }}>
+          {privada ? 'Solo la ven el creador y la persona asignada.' : 'La ven todos los usuarios activos con acceso a Tareas.'}
+        </p>
+      </div>
       <FG label="Título">
         <input value={titulo} onChange={e => setTitulo(e.target.value)} placeholder="Ej. Llamar al proveedor X" style={INP} autoFocus />
       </FG>

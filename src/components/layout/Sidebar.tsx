@@ -245,13 +245,14 @@ export function Sidebar() {
 
   const renderNavItem = ({ to, label, icon: Icon, moduleKey }: NavItem, favoritoCtx?: { index: number }) => {
     const isTareas = moduleKey === 'tareas'
-    const badge = isTareas ? tareasBadge.vencidas : moduleKey === 'calibraciones' ? calibracionesBadge : moduleKey === 'bodega' ? bodegaBadge : 0
+    const badge = isTareas ? tareasBadge.pendientes : moduleKey === 'calibraciones' ? calibracionesBadge : moduleKey === 'bodega' ? bodegaBadge : 0
+    const tareasAviso = `${tareasBadge.pendientes} tareas pendientes relacionadas contigo; ${tareasBadge.urgentes} de ellas vencidas o con vencimiento hoy o mañana`
     const esFavorito = favoritosKeys.includes(moduleKey)
 
     const link = (
       <NavLink
         to={to}
-        title={collapsed ? `${label}${badge > 0 ? ` (${badge})` : ''}` : undefined}
+        title={isTareas ? tareasAviso : collapsed ? `${label}${badge > 0 ? ` (${badge})` : ''}` : undefined}
         style={({ isActive }) => ({
           display: 'flex',
           alignItems: 'center',
@@ -275,7 +276,7 @@ export function Sidebar() {
           {badge > 0 && collapsed && (
             <span style={{
               position: 'absolute', top: -5, right: -7, minWidth: 15, height: 15, padding: '0 3px',
-              borderRadius: 8, background: '#c0392b', color: '#fff', fontSize: 9, fontWeight: 700,
+              borderRadius: 8, background: isTareas && tareasBadge.urgentes === 0 ? 'var(--accent)' : '#c0392b', color: '#fff', fontSize: 9, fontWeight: 700,
               display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--mono)',
             }}>{badge > 9 ? '9+' : badge}</span>
           )}
@@ -283,19 +284,19 @@ export function Sidebar() {
         {!collapsed && <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', flex: 1 }}>{label}</span>}
         {!collapsed && isTareas ? (
           <span style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-            {tareasBadge.asignadas > 0 && (
-              <span title="Asignadas" style={{
-                minWidth: 18, height: 18, padding: '0 5px', borderRadius: 10, background: 'var(--accent)', color: '#fff',
+            {tareasBadge.pendientes > 0 && (
+              <span title={tareasAviso} aria-label={tareasAviso} style={{
+                minWidth: 18, height: 18, padding: '0 5px', borderRadius: 10, background: tareasBadge.urgentes > 0 ? '#c0392b' : 'var(--accent)', color: '#fff',
                 fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontFamily: 'var(--mono)',
-              }}>{tareasBadge.asignadas > 99 ? '99+' : tareasBadge.asignadas}</span>
+              }}>{tareasBadge.pendientes > 99 ? '99+' : tareasBadge.pendientes}</span>
             )}
-            {tareasBadge.vencidas > 0 && (
-              <span title="Vencidas" style={{
-                minWidth: 18, height: 18, padding: '0 5px', borderRadius: 10, background: '#c0392b', color: '#fff',
+            {tareasBadge.urgentes > 0 && (
+              <span title={tareasAviso} aria-label="Hay tareas urgentes dentro del total" style={{
+                width: 14, height: 18, color: '#c0392b',
                 fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontFamily: 'var(--mono)',
-              }}>{tareasBadge.vencidas > 99 ? '99+' : tareasBadge.vencidas}</span>
+              }}>!</span>
             )}
           </span>
         ) : !collapsed && badge > 0 && (

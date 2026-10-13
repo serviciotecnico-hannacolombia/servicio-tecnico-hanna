@@ -289,6 +289,7 @@ export type EstadoTarea = 'pendiente' | 'completada'
 
 export interface Tarea {
   id: string
+  privada: boolean
   titulo: string
   descripcion: string | null
   creado_por: string
