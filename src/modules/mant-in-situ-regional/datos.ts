@@ -14,7 +14,7 @@ export interface DestinoRegional extends MantInSituDestino {
 }
 interface PasoRegional { sede_id: string, destino_codigo: string, peaje_nombre: string, sentido: 'ida' | 'regreso' }
 interface PeajeRegional extends MantInSituPeaje { vigencia_hasta: string | null, fuente_revision: string | null }
-interface Instrumento { codigo: string, descripcion: string | null, familia: string | null }
+interface Instrumento { codigo: string, descripcion: string | null, familia: string | null, codigo_mantenimiento: string | null }
 
 export function useSedesRegionales() {
   const { hasModule } = useUser()
@@ -48,7 +48,7 @@ export function useRegional(sede: SedeRegional | undefined) {
           codigo: a.codigo, horas, precio, descripcionServicio: a.descripcion_servicio ?? config.descripcion_servicio,
           precioIndividual: a.precio != null, tieneExcepcion: a.horas != null || a.precio != null,
           completo: !!c && precio != null && precio > 0 && horas != null && horas > 0,
-          codigoNormal: '', excepcion: null }
+          codigoNormal: i?.codigo_mantenimiento ?? '', excepcion: null }
       })
       const pasos = pasosRegional.map(p=>({destino_codigo:p.destino_codigo,peaje_id:p.peaje_nombre,sentido:p.sentido,revision_requerida:false}))
       return { config, codigos, asignaciones, destinos: destinos.filter(d => Number(d.ida_km) <= 110),
