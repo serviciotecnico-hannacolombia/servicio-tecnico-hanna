@@ -78,7 +78,7 @@ Seguimiento de PNC, nota de venta, importación, informe y finalización, con re
 Cálculo del servicio por equipos y destino, considerando horas de trabajo, desplazamiento, combustible, peajes y precios configurables.
 
 ### Mantenimiento In Situ Regional
-Cotizador independiente en `/mant-in-situ-regional` para Barranquilla, Bucaramanga, Cali, Medellín y Pereira. Elige oficina, departamento, municipio y equipos. Solo ofrece cabeceras municipales a un máximo de 60 km **viales de ida desde la oficina**, antes del margen de recorrido; Bogotá queda fuera. En la ciudad de la sede se cobra únicamente el precio base. En otros municipios se suman vehículo/depreciación, combustible y peajes por jornada. No incluye vuelos, alojamiento ni alimentación.
+Cotizador independiente en `/mant-in-situ-regional` para Barranquilla, Bucaramanga, Cali, Medellín y Pereira. Elige oficina, departamento, municipio y equipos. Solo ofrece cabeceras municipales a un máximo de 110 km **viales de ida desde la oficina**, antes del margen de recorrido; Bogotá queda fuera. En la ciudad de la sede se cobra únicamente el precio base. En otros municipios se suman vehículo/depreciación, combustible y peajes por jornada. Sobre los kilómetros de ida que excedan 60 km se aplica un recargo inicial de 300 COP/km por visita, editable por sede en Configuración regional. No incluye vuelos, alojamiento ni alimentación.
 
 El catálogo de precios y asignaciones es común a las cinco sedes regionales, independiente del de Bogotá. Los precios del Excel fueron revisados código por código; vehículo, combustible, jornada y peajes siguen configurándose por sede. El Excel aporta 792 referencias; los HI 839800-01/-02 se recuperan desde Bogotá y tienen precio regional de 900.000 COP. Las rutas se consultaron una sola vez con OpenStreetMap/OSRM y quedaron versionadas: no se consultan mapas durante una cotización. Son rutas a la cabecera municipal, no a una dirección específica del cliente.
 
@@ -93,6 +93,7 @@ Para una instalación nueva, se puede copiar completo [el documento SQL unificad
 3. `supabase/migrations/20261013d_refractometros_in_situ.sql` (15 referencias HI 968XX en In Situ Bogotá).
 4. `supabase/migrations/20261013e_regional_catalogo_excel.sql` (catálogo regional común y precios confirmados del Excel).
 5. `supabase/migrations/20261013f_regional_acceso_roles.sql` (consulta para roles con In Situ Bogotá y asesores/Ventas; edición solo heredada de permisos existentes).
+6. `supabase/migrations/20261013g_regional_rutas_110_peajes.sql` (234 destinos hasta 110 km, recargo y pasos de peajes por sentido).
 
 Si ya se ejecutaron los pasos 1 y 2, aplicar solo 3 y 4; no repetir migraciones. La actualización de HI 968XX conserva los precios de Bogotá y los datos existentes del catálogo. Tras aplicar los permisos, cerrar sesión y volver a entrar. La entrada está en **Estratégico**; también hay un enlace regional desde la pantalla de Mant. In Situ cuando el usuario tiene acceso.
 
@@ -214,3 +215,5 @@ Crear una rama por mejora o corrección, mantener los commits enfocados y abrir 
 ---
 
 Desarrollado por [@brayansgl](https://www.instagram.com/brayansgl) 🐱
+
+Para una instalación regional existente con b–f aplicadas, ejecutar una vez [la actualización de 110 km y peajes](docs/sql/actualizar-regional-110-peajes.sql), antes de actualizar el frontend. Para una instalación nueva, ejecutar el instalador unificado y después esta actualización. No repetir el instalador sobre tablas existentes. La actualización conserva precios base y ajustes manuales confirmados. Los peajes se cuentan una vez por estación y sentido; un total manual confirmado sustituye el cálculo automático. Hay 15 destinos con casetas o sentidos pendientes de verificar: muestran el detalle pendiente y requieren confirmar el total manual antes de copiar una cotización.

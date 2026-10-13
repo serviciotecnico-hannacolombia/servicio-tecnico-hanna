@@ -37,7 +37,11 @@ export function peajesPorVisita(destino: MantInSituDestino | undefined, pasos: M
   const porId = new Map(peajes.map(p => [p.id, p]))
   let conocido = true
   const detalle: PeajeVisita[] = []
+  const vistos = new Set<string>()
   for (const paso of pasos.filter(p => p.destino_codigo === destino.codigo)) {
+    const clave = `${paso.sentido}:${paso.peaje_id}`
+    if (vistos.has(clave)) continue
+    vistos.add(clave)
     const p = porId.get(paso.peaje_id)
     if (!p) { conocido = false; continue }
     detalle.push({ nombre: p.nombre, sentido: paso.sentido, precio: Math.round(Number(p.tarifa_categoria_i)) })

@@ -6,7 +6,8 @@ import { Card } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
 import { Spinner } from '../../components/ui/Spinner'
 import { useUser } from '../../hooks/useUser'
-import { calcular, type ItemCalculo } from '../mant-in-situ/calculo'
+import { type ItemCalculo } from '../mant-in-situ/calculo'
+import { calcularRegional } from './calculoRegional'
 import { fmtCOP, fmtHoras, fmtMinutos } from '../mant-in-situ/hooks/useMantInSitu'
 import { FG, INP } from '../mant-in-situ/ui'
 import { useSedesRegionales, useRegional, type SedeRegional } from './datos'
@@ -19,7 +20,7 @@ export function RegionalPage() {
   const { hasCapability } = useUser()
   const [configurar, setConfigurar] = useState(false)
   return <div>
-    <Header title="Mant. In Situ Regional" subtitle="Servicio desde las oficinas regionales — hasta 60 km por carretera, sin vuelos"
+    <Header title={`Mant. In Situ — ${sede?.nombre ?? 'Regional'}`} subtitle="Servicio desde la oficina regional — hasta 110 km por carretera, sin vuelos"
       actions={hasCapability('mant_in_situ_regional_editar') && <Button variant="ghost" onClick={() => setConfigurar(v => !v)}>
         {configurar ? 'Volver a consulta' : 'Configuración regional'}
       </Button>} />
@@ -51,8 +52,13 @@ function ConsultaRegional({ sede }: { sede: SedeRegional }) {
   const departamentos = [...new Set(destinos.map(d => d.departamento))].sort()
   const destino = destinos.find(d => d.codigo === codigoDestino)
   const porReferencia = new Map(data.equipos.map(e => [e.referencia, e]))
-  const resultado = calcular(items, porReferencia, destino, data.config, [], [], sede.codigo)
-  const pendientePeajes = destino && destino.codigo !== sede.codigo && !destino.peajes_confirmados
+  const resultado = calcularRegional(items, porReferencia, destino ? {...destino,peaje_manual_valor:destino.peajes_confirmados?destino.peaje_manual_valor:null}:undefined,
+    data.config, data.pasos, data.peajes, sede.codigo)
+  const hoy = new Date().toLocaleDateString('en-CA',{timeZone:'America/Bogota'})
+  const peajesCaducados = data.peajes.filter(p=>p.vigencia_hasta && p.vigencia_hasta<hoy &&
+    data.pasos.some(s=>s.destino_codigo===codigoDestino && s.peaje_id===p.nombre))
+  const pendientePeajes = destino && destino.codigo !== sede.codigo && !destino.peajes_confirmados &&
+    (!destino.peajes_ruta_verificados || peajesCaducados.length>0)
   const valido = resultado.listo && !pendientePeajes
   const norm = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
   const sugerencias = buscar.trim().length >= 2 ? data.equipos.filter(e => norm(`${e.referencia} ${e.nombre}`).includes(norm(buscar))).slice(0, 8) : []
@@ -111,7 +117,7 @@ function ConsultaRegional({ sede }: { sede: SedeRegional }) {
     <Card>
       <h3 style={{ marginBottom: 12 }}>Resumen del servicio</h3>
       {[['Servicio base', resultado.base], ['Vehículo / depreciación', resultado.vehiculo], ['Combustible', resultado.combustible],
-        ['Peajes', resultado.peajes], ['Total antes de IVA', resultado.totalRedondeado]].map(([label, valor]) => <div key={label} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0' }}>
+        ['Peajes', resultado.peajes], ['Recargo por km adicionales a 60 km',resultado.recargo], ['Total antes de IVA', resultado.totalRedondeado]].map(([label, valor]) => <div key={label} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0' }}>
         <span>{label}</span><strong>{(label === 'Peajes' || label === 'Total antes de IVA') && pendientePeajes ? 'Pendiente de confirmar' : fmtCOP(Number(valor))}</strong>
       </div>)}
       <p style={{ marginTop: 10, color: 'var(--muted)', fontSize: 12 }}>
@@ -119,8 +125,18 @@ function ConsultaRegional({ sede }: { sede: SedeRegional }) {
         {' '}Tiempo total: {fmtHoras(resultado.horas + resultado.horasViajeTotal)} · {resultado.dias} jornada(s).
         Sin vuelos, hotel ni alimentación.
       </p>
+      {!!resultado.kmAdicionales && <p style={{ marginTop: 8, fontSize: 12, color: 'var(--muted)' }}>
+        {resultado.kmAdicionales.toFixed(1)} km adicionales en {resultado.dias} visita(s) × {fmtCOP(data.config.recargo_km_adicional)}/km.
+      </p>}
+      {!!resultado.peaje.detalle.length && <div style={{ marginTop: 10, fontSize: 12 }}>
+        <strong>Peajes por visita — cada estación una vez por sentido</strong>
+        {resultado.peaje.detalle.map(p=><p key={`${p.sentido}-${p.nombre}`}>{p.sentido==='ida'?'Ida':'Regreso'}: {p.nombre} · {fmtCOP(p.precio)}</p>)}
+      </div>}
       {valido && resultado.filas.map(f => <p key={f.referencia} style={{ marginTop: 8 }}>{f.referencia}: {fmtCOP(f.unitarioRedondeado)} c/u · total {fmtCOP(f.totalRedondeado)}</p>)}
-      {pendientePeajes && <p role="alert" style={{ marginTop: 12, color: 'var(--red)' }}>Confirma los peajes de ida y regreso de este destino en Configuración regional antes de usar la cotización.</p>}
+      {pendientePeajes && <p role="alert" style={{ marginTop: 12, color: 'var(--red)' }}>Esta ruta requiere revisar: {[
+        ...(destino?.revision_ruta?.pendientes?.map(p=>`${p.nombre} (${p.sentido})`)??[]),
+        ...peajesCaducados.map(p=>`${p.nombre}: venció la vigencia de su tarifa/exención`),
+      ].join(', ') || 'asociación de casetas a la ruta'}. Revisa únicamente estas excepciones en Configuración regional.</p>}
       {!!resultado.errores.length && <p style={{ marginTop: 12, color: 'var(--muted)', fontSize: 12 }}>{resultado.errores.join(' ')}</p>}
       <Button disabled={!valido} onClick={copiar} style={{ marginTop: 14 }}><Copy size={14} /> Copiar cotización</Button>
     </Card>

@@ -1,0 +1,2744 @@
+{
+  "version": 0.6,
+  "generator": "Overpass API 0.7.62.11 87bfad18",
+  "osm3s": {
+    "timestamp_osm_base": "2026-07-28T02:16:18Z",
+    "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."
+  },
+  "elements": [
+    {
+      "type": "node",
+      "id": 60098193,
+      "lat": 10.5745457,
+      "lon": -75.4507194,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Marahuaco",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 260598010,
+      "lat": 5.0653791,
+      "lon": -74.4143648,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Caiquero",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 262634726,
+      "lat": 4.4033138,
+      "lon": -74.7314761,
+      "tags": {
+        "barrier": "toll_booth",
+        "name": "Peaje Estación Pubenza",
+        "payment:cash": "yes",
+        "payment:colpass": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 268142725,
+      "lat": 6.1782767,
+      "lon": -73.3332459,
+      "tags": {
+        "barrier": "toll_booth",
+        "charge": "11300$/Categoria I;12128$/Categoria II;31348$/Categoria III;38954$/Categoria IV;45532$/Categoria V",
+        "currency:COP": "yes",
+        "name": "Peaje Oiba",
+        "payment:cash": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 277768208,
+      "lat": 6.9174327,
+      "lon": -73.0342126,
+      "tags": {
+        "barrier": "toll_booth",
+        "charge": "17200 COP/Categoria I;17800 COP/Categoria II;37400 COP/Categoria III;66600 COP/Categoria IV",
+        "currency:COP": "yes",
+        "name": "Peaje Mesa de los Santos",
+        "payment:cash": "yes",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 277768953,
+      "lat": 6.8256237,
+      "lon": -72.9994464,
+      "tags": {
+        "barrier": "toll_booth",
+        "charge": "11300$/Categoria I;12128$/Categoria II;31348$/Categoria III;38954$/Categoria IV;45532$/Categoria V",
+        "name": "Peaje Los Curos",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 277771061,
+      "lat": 6.6177121,
+      "lon": -73.0803148,
+      "tags": {
+        "barrier": "toll_booth",
+        "charge": "11300$/Categoria I;12128$/Categoria II;31348$/Categoria III;38954$/Categoria IV;45532$/Categoria V",
+        "currency:COP": "yes",
+        "name": "Peaje Curití",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 283672606,
+      "lat": 5.201529,
+      "lon": -74.8203307,
+      "tags": {
+        "barrier": "toll_booth",
+        "name": "Peaje Honda"
+      }
+    },
+    {
+      "type": "node",
+      "id": 287293835,
+      "lat": 5.8725271,
+      "lon": -74.6113681,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Puerto Triunfo",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 293174521,
+      "lat": 4.4084376,
+      "lon": -75.8993425,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Corozal",
+        "payment:cash": "yes",
+        "payment:colpass": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 293174806,
+      "lat": 4.252275,
+      "lon": -76.1175912,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Uribe",
+        "payment:cash": "yes",
+        "payment:colpass": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 306681000,
+      "lat": 5.0522396,
+      "lon": -75.5945642,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje San Bernardo",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 309023460,
+      "lat": 11.2530798,
+      "lon": -74.1091941,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Neguanje",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 309434771,
+      "lat": 10.6089604,
+      "lon": -74.1684351,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Tucurinca",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 321600034,
+      "lat": 3.5234843,
+      "lon": -76.3433189,
+      "tags": {
+        "barrier": "toll_booth",
+        "bicycle": "no",
+        "currency:COP": "yes",
+        "ele": "972",
+        "lanes": "5",
+        "motor_vehicle": "yes",
+        "motorcar": "yes",
+        "name": "Peaje Ciat",
+        "opening_hours": "24/7",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "payment:credit_cards": "no",
+        "payment:debit_cards": "no",
+        "vehicle": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 321700637,
+      "lat": 4.9335985,
+      "lon": -75.3500999,
+      "tags": {
+        "barrier": "toll_booth",
+        "name": "Peaje Brisas"
+      }
+    },
+    {
+      "type": "node",
+      "id": 336739534,
+      "lat": 6.3995366,
+      "lon": -75.4329204,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "maxheight": "4.40",
+        "motorcar": "yes",
+        "motorcycle": "yes",
+        "name": "Peaje Trapiche",
+        "opening_hours": "24/7",
+        "operator": "HATOVIAL S.A.S.",
+        "payment:cash": "yes",
+        "payment:colpass": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 336779718,
+      "lat": 6.4966646,
+      "lon": -74.5013443,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "maxheight": "4.40",
+        "motorcar": "yes",
+        "motorcycle": "yes",
+        "name": "Peaje Puerto Berrío",
+        "opening_hours": "24/7",
+        "payment:cash": "yes",
+        "payment:coins": "yes",
+        "payment:colpass": "yes",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 336894724,
+      "lat": 3.7629629,
+      "lon": -76.6655347,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "description": "Cobro 2 sentidos Categoría I $7500 Categoría II $8400 Categoría III $20000 Categoría IV $26200 Categoría V $29900",
+        "ele": "649",
+        "name": "Peaje Loboguerrero",
+        "payment:cash": "yes",
+        "payment:colpass": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 358358091,
+      "lat": 7.2395508,
+      "lon": -73.1493868,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Rionegro",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 426999337,
+      "lat": 6.3281681,
+      "lon": -75.5154453,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Copacabana",
+        "payment:cash": "yes",
+        "payment:colpass": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 426999563,
+      "lat": 6.3278515,
+      "lon": -75.5155815,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Copacabana",
+        "payment:cash": "yes",
+        "payment:colpass": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 430257396,
+      "lat": 3.9955493,
+      "lon": -76.3284497,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "ele": "934",
+        "name": "Peaje Riofrio",
+        "payment:cash": "yes",
+        "payment:colpass": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 541998223,
+      "lat": 4.5077164,
+      "lon": -74.991613,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "designation": "Peaje Alvarado Contrato 250-2011",
+        "name": "Peaje Alvarado",
+        "operator": "Odinsa PI S.A.",
+        "payment:cash": "yes",
+        "payment:colpass": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 599815736,
+      "lat": 5.027133,
+      "lon": -75.5874764,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Pavas",
+        "payment:cash": "yes",
+        "payment:colpass": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 599815737,
+      "lat": 5.0270243,
+      "lon": -75.5874031,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Pavas",
+        "payment:cash": "yes",
+        "payment:colpass": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 600804950,
+      "lat": 6.2947296,
+      "lon": -74.4570008,
+      "tags": {
+        "barrier": "toll_booth",
+        "charge": "14500 COP/Categoría I;18950 COP/Categoría II;42448 COP/Categoría III;50876 COP/Categoría IV;59818 COP/Categoría V",
+        "currency:COP": "yes",
+        "name": "Peaje Zambito",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 601281520,
+      "lat": 10.06037,
+      "lon": -73.923803,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje El Copey",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 603657689,
+      "lat": 6.1246447,
+      "lon": -75.2429989,
+      "tags": {
+        "barrier": "toll_booth",
+        "charge:bus": "29300",
+        "charge:motorcar": "18800",
+        "currency:COP": "yes",
+        "name": "Peaje Cocorná",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "source": "Bing"
+      }
+    },
+    {
+      "type": "node",
+      "id": 608374791,
+      "lat": 3.7599832,
+      "lon": -76.4112507,
+      "tags": {
+        "barrier": "toll_booth",
+        "description": "Categoría I $8000 Categoría II $9600 Categoría III $25900 Categoría IV $33800 Categoría V $38900",
+        "name": "Peaje Mediacanoa"
+      }
+    },
+    {
+      "type": "node",
+      "id": 659970685,
+      "lat": 3.972187,
+      "lon": -76.2534361,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Betania",
+        "payment:cash": "yes",
+        "payment:colpass": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 659970686,
+      "lat": 3.9718647,
+      "lon": -76.2532615,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Betania",
+        "payment:cash": "yes",
+        "payment:colpass": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 1037976349,
+      "lat": 10.9770064,
+      "lon": -74.336527,
+      "tags": {
+        "barrier": "toll_booth",
+        "contact:phone": "+57 310 6328761",
+        "motor_vehicle": "yes",
+        "name": "Peaje Tasajera",
+        "payment:cash": "yes",
+        "toll:motorcycle": "no",
+        "website": "http://cumbia.invias.gov.co/aplicaciones_inv/redvial/magdalena.html"
+      }
+    },
+    {
+      "type": "node",
+      "id": 1160813393,
+      "lat": 10.9672203,
+      "lon": -74.9560523,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Puerto Colombia",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 1632781786,
+      "lat": 7.8674413,
+      "lon": -72.484209,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje La Parada",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 1838325701,
+      "lat": 6.1431967,
+      "lon": -75.5247992,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje El Escobero",
+        "opening_hours": "Mo-Su 06:00-22:00",
+        "operator": "HATOVIAL S.A.S.",
+        "payment:coins": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 1839397946,
+      "lat": 6.1796594,
+      "lon": -75.4613178,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "payment:cash": "yes",
+        "payment:colpass": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 1882539341,
+      "lat": 5.3324371,
+      "lon": -75.7756499,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje San Clemente",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 1889099427,
+      "lat": 7.91055,
+      "lon": -72.4695258,
+      "tags": {
+        "barrier": "toll_booth",
+        "name": "Peaje El Escobal"
+      }
+    },
+    {
+      "type": "node",
+      "id": 1979607938,
+      "lat": 6.9173964,
+      "lon": -73.0341332,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Mesa de los Santos",
+        "payment:cash": "yes",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 2402043376,
+      "lat": 3.1510789,
+      "lon": -76.4604429,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "description": "Cobro 2 sentidos Categoría I $8000 Categoría II $9600 Categoría III $25900 Categoría IV $33800 Categoría V $38900",
+        "ele": "972",
+        "name": "Peaje Villa Rica (Norte - Sur)",
+        "payment:cash": "yes",
+        "payment:colpass": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 2402043377,
+      "lat": 3.1514135,
+      "lon": -76.4597338,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "description": "Cobro 2 sentidos Categoría I $8000 Categoría II $9600 Categoría III $25900 Categoría IV $33800 Categoría V $38900",
+        "ele": "972",
+        "name": "Peaje Villa Rica (Sur - Norte)",
+        "payment:cash": "yes",
+        "payment:colpass": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 2427275104,
+      "lat": 3.6439118,
+      "lon": -76.3811016,
+      "tags": {
+        "barrier": "toll_booth",
+        "bicycle": "no",
+        "currency:COP": "yes",
+        "designation": "Peaje",
+        "ele": "965",
+        "foot": "no",
+        "horse": "no",
+        "motor_vehicle": "yes",
+        "name": "Peaje Rozo",
+        "operator": "Invias",
+        "payment:cash": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 2428264469,
+      "lat": 3.7130422,
+      "lon": -76.3194997,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "designation": "Peaje",
+        "motor_vehicle": "yes",
+        "name": "Peaje Cerrito",
+        "payment:cash": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 2428462328,
+      "lat": 3.7130207,
+      "lon": -76.3188418,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "designation": "Peaje",
+        "motor_vehicle": "yes",
+        "name": "Peaje Cerrito",
+        "payment:cash": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 2429404660,
+      "lat": 3.5573399,
+      "lon": -76.4626795,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "ele": "947",
+        "motor_vehicle": "yes",
+        "name": "Peaje Cencar",
+        "payment:cash": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 2447053236,
+      "lat": 4.9461284,
+      "lon": -74.7191467,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Cambao",
+        "opening_hours": "24/7",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "payment:credit_cards": "no",
+        "payment:debit_cards": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 2512329718,
+      "lat": 7.1032195,
+      "lon": -73.1851635,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Lebrija",
+        "opening_hours": "24/7",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "payment:credit_cards": "no",
+        "payment:debit_cards": "no",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 2538689832,
+      "lat": 10.5744891,
+      "lon": -75.450416,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Marahuaco",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 2548158712,
+      "lat": 10.9678347,
+      "lon": -74.9560756,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Puerto Colombia",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 2798478690,
+      "lat": 6.1506592,
+      "lon": -75.5312493,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Las Palmas",
+        "operator": "HATOVIAL S.A.S.",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 2832872727,
+      "lat": 6.0469532,
+      "lon": -75.6598857,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Amagá",
+        "payment:cash": "yes",
+        "payment:colpass": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 2965267638,
+      "lat": 10.547034,
+      "lon": -75.3651611,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Bayunca",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 3150064507,
+      "lat": 5.0486638,
+      "lon": -75.5988622,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Santágueda",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 3182440290,
+      "lat": 4.3002805,
+      "lon": -75.0500997,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Alto de Gualanday",
+        "payment:cash": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 3182440291,
+      "lat": 4.3004726,
+      "lon": -75.0499278,
+      "tags": {
+        "barrier": "toll_booth",
+        "bicycle": "yes",
+        "currency:COP": "yes",
+        "motor_vehicle": "yes",
+        "name": "Peaje Alto de Gualanday",
+        "payment:cash": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 3212598409,
+      "lat": 6.3996483,
+      "lon": -75.4330013,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "maxheight": "4.40",
+        "motorcar": "yes",
+        "motorcycle": "yes",
+        "name": "Peaje Trapiche",
+        "opening_hours": "24/7",
+        "operator": "HATOVIAL S.A.S.",
+        "payment:cash": "yes",
+        "payment:colpass": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 3265942266,
+      "lat": 6.2932118,
+      "lon": -75.6509231,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "maxheight": "4.40",
+        "motorcar": "yes",
+        "motorcycle": "yes",
+        "name": "Peaje Aburrá",
+        "opening_hours": "24/7",
+        "payment:cash": "yes",
+        "payment:coins": "yes",
+        "payment:colpass": "yes",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 3266149404,
+      "lat": 6.3385289,
+      "lon": -75.6712129,
+      "tags": {
+        "barrier": "toll_booth"
+      }
+    },
+    {
+      "type": "node",
+      "id": 3290802597,
+      "lat": 6.3317355,
+      "lon": -75.5994308,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Pajarito",
+        "payment:cash": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 3301121679,
+      "lat": 10.7176027,
+      "lon": -74.7526667,
+      "tags": {
+        "barrier": "toll_booth",
+        "name": "Peaje Ponedera"
+      }
+    },
+    {
+      "type": "node",
+      "id": 3301240795,
+      "lat": 10.7996853,
+      "lon": -74.7589158,
+      "tags": {
+        "barrier": "toll_booth",
+        "name": "Peaje Sabanagrande"
+      }
+    },
+    {
+      "type": "node",
+      "id": 3301241351,
+      "lat": 10.7995691,
+      "lon": -74.7591936,
+      "tags": {
+        "barrier": "toll_booth",
+        "name": "Peaje Sabanagrande"
+      }
+    },
+    {
+      "type": "node",
+      "id": 3301615504,
+      "lat": 10.2079745,
+      "lon": -74.9448765,
+      "tags": {
+        "addr:city": "Calamar",
+        "addr:street": "Troncal de Occidente",
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Calamar",
+        "payment:cash": "yes",
+        "payment:colpass": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 3396132815,
+      "lat": 4.7935044,
+      "lon": -75.8599698,
+      "tags": {
+        "barrier": "toll_booth",
+        "contact:website": "https://www.invias.gov.co/",
+        "currency:COP": "yes",
+        "description": "Carril mixto: Acepta COLPass, efectivo y vehículos exentos (residentes locales)",
+        "name": "Peaje Cerritos II",
+        "operator": "Instituto Nacional de Vías (INVIAS)",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "payment:contactless": "yes",
+        "payment:credit_cards": "no",
+        "payment:electronic": "yes",
+        "payment:electronic_toll_collection": "yes",
+        "ref": "1"
+      }
+    },
+    {
+      "type": "node",
+      "id": 3396132816,
+      "lat": 4.793341,
+      "lon": -75.8598981,
+      "tags": {
+        "barrier": "toll_booth",
+        "contact:website": "https://www.invias.gov.co/",
+        "currency:COP": "yes",
+        "description": "Carril mixto: Acepta COLPass, efectivo y vehículos exentos (residentes locales)",
+        "name": "Peaje Cerritos II",
+        "operator": "Instituto Nacional de Vías (INVIAS)",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "payment:contactless": "yes",
+        "payment:credit_cards": "no",
+        "payment:electronic": "yes",
+        "payment:electronic_toll_collection": "yes",
+        "ref": "5"
+      }
+    },
+    {
+      "type": "node",
+      "id": 3491485594,
+      "lat": 5.4970064,
+      "lon": -74.6133704,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "El Korán",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 3533917426,
+      "lat": 7.1079865,
+      "lon": -72.9688845,
+      "tags": {
+        "barrier": "toll_booth",
+        "charge": "11700 COP/Categoría I;12950 COP/Categoría II;26620 COP/Categoría III;33878 COP/Categoría IV;38131 COP/Categoría V",
+        "currency:COP": "yes",
+        "ele": "3375",
+        "name": "Peaje el Picacho",
+        "payment:cash": "yes",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 3577445655,
+      "lat": 4.2455931,
+      "lon": -74.8805291,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Chicoral",
+        "payment:cash": "yes",
+        "payment:colpass": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 3577445656,
+      "lat": 4.2454616,
+      "lon": -74.8804346,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Chicoral",
+        "payment:cash": "yes",
+        "payment:colpass": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 3580706756,
+      "lat": 8.0922798,
+      "lon": -73.5601404,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Mórrison",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 3843184248,
+      "lat": 10.3569159,
+      "lon": -75.4435038,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Turbaco",
+        "payment:cash": "yes",
+        "payment:colpass": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 3936308756,
+      "lat": 5.4972591,
+      "lon": -74.6134848,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "El Korán",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 3937925008,
+      "lat": 6.3957971,
+      "lon": -75.4236664,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "maxheight": "4.40",
+        "motorcar": "yes",
+        "motorcycle": "yes",
+        "name": "Peaje Cabildo",
+        "opening_hours": "24/7",
+        "payment:cash": "yes",
+        "payment:colpass": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 4052768408,
+      "lat": 7.3971745,
+      "lon": -73.5465389,
+      "tags": {
+        "barrier": "toll_booth",
+        "charge": "14500 COP/Categoría I;18950 COP/Categoría II;42448 COP/Categoría III;50876 COP/Categoría IV;59818 COP/Categoría V",
+        "currency:COP": "yes",
+        "name": "Peaje La Gomez",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 4052982989,
+      "lat": 7.103356,
+      "lon": -73.1851807,
+      "tags": {
+        "barrier": "toll_booth",
+        "charge": "10300 COP/Categoría I;11717 COP/Categoría II;27751 COP/Categoría III;36590 COP/Categoría IV;41934 COP/Categoría V",
+        "currency:COP": "yes",
+        "name": "Peaje Lebrija",
+        "opening_hours": "24/7",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "payment:credit_cards": "no",
+        "payment:debit_cards": "no",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 4054405490,
+      "lat": 8.09235,
+      "lon": -73.5600073,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Mórrison",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 4338748185,
+      "lat": 11.2531824,
+      "lon": -74.1092593,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Neguanje",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 4410470787,
+      "lat": 5.0655244,
+      "lon": -74.4143158,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Caiquero",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 4715083383,
+      "lat": 2.7016581,
+      "lon": -76.5367756,
+      "tags": {
+        "barrier": "toll_booth",
+        "description": "Cobro 2 sentidos\nCategoría I $8000\nCategoría II $9600\nCategoría III $25900\nCategoría IV $33800\nCategoría V $38900",
+        "ele": "1734",
+        "name": "Peaje Tunia"
+      }
+    },
+    {
+      "type": "node",
+      "id": 4715101319,
+      "lat": 3.5007362,
+      "lon": -76.4430222,
+      "tags": {
+        "barrier": "toll_booth",
+        "bicycle": "no",
+        "currency:COP": "yes",
+        "ele": "949",
+        "lanes": "6",
+        "motor_vehicle": "yes",
+        "motorcar": "yes",
+        "name": "Peaje Estambul",
+        "opening_hours": "24/7",
+        "operator": "CONCESION ANI",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "payment:credit_cards": "no",
+        "payment:debit_cards": "no",
+        "vehicle": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 4757121231,
+      "lat": 10.1361714,
+      "lon": -75.2642235,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peajo Gambote",
+        "payment:cash": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 4823136767,
+      "lat": 6.5276051,
+      "lon": -75.395861,
+      "tags": {
+        "barrier": "toll_booth",
+        "fee": "8800",
+        "maxheight": "4.40",
+        "motorcar": "yes",
+        "motorcycle": "yes",
+        "name": "Peaje Pandequeso",
+        "opening_hours": "24/7",
+        "payment:coins": "yes",
+        "payment:notes": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 4894532707,
+      "lat": 10.357023,
+      "lon": -75.4432949,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Turbaco",
+        "payment:cash": "yes",
+        "payment:colpass": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5010405097,
+      "lat": 4.4085575,
+      "lon": -75.8994894,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Corozal",
+        "payment:cash": "yes",
+        "payment:colpass": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5157551134,
+      "lat": 3.6276141,
+      "lon": -76.4577842,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Paso de La Torre",
+        "payment:cash": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5157551169,
+      "lat": 3.6277123,
+      "lon": -76.4575846,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Paso de La Torre",
+        "payment:cash": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5172147385,
+      "lat": 4.9395156,
+      "lon": -75.616522,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Tarapacá I",
+        "payment:cash": "yes",
+        "payment:colpass": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5387403731,
+      "lat": 10.9551981,
+      "lon": -74.7658765,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Zona Franca",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "toll:motorcycle": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5427928317,
+      "lat": 10.9865281,
+      "lon": -74.772348,
+      "tags": {
+        "barrier": "toll_booth",
+        "name": "Peaje Barranquillita"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5427928318,
+      "lat": 10.9863968,
+      "lon": -74.772132,
+      "tags": {
+        "barrier": "toll_booth",
+        "name": "Peaje Barranquillita"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5427928319,
+      "lat": 10.9578009,
+      "lon": -74.7666776,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Zona Franca",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "toll:motorcycle": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5429046518,
+      "lat": 5.2030543,
+      "lon": -74.6845696,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Bicentenario",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5497742007,
+      "lat": 4.9501144,
+      "lon": -75.6187217,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Tarapacá II",
+        "payment:cash": "yes",
+        "payment:colpass": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5976507977,
+      "lat": 10.8861695,
+      "lon": -74.8445875,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "fee": "yes",
+        "lanes": "3",
+        "name": "Peaje Galapa",
+        "opening_hours": "24/7",
+        "payment:cash": "yes",
+        "payment:credit_cards": "no",
+        "payment:debit_cards": "no",
+        "payment:flypass": "yes",
+        "toll": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 6122570907,
+      "lat": 5.2015146,
+      "lon": -74.8203261,
+      "tags": {
+        "barrier": "toll_booth",
+        "name": "Peaje Honda"
+      }
+    },
+    {
+      "type": "node",
+      "id": 6190977772,
+      "lat": 5.9688826,
+      "lon": -75.5940508,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Primavera",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 6193839741,
+      "lat": 4.2532039,
+      "lon": -76.1189048,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Uribe",
+        "payment:cash": "yes",
+        "payment:colpass": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 6196928900,
+      "lat": 5.5405017,
+      "lon": -75.5702859,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Supía",
+        "opening_hours": "24/7",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "payment:credit_cards": "yes",
+        "payment:debit_cards": "yes",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 6739054348,
+      "lat": 6.2230842,
+      "lon": -75.5338608,
+      "tags": {
+        "barrier": "toll_booth",
+        "bicycle": "no",
+        "fee": "19300",
+        "horse": "no",
+        "maxheight": "4.40",
+        "motorcycle": "no",
+        "name": "Peaje Seminario",
+        "opening_hours": "24/7",
+        "payment:coins": "yes",
+        "payment:notes": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 6892741034,
+      "lat": 7.5544133,
+      "lon": -73.2311216,
+      "tags": {
+        "barrier": "toll_booth",
+        "charge": "11614 COP/Categoria I;13053 COP/Categoría II;26517 COP/Categoría III;33712 COP/Categoría IV;38131 COP/Categoría V",
+        "name": "Peaje Rioblanco - El Playón"
+      }
+    },
+    {
+      "type": "node",
+      "id": 6906532324,
+      "lat": 6.1792179,
+      "lon": -75.4528135,
+      "tags": {
+        "barrier": "toll_booth",
+        "bicycle": "no",
+        "currency:COP": "yes",
+        "direction": "backward",
+        "fee": "19300",
+        "goods": "yes",
+        "horse": "no",
+        "maxheight": "4.40",
+        "motorcar": "yes",
+        "motorcycle": "no",
+        "name": "Peaje Sajonia",
+        "opening_hours": "24/7",
+        "payment:account_cards": "yes",
+        "payment:cash": "yes",
+        "payment:coins": "yes",
+        "payment:notes": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 7006371159,
+      "lat": 6.6452649,
+      "lon": -73.9525007,
+      "tags": {
+        "barrier": "toll_booth",
+        "charge": "14500 COP/Categoría I;18950 COP/Categoría II;42448 COP/Categoría III;50876 COP/Categoría IV;59818 COP/Categoría V",
+        "currency:COP": "yes",
+        "name": "Peaje Aguas Negras",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 7300767885,
+      "lat": 7.2395245,
+      "lon": -73.1495294,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Rionegro",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 7615957397,
+      "lat": 4.5640259,
+      "lon": -74.7974979,
+      "tags": {
+        "access": "yes",
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Guataquí",
+        "payment:cash": "yes",
+        "payment:colpass": "no",
+        "payment:credit_cards": "yes",
+        "payment:debit_cards": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 7878280643,
+      "lat": 4.4452746,
+      "lon": -75.5184494,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Túnel de la Línea Tolíma",
+        "payment:cash": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 8109670543,
+      "lat": 7.0836624,
+      "lon": -73.7175156,
+      "tags": {
+        "barrier": "toll_booth",
+        "charge": "17978 COP/Categoría I;21892 COP/Categoría II;27339 COP/Categoría III;34534 COP/Categoría IV;52315 COP/Categoría V;65368 COP/Categoría VI;75543 COP/Categoría VII",
+        "contact:mobile": "3103910901",
+        "contact:website": "https://rutadelcacao.com.co/peaje-lizama",
+        "currency:COP": "yes",
+        "name": "Peaje La Lizama",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 8217875050,
+      "lat": 10.8866261,
+      "lon": -74.8443457,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "fee": "yes",
+        "lanes": "3",
+        "name": "Peaje Galapa",
+        "opening_hours": "24/7",
+        "payment:cash": "yes",
+        "payment:credit_cards": "no",
+        "payment:debit_cards": "no",
+        "payment:flypass": "yes",
+        "toll": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 8217892882,
+      "lat": 11.0126565,
+      "lon": -74.8895568,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Papiros",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 8232432081,
+      "lat": 10.9292076,
+      "lon": -74.8945625,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "lanes": "3",
+        "motor_vehicle": "yes",
+        "name": "Peaje Juan Mina",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "payment:credit_cards": "no",
+        "payment:debit_cards": "no",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 8232432082,
+      "lat": 10.929353,
+      "lon": -74.8944353,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "lanes": "3",
+        "motor_vehicle": "yes",
+        "name": "Peaje Juan Mina",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "payment:credit_cards": "no",
+        "payment:debit_cards": "no",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9005842599,
+      "lat": 6.2929723,
+      "lon": -75.6512755,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "maxheight": "4.40",
+        "motorcar": "yes",
+        "motorcycle": "yes",
+        "name": "Peaje Aburrá",
+        "opening_hours": "24/7",
+        "payment:cash": "yes",
+        "payment:coins": "yes",
+        "payment:colpass": "yes",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9038744228,
+      "lat": 4.4057095,
+      "lon": -75.2854817,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Cocora",
+        "payment:cash": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9236560808,
+      "lat": 7.1454048,
+      "lon": -73.4053416,
+      "tags": {
+        "barrier": "toll_booth",
+        "fee": "yes",
+        "name": "Peaje La Paz"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9298373196,
+      "lat": 6.8304211,
+      "lon": -75.4682189,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "maxheight": "4.40",
+        "motorcar": "yes",
+        "motorcycle": "yes",
+        "name": "Peaje los Llanos",
+        "opening_hours": "24/7",
+        "payment:cash": "yes",
+        "payment:coins": "yes",
+        "payment:colpass": "yes",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9377922791,
+      "lat": 10.2443826,
+      "lon": -75.445831,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Pasacaballos",
+        "payment:cash": "yes",
+        "payment:colpass": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9377922792,
+      "lat": 10.244546,
+      "lon": -75.4457159,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Pasacaballos",
+        "payment:cash": "yes",
+        "payment:colpass": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9400006248,
+      "lat": 6.1706275,
+      "lon": -75.4787949,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Las Palmas",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9606532222,
+      "lat": 7.0833954,
+      "lon": -73.7173303,
+      "tags": {
+        "barrier": "toll_booth",
+        "contact:mobile": "3103910901",
+        "contact:website": "https://rutadelcacao.com.co/peaje-lizama",
+        "currency:COP": "yes",
+        "name": "Peaje La Lizama",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9697309523,
+      "lat": 7.6410609,
+      "lon": -72.1834778,
+      "tags": {
+        "barrier": "toll_booth",
+        "name": "Peaje San Cristóbal"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9697309524,
+      "lat": 7.6411654,
+      "lon": -72.1833712,
+      "tags": {
+        "barrier": "toll_booth",
+        "name": "Peaje San Cristóbal"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9697309525,
+      "lat": 7.6409424,
+      "lon": -72.1835768,
+      "tags": {
+        "barrier": "toll_booth",
+        "name": "Peaje San Cristóbal"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9884224724,
+      "lat": 4.950087,
+      "lon": -75.6185619,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Tarapacá II",
+        "payment:cash": "yes",
+        "payment:colpass": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9896353352,
+      "lat": 6.5276007,
+      "lon": -75.3961585,
+      "tags": {
+        "barrier": "toll_booth",
+        "fee": "8800",
+        "maxheight": "4.40",
+        "motorcar": "yes",
+        "motorcycle": "yes",
+        "name": "Peaje Pandequeso",
+        "opening_hours": "24/7",
+        "payment:coins": "yes",
+        "payment:notes": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 10136208696,
+      "lat": 4.4058059,
+      "lon": -75.2855046,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Cocora",
+        "payment:cash": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 10142412768,
+      "lat": 4.523697,
+      "lon": -75.5894507,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Túnel de la Línea - Quindío",
+        "opening_hours": "24/7",
+        "payment:cash": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 10316700329,
+      "lat": 5.8123384,
+      "lon": -75.6792577,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Pintada",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 10888843352,
+      "lat": 7.1453232,
+      "lon": -73.4051896,
+      "tags": {
+        "barrier": "toll_booth",
+        "fee": "yes",
+        "name": "Peaje La Paz"
+      }
+    },
+    {
+      "type": "node",
+      "id": 11157750624,
+      "lat": 5.1057379,
+      "lon": -75.760454,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Guaico",
+        "payment:cash": "yes",
+        "payment:colpass": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 11348354899,
+      "lat": 7.7945316,
+      "lon": -72.2338003,
+      "tags": {
+        "barrier": "toll_booth"
+      }
+    },
+    {
+      "type": "node",
+      "id": 11348366362,
+      "lat": 7.7948831,
+      "lon": -72.2339717,
+      "tags": {
+        "barrier": "toll_booth"
+      }
+    },
+    {
+      "type": "node",
+      "id": 11398568249,
+      "lat": 4.1924751,
+      "lon": -74.8607365,
+      "tags": {
+        "barrier": "toll_booth",
+        "payment:cash": "yes",
+        "payment:colpass": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 11398596142,
+      "lat": 4.1927034,
+      "lon": -74.8612132,
+      "tags": {
+        "barrier": "toll_booth",
+        "payment:cash": "yes",
+        "payment:colpass": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 11432748533,
+      "lat": 10.8368698,
+      "lon": -74.9026345,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Galapa",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 11432748534,
+      "lat": 10.836802,
+      "lon": -74.9024005,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Galapa",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 11599708256,
+      "lat": 10.2081829,
+      "lon": -74.9449895,
+      "tags": {
+        "addr:city": "Calamar",
+        "addr:street": "Troncal de Occidente",
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Calamar",
+        "payment:cash": "yes",
+        "payment:colpass": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 11612173431,
+      "lat": 10.9773008,
+      "lon": -74.3366641,
+      "tags": {
+        "barrier": "toll_booth",
+        "contact:phone": "+57 310 6328761",
+        "motor_vehicle": "yes",
+        "name": "Peaje Tasajera",
+        "payment:cash": "yes",
+        "toll:motorcycle": "no",
+        "website": "http://cumbia.invias.gov.co/aplicaciones_inv/redvial/magdalena.html"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12108795312,
+      "lat": 7.2229457,
+      "lon": -76.4332873,
+      "tags": {
+        "barrier": "toll_booth",
+        "fee": "16600",
+        "maxheight": "4.40",
+        "motorcar": "yes",
+        "motorcycle": "yes",
+        "name": "Peaje Mutatá",
+        "opening_hours": "24/7"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12127975056,
+      "lat": 7.721409,
+      "lon": -72.5714512,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Acacios",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12127975057,
+      "lat": 7.7212192,
+      "lon": -72.571328,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Acacios",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12165721048,
+      "lat": 5.4583534,
+      "lon": -74.6396874,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Puerto Salgar",
+        "opening_hours": "24/7",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "payment:credit_cards": "yes",
+        "payment:debit_cards": "yes",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12210080529,
+      "lat": 5.8121553,
+      "lon": -75.6793565,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Pintada",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12235794748,
+      "lat": 4.9992645,
+      "lon": -75.8589541,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Acapulco",
+        "payment:cash": "yes",
+        "payment:colpass": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12235794751,
+      "lat": 4.9992725,
+      "lon": -75.858856,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Acapulco",
+        "payment:cash": "yes",
+        "payment:colpass": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12453066727,
+      "lat": 7.2771176,
+      "lon": -74.8320447,
+      "tags": {
+        "barrier": "toll_booth",
+        "maxheight": "4.40",
+        "motorcar": "yes",
+        "motorcycle": "yes",
+        "name": "Peaje Fragua",
+        "opening_hours": "24/7"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12470395543,
+      "lat": 11.2330401,
+      "lon": -74.0437182,
+      "tags": {
+        "barrier": "toll_booth"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12880430858,
+      "lat": 6.9534669,
+      "lon": -76.2424968,
+      "tags": {
+        "barrier": "toll_booth",
+        "fee": "24100",
+        "maxheight": "4.40",
+        "motorcar": "yes",
+        "motorcycle": "yes",
+        "name": "Peaje Fuemia",
+        "opening_hours": "24/7"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12923068092,
+      "lat": 4.958881,
+      "lon": -74.9151089,
+      "tags": {
+        "access": "yes",
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Armero",
+        "opening_hours": "24/7",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "payment:credit_cards": "no",
+        "payment:debit_cards": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12923560834,
+      "lat": 5.2625803,
+      "lon": -75.6588599,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Irra",
+        "opening_hours": "24/7",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12923611059,
+      "lat": 4.6650934,
+      "lon": -76.0496419,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Toro",
+        "opening_hours": "24/7",
+        "payment:cash": "yes",
+        "payment:colpass": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12997684783,
+      "lat": 10.5469136,
+      "lon": -75.3651303,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Bayunca",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13205506510,
+      "lat": 6.9534432,
+      "lon": -74.7602419,
+      "tags": {
+        "barrier": "toll_booth",
+        "maxheight": "4.40",
+        "motorcar": "yes",
+        "motorcycle": "yes",
+        "name": "Peaje Santa Isabel",
+        "opening_hours": "24/7"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13205506515,
+      "lat": 7.2771516,
+      "lon": -74.832202,
+      "tags": {
+        "barrier": "toll_booth",
+        "maxheight": "4.40",
+        "motorcar": "yes",
+        "motorcycle": "yes",
+        "name": "Peaje Fragua",
+        "opening_hours": "24/7"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13205506516,
+      "lat": 6.6267888,
+      "lon": -74.7970922,
+      "tags": {
+        "barrier": "toll_booth",
+        "maxheight": "4.40",
+        "motorcar": "yes",
+        "motorcycle": "yes",
+        "name": "Peaje Vegachí",
+        "opening_hours": "24/7"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13235376202,
+      "lat": 4.7934635,
+      "lon": -75.8599519,
+      "tags": {
+        "barrier": "toll_booth",
+        "contact:website": "https://www.invias.gov.co/",
+        "currency:COP": "yes",
+        "name": "Peaje Cerritos II",
+        "operator": "Instituto Nacional de Vías (INVIAS)",
+        "payment:cash": "yes",
+        "payment:contactless": "no",
+        "payment:credit_cards": "no",
+        "payment:electronic": "no",
+        "payment:electronic_toll_collection": "no",
+        "ref": "2"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13235376205,
+      "lat": 4.7934227,
+      "lon": -75.859934,
+      "tags": {
+        "barrier": "toll_booth",
+        "contact:website": "https://www.invias.gov.co/",
+        "currency:COP": "yes",
+        "name": "Peaje Cerritos II",
+        "operator": "Instituto Nacional de Vías (INVIAS)",
+        "payment:cash": "yes",
+        "payment:contactless": "no",
+        "payment:credit_cards": "no",
+        "payment:electronic": "no",
+        "payment:electronic_toll_collection": "no",
+        "ref": "3"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13235376206,
+      "lat": 4.7933819,
+      "lon": -75.859916,
+      "tags": {
+        "barrier": "toll_booth",
+        "contact:website": "https://www.invias.gov.co/",
+        "currency:COP": "yes",
+        "name": "Peaje Cerritos II",
+        "operator": "Instituto Nacional de Vías (INVIAS)",
+        "payment:cash": "yes",
+        "payment:contactless": "no",
+        "payment:credit_cards": "no",
+        "payment:electronic": "no",
+        "payment:electronic_toll_collection": "no",
+        "ref": "4"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13462540193,
+      "lat": 4.6982914,
+      "lon": -75.6061756,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Circasia",
+        "payment:cash": "yes",
+        "payment:colpass": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13462540194,
+      "lat": 4.6982896,
+      "lon": -75.6060487,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Circasia",
+        "payment:cash": "yes",
+        "payment:colpass": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13595915575,
+      "lat": 10.7996424,
+      "lon": -74.7590051,
+      "tags": {
+        "barrier": "toll_booth",
+        "name": "Peaje Sabanagrande"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13595915576,
+      "lat": 10.7996054,
+      "lon": -74.7590963,
+      "tags": {
+        "barrier": "toll_booth",
+        "name": "Peaje Sabanagrande"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13595915577,
+      "lat": 10.7996239,
+      "lon": -74.7590506,
+      "tags": {
+        "barrier": "toll_booth",
+        "name": "Peaje Sabanagrande"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13595915578,
+      "lat": 10.7995857,
+      "lon": -74.7591466,
+      "tags": {
+        "barrier": "toll_booth",
+        "name": "Peaje Sabanagrande"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13595915579,
+      "lat": 10.7996621,
+      "lon": -74.7589607,
+      "tags": {
+        "barrier": "toll_booth",
+        "name": "Peaje Sabanagrande"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13595992887,
+      "lat": 3.7599026,
+      "lon": -76.4116273,
+      "tags": {
+        "barrier": "toll_booth",
+        "description": "Categoría I $8000 Categoría II $9600 Categoría III $25900 Categoría IV $33800 Categoría V $38900",
+        "name": "Peaje Mediacanoa"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13595992888,
+      "lat": 3.7599146,
+      "lon": -76.411564,
+      "tags": {
+        "barrier": "toll_booth",
+        "description": "Categoría I $8000 Categoría II $9600 Categoría III $25900 Categoría IV $33800 Categoría V $38900",
+        "name": "Peaje Mediacanoa"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13595992889,
+      "lat": 3.7599275,
+      "lon": -76.4115079,
+      "tags": {
+        "barrier": "toll_booth",
+        "description": "Categoría I $8000 Categoría II $9600 Categoría III $25900 Categoría IV $33800 Categoría V $38900",
+        "name": "Peaje Mediacanoa"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13595992890,
+      "lat": 3.7599401,
+      "lon": -76.4114581,
+      "tags": {
+        "barrier": "toll_booth",
+        "description": "Categoría I $8000 Categoría II $9600 Categoría III $25900 Categoría IV $33800 Categoría V $38900",
+        "name": "Peaje Mediacanoa"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13595992891,
+      "lat": 3.7599499,
+      "lon": -76.4114064,
+      "tags": {
+        "barrier": "toll_booth",
+        "description": "Categoría I $8000 Categoría II $9600 Categoría III $25900 Categoría IV $33800 Categoría V $38900",
+        "name": "Peaje Mediacanoa"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13595992892,
+      "lat": 3.7599596,
+      "lon": -76.4113569,
+      "tags": {
+        "barrier": "toll_booth",
+        "description": "Categoría I $8000 Categoría II $9600 Categoría III $25900 Categoría IV $33800 Categoría V $38900",
+        "name": "Peaje Mediacanoa"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13595992893,
+      "lat": 3.7599725,
+      "lon": -76.4113066,
+      "tags": {
+        "barrier": "toll_booth",
+        "description": "Categoría I $8000 Categoría II $9600 Categoría III $25900 Categoría IV $33800 Categoría V $38900",
+        "name": "Peaje Mediacanoa"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13612945332,
+      "lat": 6.2934828,
+      "lon": -74.457677,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Zambito",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13620649544,
+      "lat": 4.5237025,
+      "lon": -75.5895183,
+      "tags": {
+        "barrier": "toll_booth",
+        "payment:cash": "no",
+        "payment:colpass": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13620768413,
+      "lat": 4.4453046,
+      "lon": -75.5184364,
+      "tags": {
+        "barrier": "toll_booth",
+        "name": "Peaje Túnel de la Línea Tolíma",
+        "payment:cash": "no",
+        "payment:colpass": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13620803928,
+      "lat": 4.4056554,
+      "lon": -75.2854688,
+      "tags": {
+        "barrier": "toll_booth",
+        "name": "Peaje Cocora",
+        "payment:cash": "no",
+        "payment:colpass": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13620803929,
+      "lat": 4.405865,
+      "lon": -75.2855187,
+      "tags": {
+        "barrier": "toll_booth",
+        "name": "Peaje Cocora",
+        "payment:cash": "no",
+        "payment:colpass": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13620873859,
+      "lat": 4.507526,
+      "lon": -74.9914276,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "designation": "Peaje Alvarado Contrato 250-2011",
+        "name": "Peaje Alvarado",
+        "operator": "Odinsa PI S.A.",
+        "payment:cash": "yes",
+        "payment:colpass": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13620935259,
+      "lat": 4.5639961,
+      "lon": -74.7974597,
+      "tags": {
+        "access": "yes",
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Guataquí",
+        "payment:cash": "no",
+        "payment:colpass": "yes",
+        "payment:credit_cards": "no",
+        "payment:debit_cards": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13620935260,
+      "lat": 4.5640946,
+      "lon": -74.7975861,
+      "tags": {
+        "access": "yes",
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Guataquí",
+        "payment:cash": "no",
+        "payment:colpass": "yes",
+        "payment:credit_cards": "no",
+        "payment:debit_cards": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13620935269,
+      "lat": 4.5640661,
+      "lon": -74.7975496,
+      "tags": {
+        "access": "yes",
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Guataquí",
+        "payment:cash": "yes",
+        "payment:colpass": "no",
+        "payment:credit_cards": "yes",
+        "payment:debit_cards": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13621429862,
+      "lat": 4.403227,
+      "lon": -74.731377,
+      "tags": {
+        "barrier": "toll_booth",
+        "name": "Peaje Estación Pubenza",
+        "payment:cash": "yes",
+        "payment:colpass": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13621566602,
+      "lat": 4.1925436,
+      "lon": -74.8608795,
+      "tags": {
+        "barrier": "toll_booth",
+        "payment:cash": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13621566606,
+      "lat": 4.1925059,
+      "lon": -74.8608008,
+      "tags": {
+        "barrier": "toll_booth",
+        "payment:cash": "no",
+        "payment:colpass": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13621566611,
+      "lat": 4.1926253,
+      "lon": -74.86105,
+      "tags": {
+        "barrier": "toll_booth",
+        "payment:cash": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13621566615,
+      "lat": 4.1926658,
+      "lon": -74.8611346,
+      "tags": {
+        "barrier": "toll_booth",
+        "payment:cash": "no",
+        "payment:colpass": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13621657720,
+      "lat": 6.3317706,
+      "lon": -75.5994231,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Pajarito",
+        "payment:cash": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13623828653,
+      "lat": 6.5362861,
+      "lon": -75.0755168,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "maxheight": "4.40",
+        "motorcar": "yes",
+        "motorcycle": "yes",
+        "name": "Peaje Cisneros",
+        "opening_hours": "24/7",
+        "payment:cash": "yes",
+        "payment:colpass": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13623828654,
+      "lat": 6.5361393,
+      "lon": -75.0754712,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "maxheight": "4.40",
+        "motorcar": "yes",
+        "motorcycle": "yes",
+        "name": "Peaje Cisneros",
+        "opening_hours": "24/7",
+        "payment:cash": "yes",
+        "payment:colpass": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13624020601,
+      "lat": 6.1245266,
+      "lon": -75.2430184,
+      "tags": {
+        "barrier": "toll_booth",
+        "charge:bus": "29300",
+        "charge:motorcar": "18800",
+        "currency:COP": "yes",
+        "name": "Peaje Cocorná",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "source": "Bing"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13624039373,
+      "lat": 6.1707535,
+      "lon": -75.478931,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Las Palmas",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13628830085,
+      "lat": 10.1360924,
+      "lon": -75.2642205,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peajo Gambote",
+        "payment:cash": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13630132863,
+      "lat": 4.9394886,
+      "lon": -75.6164479,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Tarapacá I",
+        "payment:cash": "yes",
+        "payment:colpass": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13631161396,
+      "lat": 3.9955631,
+      "lon": -76.3285084,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Riofrio",
+        "payment:cash": "yes",
+        "payment:colpass": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13631235941,
+      "lat": 5.0521669,
+      "lon": -75.5946089,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje San Bernardo",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "toll:motorcycle": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13634106641,
+      "lat": 5.1056186,
+      "lon": -75.7603382,
+      "tags": {
+        "barrier": "toll_booth",
+        "currency:COP": "yes",
+        "name": "Peaje Guaico",
+        "payment:cash": "yes",
+        "payment:colpass": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13641697291,
+      "lat": 10.9786811,
+      "lon": -74.7296148,
+      "tags": {
+        "barrier": "toll_booth",
+        "contact:phone": "+57 (310) 632-8761",
+        "currency:COP": "yes",
+        "motor_vehicle": "yes",
+        "name": "Peaje Laureano Gómez",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "toll:motorcycle": "no",
+        "website": "https://www.invias.gov.co/index.php/listado-tarifas-peajes-2"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13641697292,
+      "lat": 10.978796,
+      "lon": -74.7297386,
+      "tags": {
+        "barrier": "toll_booth",
+        "contact:phone": "+57 (310) 632-8761",
+        "currency:COP": "yes",
+        "motor_vehicle": "yes",
+        "name": "Peaje Laureano Gómez",
+        "payment:cash": "yes",
+        "payment:colpass": "yes",
+        "toll:motorcycle": "no",
+        "website": "https://www.invias.gov.co/index.php/listado-tarifas-peajes-2"
+      }
+    }
+  ]
+}

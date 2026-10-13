@@ -59,7 +59,8 @@ export function ConfiguracionRegional({ sede }: { sede: SedeRegional }) {
     <Card><h3 style={{ marginBottom: 12 }}>Jornada, vehículo y combustible</h3>
       <Jornada key={JSON.stringify(data.config)} sede={sede} config={data.config} />
     </Card>
-    <Card><h3 style={{ marginBottom: 12 }}>Confirmación de peajes por destino</h3>
+    <Card><h3 style={{ marginBottom: 12 }}>Peajes por ruta y ajustes manuales</h3>
+      <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>Los peajes se calculan por la ruta precalculada de ida y regreso. Un total manual confirmado reemplaza ese cálculo, sin sumarlo dos veces.</p>
       <FG label="Destino"><select style={INP} value={destinoSel?.codigo ?? ''} onChange={e => setDestino(e.target.value)}>
         {data.destinos.filter(d => d.codigo !== sede.codigo).map(d => <option key={d.codigo} value={d.codigo}>{d.municipio} — {d.departamento}</option>)}
       </select></FG>
@@ -100,6 +101,7 @@ const CAMPOS = [
   ['jornada_horas', 'Horas por jornada'], ['costo_km', 'Uso del vehículo (COP/km)'],
   ['rendimiento_km_galon', 'Rendimiento (km/galón)'], ['precio_galon', 'Combustible (COP/galón)'],
   ['margen_recorrido_pct', 'Margen de recorrido (%)'],
+  ['recargo_km_adicional','Valor adicional por km que exceda 60 km (COP/km)'],
 ] as const
 
 function Jornada({ sede, config }: { sede: SedeRegional, config: NonNullable<ReturnType<typeof useRegional>['data']>['config'] }) {

@@ -8,8 +8,36 @@ const datos = JSON.parse(fs.readFileSync(new URL('../../../supabase/data/mant-in
 const source = fs.readFileSync(new URL('../mant-in-situ/calculo.ts', import.meta.url),'utf8')
 const { outputText } = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.ESNext } })
 const { calcular } = await import(`data:text/javascript;base64,${Buffer.from(outputText).toString('base64')}`)
+const baseUrl = `data:text/javascript;base64,${Buffer.from(outputText).toString('base64')}`
+const regionalSource = fs.readFileSync(new URL('./calculoRegional.ts', import.meta.url),'utf8')
+const regionalJs = ts.transpileModule(regionalSource, { compilerOptions: { module: ts.ModuleKind.ESNext } }).outputText
+  .replace('../mant-in-situ/calculo',baseUrl)
+const { calcularRegional } = await import(`data:text/javascript;base64,${Buffer.from(regionalJs).toString('base64')}`)
 const config = { jornada_horas: 8, costo_km: 473, rendimiento_km_galon: 35, precio_galon: 15900, margen_recorrido_pct: 5 }
 const equipos = new Map([['HI 5522', { referencia: 'HI 5522', codigo: 'MANPOI.02', precio: 550000, horas: 2, completo: true }]])
+
+test('rutas ampliadas respetan 110 km de ida y no duplican estaciones por sentido', () => {
+  const ampliado=JSON.parse(fs.readFileSync(new URL('../../../supabase/data/rutas-regionales-110.json',import.meta.url),'utf8'))
+  assert.equal(ampliado.destinos.length,234)
+  for(const d of ampliado.destinos) {
+    assert.ok(d.ida_km<=110)
+    assert.equal(new Set(d.pasos.map(p=>`${p.sentido}:${p.nombre}`)).size,d.pasos.length)
+  }
+})
+
+test('recargo solo sobre el exceso de ida, sin duplicar el regreso', () => {
+  const destino={codigo:'otra',ida_km:100,regreso_km:98,ida_min:60,regreso_min:60}
+  const cfg={...config,recargo_km_adicional:300,recargo_solo_ida:true}
+  const r=calcularRegional([{referencia:'HI 5522',cantidad:1}],equipos,destino,cfg,[],[],'76001')
+  assert.equal(r.kmAdicionalesVisita,40)
+  assert.equal(r.recargo,12000*r.dias)
+  const sinRecargo=calcular([{referencia:'HI 5522',cantidad:1}],equipos,destino,config,[],[],'76001')
+  assert.equal(r.total-sinRecargo.total,r.recargo)
+  for (const km of [0,59,60]) {
+    assert.equal(calcularRegional([{referencia:'HI 5522',cantidad:1}],equipos,{...destino,ida_km:km},cfg,[],[],'76001').recargo,0)
+  }
+  assert.equal(calcularRegional([{referencia:'HI 5522',cantidad:1}],equipos,{...destino,ida_km:110},{...cfg,recargo_km_adicional:500},[],[],'76001').recargo,25000*r.dias)
+})
 
 test('cinco sedes sin Bogotá y rutas únicas dentro de 60 km', () => {
   assert.equal(datos.sedes.length,5)
