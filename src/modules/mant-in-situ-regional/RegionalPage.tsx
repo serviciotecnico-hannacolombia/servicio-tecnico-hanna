@@ -96,7 +96,11 @@ function ConsultaRegional({ sede }: { sede: SedeRegional }) {
       ...resultado.filas.map(f=>'• '+f.referencia+(f.equipo?.nombre?' — '+f.equipo.nombre:'')+' (x'+f.cantidad+'): '+fmtCOP(f.unitarioRedondeado)+' c/u → '+fmtCOP(f.totalRedondeado)),
       '', 'Subtotal (antes de IVA): '+fmtCOP(resultado.totalRedondeado), 'IVA (19 %): '+fmtCOP(iva),
       '*Total con IVA: '+fmtCOP(resultado.totalRedondeado+iva)+'*',
-      '🗓️ Duración estimada: '+resultado.dias+' día(s)', '', '_Valores estimados, sujetos a la cotización formal._']
+      '🗓️ Duración estimada: '+resultado.dias+' día(s)', '',
+      '*Programación del servicio regional*',
+      'Este valor corresponde a un servicio regional de mantenimiento compartido. Para ofrecerte esta tarifa, agrupamos las solicitudes de la zona; por eso, la programación de la visita depende del número de solicitudes recibidas. Nuestro equipo coordinará contigo la fecha de atención.', '',
+      'Si prefieres una visita de mantenimiento exclusiva, puedes solicitarla a nuestro equipo. Prepararemos una cotización personalizada que incluya el desplazamiento, los viáticos y los demás gastos necesarios. Esta modalidad tendrá un precio mayor al del servicio compartido.', '',
+      '_Valores estimados, sujetos a la cotización formal._']
     try { await navigator.clipboard.writeText(lineas.join('\n')); toast.success('Resumen copiado — pégalo en WhatsApp') }
     catch { toast.error('No fue posible copiar el resumen') }
   }
