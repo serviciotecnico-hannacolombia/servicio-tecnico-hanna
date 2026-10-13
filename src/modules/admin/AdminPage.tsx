@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { UserPlus, Shield, Users, UserX, Trash2, Mail, ShieldCheck } from 'lucide-react'
+import { UserPlus, Shield, Users, UserX, Trash2, Mail, ShieldCheck, Briefcase } from 'lucide-react'
 import { Header } from '../../components/layout/Header'
 import { Card } from '../../components/ui/Card'
 import { DestinatariosAdmin } from './components/DestinatariosAdmin'
@@ -49,7 +49,7 @@ type AdminTab = 'usuarios' | 'roles' | 'destinatarios'
 
 export function AdminPage() {
   const { user: currentUser } = useUser()
-  const { users, isLoading, updateRole, toggleActivo, createUser, deleteUser } = useUsers()
+  const { users, isLoading, updateRole, toggleActivo, toggleEjecutivo, createUser, deleteUser } = useUsers()
   const { roles } = useRoles()
   const [createOpen, setCreateOpen] = useState(false)
   const [tab, setTab] = useState<AdminTab>('usuarios')
@@ -82,6 +82,22 @@ export function AdminPage() {
       toast.success(`Usuario ${u.activo ? 'desactivado' : 'activado'}`)
     } catch {
       toast.error('Error al cambiar el estado')
+    }
+  }
+
+  const handleToggleEjecutivo = async (u: Profile) => {
+    const nombre = u.full_name ?? u.email
+    const msg = u.es_ejecutivo
+      ? `¿Quitar a ${nombre} como ejecutivo?`
+      : `¿Marcar a ${nombre} como ejecutivo?
+
+Aparecerá en Control de Llamadas → Seguimiento ejecutivo.`
+    if (!confirm(msg)) return
+    try {
+      await toggleEjecutivo.mutateAsync({ id: u.id, es_ejecutivo: !u.es_ejecutivo })
+      toast.success(u.es_ejecutivo ? 'Ya no es ejecutivo' : 'Marcado como ejecutivo')
+    } catch {
+      toast.error('Error al actualizar ejecutivo')
     }
   }
 
@@ -197,7 +213,7 @@ export function AdminPage() {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface2)' }}>
-                  {['Usuario', 'Rol', 'Estado', 'Creado', 'Acciones'].map(h => (
+                  {['Usuario', 'Rol', 'Estado', 'Ejecutivo', 'Creado', 'Acciones'].map(h => (
                     <th key={h} style={{
                       padding: '10px 16px', textAlign: 'left', fontWeight: 600,
                       fontSize: '0.72rem', color: 'var(--muted)', fontFamily: 'var(--mono)',
@@ -255,6 +271,27 @@ export function AdminPage() {
                       {/* Estado */}
                       <td style={{ padding: '12px 16px' }}>
                         <ActiveBadge activo={u.activo} />
+                      </td>
+
+                      {/* Ejecutivo */}
+                      <td style={{ padding: '12px 16px' }}>
+                        <button
+                          onClick={() => handleToggleEjecutivo(u)}
+                          disabled={toggleEjecutivo.isPending}
+                          title={u.es_ejecutivo ? 'Quitar como ejecutivo' : 'Marcar como ejecutivo'}
+                          style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 5,
+                            padding: '3px 10px', borderRadius: 20, fontSize: '0.72rem', fontWeight: 700,
+                            fontFamily: 'var(--mono)', cursor: 'pointer', transition: 'all .12s',
+                            background: u.es_ejecutivo ? 'var(--accent-bg)' : 'var(--surface)',
+                            color: u.es_ejecutivo ? 'var(--accent)' : 'var(--muted)',
+                            border: `1px solid ${u.es_ejecutivo ? 'var(--accent)' : 'var(--border)'}`,
+                            opacity: toggleEjecutivo.isPending ? 0.5 : 1,
+                          }}
+                        >
+                          <Briefcase size={12} />
+                          {u.es_ejecutivo ? 'Ejecutivo' : 'No'}
+                        </button>
                       </td>
 
                       {/* Creado */}
