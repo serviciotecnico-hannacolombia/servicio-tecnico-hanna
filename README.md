@@ -90,6 +90,7 @@ Para habilitar el módulo, ejecutar una sola vez, en orden y antes de desplegar 
 2. `supabase/migrations/20261013c_mant_in_situ_regional_datos.sql` (oficinas, rutas, referencias de peajes y copias iniciales).
 3. `supabase/migrations/20261013d_refractometros_in_situ.sql` (15 referencias HI 968XX en In Situ Bogotá).
 4. `supabase/migrations/20261013e_regional_catalogo_excel.sql` (catálogo regional común y precios confirmados del Excel).
+5. `supabase/migrations/20261013f_regional_acceso_roles.sql` (consulta para roles con In Situ Bogotá y asesores/Ventas; edición solo heredada de permisos existentes).
 
 Si ya se ejecutaron los pasos 1 y 2, aplicar solo 3 y 4; no repetir migraciones. La actualización de HI 968XX conserva los precios de Bogotá y los datos existentes del catálogo. Tras aplicar los permisos, cerrar sesión y volver a entrar. La entrada está en **Estratégico**; también hay un enlace regional desde la pantalla de Mant. In Situ cuando el usuario tiene acceso.
 
