@@ -1,3 +1,4 @@
+import { SelectorBuscable } from './SelectorBuscable'
 import { useState } from 'react'
 import { Plus, Trash2, Copy, MapPinned, Search, CalendarDays, Settings, MessageCircle } from 'lucide-react'
 import { toast } from 'sonner'
@@ -26,9 +27,9 @@ export function RegionalPage() {
       actions={<div className="regional-header-actions"><Link className="regional-link" to="/mant-in-situ">Mant. In Situ Bogotá</Link><nav className="regional-tabs" aria-label="Vista regional"><button aria-pressed={!configurar} onClick={()=>setConfigurar(false)}>Consulta</button>{hasCapability('mant_in_situ_regional_editar') && <button aria-pressed={configurar} onClick={()=>setConfigurar(true)}><Settings size={14} /> Configuración</button>}</nav></div>} />
     {isLoading ? <Spinner /> : error ? <Card>No se pudo cargar la información regional. Verifica las migraciones y vuelve a intentar.</Card>
       : !sede ? <Card>No hay sedes regionales configuradas.</Card> : <>
-        <Card><FG label="Oficina de origen"><select style={INP} value={sede.id} onChange={e => setSedeId(e.target.value)}>
+        <Card><FG label="Oficina de origen"><SelectorBuscable style={INP} value={sede.id} onChange={e => setSedeId(e.target.value)}>
           {sedes.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
-        </select></FG>
+        </SelectorBuscable></FG>
       <p style={{ marginTop: 10, color: 'var(--muted)', fontSize: 13 }}><MapPinned size={14} /> {sede.direccion}</p>
         </Card>
         <div style={{ marginTop: 16 }}>
@@ -105,14 +106,14 @@ function ConsultaRegional({ sede }: { sede: SedeRegional }) {
       <h3 className="regional-step"><span>1</span> ¿Dónde se realizará el servicio?</h3>
       <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 14 }}>Precio base común para las cinco sedes regionales. El desplazamiento depende de la oficina y el destino; Bogotá conserva su propio catálogo.</p>
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-        <div style={{ flex: 1, minWidth: 180 }}><FG label="Departamento"><select style={INP} value={departamento} onChange={e => { setDepartamento(e.target.value); setCodigoDestino('') }}>
+        <div style={{ flex: 1, minWidth: 180 }}><FG label="Departamento"><SelectorBuscable style={INP} value={departamento} onChange={e => { setDepartamento(e.target.value); setCodigoDestino('') }}>
           <option value="">Todos los departamentos disponibles</option>
           {departamentos.map(d => <option key={d}>{d}</option>)}
-        </select></FG></div>
-        <div style={{ flex: 1, minWidth: 180 }}><FG label="Ciudad o municipio"><select style={INP} value={codigoDestino} onChange={e => setCodigoDestino(e.target.value)}>
+        </SelectorBuscable></FG></div>
+        <div style={{ flex: 1, minWidth: 180 }}><FG label="Ciudad o municipio"><SelectorBuscable style={INP} value={codigoDestino} onChange={e => setCodigoDestino(e.target.value)}>
           <option value="">Selecciona el destino</option>
           {destinos.filter(d => !departamento || d.departamento === departamento).map(d => <option key={d.codigo} value={d.codigo}>{d.municipio} — {Number(d.ida_km).toFixed(1)} km desde oficina</option>)}
-        </select></FG></div>
+        </SelectorBuscable></FG></div>
       </div>
       {destino && <p style={{ marginTop: 12, fontSize: 12, color: 'var(--muted)' }}>
         {destino.codigo === sede.codigo ? 'Ciudad de la sede: solo precio base del servicio.'

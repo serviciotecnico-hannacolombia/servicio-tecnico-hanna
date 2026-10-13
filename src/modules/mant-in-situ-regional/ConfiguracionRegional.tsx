@@ -1,3 +1,4 @@
+import { SelectorBuscable } from './SelectorBuscable'
 import { useState } from 'react'
 import { descargarCSV } from '../mant-in-situ/csv'
 import { ImportarPeajes } from './ImportarPeajes'
@@ -44,9 +45,9 @@ export function ConfiguracionRegional({ sede }: { sede: SedeRegional }) {
   return <div className="regional-config-layout"><Card><nav className="regional-config-nav" aria-label="Configuración regional">{[['equipos','Equipos y servicios'],['precios','Precios base'],['jornada','Jornada y vehículo'],['destinos','Peajes por destino'],['tarifas','Tarifas de peajes']].map(([key,label])=><button key={key} aria-pressed={panel===key} onClick={()=>setPanel(key)}>{label}</button>)}<p>Edita en pantalla o importa los peajes por CSV con vista previa. Los precios base son comunes a las cinco sedes.</p></nav></Card><div className="regional-config-content">
     {panel==='precios' && <Card><h3>Precios base regionales — catálogo común</h3>
       <p style={{ margin: '10px 0', fontSize: 12, color: 'var(--muted)' }}>Los servicios tienen el mismo precio base en las cinco sedes. Editar aquí actualiza todas las sedes regionales; los precios de Bogotá se mantienen independientes.</p>
-      <FG label="Código de servicio"><select style={INP} value={codigoSel?.codigo ?? ''} onChange={e => setCodigo(e.target.value)}>
+      <FG label="Código de servicio"><SelectorBuscable style={INP} value={codigoSel?.codigo ?? ''} onChange={e => setCodigo(e.target.value)}>
         {data.codigos.map(c => <option key={c.codigo}>{c.codigo}</option>)}
-      </select></FG>
+      </SelectorBuscable></FG>
       {codigoSel && <Precio key={`${sede.id}-${codigoSel.codigo}-${codigoSel.precio}-${codigoSel.horas}`} codigo={codigoSel} />}
     </Card>}
     {panel==='equipos' && <Card><h3 style={{ marginBottom: 12 }}>Equipos y servicios</h3>
@@ -56,9 +57,9 @@ export function ConfiguracionRegional({ sede }: { sede: SedeRegional }) {
         <FG label="Referencia"><input style={INP} value={referencia} onChange={e => setReferencia(e.target.value)} placeholder="HI 5522" list="referencias-regionales" />
           <datalist id="referencias-regionales">{data.asignaciones.map(e => <option key={e.referencia} value={e.referencia}>{e.codigo}</option>)}</datalist>
         </FG>
-        <FG label="Código regional"><select style={INP} value={codigoEquipo} onChange={e => setCodigoEquipo(e.target.value)}>
+        <FG label="Código regional"><SelectorBuscable style={INP} value={codigoEquipo} onChange={e => setCodigoEquipo(e.target.value)}>
           <option value="">Seleccionar código</option>{data.codigos.map(c => <option key={c.codigo}>{c.codigo}</option>)}
-        </select></FG>
+        </SelectorBuscable></FG>
       </div>
       <Button disabled={saving} onClick={asignar} style={{ marginTop: 12 }}>Guardar asignación</Button>
     </Card>}
@@ -67,9 +68,9 @@ export function ConfiguracionRegional({ sede }: { sede: SedeRegional }) {
     </Card>}
     {panel==='destinos' && <><Card><h3 style={{ marginBottom: 12 }}>Peajes por ruta y ajustes manuales</h3>
       <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>Los peajes se calculan por la ruta precalculada de ida y regreso. Un total manual confirmado reemplaza ese cálculo, sin sumarlo dos veces.</p>
-      <FG label="Destino"><select style={INP} value={destinoSel?.codigo ?? ''} onChange={e => setDestino(e.target.value)}>
+      <FG label="Destino"><SelectorBuscable style={INP} value={destinoSel?.codigo ?? ''} onChange={e => setDestino(e.target.value)}>
         {data.destinos.filter(d => d.codigo !== sede.codigo).map(d => <option key={d.codigo} value={d.codigo}>{d.municipio} — {d.departamento}</option>)}
-      </select></FG>
+      </SelectorBuscable></FG>
       {destinoSel && <Peajes key={`${destinoSel.codigo}-${destinoSel.updated_at}`} destino={destinoSel} />}
     </Card>
     <Card><h3 style={{ marginBottom: 12 }}>Actualizar peajes mediante CSV</h3>
@@ -168,5 +169,5 @@ function EditarTarifa({peajes}:{peajes:NonNullable<ReturnType<typeof useRegional
     if(error||data?.length!==1){toast.error('No se pudo guardar la tarifa');return}
     await invalidar();toast.success('Tarifa regional actualizada')
   }
-  return <div className="regional-table-filters"><FG label="Peaje"><select style={INP} value={nombre} onChange={e=>{const p=peajes.find(p=>p.nombre===e.target.value);setNombre(e.target.value);setValor(String(p?.tarifa_categoria_i??''));setFuente(p?.fuente_revision??p?.fuente??'')}}><option value="">Selecciona un peaje</option>{peajes.map(p=><option key={p.nombre}>{p.nombre}</option>)}</select></FG><FG label="Tarifa categoría I (COP)"><input style={INP} type="number" min={0} value={valor} onChange={e=>setValor(e.target.value)}/></FG><FG label="Fuente de revisión"><input style={INP} value={fuente} onChange={e=>setFuente(e.target.value)}/></FG><Button disabled={saving} onClick={guardar}>Guardar tarifa</Button></div>
+  return <div className="regional-table-filters"><FG label="Peaje"><SelectorBuscable style={INP} value={nombre} onChange={e=>{const p=peajes.find(p=>p.nombre===e.target.value);setNombre(e.target.value);setValor(String(p?.tarifa_categoria_i??''));setFuente(p?.fuente_revision??p?.fuente??'')}}><option value="">Selecciona un peaje</option>{peajes.map(p=><option key={p.nombre}>{p.nombre}</option>)}</SelectorBuscable></FG><FG label="Tarifa categoría I (COP)"><input style={INP} type="number" min={0} value={valor} onChange={e=>setValor(e.target.value)}/></FG><FG label="Fuente de revisión"><input style={INP} value={fuente} onChange={e=>setFuente(e.target.value)}/></FG><Button disabled={saving} onClick={guardar}>Guardar tarifa</Button></div>
 }
