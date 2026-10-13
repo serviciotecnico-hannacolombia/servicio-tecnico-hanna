@@ -27,6 +27,29 @@ for(const id of ids) await db.exec(`INSERT INTO roles VALUES('${id}'); INSERT IN
 await db.exec(`INSERT INTO modules VALUES('mant_in_situ'); INSERT INTO capabilities VALUES('mant_in_situ_editar');
 INSERT INTO role_modules VALUES('${ids[0]}','mant_in_situ'),('${ids[1]}','mant_in_situ'),('${ids[3]}','mant_in_situ');
 INSERT INTO role_capabilities VALUES('${ids[0]}','mant_in_situ_editar');`)
+if (process.argv.includes('--bundle')) {
+  await db.exec(`ALTER TABLE roles ADD COLUMN name text;
+    UPDATE roles SET name=CASE id WHEN '${ids[0]}' THEN 'Servicio Técnico' WHEN '${ids[1]}' THEN 'Ventas' ELSE 'Logística' END`)
+  const bundle=fs.readFileSync('docs/sql/instalar-mant-in-situ-regional.sql','utf8')
+  await db.exec(bundle)
+  assert.equal((await db.query('SELECT * FROM mant_regional_destinos')).rows.length,109)
+  assert.equal((await db.query("SELECT * FROM codigos_inet WHERE codigo LIKE 'HI 968%'")).rows.length,15)
+  const precios=JSON.parse(fs.readFileSync('supabase/data/mant-regional-precios-confirmados.json','utf8')).codigos
+  for (const [codigo,precio] of Object.entries(precios)) {
+    assert.equal(Number((await db.query(`SELECT precio FROM mant_regional_servicios WHERE codigo='${codigo}'`)).rows[0].precio),precio)
+  }
+  await db.exec('GRANT USAGE ON SCHEMA public,auth TO authenticated; GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA public TO authenticated;')
+  await as(ids[1])
+  assert.equal((await rows('SELECT * FROM mant_regional_sedes')).length,5)
+  assert.equal((await rows("UPDATE mant_regional_servicios SET precio=1 RETURNING codigo")).length,0)
+  await db.exec('RESET ROLE')
+  await assert.rejects(db.exec(bundle),e=>e.code==='P0001')
+  await db.exec('ROLLBACK')
+  assert.equal((await db.query('SELECT * FROM mant_regional_destinos')).rows.length,109)
+  await db.close()
+  console.log('Documento único validado: instalación completa, precios, equipos, permisos y bloqueo de repetición')
+  process.exit(0)
+}
 await db.exec(fs.readFileSync('supabase/migrations/20261013b_mant_in_situ_regional.sql','utf8'))
 await db.exec(fs.readFileSync('supabase/migrations/20261013c_mant_in_situ_regional_datos.sql','utf8'))
 await db.exec('GRANT USAGE ON SCHEMA public,auth TO authenticated; GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA public TO authenticated;')

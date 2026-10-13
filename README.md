@@ -86,6 +86,8 @@ El catálogo de peajes extraído del HTML es una referencia histórica, no una a
 
 Para habilitar el módulo, ejecutar una sola vez, en orden y antes de desplegar el frontend:
 
+Para una instalación nueva, se puede copiar completo [el documento SQL unificado](docs/sql/instalar-mant-in-situ-regional.sql) en Supabase SQL Editor. Aplica todos los pasos en una única transacción y se detiene si ya hay tablas regionales. Este documento está fuera de `migrations/` para evitar aplicarlo junto con las migraciones individuales. Si ya se aplicó algún paso, usar solamente las migraciones individuales pendientes.
+
 1. `supabase/migrations/20261013b_mant_in_situ_regional.sql` (tablas y permisos).
 2. `supabase/migrations/20261013c_mant_in_situ_regional_datos.sql` (oficinas, rutas, referencias de peajes y copias iniciales).
 3. `supabase/migrations/20261013d_refractometros_in_situ.sql` (15 referencias HI 968XX en In Situ Bogotá).
