@@ -1,3 +1,4 @@
+import { useUser } from '../../hooks/useUser'
 import { SelectorBuscable } from './SelectorBuscable'
 import { useState } from 'react'
 import { descargarCSV } from '../mant-in-situ/csv'
@@ -14,6 +15,9 @@ import { useRegional, useInvalidarRegional, type SedeRegional, type CodigoRegion
 
 export function ConfiguracionRegional({ sede }: { sede: SedeRegional }) {
   const consulta = useRegional(sede)
+  const {hasCapability,hasModule}=useUser()
+  const puedeCrear=hasModule('codigos')&&(['editar_codigos','gestion_codigos','importar_csv_codigos'] as const).some(hasCapability)
+  const [nueva,setNueva]=useState(false),[nombreEquipo,setNombreEquipo]=useState(''),[familiaEquipo,setFamiliaEquipo]=useState('')
   const [panel,setPanel]=useState('equipos')
   const [codigo, setCodigo] = useState('')
   const [destino, setDestino] = useState('')
@@ -28,17 +32,24 @@ export function ConfiguracionRegional({ sede }: { sede: SedeRegional }) {
   const destinoSel = data.destinos.find(d => d.codigo === destino) ?? data.destinos.find(d => d.codigo !== sede.codigo)
 
   async function asignar() {
-    const ref = referencia.trim()
+    const ref = referencia.trim().toUpperCase().replace(/\s+/g,' ')
     if (!ref || !codigoEquipo) { toast.error('Ingresa referencia y código regional'); return }
     setSaving(true)
     try {
       const { data: instrumento, error: consultaError } = await supabase.from('codigos_inet').select('codigo').eq('codigo', ref).maybeSingle()
       if (consultaError) throw consultaError
-      if (!instrumento) { toast.error('La referencia no existe en el catálogo de equipos'); return }
+      if (!instrumento) {
+        if (!nueva || !puedeCrear) { toast.error('La referencia no existe. Usa Agregar referencia para crearla con permiso de edición de Códigos.'); return }
+        if (!nombreEquipo.trim() || !familiaEquipo.trim()) { toast.error('Ingresa el nombre y la familia del equipo'); return }
+        const {error:crearError}=await supabase.from('codigos_inet').insert({codigo:ref,descripcion:nombreEquipo.trim(),familia:familiaEquipo.trim()})
+        if (crearError) throw crearError
+        setNueva(false)
+      } else if (nueva) { toast.error('Esta referencia ya existe. Puedes asignarla usando Editar asignación.'); return }
       const { error } = await supabase.from('mant_regional_referencias').upsert({ referencia: ref, codigo: codigoEquipo }, { onConflict: 'referencia' })
       if (error) throw error
       await invalidar()
-      toast.success('Código asignado para todas las sedes regionales')
+      toast.success(nueva?'Referencia creada y asignada a todas las sedes regionales':'Código asignado para todas las sedes regionales')
+      setNueva(false);setNombreEquipo('');setFamiliaEquipo('')
     } catch (e) { toast.error(e instanceof Error ? e.message : 'No se pudo asignar el código') }
     finally { setSaving(false) }
   }
@@ -51,17 +62,18 @@ export function ConfiguracionRegional({ sede }: { sede: SedeRegional }) {
       {codigoSel && <Precio key={`${sede.id}-${codigoSel.codigo}-${codigoSel.precio}-${codigoSel.horas}`} codigo={codigoSel} />}
     </Card>}
     {panel==='equipos' && <Card style={{overflow: 'visible'}}><h3 style={{ marginBottom: 12 }}>Equipos y servicios</h3>
-      <EquiposRegionalesPanel data={data} onEditar={(ref,cod)=>{setReferencia(ref);setCodigoEquipo(cod)}} />
-      <h4 style={{margin:'20px 0 12px'}}>Editar asignación de equipo</h4>
+      <EquiposRegionalesPanel data={data} onEditar={(ref,cod)=>{setNueva(false);setReferencia(ref);setCodigoEquipo(cod)}} />
+      <div style={{display:'flex',gap:12,alignItems:'center',margin:'20px 0 12px'}}><h4>{nueva?'Agregar nueva referencia':'Editar asignación de equipo'}</h4>{puedeCrear&&<Button variant="ghost" onClick={()=>{setNueva(v=>!v);setReferencia('');setCodigoEquipo('')}}>{nueva?'Volver a asignación':'+ Agregar referencia'}</Button>}</div>
+      {nueva && <><p style={{fontSize:12,color:'var(--muted)',marginBottom:12}}>La referencia se agrega al catálogo de Códigos y al regional con el servicio seleccionado. El precio base y las horas se toman de ese servicio.</p><div className="regional-table-filters"><FG label="Nombre del equipo"><input style={INP} value={nombreEquipo} onChange={e=>setNombreEquipo(e.target.value)}/></FG><FG label="Familia"><input style={INP} value={familiaEquipo} onChange={e=>setFamiliaEquipo(e.target.value)} list="familias-nuevas-regionales"/><datalist id="familias-nuevas-regionales">{[...new Set(data.equipos.map(e=>e.familia))].filter(Boolean).map(f=><option key={f}>{f}</option>)}</datalist></FG></div></>}
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-        <FG label="Referencia"><input style={INP} value={referencia} onChange={e => setReferencia(e.target.value)} placeholder="HI 5522" list="referencias-regionales" />
+        <FG label="Referencia"><input style={INP} value={referencia} onChange={e => setReferencia(e.target.value)} placeholder="HI 5221-01" list="referencias-regionales" />
           <datalist id="referencias-regionales">{data.asignaciones.map(e => <option key={e.referencia} value={e.referencia}>{e.codigo}</option>)}</datalist>
         </FG>
         <FG label="Código regional"><SelectorBuscable style={INP} value={codigoEquipo} onChange={e => setCodigoEquipo(e.target.value)}>
           <option value="">Seleccionar código</option>{data.codigos.map(c => <option key={c.codigo}>{c.codigo}</option>)}
         </SelectorBuscable></FG>
       </div>
-      <Button disabled={saving} onClick={asignar} style={{ marginTop: 12 }}>Guardar asignación</Button>
+      <Button disabled={saving} onClick={asignar} style={{ marginTop: 12 }}>{nueva?'Crear referencia y asignar servicio':'Guardar asignación'}</Button>
     </Card>}
     {panel==='jornada' && <Card style={{overflow: 'visible'}}><h3 style={{ marginBottom: 12 }}>Jornada, vehículo y combustible</h3>
       <Jornada key={JSON.stringify(data.config)} sede={sede} config={data.config} />
