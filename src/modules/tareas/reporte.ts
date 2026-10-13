@@ -20,9 +20,9 @@ export function tareasEnRango(tareas: Tarea[], desde: string, hasta: string, cri
 
 export function generarReporteCSV(tareas: Tarea[], nombre: (id: string) => string): string {
   return '\uFEFF' + Papa.unparse({
-    fields: ['ID', 'Título', 'Observaciones', 'Visibilidad', 'Estado', 'Creado por', 'Asignado a',
+    fields: ['Título', 'Observaciones', 'Visibilidad', 'Estado', 'Creado por', 'Asignado a',
       'Fecha de vencimiento', 'Fecha de creación (Colombia)', 'Fecha de finalización (Colombia)'],
-    data: tareas.map(t => [t.id, t.titulo, t.descripcion ?? '', (t.privada ?? true) ? 'Privada' : 'Pública',
+    data: tareas.map(t => [t.titulo, t.descripcion ?? '', (t.privada ?? true) ? 'Privada' : 'Pública',
       t.estado === 'pendiente' ? 'Pendiente' : 'Completada', nombre(t.creado_por), nombre(t.asignado_a),
       t.fecha_vencimiento ?? '', fechaColombia(new Date(t.created_at)),
       t.completado_at ? fechaColombia(new Date(t.completado_at)) : '']),

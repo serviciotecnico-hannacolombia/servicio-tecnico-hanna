@@ -48,6 +48,8 @@ test('CSV conserva tildes, saltos y separadores, e impide fórmulas de Excel', (
   assert.equal(csv.charCodeAt(0), 0xFEFF)
   const { data, errors } = Papa.parse(csv, { header: true, delimiter: ';' })
   assert.equal(errors.length, 0)
+  assert.equal(Object.hasOwn(data[0], 'ID'), false)
+  assert.equal(csv.includes('id-1'), false)
   assert.equal(data[0]['Título'], 'Revisión; equipo')
   assert.equal(data[0]['Observaciones'], 'Primera línea\nSegunda "línea"')
   assert.equal(data[0]['Creado por'], 'José')
