@@ -2,7 +2,7 @@ import type { Tarea } from '../../types'
 
 type PlazoTarea = Pick<Tarea, 'fecha_vencimiento' | 'estado'>
 
-function fechaColombia(ahora: Date): string {
+export function fechaColombia(ahora: Date): string {
   const partes = new Intl.DateTimeFormat('en', {
     timeZone: 'America/Bogota', year: 'numeric', month: '2-digit', day: '2-digit',
   }).formatToParts(ahora)

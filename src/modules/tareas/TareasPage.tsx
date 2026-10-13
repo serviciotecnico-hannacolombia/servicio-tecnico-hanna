@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { Plus, Pencil, Trash2, CheckCircle2, Circle, AlertTriangle, ListTodo } from 'lucide-react'
+import { Plus, Pencil, Trash2, CheckCircle2, Circle, AlertTriangle, ListTodo, Download } from 'lucide-react'
+import { ExportTareasModal } from './ExportTareasModal'
 import { supabase } from '../../lib/supabase'
 import { Header } from '../../components/layout/Header'
 import { Card } from '../../components/ui/Card'
@@ -30,6 +31,7 @@ export function TareasPage() {
   const [search, setSearch] = useState('')
   const [modal, setModal] = useState<{ tarea?: Tarea } | null>(null)
   const [eliminando, setEliminando] = useState<Tarea | null>(null)
+  const [exportando, setExportando] = useState(false)
 
   const activos = profiles.filter(p => p.activo)
   const profileName = (id: string) => profiles.find(p => p.id === id)?.full_name || profiles.find(p => p.id === id)?.email || '—'
@@ -75,7 +77,10 @@ export function TareasPage() {
       <Header
         title="Tareas"
         subtitle="Tareas públicas y privadas — consulta las compartidas en Todas"
-        actions={<button onClick={() => setModal({})} style={PRI}><Plus size={14} style={{ verticalAlign: -2 }} /> Nueva tarea</button>}
+        actions={<div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button disabled={isLoading} onClick={() => setExportando(true)} style={GHOST}><Download size={14} style={{ verticalAlign: -2 }} /> Reporte CSV</button>
+          <button onClick={() => setModal({})} style={PRI}><Plus size={14} style={{ verticalAlign: -2 }} /> Nueva tarea</button>
+        </div>}
       />
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 20 }}>
@@ -159,6 +164,11 @@ export function TareasPage() {
           </div>
         )}
       </Card>
+
+      {exportando && <ExportTareasModal tareas={tareas} nombre={id => {
+        const perfil = profiles.find(p => p.id === id)
+        return perfil?.full_name || perfil?.email || id
+      }} onClose={() => setExportando(false)} />}
 
       {modal && (
         <ModalTarea
