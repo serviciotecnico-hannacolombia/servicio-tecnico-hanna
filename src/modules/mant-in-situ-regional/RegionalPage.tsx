@@ -36,7 +36,6 @@ export function RegionalPage() {
         <li><strong>Comparte el resultado.</strong> «Copiar valor» copia el total antes de IVA. «Resumen para WhatsApp» incluye los equipos, el IVA y las condiciones de programación.</li>
       </ol>
       <h4>¿Cómo se programa la visita?</h4><p className="regional-note">El servicio regional es compartido: agrupamos solicitudes de la zona y coordinamos la fecha según la cantidad recibida. Una visita exclusiva requiere una solicitud y cotización personalizada de desplazamiento, viáticos y demás gastos; su precio será mayor. La cotización formal se realiza en el ERP.</p>
-      <h4>Si aparecen peajes pendientes</h4><p className="regional-note">Una persona con permiso de Configuración debe revisar «Peajes por destino». Allí puede mostrar solo pendientes, editar los nombres y valores de ida y regreso o importar un CSV. Una lista vacía significa cero peajes solo después de confirmar la revisión. Guarda los cambios para habilitar la cotización.</p>
     </Card></section>}
     {isLoading ? <Spinner /> : error ? <Card style={{overflow: 'visible'}}>No se pudo cargar la información regional. Verifica las migraciones y vuelve a intentar.</Card>
       : !sedes.length ? <Card style={{overflow: 'visible'}}>No hay sedes regionales configuradas.</Card> : !sede ? <Card style={{overflow:'visible'}}>
