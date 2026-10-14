@@ -31,9 +31,9 @@ function colHolidays(y: number): Set<string> {
     `${y}-${nextMon(addD(E, 59)).getMonth() + 1}-${nextMon(addD(E, 59)).getDate()}`,
     `${y}-${nextMon(addD(E, 70)).getMonth() + 1}-${nextMon(addD(E, 70)).getDate()}`,
     `${y}-${nm(6, 29).getMonth() + 1}-${nm(6, 29).getDate()}`,
-    // Día Nacional de Nuestra Señora del Rosario de Chiquinquirá — fecha fija
-    // (no se traslada al lunes), Ley 2578 del 1 de junio de 2026.
-    ...(y >= 2026 ? [`${y}-7-9`] : []),
+    // Ley 2578 de 2026, descanso trasladado al lunes según Ley 51 de 1983.
+    // Circular 23 de 2026 del MinTIC: 9 de julio se observa el 13 de julio.
+    ...(y >= 2026 ? [`${y}-${nm(7, 9).getMonth() + 1}-${nm(7, 9).getDate()}`] : []),
     `${y}-7-20`,
     `${y}-8-7`,
     `${y}-${nm(8, 15).getMonth() + 1}-${nm(8, 15).getDate()}`,

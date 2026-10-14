@@ -1,3 +1,4 @@
+import { tiempoTarea } from './horasLaborales'
 import { faltaColumnaPrivada } from './compatibilidad'
 import { useState } from 'react'
 import { toast } from 'sonner'
@@ -117,6 +118,7 @@ export function TareasPage() {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {rows.map(t => {
+              const horas=tiempoTarea(t)
               const vencida = estaVencida(t)
               const hoy = venceHoy(t)
               const proxima = venceManana(t)
@@ -150,6 +152,7 @@ export function TareasPage() {
                     <div style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--mono)', marginTop: 6, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                       <span>De: <strong>{soyCreador ? 'Mí' : profileName(t.creado_por)}</strong></span>
                       <span>Para: <strong>{t.asignado_a === user?.id ? 'Mí' : profileName(t.asignado_a)}</strong></span>
+                      <span title="Desde la creación hasta el cierre o el momento actual. Lun–jue 7:30–17:00; vie 7:30–16:00, sin fines de semana ni festivos de Colombia.">{t.estado==='completada'?'Tiempo de atención':'Tiempo transcurrido'}: <strong>{horas==null?'Sin fecha válida':horas.toLocaleString('es-CO',{maximumFractionDigits:2})+' h hábiles'}</strong></span>
                       <span>Vence: <strong style={{ color: vencida ? 'var(--red)' : undefined }}>{fmtFecha(t.fecha_vencimiento)}</strong></span>
                     </div>
                   </div>

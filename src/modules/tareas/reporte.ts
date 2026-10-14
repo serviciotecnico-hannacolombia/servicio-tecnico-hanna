@@ -1,3 +1,4 @@
+import { tiempoTarea } from './horasLaborales'
 import Papa from 'papaparse'
 import type { Tarea } from '../../types'
 import { fechaColombia } from './plazos'
@@ -18,14 +19,15 @@ export function tareasEnRango(tareas: Tarea[], desde: string, hasta: string, cri
   })
 }
 
-export function generarReporteCSV(tareas: Tarea[], nombre: (id: string) => string): string {
+export function generarReporteCSV(tareas: Tarea[], nombre: (id: string) => string, ahora = new Date()): string {
   return '\uFEFF' + Papa.unparse({
     fields: ['Título', 'Observaciones', 'Estado', 'Creado por', 'Asignado a',
-      'Fecha de creación (Colombia)', 'Fecha de vencimiento', 'Fecha de finalización (Colombia)'],
+      'Fecha de creación (Colombia)', 'Fecha de vencimiento', 'Fecha de finalización (Colombia)', 'Tiempo (horas hábiles)'],
     data: tareas.map(t => [t.titulo, t.descripcion ?? '',
       t.estado === 'pendiente' ? 'Pendiente' : 'Completada', nombre(t.creado_por), nombre(t.asignado_a),
       fechaColombia(new Date(t.created_at)), t.fecha_vencimiento ?? '',
-      t.completado_at ? fechaColombia(new Date(t.completado_at)) : '']),
+      t.completado_at ? fechaColombia(new Date(t.completado_at)) : '',
+      tiempoTarea(t,ahora)==null?'':Number(tiempoTarea(t,ahora)!.toFixed(2))]),
   }, { delimiter: ';', escapeFormulae: true })
 }
 

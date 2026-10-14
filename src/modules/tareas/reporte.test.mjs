@@ -14,7 +14,7 @@ function cargar(archivo) {
   })
   const module = { exports: {} }
   new Function('require', 'module', 'exports', outputText)(
-    id => id === './plazos' ? cargar('./plazos.ts') : require(id), module, module.exports)
+    id => id === './plazos' ? cargar('./plazos.ts') : id === './horasLaborales' ? cargar('./horasLaborales.ts') : id === '../../lib/colombiaCalendar' ? cargar('../../lib/colombiaCalendar.ts') : require(id), module, module.exports)
   return module.exports
 }
 const { mesActual, tareasEnRango, generarReporteCSV } = cargar('./reporte.ts')
@@ -51,7 +51,7 @@ test('CSV conserva tildes, saltos y separadores, e impide fórmulas de Excel', (
   assert.equal(Object.hasOwn(data[0], 'ID'), false)
   assert.equal(Object.hasOwn(data[0], 'Visibilidad'), false)
   assert.deepEqual(meta.fields, ['Título', 'Observaciones', 'Estado', 'Creado por', 'Asignado a',
-    'Fecha de creación (Colombia)', 'Fecha de vencimiento', 'Fecha de finalización (Colombia)'])
+    'Fecha de creación (Colombia)', 'Fecha de vencimiento', 'Fecha de finalización (Colombia)', 'Tiempo (horas hábiles)'])
   assert.equal(csv.includes('id-1'), false)
   assert.equal(data[0]['Título'], 'Revisión; equipo')
   assert.equal(data[0]['Observaciones'], 'Primera línea\nSegunda "línea"')
