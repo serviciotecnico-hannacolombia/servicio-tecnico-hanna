@@ -1,0 +1,32 @@
+[
+  {
+    "nombre": "SEMINARIO",
+    "sentido": "Oriente Occidente",
+    "latitud": 6.223260000000039,
+    "longitud": -75.53491799999995,
+    "tarifaCategoriaI": 26300,
+    "fuente": "https://arcgiswebadaptor.mintransporte.gov.co/server/rest/services/peajes_consulta/peajes_consulta/FeatureServer",
+    "sector": "Gobernación de Antioquía",
+    "actualizado": "2026-10-13"
+  },
+  {
+    "nombre": "SAJONIA",
+    "sentido": "Occidente Oriente",
+    "latitud": 6.1793290000000525,
+    "longitud": -75.45288699999998,
+    "tarifaCategoriaI": 26300,
+    "fuente": "https://arcgiswebadaptor.mintransporte.gov.co/server/rest/services/peajes_consulta/peajes_consulta/FeatureServer",
+    "sector": "Gobernación de Antioquía",
+    "actualizado": "2026-10-13"
+  },
+  {
+    "nombre": "ZONA FRANCA",
+    "sentido": "Ambos sentidos",
+    "latitud": 10.955190000000073,
+    "longitud": -74.76588999999996,
+    "tarifaCategoriaI": 11700,
+    "fuente": "https://arcgiswebadaptor.mintransporte.gov.co/server/rest/services/peajes_consulta/peajes_consulta/FeatureServer",
+    "sector": "Gobernación del Atlántico",
+    "actualizado": "2026-10-13"
+  }
+]

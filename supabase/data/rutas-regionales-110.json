@@ -1,0 +1,6658 @@
+{
+  "consultado_at": "2026-10-13T19:29:33.531Z",
+  "limite_km": 110,
+  "motor": "OpenStreetMap/OSRM",
+  "sedes": [
+    {
+      "id": "barranquilla",
+      "nombre": "Barranquilla",
+      "codigo": "08001",
+      "lat": 11.0042234,
+      "lng": -74.813282,
+      "direccion": "Cra. 51B #80-58, Edificio Smart Office Center, Oficina 510, Barranquilla, Atlántico",
+      "fuente": "https://www.waze.com/live-map/directions/co/atlantico/barranquilla/smart-office-center?to=place.ChIJUx4xWqYt9I4RuvIdhwWlzZU"
+    },
+    {
+      "id": "bucaramanga",
+      "nombre": "Bucaramanga",
+      "codigo": "68001",
+      "lat": 7.1203369,
+      "lng": -73.1161193,
+      "direccion": "Carrera 27 #37-33, Green Gold Business Building, Oficina 519, Bucaramanga, Santander",
+      "fuente": "https://hannacolombia.com/bucaramanga-asesoria/"
+    },
+    {
+      "id": "cali",
+      "nombre": "Cali",
+      "codigo": "76001",
+      "lat": 3.4348977,
+      "lng": -76.5469455,
+      "direccion": "Cra. 35A #3BIS-16, San Fernando, Cali, Valle del Cauca",
+      "fuente": "https://maps.app.goo.gl/WA5SbLDLnWFVyn8y7"
+    },
+    {
+      "id": "medellin",
+      "nombre": "Medellín",
+      "codigo": "05001",
+      "lat": 6.2011951,
+      "lng": -75.5732438,
+      "direccion": "Cl. 3 Sur #43A-52, Conjunto inmobiliario 43 avenida PH, Oficina 805, El Poblado, Medellín, Antioquia",
+      "fuente": "https://maps.app.goo.gl/mPp1VM6bwKmfjcwJ8"
+    },
+    {
+      "id": "pereira",
+      "nombre": "Pereira",
+      "codigo": "66001",
+      "lat": 4.800043239,
+      "lng": -75.691888687,
+      "direccion": "Cl. 14 #23-72, Alturia Business Center, Oficina 904, Pereira, Risaralda",
+      "fuente": "https://www.waze.com/es-419/live-map/directions?from=place.w.186318896.1863254496.12000105"
+    }
+  ],
+  "destinos": [
+    {
+      "sede_id": "barranquilla",
+      "codigo": "08001",
+      "departamento": "ATLÁNTICO",
+      "municipio": "BARRANQUILLA",
+      "lat": 10.977961,
+      "lng": -74.815546,
+      "ida_km": 4.1388,
+      "ida_min": 7.46,
+      "regreso_km": 4.7361,
+      "regreso_min": 9.303333333333335,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "barranquilla",
+      "codigo": "08078",
+      "departamento": "ATLÁNTICO",
+      "municipio": "BARANOA",
+      "lat": 10.79445,
+      "lng": -74.916077,
+      "ida_km": 36.145199999999996,
+      "ida_min": 29.766666666666666,
+      "regreso_km": 29.5538,
+      "regreso_min": 29.696666666666665,
+      "pasos": [
+        {
+          "nombre": "JUAN MINA",
+          "distancia_m": 21,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "Galapa",
+          "distancia_m": 27,
+          "fuente": "INVÍAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "Galapa",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "barranquilla",
+      "codigo": "08137",
+      "departamento": "ATLÁNTICO",
+      "municipio": "CAMPO DE LA CRUZ",
+      "lat": 10.378291,
+      "lng": -74.880847,
+      "ida_km": 96.546,
+      "ida_min": 77.44,
+      "regreso_km": 96.10419999999999,
+      "regreso_min": 75.41666666666667,
+      "pasos": [
+        {
+          "nombre": "GALAPA 02",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "Sabanagrande",
+          "distancia_m": 17,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "JUAN MINA",
+          "distancia_m": 21,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "JUAN MINA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "GALAPA 02",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "Sabanagrande",
+          "distancia_m": 5,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": [
+        {
+          "nombre": "Peaje Ponedera",
+          "motivo": "Caseta en la ruta sin tarifa asociada en el catálogo",
+          "osm_id": 3301121679,
+          "sentido": "ida"
+        },
+        {
+          "nombre": "Peaje Ponedera",
+          "motivo": "Caseta en la ruta sin tarifa asociada en el catálogo",
+          "osm_id": 3301121679,
+          "sentido": "regreso"
+        }
+      ]
+    },
+    {
+      "sede_id": "barranquilla",
+      "codigo": "08141",
+      "departamento": "ATLÁNTICO",
+      "municipio": "CANDELARIA",
+      "lat": 10.461903,
+      "lng": -74.879717,
+      "ida_km": 79.75280000000001,
+      "ida_min": 79.96000000000001,
+      "regreso_km": 73.2613,
+      "regreso_min": 79.62833333333333,
+      "pasos": [
+        {
+          "nombre": "JUAN MINA",
+          "distancia_m": 21,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "Galapa",
+          "distancia_m": 27,
+          "fuente": "INVÍAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "Galapa",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "barranquilla",
+      "codigo": "08296",
+      "departamento": "ATLÁNTICO",
+      "municipio": "GALAPA",
+      "lat": 10.919033,
+      "lng": -74.870385,
+      "ida_km": 22.9498,
+      "ida_min": 21.066666666666666,
+      "regreso_km": 14.4748,
+      "regreso_min": 18.386666666666667,
+      "pasos": [
+        {
+          "nombre": "JUAN MINA",
+          "distancia_m": 21,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "barranquilla",
+      "codigo": "08372",
+      "departamento": "ATLÁNTICO",
+      "municipio": "JUAN DE ACOSTA",
+      "lat": 10.83254,
+      "lng": -75.041032,
+      "ida_km": 45.156699999999994,
+      "ida_min": 38.044999999999995,
+      "regreso_km": 44.9265,
+      "regreso_min": 37.61666666666667,
+      "pasos": [
+        {
+          "nombre": "PUERTO COLOMBIA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "PAPIROS",
+          "distancia_m": 14,
+          "fuente": "https://mintransporte.gov.co/info/mintransporte/media/anexos/JxwDCB38.pdf",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "PUERTO COLOMBIA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "PAPIROS",
+          "distancia_m": 0,
+          "fuente": "https://mintransporte.gov.co/info/mintransporte/media/anexos/JxwDCB38.pdf",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "barranquilla",
+      "codigo": "08421",
+      "departamento": "ATLÁNTICO",
+      "municipio": "LURUACO",
+      "lat": 10.610491,
+      "lng": -75.14199,
+      "ida_km": 83.2179,
+      "ida_min": 62.473333333333336,
+      "regreso_km": 76.72630000000001,
+      "regreso_min": 62.205000000000005,
+      "pasos": [
+        {
+          "nombre": "JUAN MINA",
+          "distancia_m": 21,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "Galapa",
+          "distancia_m": 27,
+          "fuente": "INVÍAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "Galapa",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "barranquilla",
+      "codigo": "08433",
+      "departamento": "ATLÁNTICO",
+      "municipio": "MALAMBO",
+      "lat": 10.857086,
+      "lng": -74.776923,
+      "ida_km": 20.4803,
+      "ida_min": 29.513333333333332,
+      "regreso_km": 21.8096,
+      "regreso_min": 31,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "barranquilla",
+      "codigo": "08436",
+      "departamento": "ATLÁNTICO",
+      "municipio": "MANATÍ",
+      "lat": 10.449089,
+      "lng": -74.956867,
+      "ida_km": 80.5113,
+      "ida_min": 71.52333333333333,
+      "regreso_km": 74.0157,
+      "regreso_min": 71.22,
+      "pasos": [
+        {
+          "nombre": "JUAN MINA",
+          "distancia_m": 21,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "Galapa",
+          "distancia_m": 27,
+          "fuente": "INVÍAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "Galapa",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "barranquilla",
+      "codigo": "08520",
+      "departamento": "ATLÁNTICO",
+      "municipio": "PALMAR DE VARELA",
+      "lat": 10.738591,
+      "lng": -74.754765,
+      "ida_km": 49.0324,
+      "ida_min": 41.77166666666667,
+      "regreso_km": 48.4594,
+      "regreso_min": 39.623333333333335,
+      "pasos": [
+        {
+          "nombre": "GALAPA 02",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "Sabanagrande",
+          "distancia_m": 17,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "JUAN MINA",
+          "distancia_m": 21,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "JUAN MINA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "GALAPA 02",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "Sabanagrande",
+          "distancia_m": 5,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "barranquilla",
+      "codigo": "08549",
+      "departamento": "ATLÁNTICO",
+      "municipio": "PIOJÓ",
+      "lat": 10.749216,
+      "lng": -75.107592,
+      "ida_km": 60.5077,
+      "ida_min": 58.57,
+      "regreso_km": 60.2775,
+      "regreso_min": 58.17666666666666,
+      "pasos": [
+        {
+          "nombre": "PUERTO COLOMBIA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "PAPIROS",
+          "distancia_m": 14,
+          "fuente": "https://mintransporte.gov.co/info/mintransporte/media/anexos/JxwDCB38.pdf",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "PUERTO COLOMBIA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "PAPIROS",
+          "distancia_m": 0,
+          "fuente": "https://mintransporte.gov.co/info/mintransporte/media/anexos/JxwDCB38.pdf",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "barranquilla",
+      "codigo": "08558",
+      "departamento": "ATLÁNTICO",
+      "municipio": "POLONUEVO",
+      "lat": 10.777363,
+      "lng": -74.852981,
+      "ida_km": 42.740300000000005,
+      "ida_min": 36.86,
+      "regreso_km": 36.207800000000006,
+      "regreso_min": 36.526666666666664,
+      "pasos": [
+        {
+          "nombre": "JUAN MINA",
+          "distancia_m": 21,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "Galapa",
+          "distancia_m": 27,
+          "fuente": "INVÍAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "Galapa",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "barranquilla",
+      "codigo": "08560",
+      "departamento": "ATLÁNTICO",
+      "municipio": "PONEDERA",
+      "lat": 10.641779,
+      "lng": -74.753885,
+      "ida_km": 62.983599999999996,
+      "ida_min": 51.015,
+      "regreso_km": 62.538599999999995,
+      "regreso_min": 48.97666666666667,
+      "pasos": [
+        {
+          "nombre": "GALAPA 02",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "Sabanagrande",
+          "distancia_m": 17,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "JUAN MINA",
+          "distancia_m": 21,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "JUAN MINA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "GALAPA 02",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "Sabanagrande",
+          "distancia_m": 5,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": [
+        {
+          "nombre": "Peaje Ponedera",
+          "motivo": "Caseta en la ruta sin tarifa asociada en el catálogo",
+          "osm_id": 3301121679,
+          "sentido": "ida"
+        },
+        {
+          "nombre": "Peaje Ponedera",
+          "motivo": "Caseta en la ruta sin tarifa asociada en el catálogo",
+          "osm_id": 3301121679,
+          "sentido": "regreso"
+        }
+      ]
+    },
+    {
+      "sede_id": "barranquilla",
+      "codigo": "08573",
+      "departamento": "ATLÁNTICO",
+      "municipio": "PUERTO COLOMBIA",
+      "lat": 11.015322,
+      "lng": -74.888627,
+      "ida_km": 10.5551,
+      "ida_min": 18.654999999999998,
+      "regreso_km": 10.451600000000001,
+      "regreso_min": 18.925,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "barranquilla",
+      "codigo": "08606",
+      "departamento": "ATLÁNTICO",
+      "municipio": "REPELÓN",
+      "lat": 10.493357,
+      "lng": -75.125534,
+      "ida_km": 100.4557,
+      "ida_min": 90.94,
+      "regreso_km": 93.96419999999999,
+      "regreso_min": 90.60833333333333,
+      "pasos": [
+        {
+          "nombre": "JUAN MINA",
+          "distancia_m": 21,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "Galapa",
+          "distancia_m": 27,
+          "fuente": "INVÍAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "Galapa",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "barranquilla",
+      "codigo": "08634",
+      "departamento": "ATLÁNTICO",
+      "municipio": "SABANAGRANDE",
+      "lat": 10.792453,
+      "lng": -74.759496,
+      "ida_km": 42.9375,
+      "ida_min": 36.269999999999996,
+      "regreso_km": 42.3943,
+      "regreso_min": 34.12833333333334,
+      "pasos": [
+        {
+          "nombre": "GALAPA 02",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "Sabanagrande",
+          "distancia_m": 17,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "JUAN MINA",
+          "distancia_m": 21,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "JUAN MINA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "GALAPA 02",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "Sabanagrande",
+          "distancia_m": 5,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "barranquilla",
+      "codigo": "08638",
+      "departamento": "ATLÁNTICO",
+      "municipio": "SABANALARGA",
+      "lat": 10.632091,
+      "lng": -74.921256,
+      "ida_km": 56.5095,
+      "ida_min": 44.593333333333334,
+      "regreso_km": 50.0096,
+      "regreso_min": 44.27833333333333,
+      "pasos": [
+        {
+          "nombre": "JUAN MINA",
+          "distancia_m": 21,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "Galapa",
+          "distancia_m": 27,
+          "fuente": "INVÍAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "Galapa",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "barranquilla",
+      "codigo": "08685",
+      "departamento": "ATLÁNTICO",
+      "municipio": "SANTO TOMÁS",
+      "lat": 10.758735,
+      "lng": -74.757859,
+      "ida_km": 46.775800000000004,
+      "ida_min": 39.64833333333333,
+      "regreso_km": 46.1971,
+      "regreso_min": 37.44666666666667,
+      "pasos": [
+        {
+          "nombre": "GALAPA 02",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "Sabanagrande",
+          "distancia_m": 17,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "JUAN MINA",
+          "distancia_m": 21,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "JUAN MINA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "GALAPA 02",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "Sabanagrande",
+          "distancia_m": 5,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "barranquilla",
+      "codigo": "08758",
+      "departamento": "ATLÁNTICO",
+      "municipio": "SOLEDAD",
+      "lat": 10.909921,
+      "lng": -74.786054,
+      "ida_km": 15.478200000000001,
+      "ida_min": 20.683333333333334,
+      "regreso_km": 16.5846,
+      "regreso_min": 22.381666666666668,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "barranquilla",
+      "codigo": "08770",
+      "departamento": "ATLÁNTICO",
+      "municipio": "SUAN",
+      "lat": 10.335432,
+      "lng": -74.881687,
+      "ida_km": 100.3177,
+      "ida_min": 78.68,
+      "regreso_km": 99.8727,
+      "regreso_min": 76.61666666666666,
+      "pasos": [
+        {
+          "nombre": "GALAPA 02",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "Sabanagrande",
+          "distancia_m": 17,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "JUAN MINA",
+          "distancia_m": 21,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "JUAN MINA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "GALAPA 02",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "Sabanagrande",
+          "distancia_m": 5,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": [
+        {
+          "nombre": "Peaje Ponedera",
+          "motivo": "Caseta en la ruta sin tarifa asociada en el catálogo",
+          "osm_id": 3301121679,
+          "sentido": "ida"
+        },
+        {
+          "nombre": "Peaje Ponedera",
+          "motivo": "Caseta en la ruta sin tarifa asociada en el catálogo",
+          "osm_id": 3301121679,
+          "sentido": "regreso"
+        }
+      ]
+    },
+    {
+      "sede_id": "barranquilla",
+      "codigo": "08832",
+      "departamento": "ATLÁNTICO",
+      "municipio": "TUBARÁ",
+      "lat": 10.873586,
+      "lng": -74.978704,
+      "ida_km": 31.7637,
+      "ida_min": 32.615,
+      "regreso_km": 31.5128,
+      "regreso_min": 32.45166666666667,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "barranquilla",
+      "codigo": "08849",
+      "departamento": "ATLÁNTICO",
+      "municipio": "USIACURÍ",
+      "lat": 10.74298,
+      "lng": -74.976985,
+      "ida_km": 46.3504,
+      "ida_min": 41.51,
+      "regreso_km": 40.0449,
+      "regreso_min": 41.89,
+      "pasos": [
+        {
+          "nombre": "JUAN MINA",
+          "distancia_m": 21,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "Galapa",
+          "distancia_m": 27,
+          "fuente": "INVÍAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "Galapa",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "barranquilla",
+      "codigo": "13222",
+      "departamento": "BOLÍVAR",
+      "municipio": "CLEMENCIA",
+      "lat": 10.567452,
+      "lng": -75.328469,
+      "ida_km": 88.5619,
+      "ida_min": 77.16499999999999,
+      "regreso_km": 88.3317,
+      "regreso_min": 76.70666666666666,
+      "pasos": [
+        {
+          "nombre": "PUERTO COLOMBIA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "PAPIROS",
+          "distancia_m": 14,
+          "fuente": "https://mintransporte.gov.co/info/mintransporte/media/anexos/JxwDCB38.pdf",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "PUERTO COLOMBIA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "PAPIROS",
+          "distancia_m": 0,
+          "fuente": "https://mintransporte.gov.co/info/mintransporte/media/anexos/JxwDCB38.pdf",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "barranquilla",
+      "codigo": "13647",
+      "departamento": "BOLÍVAR",
+      "municipio": "SAN ESTANISLAO",
+      "lat": 10.398602,
+      "lng": -75.153101,
+      "ida_km": 101.47810000000001,
+      "ida_min": 107.53500000000001,
+      "regreso_km": 94.98830000000001,
+      "regreso_min": 107.41833333333334,
+      "pasos": [
+        {
+          "nombre": "JUAN MINA",
+          "distancia_m": 21,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "Galapa",
+          "distancia_m": 27,
+          "fuente": "INVÍAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "Galapa",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "barranquilla",
+      "codigo": "13673",
+      "departamento": "BOLÍVAR",
+      "municipio": "SANTA CATALINA",
+      "lat": 10.605294,
+      "lng": -75.287855,
+      "ida_km": 82.4282,
+      "ida_min": 73.21000000000001,
+      "regreso_km": 82.198,
+      "regreso_min": 72.86833333333334,
+      "pasos": [
+        {
+          "nombre": "PUERTO COLOMBIA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "PAPIROS",
+          "distancia_m": 14,
+          "fuente": "https://mintransporte.gov.co/info/mintransporte/media/anexos/JxwDCB38.pdf",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "PUERTO COLOMBIA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "PAPIROS",
+          "distancia_m": 0,
+          "fuente": "https://mintransporte.gov.co/info/mintransporte/media/anexos/JxwDCB38.pdf",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "barranquilla",
+      "codigo": "13760",
+      "departamento": "BOLÍVAR",
+      "municipio": "SOPLAVIENTO",
+      "lat": 10.38839,
+      "lng": -75.136404,
+      "ida_km": 102.42360000000001,
+      "ida_min": 108.79833333333333,
+      "regreso_km": 95.9338,
+      "regreso_min": 108.58166666666666,
+      "pasos": [
+        {
+          "nombre": "JUAN MINA",
+          "distancia_m": 21,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "Galapa",
+          "distancia_m": 27,
+          "fuente": "INVÍAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "Galapa",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "barranquilla",
+      "codigo": "47001",
+      "departamento": "MAGDALENA",
+      "municipio": "SANTA MARTA",
+      "lat": 11.204679,
+      "lng": -74.199829,
+      "ida_km": 102.01169999999999,
+      "ida_min": 83.91833333333334,
+      "regreso_km": 101.072,
+      "regreso_min": 84.01,
+      "pasos": [
+        {
+          "nombre": "ZONA FRANCA",
+          "distancia_m": 0,
+          "fuente": "https://arcgiswebadaptor.mintransporte.gov.co/server/rest/services/peajes_consulta/peajes_consulta/FeatureServer",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "TASAJERA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "LAUREANO GÓMEZ",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "ZONA FRANCA",
+          "distancia_m": 17,
+          "fuente": "https://arcgiswebadaptor.mintransporte.gov.co/server/rest/services/peajes_consulta/peajes_consulta/FeatureServer",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "barranquilla",
+      "codigo": "47161",
+      "departamento": "MAGDALENA",
+      "municipio": "CERRO DE SAN ANTONIO",
+      "lat": 10.325531,
+      "lng": -74.868474,
+      "ida_km": 99.19139999999999,
+      "ida_min": 134.15,
+      "regreso_km": 99.88980000000001,
+      "regreso_min": 135.27833333333334,
+      "pasos": [
+        {
+          "nombre": "ZONA FRANCA",
+          "distancia_m": 0,
+          "fuente": "https://arcgiswebadaptor.mintransporte.gov.co/server/rest/services/peajes_consulta/peajes_consulta/FeatureServer",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "ZONA FRANCA",
+          "distancia_m": 17,
+          "fuente": "https://arcgiswebadaptor.mintransporte.gov.co/server/rest/services/peajes_consulta/peajes_consulta/FeatureServer",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "barranquilla",
+      "codigo": "47189",
+      "departamento": "MAGDALENA",
+      "municipio": "CIÉNAGA",
+      "lat": 11.006654,
+      "lng": -74.241286,
+      "ida_km": 72.7705,
+      "ida_min": 60.60333333333333,
+      "regreso_km": 73.48039999999999,
+      "regreso_min": 61.76166666666666,
+      "pasos": [
+        {
+          "nombre": "ZONA FRANCA",
+          "distancia_m": 0,
+          "fuente": "https://arcgiswebadaptor.mintransporte.gov.co/server/rest/services/peajes_consulta/peajes_consulta/FeatureServer",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "TASAJERA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "LAUREANO GÓMEZ",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "ZONA FRANCA",
+          "distancia_m": 17,
+          "fuente": "https://arcgiswebadaptor.mintransporte.gov.co/server/rest/services/peajes_consulta/peajes_consulta/FeatureServer",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "barranquilla",
+      "codigo": "47258",
+      "departamento": "MAGDALENA",
+      "municipio": "EL PIÑÓN",
+      "lat": 10.402781,
+      "lng": -74.823094,
+      "ida_km": 89.0945,
+      "ida_min": 118.83,
+      "regreso_km": 89.79289999999999,
+      "regreso_min": 119.97166666666666,
+      "pasos": [
+        {
+          "nombre": "ZONA FRANCA",
+          "distancia_m": 0,
+          "fuente": "https://arcgiswebadaptor.mintransporte.gov.co/server/rest/services/peajes_consulta/peajes_consulta/FeatureServer",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "ZONA FRANCA",
+          "distancia_m": 17,
+          "fuente": "https://arcgiswebadaptor.mintransporte.gov.co/server/rest/services/peajes_consulta/peajes_consulta/FeatureServer",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "barranquilla",
+      "codigo": "47551",
+      "departamento": "MAGDALENA",
+      "municipio": "PIVIJAY",
+      "lat": 10.460707,
+      "lng": -74.613312,
+      "ida_km": 101.5282,
+      "ida_min": 129.195,
+      "regreso_km": 102.2266,
+      "regreso_min": 130.41833333333335,
+      "pasos": [
+        {
+          "nombre": "ZONA FRANCA",
+          "distancia_m": 0,
+          "fuente": "https://arcgiswebadaptor.mintransporte.gov.co/server/rest/services/peajes_consulta/peajes_consulta/FeatureServer",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "ZONA FRANCA",
+          "distancia_m": 17,
+          "fuente": "https://arcgiswebadaptor.mintransporte.gov.co/server/rest/services/peajes_consulta/peajes_consulta/FeatureServer",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "barranquilla",
+      "codigo": "47570",
+      "departamento": "MAGDALENA",
+      "municipio": "PUEBLOVIEJO",
+      "lat": 10.994766,
+      "lng": -74.28253,
+      "ida_km": 67.7646,
+      "ida_min": 56.748333333333335,
+      "regreso_km": 68.4647,
+      "regreso_min": 57.916666666666664,
+      "pasos": [
+        {
+          "nombre": "ZONA FRANCA",
+          "distancia_m": 0,
+          "fuente": "https://arcgiswebadaptor.mintransporte.gov.co/server/rest/services/peajes_consulta/peajes_consulta/FeatureServer",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "TASAJERA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "LAUREANO GÓMEZ",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "ZONA FRANCA",
+          "distancia_m": 17,
+          "fuente": "https://arcgiswebadaptor.mintransporte.gov.co/server/rest/services/peajes_consulta/peajes_consulta/FeatureServer",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "barranquilla",
+      "codigo": "47605",
+      "departamento": "MAGDALENA",
+      "municipio": "REMOLINO",
+      "lat": 10.701952,
+      "lng": -74.716172,
+      "ida_km": 46.0313,
+      "ida_min": 56.391666666666666,
+      "regreso_km": 46.729699999999994,
+      "regreso_min": 57.663333333333334,
+      "pasos": [
+        {
+          "nombre": "ZONA FRANCA",
+          "distancia_m": 0,
+          "fuente": "https://arcgiswebadaptor.mintransporte.gov.co/server/rest/services/peajes_consulta/peajes_consulta/FeatureServer",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "ZONA FRANCA",
+          "distancia_m": 17,
+          "fuente": "https://arcgiswebadaptor.mintransporte.gov.co/server/rest/services/peajes_consulta/peajes_consulta/FeatureServer",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "barranquilla",
+      "codigo": "47675",
+      "departamento": "MAGDALENA",
+      "municipio": "SALAMINA",
+      "lat": 10.491229,
+      "lng": -74.794189,
+      "ida_km": 75.194,
+      "ida_min": 100.44166666666666,
+      "regreso_km": 75.8924,
+      "regreso_min": 101.61,
+      "pasos": [
+        {
+          "nombre": "ZONA FRANCA",
+          "distancia_m": 0,
+          "fuente": "https://arcgiswebadaptor.mintransporte.gov.co/server/rest/services/peajes_consulta/peajes_consulta/FeatureServer",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "ZONA FRANCA",
+          "distancia_m": 17,
+          "fuente": "https://arcgiswebadaptor.mintransporte.gov.co/server/rest/services/peajes_consulta/peajes_consulta/FeatureServer",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "barranquilla",
+      "codigo": "47745",
+      "departamento": "MAGDALENA",
+      "municipio": "SITIONUEVO",
+      "lat": 10.775285,
+      "lng": -74.720021,
+      "ida_km": 36.5021,
+      "ida_min": 42.215,
+      "regreso_km": 37.224,
+      "regreso_min": 43.39666666666667,
+      "pasos": [
+        {
+          "nombre": "ZONA FRANCA",
+          "distancia_m": 0,
+          "fuente": "https://arcgiswebadaptor.mintransporte.gov.co/server/rest/services/peajes_consulta/peajes_consulta/FeatureServer",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "ZONA FRANCA",
+          "distancia_m": 17,
+          "fuente": "https://arcgiswebadaptor.mintransporte.gov.co/server/rest/services/peajes_consulta/peajes_consulta/FeatureServer",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "bucaramanga",
+      "codigo": "20710",
+      "departamento": "CESAR",
+      "municipio": "SAN ALBERTO",
+      "lat": 7.76111,
+      "lng": -73.393889,
+      "ida_km": 99.1078,
+      "ida_min": 104.84333333333333,
+      "regreso_km": 165.25060000000002,
+      "regreso_min": 120.56833333333334,
+      "pasos": [
+        {
+          "nombre": "Río Blanco",
+          "distancia_m": 4,
+          "fuente": "INVÍAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "LEBRIJA",
+          "distancia_m": 15,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": [
+        {
+          "nombre": "Peaje Rioblanco - El Playón",
+          "motivo": "Caseta en la ruta sin tarifa asociada en el catálogo",
+          "osm_id": 6892741034,
+          "sentido": "ida"
+        },
+        {
+          "nombre": "LA PAZ",
+          "motivo": "Sentido de cobro sin determinar",
+          "distancia_m": 27.07218526122142,
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "Peaje La Paz",
+          "motivo": "Caseta en la ruta sin tarifa asociada en el catálogo",
+          "osm_id": 9236560808,
+          "sentido": "regreso"
+        }
+      ]
+    },
+    {
+      "sede_id": "bucaramanga",
+      "codigo": "54128",
+      "departamento": "NORTE DE SANTANDER",
+      "municipio": "CÁCHIRA",
+      "lat": 7.741248,
+      "lng": -73.048983,
+      "ida_km": 106.05489999999999,
+      "ida_min": 138.88333333333333,
+      "regreso_km": 107.5094,
+      "regreso_min": 190.765,
+      "pasos": [
+        {
+          "nombre": "RÍONEGRO",
+          "distancia_m": 16,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": [
+        {
+          "nombre": "Peaje Rioblanco - El Playón",
+          "motivo": "Caseta en la ruta sin tarifa asociada en el catálogo",
+          "osm_id": 6892741034,
+          "sentido": "ida"
+        },
+        {
+          "nombre": "Peaje Rioblanco - El Playón",
+          "motivo": "Caseta en la ruta sin tarifa asociada en el catálogo",
+          "osm_id": 6892741034,
+          "sentido": "regreso"
+        }
+      ]
+    },
+    {
+      "sede_id": "bucaramanga",
+      "codigo": "54385",
+      "departamento": "NORTE DE SANTANDER",
+      "municipio": "LA ESPERANZA",
+      "lat": 7.639839,
+      "lng": -73.328126,
+      "ida_km": 81.7455,
+      "ida_min": 92.03999999999999,
+      "regreso_km": 182.672,
+      "regreso_min": 133.63333333333333,
+      "pasos": [
+        {
+          "nombre": "Río Blanco",
+          "distancia_m": 4,
+          "fuente": "INVÍAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "LEBRIJA",
+          "distancia_m": 15,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": [
+        {
+          "nombre": "Peaje Rioblanco - El Playón",
+          "motivo": "Caseta en la ruta sin tarifa asociada en el catálogo",
+          "osm_id": 6892741034,
+          "sentido": "ida"
+        },
+        {
+          "nombre": "LA PAZ",
+          "motivo": "Sentido de cobro sin determinar",
+          "distancia_m": 27.07218526122142,
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "Peaje La Paz",
+          "motivo": "Caseta en la ruta sin tarifa asociada en el catálogo",
+          "osm_id": 9236560808,
+          "sentido": "regreso"
+        }
+      ]
+    },
+    {
+      "sede_id": "bucaramanga",
+      "codigo": "54480",
+      "departamento": "NORTE DE SANTANDER",
+      "municipio": "MUTISCUA",
+      "lat": 7.300469,
+      "lng": -72.747169,
+      "ida_km": 101.44669999999999,
+      "ida_min": 84.21333333333334,
+      "regreso_km": 100.2164,
+      "regreso_min": 78.11666666666666,
+      "pasos": [
+        {
+          "nombre": "El Picacho",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "El Picacho",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "bucaramanga",
+      "codigo": "54743",
+      "departamento": "NORTE DE SANTANDER",
+      "municipio": "SILOS",
+      "lat": 7.204736,
+      "lng": -72.757128,
+      "ida_km": 98.0078,
+      "ida_min": 87.475,
+      "regreso_km": 96.7913,
+      "regreso_min": 81.475,
+      "pasos": [
+        {
+          "nombre": "El Picacho",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "El Picacho",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "bucaramanga",
+      "codigo": "68001",
+      "departamento": "SANTANDER",
+      "municipio": "BUCARAMANGA",
+      "lat": 7.11647,
+      "lng": -73.132562,
+      "ida_km": 3.2583,
+      "ida_min": 3.4433333333333334,
+      "regreso_km": 3.0704000000000002,
+      "regreso_min": 4.198333333333333,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "bucaramanga",
+      "codigo": "68051",
+      "departamento": "SANTANDER",
+      "municipio": "ARATOCA",
+      "lat": 6.694418,
+      "lng": -73.01786,
+      "ida_km": 70.9344,
+      "ida_min": 53.85166666666667,
+      "regreso_km": 69.8557,
+      "regreso_min": 50.21333333333334,
+      "pasos": [
+        {
+          "nombre": "Los Curos",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "Los Curos",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "bucaramanga",
+      "codigo": "68092",
+      "departamento": "SANTANDER",
+      "municipio": "BETULIA",
+      "lat": 6.899525,
+      "lng": -73.283669,
+      "ida_km": 60.1588,
+      "ida_min": 84.03,
+      "regreso_km": 59.683,
+      "regreso_min": 82.295,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "bucaramanga",
+      "codigo": "68132",
+      "departamento": "SANTANDER",
+      "municipio": "CALIFORNIA",
+      "lat": 7.347989,
+      "lng": -72.946491,
+      "ida_km": 53.7479,
+      "ida_min": 79.59833333333333,
+      "regreso_km": 54.4744,
+      "regreso_min": 80.69,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "bucaramanga",
+      "codigo": "68160",
+      "departamento": "SANTANDER",
+      "municipio": "CEPITÁ",
+      "lat": 6.753518,
+      "lng": -72.973536,
+      "ida_km": 66.4587,
+      "ida_min": 58.2,
+      "regreso_km": 65.39880000000001,
+      "regreso_min": 56.555,
+      "pasos": [
+        {
+          "nombre": "Los Curos",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "Los Curos",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "bucaramanga",
+      "codigo": "68169",
+      "departamento": "SANTANDER",
+      "municipio": "CHARTA",
+      "lat": 7.28082,
+      "lng": -72.968798,
+      "ida_km": 40.5005,
+      "ida_min": 66.80666666666667,
+      "regreso_km": 41.227,
+      "regreso_min": 68.02333333333334,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "bucaramanga",
+      "codigo": "68229",
+      "departamento": "SANTANDER",
+      "municipio": "CURITÍ",
+      "lat": 6.605099,
+      "lng": -73.069383,
+      "ida_km": 89.1413,
+      "ida_min": 69.06,
+      "regreso_km": 88.1245,
+      "regreso_min": 65.53166666666667,
+      "pasos": [
+        {
+          "nombre": "Curití",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "Los Curos",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "Curití",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "Los Curos",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "bucaramanga",
+      "codigo": "68255",
+      "departamento": "SANTANDER",
+      "municipio": "EL PLAYÓN",
+      "lat": 7.470715,
+      "lng": -73.20287,
+      "ida_km": 48.1654,
+      "ida_min": 68.40833333333333,
+      "regreso_km": 49.619800000000005,
+      "regreso_min": 120.30666666666666,
+      "pasos": [
+        {
+          "nombre": "RÍONEGRO",
+          "distancia_m": 16,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "bucaramanga",
+      "codigo": "68276",
+      "departamento": "SANTANDER",
+      "municipio": "FLORIDABLANCA",
+      "lat": 7.072329,
+      "lng": -73.099104,
+      "ida_km": 7.7645,
+      "ida_min": 7.928333333333333,
+      "regreso_km": 6.7125,
+      "regreso_min": 6.498333333333333,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "bucaramanga",
+      "codigo": "68307",
+      "departamento": "SANTANDER",
+      "municipio": "GIRÓN",
+      "lat": 7.070432,
+      "lng": -73.166832,
+      "ida_km": 12.985899999999999,
+      "ida_min": 13.716666666666667,
+      "regreso_km": 11.4816,
+      "regreso_min": 11.441666666666666,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "bucaramanga",
+      "codigo": "68318",
+      "departamento": "SANTANDER",
+      "municipio": "GUACA",
+      "lat": 6.876563,
+      "lng": -72.856322,
+      "ida_km": 89.5378,
+      "ida_min": 102.89833333333333,
+      "regreso_km": 88.478,
+      "regreso_min": 101.25500000000001,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "bucaramanga",
+      "codigo": "68370",
+      "departamento": "SANTANDER",
+      "municipio": "JORDÁN",
+      "lat": 6.732727,
+      "lng": -73.096053,
+      "ida_km": 91.244,
+      "ida_min": 97.88833333333334,
+      "regreso_km": 90.1653,
+      "regreso_min": 94.25,
+      "pasos": [
+        {
+          "nombre": "Los Curos",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "Los Curos",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "bucaramanga",
+      "codigo": "68406",
+      "departamento": "SANTANDER",
+      "municipio": "LEBRIJA",
+      "lat": 7.113351,
+      "lng": -73.219524,
+      "ida_km": 22.4767,
+      "ida_min": 19.509999999999998,
+      "regreso_km": 20.6109,
+      "regreso_min": 17.511666666666667,
+      "pasos": [
+        {
+          "nombre": "LEBRIJA",
+          "distancia_m": 15,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "bucaramanga",
+      "codigo": "68418",
+      "departamento": "SANTANDER",
+      "municipio": "LOS SANTOS",
+      "lat": 6.755203,
+      "lng": -73.102739,
+      "ida_km": 58.5135,
+      "ida_min": 68.35666666666665,
+      "regreso_km": 57.4613,
+      "regreso_min": 66.695,
+      "pasos": [],
+      "pendientes": [
+        {
+          "nombre": "Peaje Mesa de los Santos",
+          "motivo": "Caseta en la ruta sin tarifa asociada en el catálogo",
+          "osm_id": 277768208,
+          "sentido": "ida"
+        },
+        {
+          "nombre": "Peaje Mesa de los Santos",
+          "motivo": "Caseta en la ruta sin tarifa asociada en el catálogo",
+          "osm_id": 277768208,
+          "sentido": "regreso"
+        }
+      ]
+    },
+    {
+      "sede_id": "bucaramanga",
+      "codigo": "68444",
+      "departamento": "SANTANDER",
+      "municipio": "MATANZA",
+      "lat": 7.323175,
+      "lng": -73.015566,
+      "ida_km": 38.4703,
+      "ida_min": 56.71,
+      "regreso_km": 39.1968,
+      "regreso_min": 57.785,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "bucaramanga",
+      "codigo": "68547",
+      "departamento": "SANTANDER",
+      "municipio": "PIEDECUESTA",
+      "lat": 6.997245,
+      "lng": -73.054795,
+      "ida_km": 17.7148,
+      "ida_min": 14.826666666666666,
+      "regreso_km": 17.9972,
+      "regreso_min": 14.223333333333333,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "bucaramanga",
+      "codigo": "68549",
+      "departamento": "SANTANDER",
+      "municipio": "PINCHOTE",
+      "lat": 6.531552,
+      "lng": -73.174209,
+      "ida_km": 104.18539999999999,
+      "ida_min": 80.685,
+      "regreso_km": 103.08210000000001,
+      "regreso_min": 76.98333333333333,
+      "pasos": [
+        {
+          "nombre": "Curití",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "Los Curos",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "Curití",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "Los Curos",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "bucaramanga",
+      "codigo": "68615",
+      "departamento": "SANTANDER",
+      "municipio": "RIONEGRO",
+      "lat": 7.265014,
+      "lng": -73.150177,
+      "ida_km": 23.3197,
+      "ida_min": 27.225,
+      "regreso_km": 24.7703,
+      "regreso_min": 79.10333333333332,
+      "pasos": [
+        {
+          "nombre": "RÍONEGRO",
+          "distancia_m": 16,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "bucaramanga",
+      "codigo": "68669",
+      "departamento": "SANTANDER",
+      "municipio": "SAN ANDRÉS",
+      "lat": 6.811511,
+      "lng": -72.848864,
+      "ida_km": 101.84089999999999,
+      "ida_min": 114.615,
+      "regreso_km": 100.781,
+      "regreso_min": 112.99666666666667,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "bucaramanga",
+      "codigo": "68679",
+      "departamento": "SANTANDER",
+      "municipio": "SAN GIL",
+      "lat": 6.551952,
+      "lng": -73.134776,
+      "ida_km": 98.3108,
+      "ida_min": 73.51666666666667,
+      "regreso_km": 97.2321,
+      "regreso_min": 69.825,
+      "pasos": [
+        {
+          "nombre": "Curití",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "Los Curos",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "Curití",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "Los Curos",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "bucaramanga",
+      "codigo": "68689",
+      "departamento": "SANTANDER",
+      "municipio": "SAN VICENTE DE CHUCURÍ",
+      "lat": 6.880383,
+      "lng": -73.411024,
+      "ida_km": 85.0481,
+      "ida_min": 82.37333333333332,
+      "regreso_km": 83.43889999999999,
+      "regreso_min": 79.91499999999999,
+      "pasos": [
+        {
+          "nombre": "LEBRIJA",
+          "distancia_m": 15,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "bucaramanga",
+      "codigo": "68705",
+      "departamento": "SANTANDER",
+      "municipio": "SANTA BÁRBARA",
+      "lat": 6.990996,
+      "lng": -72.907445,
+      "ida_km": 60.792199999999994,
+      "ida_min": 65.29166666666667,
+      "regreso_km": 59.7323,
+      "regreso_min": 63.62,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "bucaramanga",
+      "codigo": "68780",
+      "departamento": "SANTANDER",
+      "municipio": "SURATÁ",
+      "lat": 7.36658,
+      "lng": -72.984232,
+      "ida_km": 45.479699999999994,
+      "ida_min": 66.95333333333333,
+      "regreso_km": 46.206199999999995,
+      "regreso_min": 68.08333333333333,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "bucaramanga",
+      "codigo": "68820",
+      "departamento": "SANTANDER",
+      "municipio": "TONA",
+      "lat": 7.201417,
+      "lng": -72.967023,
+      "ida_km": 37.2279,
+      "ida_min": 51.825,
+      "regreso_km": 82.60560000000001,
+      "regreso_min": 94.52,
+      "pasos": [
+        {
+          "nombre": "El Picacho",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "bucaramanga",
+      "codigo": "68867",
+      "departamento": "SANTANDER",
+      "municipio": "VETAS",
+      "lat": 7.30981,
+      "lng": -72.871041,
+      "ida_km": 88.18339999999999,
+      "ida_min": 93.205,
+      "regreso_km": 86.96719999999999,
+      "regreso_min": 86.87166666666667,
+      "pasos": [
+        {
+          "nombre": "El Picacho",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "El Picacho",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "bucaramanga",
+      "codigo": "68872",
+      "departamento": "SANTANDER",
+      "municipio": "VILLANUEVA",
+      "lat": 6.670078,
+      "lng": -73.174307,
+      "ida_km": 95.3421,
+      "ida_min": 103.02833333333334,
+      "regreso_km": 94.26339999999999,
+      "regreso_min": 99.355,
+      "pasos": [
+        {
+          "nombre": "Los Curos",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "Los Curos",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "bucaramanga",
+      "codigo": "68895",
+      "departamento": "SANTANDER",
+      "municipio": "ZAPATOCA",
+      "lat": 6.814387,
+      "lng": -73.268034,
+      "ida_km": 68.2256,
+      "ida_min": 72.475,
+      "regreso_km": 67.8798,
+      "regreso_min": 70.83666666666666,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "cali",
+      "codigo": "19110",
+      "departamento": "CAUCA",
+      "municipio": "BUENOS AIRES",
+      "lat": 3.015382,
+      "lng": -76.642238,
+      "ida_km": 59.5905,
+      "ida_min": 70.65166666666667,
+      "regreso_km": 60.3684,
+      "regreso_min": 72.80833333333334,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "cali",
+      "codigo": "19137",
+      "departamento": "CAUCA",
+      "municipio": "CALDONO",
+      "lat": 2.798059,
+      "lng": -76.484319,
+      "ida_km": 91.5143,
+      "ida_min": 111.67333333333333,
+      "regreso_km": 92.3714,
+      "regreso_min": 110.22166666666666,
+      "pasos": [
+        {
+          "nombre": "VILLARICA",
+          "distancia_m": 42,
+          "fuente": "INVÍAS / INVIAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "VILLARICA",
+          "distancia_m": 29,
+          "fuente": "INVÍAS / INVIAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "cali",
+      "codigo": "19142",
+      "departamento": "CAUCA",
+      "municipio": "CALOTO",
+      "lat": 3.034531,
+      "lng": -76.408941,
+      "ida_km": 53.232699999999994,
+      "ida_min": 68.49166666666666,
+      "regreso_km": 52.517199999999995,
+      "regreso_min": 60.52333333333333,
+      "pasos": [
+        {
+          "nombre": "VILLARICA",
+          "distancia_m": 30,
+          "fuente": "INVÍAS / INVIAS",
+          "sentido": "ida"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "cali",
+      "codigo": "19212",
+      "departamento": "CAUCA",
+      "municipio": "CORINTO",
+      "lat": 3.173854,
+      "lng": -76.261866,
+      "ida_km": 61.4152,
+      "ida_min": 72.63166666666666,
+      "regreso_km": 62.5092,
+      "regreso_min": 75.48833333333333,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "cali",
+      "codigo": "19300",
+      "departamento": "CAUCA",
+      "municipio": "GUACHENÉ",
+      "lat": 3.134153,
+      "lng": -76.392189,
+      "ida_km": 42.032599999999995,
+      "ida_min": 57.68333333333333,
+      "regreso_km": 46.9555,
+      "regreso_min": 61.184999999999995,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "cali",
+      "codigo": "19455",
+      "departamento": "CAUCA",
+      "municipio": "MIRANDA",
+      "lat": 3.254651,
+      "lng": -76.228722,
+      "ida_km": 51.029300000000006,
+      "ida_min": 62.37833333333333,
+      "regreso_km": 51.7806,
+      "regreso_min": 62.63166666666667,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "cali",
+      "codigo": "19473",
+      "departamento": "CAUCA",
+      "municipio": "MORALES",
+      "lat": 2.754684,
+      "lng": -76.629106,
+      "ida_km": 98.639,
+      "ida_min": 116.025,
+      "regreso_km": 99.417,
+      "regreso_min": 117.16000000000001,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "cali",
+      "codigo": "19513",
+      "departamento": "CAUCA",
+      "municipio": "PADILLA",
+      "lat": 3.220984,
+      "lng": -76.313265,
+      "ida_km": 43.2399,
+      "ida_min": 59.14833333333333,
+      "regreso_km": 43.9276,
+      "regreso_min": 65.25166666666667,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "cali",
+      "codigo": "19548",
+      "departamento": "CAUCA",
+      "municipio": "PIENDAMÓ - TUNÍA",
+      "lat": 2.64228,
+      "lng": -76.528615,
+      "ida_km": 103.98519999999999,
+      "ida_min": 117.42833333333333,
+      "regreso_km": 104.84230000000001,
+      "regreso_min": 116.34333333333333,
+      "pasos": [
+        {
+          "nombre": "VILLARICA",
+          "distancia_m": 42,
+          "fuente": "INVÍAS / INVIAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "VILLARICA",
+          "distancia_m": 29,
+          "fuente": "INVÍAS / INVIAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": [
+        {
+          "nombre": "Peaje Tunia",
+          "motivo": "Caseta en la ruta sin tarifa asociada en el catálogo",
+          "osm_id": 4715083383,
+          "sentido": "ida"
+        },
+        {
+          "nombre": "Peaje Tunia",
+          "motivo": "Caseta en la ruta sin tarifa asociada en el catálogo",
+          "osm_id": 4715083383,
+          "sentido": "regreso"
+        }
+      ]
+    },
+    {
+      "sede_id": "cali",
+      "codigo": "19573",
+      "departamento": "CAUCA",
+      "municipio": "PUERTO TEJADA",
+      "lat": 3.233254,
+      "lng": -76.417673,
+      "ida_km": 29.4254,
+      "ida_min": 39.086666666666666,
+      "regreso_km": 30.1053,
+      "regreso_min": 42.71666666666667,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "cali",
+      "codigo": "19698",
+      "departamento": "CAUCA",
+      "municipio": "SANTANDER DE QUILICHAO",
+      "lat": 3.015008,
+      "lng": -76.485141,
+      "ida_km": 52.377,
+      "ida_min": 62.825,
+      "regreso_km": 53.063,
+      "regreso_min": 57.03666666666666,
+      "pasos": [
+        {
+          "nombre": "VILLARICA",
+          "distancia_m": 42,
+          "fuente": "INVÍAS / INVIAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "VILLARICA",
+          "distancia_m": 29,
+          "fuente": "INVÍAS / INVIAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "cali",
+      "codigo": "19780",
+      "departamento": "CAUCA",
+      "municipio": "SUÁREZ",
+      "lat": 2.959785,
+      "lng": -76.69357,
+      "ida_km": 65.6792,
+      "ida_min": 79.97833333333332,
+      "regreso_km": 66.4572,
+      "regreso_min": 81.18333333333334,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "cali",
+      "codigo": "19821",
+      "departamento": "CAUCA",
+      "municipio": "TORIBÍO",
+      "lat": 2.953017,
+      "lng": -76.270284,
+      "ida_km": 86.0733,
+      "ida_min": 108.45833333333333,
+      "regreso_km": 85.3822,
+      "regreso_min": 95.79166666666667,
+      "pasos": [
+        {
+          "nombre": "VILLARICA",
+          "distancia_m": 30,
+          "fuente": "INVÍAS / INVIAS",
+          "sentido": "ida"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "cali",
+      "codigo": "19845",
+      "departamento": "CAUCA",
+      "municipio": "VILLA RICA",
+      "lat": 3.17762,
+      "lng": -76.458025,
+      "ida_km": 36.3656,
+      "ida_min": 45.718333333333334,
+      "regreso_km": 36.0815,
+      "regreso_min": 41.14333333333333,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "cali",
+      "codigo": "76001",
+      "departamento": "VALLE DEL CAUCA",
+      "municipio": "SANTIAGO DE CALI",
+      "lat": 3.413686,
+      "lng": -76.52133,
+      "ida_km": 5.0499,
+      "ida_min": 12.656666666666666,
+      "regreso_km": 5.0137,
+      "regreso_min": 11.2,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "cali",
+      "codigo": "76111",
+      "departamento": "VALLE DEL CAUCA",
+      "municipio": "GUADALAJARA DE BUGA",
+      "lat": 3.900736,
+      "lng": -76.298979,
+      "ida_km": 73.8009,
+      "ida_min": 72.42,
+      "regreso_km": 69.6602,
+      "regreso_min": 80.60833333333333,
+      "pasos": [
+        {
+          "nombre": "CERRITO",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "ESTAMBUL",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / INVIAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "CERRITO",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "ROZO",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / INVIAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "cali",
+      "codigo": "76126",
+      "departamento": "VALLE DEL CAUCA",
+      "municipio": "CALIMA",
+      "lat": 3.933664,
+      "lng": -76.484132,
+      "ida_km": 90.4397,
+      "ida_min": 97.91333333333334,
+      "regreso_km": 96.8343,
+      "regreso_min": 106.31833333333334,
+      "pasos": [
+        {
+          "nombre": "MEDIACANOA",
+          "distancia_m": 12,
+          "fuente": "INVÍAS / INVIAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "MEDIACANOA",
+          "distancia_m": 6,
+          "fuente": "INVÍAS / INVIAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "cali",
+      "codigo": "76130",
+      "departamento": "VALLE DEL CAUCA",
+      "municipio": "CANDELARIA",
+      "lat": 3.408354,
+      "lng": -76.346519,
+      "ida_km": 29.3666,
+      "ida_min": 42.391666666666666,
+      "regreso_km": 30.1844,
+      "regreso_min": 41.66,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "cali",
+      "codigo": "76233",
+      "departamento": "VALLE DEL CAUCA",
+      "municipio": "DAGUA",
+      "lat": 3.657318,
+      "lng": -76.68886,
+      "ida_km": 48.8976,
+      "ida_min": 56.62833333333333,
+      "regreso_km": 47.0847,
+      "regreso_min": 57.483333333333334,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "cali",
+      "codigo": "76248",
+      "departamento": "VALLE DEL CAUCA",
+      "municipio": "EL CERRITO",
+      "lat": 3.684229,
+      "lng": -76.311972,
+      "ida_km": 49.549099999999996,
+      "ida_min": 48.38,
+      "regreso_km": 45.995,
+      "regreso_min": 54.8,
+      "pasos": [
+        {
+          "nombre": "ESTAMBUL",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / INVIAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "ROZO",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / INVIAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "cali",
+      "codigo": "76275",
+      "departamento": "VALLE DEL CAUCA",
+      "municipio": "FLORIDA",
+      "lat": 3.324118,
+      "lng": -76.234199,
+      "ida_km": 43.4849,
+      "ida_min": 56.651666666666664,
+      "regreso_km": 43.9447,
+      "regreso_min": 54.60333333333333,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "cali",
+      "codigo": "76306",
+      "departamento": "VALLE DEL CAUCA",
+      "municipio": "GINEBRA",
+      "lat": 3.724181,
+      "lng": -76.268068,
+      "ida_km": 55.1862,
+      "ida_min": 56.10666666666667,
+      "regreso_km": 54.7879,
+      "regreso_min": 63.901666666666664,
+      "pasos": [
+        {
+          "nombre": "ESTAMBUL",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / INVIAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "ROZO",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / INVIAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "cali",
+      "codigo": "76318",
+      "departamento": "VALLE DEL CAUCA",
+      "municipio": "GUACARÍ",
+      "lat": 3.761815,
+      "lng": -76.330911,
+      "ida_km": 58.2424,
+      "ida_min": 55.138333333333335,
+      "regreso_km": 52.406099999999995,
+      "regreso_min": 61.25833333333333,
+      "pasos": [
+        {
+          "nombre": "CERRITO",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "ESTAMBUL",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / INVIAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "CERRITO",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "ROZO",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / INVIAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "cali",
+      "codigo": "76364",
+      "departamento": "VALLE DEL CAUCA",
+      "municipio": "JAMUNDÍ",
+      "lat": 3.258751,
+      "lng": -76.538472,
+      "ida_km": 22.8377,
+      "ida_min": 29.971666666666668,
+      "regreso_km": 23.6116,
+      "regreso_min": 30.825,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "cali",
+      "codigo": "76377",
+      "departamento": "VALLE DEL CAUCA",
+      "municipio": "LA CUMBRE",
+      "lat": 3.649268,
+      "lng": -76.56805,
+      "ida_km": 46.4961,
+      "ida_min": 49.70333333333333,
+      "regreso_km": 45.0477,
+      "regreso_min": 50.29333333333333,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "cali",
+      "codigo": "76520",
+      "departamento": "VALLE DEL CAUCA",
+      "municipio": "PALMIRA",
+      "lat": 3.531544,
+      "lng": -76.298846,
+      "ida_km": 32.3435,
+      "ida_min": 36.87833333333333,
+      "regreso_km": 33.7654,
+      "regreso_min": 40.71666666666667,
+      "pasos": [
+        {
+          "nombre": "ESTAMBUL",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / INVIAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "CIAT",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / INVIAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "cali",
+      "codigo": "76563",
+      "departamento": "VALLE DEL CAUCA",
+      "municipio": "PRADERA",
+      "lat": 3.419793,
+      "lng": -76.241799,
+      "ida_km": 50.0294,
+      "ida_min": 56.36833333333333,
+      "regreso_km": 50.1346,
+      "regreso_min": 55.669999999999995,
+      "pasos": [
+        {
+          "nombre": "ESTAMBUL",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / INVIAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "CIAT",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / INVIAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "cali",
+      "codigo": "76606",
+      "departamento": "VALLE DEL CAUCA",
+      "municipio": "RESTREPO",
+      "lat": 3.821351,
+      "lng": -76.523329,
+      "ida_km": 73.9798,
+      "ida_min": 79.95166666666667,
+      "regreso_km": 72.0144,
+      "regreso_min": 80.06833333333334,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "cali",
+      "codigo": "76616",
+      "departamento": "VALLE DEL CAUCA",
+      "municipio": "RIOFRÍO",
+      "lat": 4.156908,
+      "lng": -76.288313,
+      "ida_km": 100.2063,
+      "ida_min": 105.52333333333333,
+      "regreso_km": 98.9735,
+      "regreso_min": 108.75166666666668,
+      "pasos": [
+        {
+          "nombre": "Río Frío",
+          "distancia_m": 4,
+          "fuente": "INVÍAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "MEDIACANOA",
+          "distancia_m": 12,
+          "fuente": "INVÍAS / INVIAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "Río Frío",
+          "distancia_m": 2,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "MEDIACANOA",
+          "distancia_m": 6,
+          "fuente": "INVÍAS / INVIAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "cali",
+      "codigo": "76670",
+      "departamento": "VALLE DEL CAUCA",
+      "municipio": "SAN PEDRO",
+      "lat": 3.995073,
+      "lng": -76.228692,
+      "ida_km": 88.8652,
+      "ida_min": 82.08999999999999,
+      "regreso_km": 83.7847,
+      "regreso_min": 88.95333333333333,
+      "pasos": [
+        {
+          "nombre": "CERRITO",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "ESTAMBUL",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / INVIAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "BETANIA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "BETANIA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "CERRITO",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "ROZO",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / INVIAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "cali",
+      "codigo": "76828",
+      "departamento": "VALLE DEL CAUCA",
+      "municipio": "TRUJILLO",
+      "lat": 4.212037,
+      "lng": -76.318818,
+      "ida_km": 109.7735,
+      "ida_min": 116.08666666666666,
+      "regreso_km": 108.5413,
+      "regreso_min": 119.24,
+      "pasos": [
+        {
+          "nombre": "Río Frío",
+          "distancia_m": 4,
+          "fuente": "INVÍAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "MEDIACANOA",
+          "distancia_m": 12,
+          "fuente": "INVÍAS / INVIAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "Río Frío",
+          "distancia_m": 2,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "MEDIACANOA",
+          "distancia_m": 6,
+          "fuente": "INVÍAS / INVIAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "cali",
+      "codigo": "76834",
+      "departamento": "VALLE DEL CAUCA",
+      "municipio": "TULUÁ",
+      "lat": 4.085399,
+      "lng": -76.197731,
+      "ida_km": 100.2239,
+      "ida_min": 92.80333333333333,
+      "regreso_km": 94.9097,
+      "regreso_min": 98.47,
+      "pasos": [
+        {
+          "nombre": "CERRITO",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "ESTAMBUL",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / INVIAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "BETANIA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "BETANIA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "CERRITO",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "ROZO",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / INVIAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "cali",
+      "codigo": "76869",
+      "departamento": "VALLE DEL CAUCA",
+      "municipio": "VIJES",
+      "lat": 3.698686,
+      "lng": -76.441804,
+      "ida_km": 38.1394,
+      "ida_min": 48.195,
+      "regreso_km": 35.7444,
+      "regreso_min": 49.89833333333333,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "cali",
+      "codigo": "76890",
+      "departamento": "VALLE DEL CAUCA",
+      "municipio": "YOTOCO",
+      "lat": 3.861241,
+      "lng": -76.382698,
+      "ida_km": 59.1909,
+      "ida_min": 68.20666666666666,
+      "regreso_km": 57.5636,
+      "regreso_min": 70.99166666666666,
+      "pasos": [
+        {
+          "nombre": "MEDIACANOA",
+          "distancia_m": 12,
+          "fuente": "INVÍAS / INVIAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "MEDIACANOA",
+          "distancia_m": 6,
+          "fuente": "INVÍAS / INVIAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "cali",
+      "codigo": "76892",
+      "departamento": "VALLE DEL CAUCA",
+      "municipio": "YUMBO",
+      "lat": 3.540097,
+      "lng": -76.499893,
+      "ida_km": 18.425900000000002,
+      "ida_min": 26.311666666666667,
+      "regreso_km": 14.9121,
+      "regreso_min": 24.561666666666667,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05001",
+      "departamento": "ANTIOQUIA",
+      "municipio": "MEDELLÍN",
+      "lat": 6.246631,
+      "lng": -75.581775,
+      "ida_km": 7.3658,
+      "ida_min": 10.228333333333333,
+      "regreso_km": 6.2879,
+      "regreso_min": 7.678333333333333,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05002",
+      "departamento": "ANTIOQUIA",
+      "municipio": "ABEJORRAL",
+      "lat": 5.789315,
+      "lng": -75.428739,
+      "ida_km": 78.753,
+      "ida_min": 98.40833333333333,
+      "regreso_km": 79.3899,
+      "regreso_min": 99.12166666666667,
+      "pasos": [
+        {
+          "nombre": "Las Palmas",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05021",
+      "departamento": "ANTIOQUIA",
+      "municipio": "ALEJANDRÍA",
+      "lat": 6.376061,
+      "lng": -75.141346,
+      "ida_km": 85.6028,
+      "ida_min": 106.43833333333333,
+      "regreso_km": 84.2773,
+      "regreso_min": 93.32166666666667,
+      "pasos": [
+        {
+          "nombre": "TRAPICHE",
+          "distancia_m": 15,
+          "fuente": "INVÍAS / DEPARTAMENTO",
+          "sentido": "ida"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05030",
+      "departamento": "ANTIOQUIA",
+      "municipio": "AMAGÁ",
+      "lat": 6.038708,
+      "lng": -75.702188,
+      "ida_km": 33.3703,
+      "ida_min": 34.165,
+      "regreso_km": 34.415800000000004,
+      "regreso_min": 37.86666666666667,
+      "pasos": [
+        {
+          "nombre": "AMAGÁ",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "AMAGÁ",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05034",
+      "departamento": "ANTIOQUIA",
+      "municipio": "ANDES",
+      "lat": 5.657194,
+      "lng": -75.878828,
+      "ida_km": 105.6112,
+      "ida_min": 103.05333333333333,
+      "regreso_km": 110.29889999999999,
+      "regreso_min": 110.985,
+      "pasos": [
+        {
+          "nombre": "AMAGÁ",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "AMAGÁ",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05036",
+      "departamento": "ANTIOQUIA",
+      "municipio": "ANGELÓPOLIS",
+      "lat": 6.109719,
+      "lng": -75.711389,
+      "ida_km": 32.1383,
+      "ida_min": 44.13333333333333,
+      "regreso_km": 33.2519,
+      "regreso_min": 46.085,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05042",
+      "departamento": "ANTIOQUIA",
+      "municipio": "SANTA FÉ DE ANTIOQUIA",
+      "lat": 6.556484,
+      "lng": -75.826648,
+      "ida_km": 64.0339,
+      "ida_min": 57.968333333333334,
+      "regreso_km": 62.808,
+      "regreso_min": 51.391666666666666,
+      "pasos": [
+        {
+          "nombre": "ABURRA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "ABURRA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05044",
+      "departamento": "ANTIOQUIA",
+      "municipio": "ANZÁ",
+      "lat": 6.302641,
+      "lng": -75.854442,
+      "ida_km": 87.32939999999999,
+      "ida_min": 80.01166666666667,
+      "regreso_km": 85.2889,
+      "regreso_min": 75.85333333333332,
+      "pasos": [
+        {
+          "nombre": "ABURRA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "ABURRA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05059",
+      "departamento": "ANTIOQUIA",
+      "municipio": "ARMENIA",
+      "lat": 6.155667,
+      "lng": -75.786647,
+      "ida_km": 44.6087,
+      "ida_min": 76.54333333333334,
+      "regreso_km": 45.4126,
+      "regreso_min": 78.50500000000001,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05079",
+      "departamento": "ANTIOQUIA",
+      "municipio": "BARBOSA",
+      "lat": 6.439195,
+      "lng": -75.331627,
+      "ida_km": 48.4221,
+      "ida_min": 54.88166666666667,
+      "regreso_km": 47.0786,
+      "regreso_min": 41.88,
+      "pasos": [
+        {
+          "nombre": "TRAPICHE",
+          "distancia_m": 15,
+          "fuente": "INVÍAS / DEPARTAMENTO",
+          "sentido": "ida"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05086",
+      "departamento": "ANTIOQUIA",
+      "municipio": "BELMIRA",
+      "lat": 6.606319,
+      "lng": -75.667779,
+      "ida_km": 64.88,
+      "ida_min": 84.08500000000001,
+      "regreso_km": 64.0973,
+      "regreso_min": 82.615,
+      "pasos": [
+        {
+          "nombre": "PAJARITO",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "PAJARITO",
+          "distancia_m": 4,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05088",
+      "departamento": "ANTIOQUIA",
+      "municipio": "BELLO",
+      "lat": 6.333587,
+      "lng": -75.555245,
+      "ida_km": 17.8191,
+      "ida_min": 22.313333333333333,
+      "regreso_km": 17.0012,
+      "regreso_min": 18.60666666666667,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05091",
+      "departamento": "ANTIOQUIA",
+      "municipio": "BETANIA",
+      "lat": 5.74615,
+      "lng": -75.97679,
+      "ida_km": 103.1115,
+      "ida_min": 105.95666666666666,
+      "regreso_km": 107.848,
+      "regreso_min": 113.60666666666665,
+      "pasos": [
+        {
+          "nombre": "AMAGÁ",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "AMAGÁ",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05101",
+      "departamento": "ANTIOQUIA",
+      "municipio": "CIUDAD BOLÍVAR",
+      "lat": 5.850273,
+      "lng": -76.021509,
+      "ida_km": 94.1104,
+      "ida_min": 87.03666666666666,
+      "regreso_km": 98.81269999999999,
+      "regreso_min": 95.25833333333334,
+      "pasos": [
+        {
+          "nombre": "AMAGÁ",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "AMAGÁ",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05113",
+      "departamento": "ANTIOQUIA",
+      "municipio": "BURITICÁ",
+      "lat": 6.720759,
+      "lng": -75.907,
+      "ida_km": 98.782,
+      "ida_min": 89.20166666666667,
+      "regreso_km": 96.9817,
+      "regreso_min": 80.955,
+      "pasos": [
+        {
+          "nombre": "ABURRA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "ABURRA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05125",
+      "departamento": "ANTIOQUIA",
+      "municipio": "CAICEDO",
+      "lat": 6.405607,
+      "lng": -75.98293,
+      "ida_km": 102.592,
+      "ida_min": 105.5,
+      "regreso_km": 100.5514,
+      "regreso_min": 99.71833333333333,
+      "pasos": [
+        {
+          "nombre": "ABURRA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "ABURRA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05129",
+      "departamento": "ANTIOQUIA",
+      "municipio": "CALDAS",
+      "lat": 6.091077,
+      "lng": -75.633673,
+      "ida_km": 18.2155,
+      "ida_min": 22.748333333333335,
+      "regreso_km": 18.618299999999998,
+      "regreso_min": 23.878333333333334,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05148",
+      "departamento": "ANTIOQUIA",
+      "municipio": "EL CARMEN DE VIBORAL",
+      "lat": 6.082885,
+      "lng": -75.333901,
+      "ida_km": 43.7708,
+      "ida_min": 58.595,
+      "regreso_km": 45.492,
+      "regreso_min": 57.84166666666667,
+      "pasos": [
+        {
+          "nombre": "SAJONIA",
+          "distancia_m": 16,
+          "fuente": "https://arcgiswebadaptor.mintransporte.gov.co/server/rest/services/peajes_consulta/peajes_consulta/FeatureServer",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "SEMINARIO",
+          "distancia_m": 24,
+          "fuente": "https://arcgiswebadaptor.mintransporte.gov.co/server/rest/services/peajes_consulta/peajes_consulta/FeatureServer",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05150",
+      "departamento": "ANTIOQUIA",
+      "municipio": "CAROLINA",
+      "lat": 6.725995,
+      "lng": -75.283192,
+      "ida_km": 103.5473,
+      "ida_min": 123.22,
+      "regreso_km": 101.7019,
+      "regreso_min": 110.06166666666667,
+      "pasos": [
+        {
+          "nombre": "TRAPICHE",
+          "distancia_m": 15,
+          "fuente": "INVÍAS / DEPARTAMENTO",
+          "sentido": "ida"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05190",
+      "departamento": "ANTIOQUIA",
+      "municipio": "CISNEROS",
+      "lat": 6.537829,
+      "lng": -75.087047,
+      "ida_km": 84.0656,
+      "ida_min": 86.90166666666667,
+      "regreso_km": 81.8788,
+      "regreso_min": 73.315,
+      "pasos": [
+        {
+          "nombre": "TRAPICHE",
+          "distancia_m": 15,
+          "fuente": "INVÍAS / DEPARTAMENTO",
+          "sentido": "ida"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05197",
+      "departamento": "ANTIOQUIA",
+      "municipio": "COCORNÁ",
+      "lat": 6.058295,
+      "lng": -75.185483,
+      "ida_km": 72.4742,
+      "ida_min": 95.87333333333332,
+      "regreso_km": 72.7568,
+      "regreso_min": 93.26666666666667,
+      "pasos": [
+        {
+          "nombre": "SAJONIA",
+          "distancia_m": 16,
+          "fuente": "https://arcgiswebadaptor.mintransporte.gov.co/server/rest/services/peajes_consulta/peajes_consulta/FeatureServer",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "Cocorná",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "SEMINARIO",
+          "distancia_m": 24,
+          "fuente": "https://arcgiswebadaptor.mintransporte.gov.co/server/rest/services/peajes_consulta/peajes_consulta/FeatureServer",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05206",
+      "departamento": "ANTIOQUIA",
+      "municipio": "CONCEPCIÓN",
+      "lat": 6.394348,
+      "lng": -75.257587,
+      "ida_km": 69.0174,
+      "ida_min": 83.10333333333332,
+      "regreso_km": 67.69189999999999,
+      "regreso_min": 70.08666666666666,
+      "pasos": [
+        {
+          "nombre": "TRAPICHE",
+          "distancia_m": 15,
+          "fuente": "INVÍAS / DEPARTAMENTO",
+          "sentido": "ida"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05209",
+      "departamento": "ANTIOQUIA",
+      "municipio": "CONCORDIA",
+      "lat": 6.045738,
+      "lng": -75.908448,
+      "ida_km": 82.8981,
+      "ida_min": 98.24166666666666,
+      "regreso_km": 87.5878,
+      "regreso_min": 104.31666666666666,
+      "pasos": [
+        {
+          "nombre": "AMAGÁ",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "AMAGÁ",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05212",
+      "departamento": "ANTIOQUIA",
+      "municipio": "COPACABANA",
+      "lat": 6.348557,
+      "lng": -75.509384,
+      "ida_km": 23.789099999999998,
+      "ida_min": 27.433333333333334,
+      "regreso_km": 23.767,
+      "regreso_min": 23.346666666666668,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05237",
+      "departamento": "ANTIOQUIA",
+      "municipio": "DONMATÍAS",
+      "lat": 6.485603,
+      "lng": -75.39263,
+      "ida_km": 57.625,
+      "ida_min": 64.76833333333333,
+      "regreso_km": 54.9602,
+      "regreso_min": 49.608333333333334,
+      "pasos": [
+        {
+          "nombre": "TRAPICHE",
+          "distancia_m": 15,
+          "fuente": "INVÍAS / DEPARTAMENTO",
+          "sentido": "ida"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05240",
+      "departamento": "ANTIOQUIA",
+      "municipio": "EBÉJICO",
+      "lat": 6.325615,
+      "lng": -75.766413,
+      "ida_km": 50.6644,
+      "ida_min": 61.615,
+      "regreso_km": 49.5045,
+      "regreso_min": 56.93,
+      "pasos": [
+        {
+          "nombre": "ABURRA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "ABURRA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05264",
+      "departamento": "ANTIOQUIA",
+      "municipio": "ENTRERRÍOS",
+      "lat": 6.566273,
+      "lng": -75.517685,
+      "ida_km": 61.290800000000004,
+      "ida_min": 72.11999999999999,
+      "regreso_km": 60.5484,
+      "regreso_min": 71.08666666666666,
+      "pasos": [
+        {
+          "nombre": "PAJARITO",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "PAJARITO",
+          "distancia_m": 4,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05266",
+      "departamento": "ANTIOQUIA",
+      "municipio": "ENVIGADO",
+      "lat": 6.166695,
+      "lng": -75.582192,
+      "ida_km": 4.7714,
+      "ida_min": 6.586666666666667,
+      "regreso_km": 5.082199999999999,
+      "regreso_min": 7.7683333333333335,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05282",
+      "departamento": "ANTIOQUIA",
+      "municipio": "FREDONIA",
+      "lat": 5.928039,
+      "lng": -75.675072,
+      "ida_km": 52.2067,
+      "ida_min": 58.12166666666667,
+      "regreso_km": 52.8294,
+      "regreso_min": 60.690000000000005,
+      "pasos": [
+        {
+          "nombre": "AMAGÁ",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "AMAGÁ",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05306",
+      "departamento": "ANTIOQUIA",
+      "municipio": "GIRALDO",
+      "lat": 6.680808,
+      "lng": -75.952158,
+      "ida_km": 102.9728,
+      "ida_min": 92.46833333333333,
+      "regreso_km": 101.1725,
+      "regreso_min": 84.25333333333333,
+      "pasos": [
+        {
+          "nombre": "ABURRA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "ABURRA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05308",
+      "departamento": "ANTIOQUIA",
+      "municipio": "GIRARDOTA",
+      "lat": 6.379472,
+      "lng": -75.444238,
+      "ida_km": 32.9439,
+      "ida_min": 43.165,
+      "regreso_km": 31.505200000000002,
+      "regreso_min": 30.831666666666667,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05310",
+      "departamento": "ANTIOQUIA",
+      "municipio": "GÓMEZ PLATA",
+      "lat": 6.683269,
+      "lng": -75.220018,
+      "ida_km": 91.4319,
+      "ida_min": 104.89833333333333,
+      "regreso_km": 89.5261,
+      "regreso_min": 91.545,
+      "pasos": [
+        {
+          "nombre": "TRAPICHE",
+          "distancia_m": 15,
+          "fuente": "INVÍAS / DEPARTAMENTO",
+          "sentido": "ida"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05313",
+      "departamento": "ANTIOQUIA",
+      "municipio": "GRANADA",
+      "lat": 6.142892,
+      "lng": -75.184446,
+      "ida_km": 65.3047,
+      "ida_min": 92.92666666666668,
+      "regreso_km": 65.68639999999999,
+      "regreso_min": 90.875,
+      "pasos": [
+        {
+          "nombre": "SAJONIA",
+          "distancia_m": 16,
+          "fuente": "https://arcgiswebadaptor.mintransporte.gov.co/server/rest/services/peajes_consulta/peajes_consulta/FeatureServer",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "SEMINARIO",
+          "distancia_m": 24,
+          "fuente": "https://arcgiswebadaptor.mintransporte.gov.co/server/rest/services/peajes_consulta/peajes_consulta/FeatureServer",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": [
+        {
+          "nombre": "Cocorná",
+          "motivo": "Coordenada próxima a la ruta, requiere validar el cruce",
+          "distancia_m": 152.39707226270679,
+          "sentido": "regreso"
+        }
+      ]
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05318",
+      "departamento": "ANTIOQUIA",
+      "municipio": "GUARNE",
+      "lat": 6.27787,
+      "lng": -75.441612,
+      "ida_km": 34.425,
+      "ida_min": 42.03333333333333,
+      "regreso_km": 34.1079,
+      "regreso_min": 42.585,
+      "pasos": [
+        {
+          "nombre": "SAJONIA",
+          "distancia_m": 16,
+          "fuente": "https://arcgiswebadaptor.mintransporte.gov.co/server/rest/services/peajes_consulta/peajes_consulta/FeatureServer",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "SEMINARIO",
+          "distancia_m": 24,
+          "fuente": "https://arcgiswebadaptor.mintransporte.gov.co/server/rest/services/peajes_consulta/peajes_consulta/FeatureServer",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05321",
+      "departamento": "ANTIOQUIA",
+      "municipio": "GUATAPÉ",
+      "lat": 6.232461,
+      "lng": -75.160041,
+      "ida_km": 69.91489999999999,
+      "ida_min": 110.17333333333333,
+      "regreso_km": 88.7529,
+      "regreso_min": 112.375,
+      "pasos": [
+        {
+          "nombre": "SAJONIA",
+          "distancia_m": 16,
+          "fuente": "https://arcgiswebadaptor.mintransporte.gov.co/server/rest/services/peajes_consulta/peajes_consulta/FeatureServer",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "SEMINARIO",
+          "distancia_m": 24,
+          "fuente": "https://arcgiswebadaptor.mintransporte.gov.co/server/rest/services/peajes_consulta/peajes_consulta/FeatureServer",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05347",
+      "departamento": "ANTIOQUIA",
+      "municipio": "HELICONIA",
+      "lat": 6.206757,
+      "lng": -75.734322,
+      "ida_km": 35.1857,
+      "ida_min": 54.385,
+      "regreso_km": 35.989599999999996,
+      "regreso_min": 56.575,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05353",
+      "departamento": "ANTIOQUIA",
+      "municipio": "HISPANIA",
+      "lat": 5.799461,
+      "lng": -75.906587,
+      "ida_km": 86.25389999999999,
+      "ida_min": 81.38333333333334,
+      "regreso_km": 90.94139999999999,
+      "regreso_min": 89.32,
+      "pasos": [
+        {
+          "nombre": "AMAGÁ",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "AMAGÁ",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05360",
+      "departamento": "ANTIOQUIA",
+      "municipio": "ITAGÜÍ",
+      "lat": 6.175079,
+      "lng": -75.612056,
+      "ida_km": 6.6674,
+      "ida_min": 8.681666666666667,
+      "regreso_km": 7.4186000000000005,
+      "regreso_min": 10.07,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05368",
+      "departamento": "ANTIOQUIA",
+      "municipio": "JERICÓ",
+      "lat": 5.789748,
+      "lng": -75.785499,
+      "ida_km": 96.0295,
+      "ida_min": 96.35833333333333,
+      "regreso_km": 97.37180000000001,
+      "regreso_min": 99.71833333333333,
+      "pasos": [
+        {
+          "nombre": "AMAGÁ",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "AMAGÁ",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05376",
+      "departamento": "ANTIOQUIA",
+      "municipio": "LA CEJA",
+      "lat": 6.028062,
+      "lng": -75.429433,
+      "ida_km": 36.1799,
+      "ida_min": 49.791666666666664,
+      "regreso_km": 36.8015,
+      "regreso_min": 51.66,
+      "pasos": [
+        {
+          "nombre": "Las Palmas",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05380",
+      "departamento": "ANTIOQUIA",
+      "municipio": "LA ESTRELLA",
+      "lat": 6.145238,
+      "lng": -75.637708,
+      "ida_km": 10.700299999999999,
+      "ida_min": 12.113333333333333,
+      "regreso_km": 12.1478,
+      "regreso_min": 14.59,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05390",
+      "departamento": "ANTIOQUIA",
+      "municipio": "LA PINTADA",
+      "lat": 5.743808,
+      "lng": -75.60781,
+      "ida_km": 99.0835,
+      "ida_min": 79.58333333333333,
+      "regreso_km": 100.0337,
+      "regreso_min": 82.52666666666667,
+      "pasos": [
+        {
+          "nombre": "AMAGÁ",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "AMAGÁ",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "PINTADA",
+          "distancia_m": 23,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": [
+        {
+          "nombre": "LA PINTADA",
+          "motivo": "Sentido de cobro sin determinar",
+          "distancia_m": 91.70816531942542,
+          "sentido": "ida"
+        },
+        {
+          "nombre": "LA PINTADA",
+          "motivo": "Sentido de cobro sin determinar",
+          "distancia_m": 108.54193890409911,
+          "sentido": "regreso"
+        }
+      ]
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05400",
+      "departamento": "ANTIOQUIA",
+      "municipio": "LA UNIÓN",
+      "lat": 5.973845,
+      "lng": -75.360874,
+      "ida_km": 50.3939,
+      "ida_min": 62.87833333333333,
+      "regreso_km": 50.9765,
+      "regreso_min": 64.74833333333333,
+      "pasos": [
+        {
+          "nombre": "Las Palmas",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05411",
+      "departamento": "ANTIOQUIA",
+      "municipio": "LIBORINA",
+      "lat": 6.677316,
+      "lng": -75.812838,
+      "ida_km": 86.3539,
+      "ida_min": 104.79666666666667,
+      "regreso_km": 84.49589999999999,
+      "regreso_min": 96.88333333333334,
+      "pasos": [
+        {
+          "nombre": "ABURRA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "ABURRA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05440",
+      "departamento": "ANTIOQUIA",
+      "municipio": "MARINILLA",
+      "lat": 6.173995,
+      "lng": -75.339345,
+      "ida_km": 39.7623,
+      "ida_min": 55.74,
+      "regreso_km": 39.4109,
+      "regreso_min": 58.15833333333333,
+      "pasos": [
+        {
+          "nombre": "SAJONIA",
+          "distancia_m": 16,
+          "fuente": "https://arcgiswebadaptor.mintransporte.gov.co/server/rest/services/peajes_consulta/peajes_consulta/FeatureServer",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "SEMINARIO",
+          "distancia_m": 24,
+          "fuente": "https://arcgiswebadaptor.mintransporte.gov.co/server/rest/services/peajes_consulta/peajes_consulta/FeatureServer",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05467",
+      "departamento": "ANTIOQUIA",
+      "municipio": "MONTEBELLO",
+      "lat": 5.946313,
+      "lng": -75.523455,
+      "ida_km": 47.6375,
+      "ida_min": 78.13833333333334,
+      "regreso_km": 48.648,
+      "regreso_min": 81.03500000000001,
+      "pasos": [
+        {
+          "nombre": "PRIMAVERA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05501",
+      "departamento": "ANTIOQUIA",
+      "municipio": "OLAYA",
+      "lat": 6.626492,
+      "lng": -75.811773,
+      "ida_km": 78.6629,
+      "ida_min": 86.17666666666668,
+      "regreso_km": 77.001,
+      "regreso_min": 78.54666666666667,
+      "pasos": [
+        {
+          "nombre": "ABURRA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "ABURRA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05541",
+      "departamento": "ANTIOQUIA",
+      "municipio": "PEÑOL",
+      "lat": 6.219349,
+      "lng": -75.242693,
+      "ida_km": 56.051300000000005,
+      "ida_min": 88.99833333333332,
+      "regreso_km": 56.1148,
+      "regreso_min": 93.64333333333335,
+      "pasos": [
+        {
+          "nombre": "SAJONIA",
+          "distancia_m": 16,
+          "fuente": "https://arcgiswebadaptor.mintransporte.gov.co/server/rest/services/peajes_consulta/peajes_consulta/FeatureServer",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "SEMINARIO",
+          "distancia_m": 24,
+          "fuente": "https://arcgiswebadaptor.mintransporte.gov.co/server/rest/services/peajes_consulta/peajes_consulta/FeatureServer",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05576",
+      "departamento": "ANTIOQUIA",
+      "municipio": "PUEBLORRICO",
+      "lat": 5.79158,
+      "lng": -75.839903,
+      "ida_km": 90.553,
+      "ida_min": 98.945,
+      "regreso_km": 101.2815,
+      "regreso_min": 105.35666666666665,
+      "pasos": [
+        {
+          "nombre": "AMAGÁ",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "AMAGÁ",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05607",
+      "departamento": "ANTIOQUIA",
+      "municipio": "RETIRO",
+      "lat": 6.062454,
+      "lng": -75.501301,
+      "ida_km": 25.277,
+      "ida_min": 40.88333333333333,
+      "regreso_km": 26.5232,
+      "regreso_min": 43.72666666666667,
+      "pasos": [
+        {
+          "nombre": "Las Palmas",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05615",
+      "departamento": "ANTIOQUIA",
+      "municipio": "RIONEGRO",
+      "lat": 6.147148,
+      "lng": -75.377316,
+      "ida_km": 32.939,
+      "ida_min": 45.156666666666666,
+      "regreso_km": 34.4266,
+      "regreso_min": 46.485,
+      "pasos": [
+        {
+          "nombre": "SAJONIA",
+          "distancia_m": 16,
+          "fuente": "https://arcgiswebadaptor.mintransporte.gov.co/server/rest/services/peajes_consulta/peajes_consulta/FeatureServer",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "SEMINARIO",
+          "distancia_m": 24,
+          "fuente": "https://arcgiswebadaptor.mintransporte.gov.co/server/rest/services/peajes_consulta/peajes_consulta/FeatureServer",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05631",
+      "departamento": "ANTIOQUIA",
+      "municipio": "SABANETA",
+      "lat": 6.149903,
+      "lng": -75.615479,
+      "ida_km": 8.367899999999999,
+      "ida_min": 11.635,
+      "regreso_km": 9.3071,
+      "regreso_min": 11.925,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05642",
+      "departamento": "ANTIOQUIA",
+      "municipio": "SALGAR",
+      "lat": 5.964198,
+      "lng": -75.976807,
+      "ida_km": 87.4455,
+      "ida_min": 89.36,
+      "regreso_km": 92.25439999999999,
+      "regreso_min": 97.895,
+      "pasos": [
+        {
+          "nombre": "AMAGÁ",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "AMAGÁ",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05649",
+      "departamento": "ANTIOQUIA",
+      "municipio": "SAN CARLOS",
+      "lat": 6.187746,
+      "lng": -74.988097,
+      "ida_km": 106.0247,
+      "ida_min": 137.23666666666668,
+      "regreso_km": 106.4125,
+      "regreso_min": 135.06166666666667,
+      "pasos": [
+        {
+          "nombre": "SAJONIA",
+          "distancia_m": 16,
+          "fuente": "https://arcgiswebadaptor.mintransporte.gov.co/server/rest/services/peajes_consulta/peajes_consulta/FeatureServer",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "SEMINARIO",
+          "distancia_m": 24,
+          "fuente": "https://arcgiswebadaptor.mintransporte.gov.co/server/rest/services/peajes_consulta/peajes_consulta/FeatureServer",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": [
+        {
+          "nombre": "Cocorná",
+          "motivo": "Coordenada próxima a la ruta, requiere validar el cruce",
+          "distancia_m": 152.39707226270679,
+          "sentido": "regreso"
+        }
+      ]
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05652",
+      "departamento": "ANTIOQUIA",
+      "municipio": "SAN FRANCISCO",
+      "lat": 5.963476,
+      "lng": -75.101562,
+      "ida_km": 93.35730000000001,
+      "ida_min": 119.61166666666666,
+      "regreso_km": 93.6822,
+      "regreso_min": 117.57166666666667,
+      "pasos": [
+        {
+          "nombre": "SAJONIA",
+          "distancia_m": 16,
+          "fuente": "https://arcgiswebadaptor.mintransporte.gov.co/server/rest/services/peajes_consulta/peajes_consulta/FeatureServer",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "Cocorná",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "SEMINARIO",
+          "distancia_m": 24,
+          "fuente": "https://arcgiswebadaptor.mintransporte.gov.co/server/rest/services/peajes_consulta/peajes_consulta/FeatureServer",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05656",
+      "departamento": "ANTIOQUIA",
+      "municipio": "SAN JERÓNIMO",
+      "lat": 6.44809,
+      "lng": -75.726975,
+      "ida_km": 45.121199999999995,
+      "ida_min": 42.60166666666667,
+      "regreso_km": 44.487199999999994,
+      "regreso_min": 38.76166666666666,
+      "pasos": [
+        {
+          "nombre": "ABURRA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "ABURRA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05664",
+      "departamento": "ANTIOQUIA",
+      "municipio": "SAN PEDRO DE LOS MILAGROS",
+      "lat": 6.46012,
+      "lng": -75.556743,
+      "ida_km": 40.0338,
+      "ida_min": 48.975,
+      "regreso_km": 39.3717,
+      "regreso_min": 48.13,
+      "pasos": [
+        {
+          "nombre": "PAJARITO",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "PAJARITO",
+          "distancia_m": 4,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05667",
+      "departamento": "ANTIOQUIA",
+      "municipio": "SAN RAFAEL",
+      "lat": 6.293759,
+      "lng": -75.02849,
+      "ida_km": 97.0793,
+      "ida_min": 139.31166666666667,
+      "regreso_km": 108.4939,
+      "regreso_min": 127.515,
+      "pasos": [
+        {
+          "nombre": "SAJONIA",
+          "distancia_m": 16,
+          "fuente": "https://arcgiswebadaptor.mintransporte.gov.co/server/rest/services/peajes_consulta/peajes_consulta/FeatureServer",
+          "sentido": "ida"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05670",
+      "departamento": "ANTIOQUIA",
+      "municipio": "SAN ROQUE",
+      "lat": 6.485939,
+      "lng": -75.019109,
+      "ida_km": 102.7875,
+      "ida_min": 104.44166666666666,
+      "regreso_km": 101.1016,
+      "regreso_min": 91.15166666666667,
+      "pasos": [
+        {
+          "nombre": "CISNEROS",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "TRAPICHE",
+          "distancia_m": 15,
+          "fuente": "INVÍAS / DEPARTAMENTO",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "CISNEROS",
+          "distancia_m": 17,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05674",
+      "departamento": "ANTIOQUIA",
+      "municipio": "SAN VICENTE FERRER",
+      "lat": 6.282164,
+      "lng": -75.332616,
+      "ida_km": 49.2936,
+      "ida_min": 60.815000000000005,
+      "regreso_km": 48.5788,
+      "regreso_min": 56.375,
+      "pasos": [
+        {
+          "nombre": "SAJONIA",
+          "distancia_m": 16,
+          "fuente": "https://arcgiswebadaptor.mintransporte.gov.co/server/rest/services/peajes_consulta/peajes_consulta/FeatureServer",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "SEMINARIO",
+          "distancia_m": 24,
+          "fuente": "https://arcgiswebadaptor.mintransporte.gov.co/server/rest/services/peajes_consulta/peajes_consulta/FeatureServer",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05679",
+      "departamento": "ANTIOQUIA",
+      "municipio": "SANTA BÁRBARA",
+      "lat": 5.875527,
+      "lng": -75.567351,
+      "ida_km": 47.6976,
+      "ida_min": 93.11833333333334,
+      "regreso_km": 48.9461,
+      "regreso_min": 91.26666666666667,
+      "pasos": [
+        {
+          "nombre": "PRIMAVERA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05686",
+      "departamento": "ANTIOQUIA",
+      "municipio": "SANTA ROSA DE OSOS",
+      "lat": 6.643366,
+      "lng": -75.460723,
+      "ida_km": 84.7133,
+      "ida_min": 88.305,
+      "regreso_km": 82.9147,
+      "regreso_min": 74.96666666666667,
+      "pasos": [
+        {
+          "nombre": "PANDEQUESO",
+          "distancia_m": 0,
+          "fuente": "https://arcgiswebadaptor.mintransporte.gov.co/server/rest/services/peajes_consulta/peajes_consulta/FeatureServer",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "TRAPICHE",
+          "distancia_m": 15,
+          "fuente": "INVÍAS / DEPARTAMENTO",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "PANDEQUESO",
+          "distancia_m": 0,
+          "fuente": "https://arcgiswebadaptor.mintransporte.gov.co/server/rest/services/peajes_consulta/peajes_consulta/FeatureServer",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05690",
+      "departamento": "ANTIOQUIA",
+      "municipio": "SANTO DOMINGO",
+      "lat": 6.473032,
+      "lng": -75.164903,
+      "ida_km": 76.701,
+      "ida_min": 82.76833333333335,
+      "regreso_km": 74.841,
+      "regreso_min": 69.43833333333333,
+      "pasos": [
+        {
+          "nombre": "TRAPICHE",
+          "distancia_m": 15,
+          "fuente": "INVÍAS / DEPARTAMENTO",
+          "sentido": "ida"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05697",
+      "departamento": "ANTIOQUIA",
+      "municipio": "EL SANTUARIO",
+      "lat": 6.136871,
+      "lng": -75.265465,
+      "ida_km": 49.662099999999995,
+      "ida_min": 76.11,
+      "regreso_km": 50.088699999999996,
+      "regreso_min": 74.83500000000001,
+      "pasos": [
+        {
+          "nombre": "SAJONIA",
+          "distancia_m": 16,
+          "fuente": "https://arcgiswebadaptor.mintransporte.gov.co/server/rest/services/peajes_consulta/peajes_consulta/FeatureServer",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "SEMINARIO",
+          "distancia_m": 24,
+          "fuente": "https://arcgiswebadaptor.mintransporte.gov.co/server/rest/services/peajes_consulta/peajes_consulta/FeatureServer",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05756",
+      "departamento": "ANTIOQUIA",
+      "municipio": "SONSÓN",
+      "lat": 5.714851,
+      "lng": -75.309596,
+      "ida_km": 104.0453,
+      "ida_min": 112.37166666666667,
+      "regreso_km": 105.00760000000001,
+      "regreso_min": 114.98666666666666,
+      "pasos": [
+        {
+          "nombre": "Las Palmas",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05761",
+      "departamento": "ANTIOQUIA",
+      "municipio": "SOPETRÁN",
+      "lat": 6.500745,
+      "lng": -75.747378,
+      "ida_km": 55.791,
+      "ida_min": 59.475,
+      "regreso_km": 54.310199999999995,
+      "regreso_min": 55.806666666666665,
+      "pasos": [
+        {
+          "nombre": "ABURRA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "ABURRA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05789",
+      "departamento": "ANTIOQUIA",
+      "municipio": "TÁMESIS",
+      "lat": 5.664645,
+      "lng": -75.714429,
+      "ida_km": 107.9128,
+      "ida_min": 106.16833333333334,
+      "regreso_km": 109.3274,
+      "regreso_min": 109.96000000000001,
+      "pasos": [
+        {
+          "nombre": "AMAGÁ",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "AMAGÁ",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05792",
+      "departamento": "ANTIOQUIA",
+      "municipio": "TARSO",
+      "lat": 5.864542,
+      "lng": -75.822956,
+      "ida_km": 74.8386,
+      "ida_min": 78.21000000000001,
+      "regreso_km": 87.5127,
+      "regreso_min": 84.42833333333333,
+      "pasos": [
+        {
+          "nombre": "AMAGÁ",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "AMAGÁ",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05809",
+      "departamento": "ANTIOQUIA",
+      "municipio": "TITIRIBÍ",
+      "lat": 6.062391,
+      "lng": -75.791887,
+      "ida_km": 51.4961,
+      "ida_min": 52.516666666666666,
+      "regreso_km": 52.6511,
+      "regreso_min": 55.91833333333333,
+      "pasos": [
+        {
+          "nombre": "AMAGÁ",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "AMAGÁ",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05861",
+      "departamento": "ANTIOQUIA",
+      "municipio": "VENECIA",
+      "lat": 5.964693,
+      "lng": -75.735544,
+      "ida_km": 53.440599999999996,
+      "ida_min": 55.980000000000004,
+      "regreso_km": 53.841300000000004,
+      "regreso_min": 58.059999999999995,
+      "pasos": [
+        {
+          "nombre": "AMAGÁ",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "AMAGÁ",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "medellin",
+      "codigo": "05890",
+      "departamento": "ANTIOQUIA",
+      "municipio": "YOLOMBÓ",
+      "lat": 6.594511,
+      "lng": -75.013385,
+      "ida_km": 99.0082,
+      "ida_min": 106.5,
+      "regreso_km": 97.09039999999999,
+      "regreso_min": 93.33500000000001,
+      "pasos": [
+        {
+          "nombre": "TRAPICHE",
+          "distancia_m": 15,
+          "fuente": "INVÍAS / DEPARTAMENTO",
+          "sentido": "ida"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "17001",
+      "departamento": "CALDAS",
+      "municipio": "MANIZALES",
+      "lat": 5.057657,
+      "lng": -75.491025,
+      "ida_km": 56.6511,
+      "ida_min": 53.84166666666667,
+      "regreso_km": 55.6445,
+      "regreso_min": 53.785,
+      "pasos": [
+        {
+          "nombre": "TARAPACÁ I",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "PAVAS",
+          "distancia_m": 0,
+          "fuente": "https://ftp.autopistasdelcafe.com/informacionpeajes",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "TARAPACÁ II",
+          "distancia_m": 18,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "TARAPACÁ II",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "PAVAS",
+          "distancia_m": 10,
+          "fuente": "https://ftp.autopistasdelcafe.com/informacionpeajes",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "TARAPACÁ I",
+          "distancia_m": 18,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "17042",
+      "departamento": "CALDAS",
+      "municipio": "ANSERMA",
+      "lat": 5.236471,
+      "lng": -75.784343,
+      "ida_km": 79.4508,
+      "ida_min": 75.42666666666668,
+      "regreso_km": 78.5739,
+      "regreso_min": 73.78,
+      "pasos": [
+        {
+          "nombre": "ACAPULCO",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "ACAPULCO",
+          "distancia_m": 11,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "17050",
+      "departamento": "CALDAS",
+      "municipio": "ARANZAZU",
+      "lat": 5.271195,
+      "lng": -75.49129,
+      "ida_km": 101.51910000000001,
+      "ida_min": 105.60333333333332,
+      "regreso_km": 90.8667,
+      "regreso_min": 92.28666666666666,
+      "pasos": [
+        {
+          "nombre": "TARAPACÁ I",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "PAVAS",
+          "distancia_m": 0,
+          "fuente": "https://ftp.autopistasdelcafe.com/informacionpeajes",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "TARAPACÁ II",
+          "distancia_m": 18,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "TARAPACÁ II",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "SANTAGUEDA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "TARAPACÁ I",
+          "distancia_m": 18,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": [
+        {
+          "nombre": "LA ESTRELLA",
+          "motivo": "Sentido de cobro sin determinar",
+          "distancia_m": 3.852395938968118,
+          "sentido": "ida"
+        }
+      ]
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "17088",
+      "departamento": "CALDAS",
+      "municipio": "BELALCÁZAR",
+      "lat": 4.993785,
+      "lng": -75.811918,
+      "ida_km": 49.5999,
+      "ida_min": 53.345,
+      "regreso_km": 48.9045,
+      "regreso_min": 52.875,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "17174",
+      "departamento": "CALDAS",
+      "municipio": "CHINCHINÁ",
+      "lat": 4.985227,
+      "lng": -75.607529,
+      "ida_km": 30.5009,
+      "ida_min": 27.91,
+      "regreso_km": 29.2896,
+      "regreso_min": 29.44333333333333,
+      "pasos": [
+        {
+          "nombre": "TARAPACÁ I",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "TARAPACÁ II",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "TARAPACÁ I",
+          "distancia_m": 18,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "17272",
+      "departamento": "CALDAS",
+      "municipio": "FILADELFIA",
+      "lat": 5.297091,
+      "lng": -75.562474,
+      "ida_km": 99.689,
+      "ida_min": 103.095,
+      "regreso_km": 86.93480000000001,
+      "regreso_min": 87.04333333333334,
+      "pasos": [
+        {
+          "nombre": "TARAPACÁ I",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "PAVAS",
+          "distancia_m": 0,
+          "fuente": "https://ftp.autopistasdelcafe.com/informacionpeajes",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "TARAPACÁ II",
+          "distancia_m": 18,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "TARAPACÁ II",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "SANTAGUEDA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "TARAPACÁ I",
+          "distancia_m": 18,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": [
+        {
+          "nombre": "LA ESTRELLA",
+          "motivo": "Sentido de cobro sin determinar",
+          "distancia_m": 3.852395938968118,
+          "sentido": "ida"
+        }
+      ]
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "17486",
+      "departamento": "CALDAS",
+      "municipio": "NEIRA",
+      "lat": 5.166895,
+      "lng": -75.520006,
+      "ida_km": 72.1696,
+      "ida_min": 73.05333333333333,
+      "regreso_km": 70.7342,
+      "regreso_min": 73.24499999999999,
+      "pasos": [
+        {
+          "nombre": "TARAPACÁ I",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "PAVAS",
+          "distancia_m": 0,
+          "fuente": "https://ftp.autopistasdelcafe.com/informacionpeajes",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "TARAPACÁ II",
+          "distancia_m": 18,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "TARAPACÁ II",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "PAVAS",
+          "distancia_m": 10,
+          "fuente": "https://ftp.autopistasdelcafe.com/informacionpeajes",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "TARAPACÁ I",
+          "distancia_m": 18,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": [
+        {
+          "nombre": "LA ESTRELLA",
+          "motivo": "Sentido de cobro sin determinar",
+          "distancia_m": 3.852395938968118,
+          "sentido": "ida"
+        },
+        {
+          "nombre": "LA ESTRELLA",
+          "motivo": "Sentido de cobro sin determinar",
+          "distancia_m": 3.852395938968118,
+          "sentido": "regreso"
+        }
+      ]
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "17524",
+      "departamento": "CALDAS",
+      "municipio": "PALESTINA",
+      "lat": 5.017879,
+      "lng": -75.624577,
+      "ida_km": 34.3928,
+      "ida_min": 33.50666666666667,
+      "regreso_km": 32.598099999999995,
+      "regreso_min": 34.44833333333334,
+      "pasos": [
+        {
+          "nombre": "TARAPACÁ I",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "TARAPACÁ II",
+          "distancia_m": 18,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "TARAPACÁ II",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "TARAPACÁ I",
+          "distancia_m": 18,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "17616",
+      "departamento": "CALDAS",
+      "municipio": "RISARALDA",
+      "lat": 5.164509,
+      "lng": -75.76722,
+      "ida_km": 66.7303,
+      "ida_min": 71.345,
+      "regreso_km": 71.48360000000001,
+      "regreso_min": 66.81,
+      "pasos": [
+        {
+          "nombre": "TARAPACÁ I",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "TARAPACÁ II",
+          "distancia_m": 18,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "TARAPACÁ II",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "SANTAGUEDA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "TARAPACÁ I",
+          "distancia_m": 18,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "17665",
+      "departamento": "CALDAS",
+      "municipio": "SAN JOSÉ",
+      "lat": 5.08231,
+      "lng": -75.792063,
+      "ida_km": 65.6718,
+      "ida_min": 65.78666666666666,
+      "regreso_km": 65.00019999999999,
+      "regreso_min": 64.88666666666667,
+      "pasos": [
+        {
+          "nombre": "ACAPULCO",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "ACAPULCO",
+          "distancia_m": 11,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "17777",
+      "departamento": "CALDAS",
+      "municipio": "SUPÍA",
+      "lat": 5.446843,
+      "lng": -75.64966,
+      "ida_km": 105.1747,
+      "ida_min": 111.41833333333334,
+      "regreso_km": 96.0737,
+      "regreso_min": 83.30333333333333,
+      "pasos": [
+        {
+          "nombre": "TARAPACÁ I",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "IRRA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "TARAPACÁ II",
+          "distancia_m": 18,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "IRRA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "TARAPACÁ II",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "SANTAGUEDA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "TARAPACÁ I",
+          "distancia_m": 18,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "17873",
+      "departamento": "CALDAS",
+      "municipio": "VILLAMARÍA",
+      "lat": 5.038925,
+      "lng": -75.502487,
+      "ida_km": 55.8286,
+      "ida_min": 54.87166666666667,
+      "regreso_km": 56.6235,
+      "regreso_min": 55.519999999999996,
+      "pasos": [
+        {
+          "nombre": "TARAPACÁ I",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "PAVAS",
+          "distancia_m": 0,
+          "fuente": "https://ftp.autopistasdelcafe.com/informacionpeajes",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "TARAPACÁ II",
+          "distancia_m": 18,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "TARAPACÁ II",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "PAVAS",
+          "distancia_m": 10,
+          "fuente": "https://ftp.autopistasdelcafe.com/informacionpeajes",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "TARAPACÁ I",
+          "distancia_m": 18,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "17877",
+      "departamento": "CALDAS",
+      "municipio": "VITERBO",
+      "lat": 5.062664,
+      "lng": -75.87061,
+      "ida_km": 53.9852,
+      "ida_min": 52.575,
+      "regreso_km": 53.061699999999995,
+      "regreso_min": 51.376666666666665,
+      "pasos": [
+        {
+          "nombre": "ACAPULCO",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "ACAPULCO",
+          "distancia_m": 11,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "27660",
+      "departamento": "CHOCÓ",
+      "municipio": "SAN JOSÉ DEL PALMAR",
+      "lat": 4.896954,
+      "lng": -76.234227,
+      "ida_km": 107.4872,
+      "ida_min": 140.45499999999998,
+      "regreso_km": 106.9123,
+      "regreso_min": 141.37166666666664,
+      "pasos": [
+        {
+          "nombre": "Cerritos II",
+          "distancia_m": 5,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "63001",
+      "departamento": "QUINDÍO",
+      "municipio": "ARMENIA",
+      "lat": 4.53598,
+      "lng": -75.680786,
+      "ida_km": 45.666,
+      "ida_min": 57.75333333333333,
+      "regreso_km": 47.817099999999996,
+      "regreso_min": 65.34666666666666,
+      "pasos": [
+        {
+          "nombre": "CIRCASIA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "CIRCASIA",
+          "distancia_m": 14,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "63111",
+      "departamento": "QUINDÍO",
+      "municipio": "BUENAVISTA",
+      "lat": 4.360029,
+      "lng": -75.739572,
+      "ida_km": 75.593,
+      "ida_min": 87.95166666666667,
+      "regreso_km": 75.042,
+      "regreso_min": 91.16833333333334,
+      "pasos": [
+        {
+          "nombre": "CIRCASIA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "CIRCASIA",
+          "distancia_m": 14,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "63130",
+      "departamento": "QUINDÍO",
+      "municipio": "CALARCÁ",
+      "lat": 4.520982,
+      "lng": -75.646085,
+      "ida_km": 46.154199999999996,
+      "ida_min": 55.20333333333333,
+      "regreso_km": 45.8619,
+      "regreso_min": 61.388333333333335,
+      "pasos": [
+        {
+          "nombre": "CIRCASIA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "CIRCASIA",
+          "distancia_m": 14,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "63190",
+      "departamento": "QUINDÍO",
+      "municipio": "CIRCASIA",
+      "lat": 4.617759,
+      "lng": -75.636533,
+      "ida_km": 32.9565,
+      "ida_min": 42.97666666666667,
+      "regreso_km": 34.189800000000005,
+      "regreso_min": 49.43833333333334,
+      "pasos": [
+        {
+          "nombre": "CIRCASIA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "CIRCASIA",
+          "distancia_m": 14,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "63212",
+      "departamento": "QUINDÍO",
+      "municipio": "CÓRDOBA",
+      "lat": 4.392485,
+      "lng": -75.687866,
+      "ida_km": 72.8797,
+      "ida_min": 86.18666666666667,
+      "regreso_km": 72.32430000000001,
+      "regreso_min": 89.35,
+      "pasos": [
+        {
+          "nombre": "CIRCASIA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "CIRCASIA",
+          "distancia_m": 14,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "63272",
+      "departamento": "QUINDÍO",
+      "municipio": "FILANDIA",
+      "lat": 4.674338,
+      "lng": -75.658387,
+      "ida_km": 29.0895,
+      "ida_min": 35.04833333333333,
+      "regreso_km": 29.3533,
+      "regreso_min": 38.013333333333335,
+      "pasos": [
+        {
+          "nombre": "CIRCASIA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "CIRCASIA",
+          "distancia_m": 14,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "63302",
+      "departamento": "QUINDÍO",
+      "municipio": "GÉNOVA",
+      "lat": 4.206641,
+      "lng": -75.790402,
+      "ida_km": 99.94460000000001,
+      "ida_min": 121.89833333333333,
+      "regreso_km": 99.4245,
+      "regreso_min": 125.06666666666666,
+      "pasos": [
+        {
+          "nombre": "CIRCASIA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "CIRCASIA",
+          "distancia_m": 14,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "63401",
+      "departamento": "QUINDÍO",
+      "municipio": "LA TEBAIDA",
+      "lat": 4.453755,
+      "lng": -75.786887,
+      "ida_km": 63.8826,
+      "ida_min": 74.31833333333334,
+      "regreso_km": 65.727,
+      "regreso_min": 80.36333333333333,
+      "pasos": [
+        {
+          "nombre": "CIRCASIA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "63470",
+      "departamento": "QUINDÍO",
+      "municipio": "MONTENEGRO",
+      "lat": 4.565057,
+      "lng": -75.749827,
+      "ida_km": 48.2835,
+      "ida_min": 59.995,
+      "regreso_km": 47.4747,
+      "regreso_min": 55.75,
+      "pasos": [
+        {
+          "nombre": "CIRCASIA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "63548",
+      "departamento": "QUINDÍO",
+      "municipio": "PIJAO",
+      "lat": 4.335036,
+      "lng": -75.703329,
+      "ida_km": 79.17689999999999,
+      "ida_min": 96.11166666666666,
+      "regreso_km": 78.6127,
+      "regreso_min": 99.21833333333333,
+      "pasos": [
+        {
+          "nombre": "CIRCASIA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "CIRCASIA",
+          "distancia_m": 14,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "63594",
+      "departamento": "QUINDÍO",
+      "municipio": "QUIMBAYA",
+      "lat": 4.624387,
+      "lng": -75.765074,
+      "ida_km": 38.524,
+      "ida_min": 45.43833333333334,
+      "regreso_km": 37.6424,
+      "regreso_min": 41.225,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "63690",
+      "departamento": "QUINDÍO",
+      "municipio": "SALENTO",
+      "lat": 4.637157,
+      "lng": -75.570844,
+      "ida_km": 34.6147,
+      "ida_min": 40.715,
+      "regreso_km": 35.3378,
+      "regreso_min": 46.405,
+      "pasos": [
+        {
+          "nombre": "CIRCASIA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "CIRCASIA",
+          "distancia_m": 14,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "66001",
+      "departamento": "RISARALDA",
+      "municipio": "PEREIRA",
+      "lat": 4.804985,
+      "lng": -75.719711,
+      "ida_km": 5.5533,
+      "ida_min": 6.6,
+      "regreso_km": 4.3261,
+      "regreso_min": 4.701666666666667,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "66045",
+      "departamento": "RISARALDA",
+      "municipio": "APÍA",
+      "lat": 5.106526,
+      "lng": -75.942356,
+      "ida_km": 65.3443,
+      "ida_min": 67.48166666666667,
+      "regreso_km": 64.2086,
+      "regreso_min": 65.55333333333333,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "66075",
+      "departamento": "RISARALDA",
+      "municipio": "BALBOA",
+      "lat": 4.949096,
+      "lng": -75.958663,
+      "ida_km": 50.021800000000006,
+      "ida_min": 57.32166666666667,
+      "regreso_km": 48.9401,
+      "regreso_min": 55.365,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "66088",
+      "departamento": "RISARALDA",
+      "municipio": "BELÉN DE UMBRÍA",
+      "lat": 5.200793,
+      "lng": -75.868334,
+      "ida_km": 71.5123,
+      "ida_min": 70.05833333333334,
+      "regreso_km": 70.3117,
+      "regreso_min": 68.83666666666666,
+      "pasos": [
+        {
+          "nombre": "ACAPULCO",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "ACAPULCO",
+          "distancia_m": 11,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "66170",
+      "departamento": "RISARALDA",
+      "municipio": "DOSQUEBRADAS",
+      "lat": 4.833131,
+      "lng": -75.675371,
+      "ida_km": 5.9318,
+      "ida_min": 8.133333333333333,
+      "regreso_km": 5.535699999999999,
+      "regreso_min": 7.221666666666667,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "66318",
+      "departamento": "RISARALDA",
+      "municipio": "GUÁTICA",
+      "lat": 5.315367,
+      "lng": -75.799005,
+      "ida_km": 90.45439999999999,
+      "ida_min": 86.41333333333334,
+      "regreso_km": 89.5775,
+      "regreso_min": 84.845,
+      "pasos": [
+        {
+          "nombre": "ACAPULCO",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "ACAPULCO",
+          "distancia_m": 11,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "66383",
+      "departamento": "RISARALDA",
+      "municipio": "LA CELIA",
+      "lat": 5.002787,
+      "lng": -76.0032,
+      "ida_km": 64.9586,
+      "ida_min": 71.89666666666668,
+      "regreso_km": 63.8924,
+      "regreso_min": 69.97833333333332,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "66400",
+      "departamento": "RISARALDA",
+      "municipio": "LA VIRGINIA",
+      "lat": 4.896624,
+      "lng": -75.880394,
+      "ida_km": 32.5742,
+      "ida_min": 36.95,
+      "regreso_km": 31.981,
+      "regreso_min": 35.75833333333333,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "66440",
+      "departamento": "RISARALDA",
+      "municipio": "MARSELLA",
+      "lat": 4.935771,
+      "lng": -75.73879,
+      "ida_km": 33.985099999999996,
+      "ida_min": 38.711666666666666,
+      "regreso_km": 33.3553,
+      "regreso_min": 38.865,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "66456",
+      "departamento": "RISARALDA",
+      "municipio": "MISTRATÓ",
+      "lat": 5.297039,
+      "lng": -75.882886,
+      "ida_km": 87.5366,
+      "ida_min": 87.71166666666666,
+      "regreso_km": 86.34389999999999,
+      "regreso_min": 86.17,
+      "pasos": [
+        {
+          "nombre": "ACAPULCO",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "ACAPULCO",
+          "distancia_m": 11,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "66572",
+      "departamento": "RISARALDA",
+      "municipio": "PUEBLO RICO",
+      "lat": 5.222043,
+      "lng": -76.030801,
+      "ida_km": 90.2298,
+      "ida_min": 90.40166666666667,
+      "regreso_km": 89.1481,
+      "regreso_min": 88.48333333333333,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "66594",
+      "departamento": "RISARALDA",
+      "municipio": "QUINCHÍA",
+      "lat": 5.340456,
+      "lng": -75.730431,
+      "ida_km": 104.0066,
+      "ida_min": 101.54666666666667,
+      "regreso_km": 91.0045,
+      "regreso_min": 90.15333333333334,
+      "pasos": [
+        {
+          "nombre": "San Clemente",
+          "distancia_m": 0,
+          "fuente": "INVÍAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "ACAPULCO",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "IRRA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "TARAPACÁ II",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "SANTAGUEDA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "TARAPACÁ I",
+          "distancia_m": 18,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "66682",
+      "departamento": "RISARALDA",
+      "municipio": "SANTA ROSA DE CABAL",
+      "lat": 4.876271,
+      "lng": -75.623268,
+      "ida_km": 17.4434,
+      "ida_min": 18.261666666666667,
+      "regreso_km": 16.313299999999998,
+      "regreso_min": 18.573333333333334,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "66687",
+      "departamento": "RISARALDA",
+      "municipio": "SANTUARIO",
+      "lat": 5.074911,
+      "lng": -75.964628,
+      "ida_km": 64.73830000000001,
+      "ida_min": 71.355,
+      "regreso_km": 63.6566,
+      "regreso_min": 69.62166666666667,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "73124",
+      "departamento": "TOLIMA",
+      "municipio": "CAJAMARCA",
+      "lat": 4.438812,
+      "lng": -75.431971,
+      "ida_km": 78.213,
+      "ida_min": 86.92833333333333,
+      "regreso_km": 88.0152,
+      "regreso_min": 114.06666666666666,
+      "pasos": [
+        {
+          "nombre": "CIRCASIA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "CIRCASIA",
+          "distancia_m": 14,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": [
+        {
+          "nombre": "Peaje Túnel de la Línea - Quindío",
+          "motivo": "Caseta en la ruta sin tarifa asociada en el catálogo",
+          "osm_id": 10142412768,
+          "sentido": "ida"
+        },
+        {
+          "nombre": "Caseta OSM 13620649544",
+          "motivo": "Caseta en la ruta sin tarifa asociada en el catálogo",
+          "osm_id": 13620649544,
+          "sentido": "ida"
+        },
+        {
+          "nombre": "Peaje Túnel de la Línea Tolíma",
+          "motivo": "Caseta en la ruta sin tarifa asociada en el catálogo",
+          "osm_id": 7878280643,
+          "sentido": "regreso"
+        }
+      ]
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "76020",
+      "departamento": "VALLE DEL CAUCA",
+      "municipio": "ALCALÁ",
+      "lat": 4.674994,
+      "lng": -75.779792,
+      "ida_km": 31.3194,
+      "ida_min": 35.59166666666667,
+      "regreso_km": 30.348200000000002,
+      "regreso_min": 34.415,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "76036",
+      "departamento": "VALLE DEL CAUCA",
+      "municipio": "ANDALUCÍA",
+      "lat": 4.171713,
+      "lng": -76.167925,
+      "ida_km": 107.9192,
+      "ida_min": 102.565,
+      "regreso_km": 106.2267,
+      "regreso_min": 95.79333333333334,
+      "pasos": [
+        {
+          "nombre": "LA URIBE",
+          "distancia_m": 84,
+          "fuente": "INVÍAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "Cerritos II",
+          "distancia_m": 5,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "LA URIBE",
+          "distancia_m": 90,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "76041",
+      "departamento": "VALLE DEL CAUCA",
+      "municipio": "ANSERMANUEVO",
+      "lat": 4.794984,
+      "lng": -75.992003,
+      "ida_km": 41.8331,
+      "ida_min": 51.025,
+      "regreso_km": 41.2581,
+      "regreso_min": 51.92333333333333,
+      "pasos": [
+        {
+          "nombre": "Cerritos II",
+          "distancia_m": 5,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "76054",
+      "departamento": "VALLE DEL CAUCA",
+      "municipio": "ARGELIA",
+      "lat": 4.726945,
+      "lng": -76.119905,
+      "ida_km": 67.95410000000001,
+      "ida_min": 80.36,
+      "regreso_km": 67.37910000000001,
+      "regreso_min": 81.15833333333333,
+      "pasos": [
+        {
+          "nombre": "Cerritos II",
+          "distancia_m": 5,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "76100",
+      "departamento": "VALLE DEL CAUCA",
+      "municipio": "BOLÍVAR",
+      "lat": 4.337846,
+      "lng": -76.183583,
+      "ida_km": 97.82010000000001,
+      "ida_min": 94.88666666666667,
+      "regreso_km": 96.8991,
+      "regreso_min": 96.36333333333333,
+      "pasos": [
+        {
+          "nombre": "Cerritos II",
+          "distancia_m": 5,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "76113",
+      "departamento": "VALLE DEL CAUCA",
+      "municipio": "BUGALAGRANDE",
+      "lat": 4.208358,
+      "lng": -76.15682,
+      "ida_km": 102.32260000000001,
+      "ida_min": 99.33666666666666,
+      "regreso_km": 101.3211,
+      "regreso_min": 93.52,
+      "pasos": [
+        {
+          "nombre": "LA URIBE",
+          "distancia_m": 84,
+          "fuente": "INVÍAS",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "Cerritos II",
+          "distancia_m": 5,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        },
+        {
+          "nombre": "LA URIBE",
+          "distancia_m": 90,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "76122",
+      "departamento": "VALLE DEL CAUCA",
+      "municipio": "CAICEDONIA",
+      "lat": 4.334808,
+      "lng": -75.830594,
+      "ida_km": 82.6665,
+      "ida_min": 94.11666666666666,
+      "regreso_km": 82.1361,
+      "regreso_min": 97.22833333333332,
+      "pasos": [
+        {
+          "nombre": "CIRCASIA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "CIRCASIA",
+          "distancia_m": 14,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "76147",
+      "departamento": "VALLE DEL CAUCA",
+      "municipio": "CARTAGO",
+      "lat": 4.742192,
+      "lng": -75.924374,
+      "ida_km": 32.4762,
+      "ida_min": 40.708333333333336,
+      "regreso_km": 31.6676,
+      "regreso_min": 41.60166666666667,
+      "pasos": [
+        {
+          "nombre": "Cerritos II",
+          "distancia_m": 5,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "76243",
+      "departamento": "VALLE DEL CAUCA",
+      "municipio": "EL ÁGUILA",
+      "lat": 4.906062,
+      "lng": -76.042779,
+      "ida_km": 69.0781,
+      "ida_min": 85.15666666666667,
+      "regreso_km": 69.1343,
+      "regreso_min": 86.185,
+      "pasos": [
+        {
+          "nombre": "Cerritos II",
+          "distancia_m": 5,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "76246",
+      "departamento": "VALLE DEL CAUCA",
+      "municipio": "EL CAIRO",
+      "lat": 4.760874,
+      "lng": -76.221611,
+      "ida_km": 96.77560000000001,
+      "ida_min": 124.32166666666667,
+      "regreso_km": 96.2007,
+      "regreso_min": 125.22666666666667,
+      "pasos": [
+        {
+          "nombre": "Cerritos II",
+          "distancia_m": 5,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "76250",
+      "departamento": "VALLE DEL CAUCA",
+      "municipio": "EL DOVIO",
+      "lat": 4.510452,
+      "lng": -76.237084,
+      "ida_km": 95.2534,
+      "ida_min": 99.09166666666667,
+      "regreso_km": 94.9937,
+      "regreso_min": 101.02666666666667,
+      "pasos": [
+        {
+          "nombre": "Cerritos II",
+          "distancia_m": 5,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "76400",
+      "departamento": "VALLE DEL CAUCA",
+      "municipio": "LA UNIÓN",
+      "lat": 4.533869,
+      "lng": -76.099661,
+      "ida_km": 71.29310000000001,
+      "ida_min": 72.77333333333333,
+      "regreso_km": 70.88069999999999,
+      "regreso_min": 74.25500000000001,
+      "pasos": [
+        {
+          "nombre": "Cerritos II",
+          "distancia_m": 5,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "76403",
+      "departamento": "VALLE DEL CAUCA",
+      "municipio": "LA VICTORIA",
+      "lat": 4.523603,
+      "lng": -76.036529,
+      "ida_km": 63.8986,
+      "ida_min": 63.72833333333333,
+      "regreso_km": 62.542300000000004,
+      "regreso_min": 65.335,
+      "pasos": [
+        {
+          "nombre": "Cerritos II",
+          "distancia_m": 5,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "76497",
+      "departamento": "VALLE DEL CAUCA",
+      "municipio": "OBANDO",
+      "lat": 4.575712,
+      "lng": -75.974709,
+      "ida_km": 53.3389,
+      "ida_min": 55.97,
+      "regreso_km": 51.7884,
+      "regreso_min": 55.73833333333334,
+      "pasos": [
+        {
+          "nombre": "Cerritos II",
+          "distancia_m": 5,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "76622",
+      "departamento": "VALLE DEL CAUCA",
+      "municipio": "ROLDANILLO",
+      "lat": 4.413601,
+      "lng": -76.152277,
+      "ida_km": 87.6874,
+      "ida_min": 85.94,
+      "regreso_km": 86.8375,
+      "regreso_min": 87.47,
+      "pasos": [
+        {
+          "nombre": "Cerritos II",
+          "distancia_m": 5,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "76736",
+      "departamento": "VALLE DEL CAUCA",
+      "municipio": "SEVILLA",
+      "lat": 4.270714,
+      "lng": -75.931629,
+      "ida_km": 101.06410000000001,
+      "ida_min": 116.40666666666667,
+      "regreso_km": 100.8232,
+      "regreso_min": 118.51166666666667,
+      "pasos": [
+        {
+          "nombre": "CIRCASIA",
+          "distancia_m": 0,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "ida"
+        },
+        {
+          "nombre": "CIRCASIA",
+          "distancia_m": 14,
+          "fuente": "INVÍAS / ANI",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "76823",
+      "departamento": "VALLE DEL CAUCA",
+      "municipio": "TORO",
+      "lat": 4.608085,
+      "lng": -76.076859,
+      "ida_km": 67.241,
+      "ida_min": 77.48833333333333,
+      "regreso_km": 66.37410000000001,
+      "regreso_min": 79.19833333333332,
+      "pasos": [
+        {
+          "nombre": "Cerritos II",
+          "distancia_m": 5,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "76845",
+      "departamento": "VALLE DEL CAUCA",
+      "municipio": "ULLOA",
+      "lat": 4.703623,
+      "lng": -75.737808,
+      "ida_km": 26.1132,
+      "ida_min": 34.913333333333334,
+      "regreso_km": 25.1512,
+      "regreso_min": 33.833333333333336,
+      "pasos": [],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "76863",
+      "departamento": "VALLE DEL CAUCA",
+      "municipio": "VERSALLES",
+      "lat": 4.575019,
+      "lng": -76.199203,
+      "ida_km": 93.302,
+      "ida_min": 96.935,
+      "regreso_km": 92.9104,
+      "regreso_min": 98.395,
+      "pasos": [
+        {
+          "nombre": "Cerritos II",
+          "distancia_m": 5,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    },
+    {
+      "sede_id": "pereira",
+      "codigo": "76895",
+      "departamento": "VALLE DEL CAUCA",
+      "municipio": "ZARZAL",
+      "lat": 4.392658,
+      "lng": -76.070795,
+      "ida_km": 78.5402,
+      "ida_min": 74.65333333333334,
+      "regreso_km": 77.281,
+      "regreso_min": 75.91499999999999,
+      "pasos": [
+        {
+          "nombre": "Cerritos II",
+          "distancia_m": 5,
+          "fuente": "INVÍAS",
+          "sentido": "regreso"
+        }
+      ],
+      "pendientes": []
+    }
+  ],
+  "peajes": [
+    {
+      "nombre": "Río Frío",
+      "fuente": "INVÍAS",
+      "tarifaCategoriaI": 12800,
+      "latitud": 3.99550924900007,
+      "longitud": -76.328496698,
+      "sector": "Mediacanoa - Roldanillo",
+      "sentido": "Norte – Sur  / Sur - Norte",
+      "actualizado": "2026-07-01"
+    },
+    {
+      "nombre": "San Clemente",
+      "fuente": "INVÍAS",
+      "tarifaCategoriaI": 12800,
+      "latitud": 5.33243849400003,
+      "longitud": -75.7756032779999,
+      "sector": "Cauyá - La Felisa",
+      "sentido": "Ambos sentidos de circulación",
+      "actualizado": "2026-07-01"
+    },
+    {
+      "nombre": "Los Curos",
+      "fuente": "INVÍAS",
+      "tarifaCategoriaI": 12700,
+      "latitud": 6.82563436700002,
+      "longitud": -72.999481869,
+      "sector": "San Gil - Bucaramanga",
+      "sentido": "Aplica en ambos sentidos",
+      "actualizado": "2026-07-01"
+    },
+    {
+      "nombre": "Curití",
+      "fuente": "INVÍAS",
+      "tarifaCategoriaI": 12700,
+      "latitud": 6.61769608900005,
+      "longitud": -73.0803086669999,
+      "sector": "San Gil - Bucaramanga",
+      "sentido": "Ambos sentidos",
+      "actualizado": "2026-07-01"
+    },
+    {
+      "nombre": "Cocorná",
+      "fuente": "INVÍAS",
+      "tarifaCategoriaI": 18800,
+      "latitud": 6.12460709800007,
+      "longitud": -75.243039628,
+      "sector": "El Santuario - Cruce Ruta 45 (Caño Alegre)",
+      "sentido": "Sur – Norte",
+      "actualizado": "2026-07-01"
+    },
+    {
+      "nombre": "Cerritos II",
+      "fuente": "INVÍAS",
+      "tarifaCategoriaI": 18700,
+      "latitud": 4.79340820900006,
+      "longitud": -75.859962863,
+      "sector": "La Victoria - Cartago - Cerritos",
+      "sentido": "Sur – Norte",
+      "actualizado": "2026-07-01"
+    },
+    {
+      "nombre": "Río Blanco",
+      "fuente": "INVÍAS",
+      "tarifaCategoriaI": 13000,
+      "latitud": 7.63281900600003,
+      "longitud": -73.263641967,
+      "sector": "Río Negro - San Alberto",
+      "sentido": "Norte – Sur",
+      "actualizado": "2026-07-01"
+    },
+    {
+      "nombre": "IRRA",
+      "fuente": "INVÍAS / ANI",
+      "tarifaCategoriaI": 17600,
+      "latitud": 5.257731960000058,
+      "longitud": -75.65746103999999,
+      "sector": "CALDAS",
+      "sentido": "",
+      "actualizado": "2026-01-16"
+    },
+    {
+      "nombre": "GALAPA 02",
+      "fuente": "INVÍAS / ANI",
+      "tarifaCategoriaI": 10000,
+      "latitud": 10.88217504000005,
+      "longitud": -74.83706099999995,
+      "sector": "ATLÁNTICO",
+      "sentido": "",
+      "actualizado": "2026-01-16"
+    },
+    {
+      "nombre": "JUAN MINA",
+      "fuente": "INVÍAS / ANI",
+      "tarifaCategoriaI": 10000,
+      "latitud": 10.929328214000066,
+      "longitud": -74.89449503499998,
+      "sector": "Vía Juan Mina - Las Hermanas",
+      "sentido": "Norte - Sur. Sur - Norte",
+      "actualizado": "2026-01-16"
+    },
+    {
+      "nombre": "LEBRIJA",
+      "fuente": "INVÍAS",
+      "tarifaCategoriaI": 7200,
+      "latitud": 7.10312711700004,
+      "longitud": -73.188611598,
+      "sector": "Lebrija - Palenque",
+      "sentido": "Sur - Norte",
+      "actualizado": "2026-07-01"
+    },
+    {
+      "nombre": "RÍONEGRO",
+      "fuente": "INVÍAS",
+      "tarifaCategoriaI": 7200,
+      "latitud": 7.24326752600007,
+      "longitud": -73.149403777,
+      "sector": "La cemento - Rionegro",
+      "sentido": "Norte - Sur",
+      "actualizado": "2026-07-01"
+    },
+    {
+      "nombre": "ROZO",
+      "fuente": "INVÍAS / INVIAS",
+      "tarifaCategoriaI": 13200,
+      "latitud": 3.6438522090000447,
+      "longitud": -76.38115644299995,
+      "sector": "Palmaseca - El Cerrito",
+      "sentido": "Norte – Sur",
+      "actualizado": "2026-01-16"
+    },
+    {
+      "nombre": "VILLARICA",
+      "fuente": "INVÍAS / INVIAS",
+      "tarifaCategoriaI": 13200,
+      "latitud": 3.151233082000033,
+      "longitud": -76.46003183399995,
+      "sector": "Popayán - Jamundí",
+      "sentido": "Sur – Norte // Norte – Sur",
+      "actualizado": "2026-01-16"
+    },
+    {
+      "nombre": "MEDIACANOA",
+      "fuente": "INVÍAS / INVIAS",
+      "tarifaCategoriaI": 13200,
+      "latitud": 3.7599859330000527,
+      "longitud": -76.41138629499994,
+      "sector": "Yumbo - Mediacanoa",
+      "sentido": "Sur - Norte // Norte - Sur",
+      "actualizado": "2026-01-16"
+    },
+    {
+      "nombre": "CERRITO",
+      "fuente": "INVÍAS",
+      "tarifaCategoriaI": 11000,
+      "latitud": 3.71302200000002,
+      "longitud": -76.31918,
+      "sector": "Cali - Palmira - Buga",
+      "sentido": "Sur - Norte // Norte - Sur",
+      "actualizado": "2026-07-01"
+    },
+    {
+      "nombre": "CIAT",
+      "fuente": "INVÍAS / INVIAS",
+      "tarifaCategoriaI": 13300,
+      "latitud": 3.5235399830000347,
+      "longitud": -76.34316372899997,
+      "sector": "Cali - Palmira - Buga",
+      "sentido": "Norte – Sur",
+      "actualizado": "2026-01-16"
+    },
+    {
+      "nombre": "ESTAMBUL",
+      "fuente": "INVÍAS / INVIAS",
+      "tarifaCategoriaI": 13300,
+      "latitud": 3.5007221990000517,
+      "longitud": -76.44302716399994,
+      "sector": "Cali - Palmira - Buga",
+      "sentido": "Sur - Norte",
+      "actualizado": "2026-01-16"
+    },
+    {
+      "nombre": "CORREDOR PORTUARIO",
+      "fuente": "INVÍAS",
+      "tarifaCategoriaI": 6400,
+      "latitud": 10.95519,
+      "longitud": -74.76589,
+      "sector": "Calle 6",
+      "sentido": "",
+      "actualizado": "2026-07-01"
+    },
+    {
+      "nombre": "LA URIBE",
+      "fuente": "INVÍAS",
+      "tarifaCategoriaI": 8400,
+      "latitud": 4.25246825100004,
+      "longitud": -76.118437533,
+      "sector": "Andalucía - La Paila -La Victoria",
+      "sentido": "Norte – Sur  / Sur - Norte",
+      "actualizado": "2026-07-01"
+    },
+    {
+      "nombre": "El Picacho",
+      "fuente": "INVÍAS / ANI",
+      "tarifaCategoriaI": 13000,
+      "latitud": 7.1079690000000255,
+      "longitud": -72.96897899999993,
+      "sector": "Cuestaboba - Pamplona",
+      "sentido": "Sur - Norte  -  Norte - Sur",
+      "actualizado": "2026-07-01"
+    },
+    {
+      "nombre": "CISNEROS",
+      "fuente": "INVÍAS / ANI",
+      "tarifaCategoriaI": 29400,
+      "latitud": 6.536330315000043,
+      "longitud": -75.07477738199998,
+      "sector": "Cisneros - Alto de Dolores",
+      "sentido": "Aplica en ambos sentidos. Tramo que cubre: Cisneros - Antes de la entrada a la vía secundaria hacia",
+      "actualizado": "2026-01-16"
+    },
+    {
+      "nombre": "PAVAS (TRINIDAD I)",
+      "fuente": "INVÍAS",
+      "tarifaCategoriaI": 14600,
+      "latitud": 5.02706200000006,
+      "longitud": -75.587418,
+      "sector": "Club Campestre - La Trinidad",
+      "sentido": "Ambos sentidos de circulación",
+      "actualizado": "2026-07-01"
+    },
+    {
+      "nombre": "PUERTO COLOMBIA",
+      "fuente": "INVÍAS / ANI",
+      "tarifaCategoriaI": 20700,
+      "latitud": 10.967155537000053,
+      "longitud": -74.95608175999996,
+      "sector": "Cartagena - Lomita Arena",
+      "sentido": "Ambos sentidos de circulación",
+      "actualizado": "2026-01-16"
+    },
+    {
+      "nombre": "Las Palmas",
+      "fuente": "INVÍAS / ANI",
+      "tarifaCategoriaI": 13500,
+      "latitud": 6.150630000000035,
+      "longitud": -75.53127299999994,
+      "sector": "Glorieta Las Palmas - La Unión",
+      "sentido": "Oriente – Occidente",
+      "actualizado": "2026-07-01"
+    },
+    {
+      "nombre": "SANTAGUEDA",
+      "fuente": "INVÍAS / ANI",
+      "tarifaCategoriaI": 16200,
+      "latitud": 5.048662000000036,
+      "longitud": -75.59884599999998,
+      "sector": "Chinchiná - La Manuela",
+      "sentido": "Ambos sentidos de circulación",
+      "actualizado": "2026-01-09"
+    },
+    {
+      "nombre": "BETANIA",
+      "fuente": "INVÍAS",
+      "tarifaCategoriaI": 8200,
+      "latitud": 3.97204071900006,
+      "longitud": -76.2533831599999,
+      "sector": "Aguaclara - Río de Oro",
+      "sentido": "Sur - Norte // Norte - Sur",
+      "actualizado": "2026-07-01"
+    },
+    {
+      "nombre": "LA ESTRELLA",
+      "fuente": "INVÍAS",
+      "tarifaCategoriaI": 6100,
+      "latitud": 5.12551851000006,
+      "longitud": -75.505280332,
+      "sector": "Manizales - Neira",
+      "sentido": "",
+      "actualizado": "2026-07-01"
+    },
+    {
+      "nombre": "PAJARITO",
+      "fuente": "INVÍAS",
+      "tarifaCategoriaI": 6000,
+      "latitud": 6.33180205000002,
+      "longitud": -75.599368636,
+      "sector": "Medellín - San Pedro",
+      "sentido": "",
+      "actualizado": "2026-07-01"
+    },
+    {
+      "nombre": "TARAPACÁ II",
+      "fuente": "INVÍAS / ANI",
+      "tarifaCategoriaI": 17800,
+      "latitud": 4.9497330000000375,
+      "longitud": -75.61876699999993,
+      "sector": "Intersección Jazmín - Estación de  Servicio Chinchiná",
+      "sentido": "Aplica en ambos sentidos de circulación",
+      "actualizado": "2026-01-09"
+    },
+    {
+      "nombre": "ABURRA",
+      "fuente": "INVÍAS",
+      "tarifaCategoriaI": 20600,
+      "latitud": 6.29319200000003,
+      "longitud": -75.651083,
+      "sector": "Puente Aurrá - Medellín",
+      "sentido": "Santa Fe de Antioquia - Medellín",
+      "actualizado": "2026-07-01"
+    },
+    {
+      "nombre": "Sabanagrande",
+      "fuente": "INVÍAS / ANI",
+      "tarifaCategoriaI": 13300,
+      "latitud": 10.799603000000047,
+      "longitud": -74.75900299999995,
+      "sector": "Palmar de Varela - Barranquilla",
+      "sentido": "Ambos sentidos de circulación",
+      "actualizado": "2026-07-01"
+    },
+    {
+      "nombre": "TARAPACÁ I",
+      "fuente": "INVÍAS / ANI",
+      "tarifaCategoriaI": 17800,
+      "latitud": 4.939136000000076,
+      "longitud": -75.61659199999997,
+      "sector": "La Romelia - Río Campo Alegre",
+      "sentido": "Ambos sentidos de circulación",
+      "actualizado": "2026-01-09"
+    },
+    {
+      "nombre": "CIRCASIA",
+      "fuente": "INVÍAS / ANI",
+      "tarifaCategoriaI": 21200,
+      "latitud": 4.698388000000023,
+      "longitud": -75.60614799999996,
+      "sector": "Armenia-Pereira",
+      "sentido": "Norte Sur y Sur Norte",
+      "actualizado": "2026-01-09"
+    },
+    {
+      "nombre": "PRIMAVERA",
+      "fuente": "INVÍAS / ANI",
+      "tarifaCategoriaI": 12600,
+      "latitud": 5.968797000000052,
+      "longitud": -75.59402499999999,
+      "sector": "La Pintada - Primavera",
+      "sentido": "Sur – Norte",
+      "actualizado": "2026-01-16"
+    },
+    {
+      "nombre": "PAPIROS",
+      "fuente": "INVÍAS",
+      "tarifaCategoriaI": 3000,
+      "latitud": 11.0127000000001,
+      "longitud": -74.8895879999999,
+      "sector": "Cartagena - Lomita Arena",
+      "sentido": "Sentido Occidente Oriente",
+      "actualizado": "2026-07-01"
+    },
+    {
+      "nombre": "ACAPULCO",
+      "fuente": "INVÍAS / ANI",
+      "tarifaCategoriaI": 17600,
+      "latitud": 4.999062000000038,
+      "longitud": -75.85887099999997,
+      "sector": "La Virginia - Remolinos",
+      "sentido": "Aplica en ambos sentidos de circulación",
+      "actualizado": "2026-01-16"
+    },
+    {
+      "nombre": "LAUREANO GÓMEZ",
+      "fuente": "INVÍAS",
+      "tarifaCategoriaI": 10100,
+      "latitud": 10.978719174,
+      "longitud": -74.729718979,
+      "sector": "Barranquilla - Santa Marta",
+      "sentido": "Norte – Sur",
+      "actualizado": "2026-07-01"
+    },
+    {
+      "nombre": "TASAJERA",
+      "fuente": "INVÍAS",
+      "tarifaCategoriaI": 10100,
+      "latitud": 10.9771881520001,
+      "longitud": -74.3366643319999,
+      "sector": "Barranquilla - Santa Marta",
+      "sentido": "Norte – Sur",
+      "actualizado": "2026-07-01"
+    },
+    {
+      "nombre": "PANDEQUESO",
+      "fuente": "INVÍAS / DEPARTAMENTO",
+      "tarifaCategoriaI": 17700,
+      "latitud": 6.5276,
+      "longitud": -75.39586,
+      "sector": "Medellìn - Hoyo Rico",
+      "sentido": "Norte - Sur",
+      "actualizado": "2026-01-16"
+    },
+    {
+      "nombre": "AMAGÁ",
+      "fuente": "INVÍAS / ANI",
+      "tarifaCategoriaI": 20600,
+      "latitud": 6.0469490000000405,
+      "longitud": -75.65987399999995,
+      "sector": "El Santuario - Cruce Ruta 45 (Caño Alegre)",
+      "sentido": "Suroeste Tramo que cubre: Bolombolo - Camilo C",
+      "actualizado": "2026-01-16"
+    },
+    {
+      "nombre": "TRAPICHE",
+      "fuente": "INVÍAS / DEPARTAMENTO",
+      "tarifaCategoriaI": 20300,
+      "latitud": 6.399637273000053,
+      "longitud": -75.43301627699998,
+      "sector": "Medellìn - Hoyo Rico",
+      "sentido": "Norte",
+      "actualizado": "2026-01-16"
+    },
+    {
+      "nombre": "PINTADA",
+      "fuente": "INVÍAS",
+      "tarifaCategoriaI": 16200,
+      "latitud": 5.81215600000007,
+      "longitud": -75.679156,
+      "sector": "La Pintada - Peñalisa",
+      "sentido": "Sur – Norte",
+      "actualizado": "2026-07-01"
+    },
+    {
+      "nombre": "Galapa",
+      "fuente": "INVÍAS",
+      "tarifaCategoriaI": 13300,
+      "latitud": 10.8375330000001,
+      "longitud": -74.902122,
+      "sector": "Sabanalarga - Barranquilla",
+      "sentido": "Ambos sentidos de circulación",
+      "actualizado": "2026-07-01"
+    },
+    {
+      "nombre": "PAVAS",
+      "fuente": "ANI",
+      "tarifaCategoriaI": 16200,
+      "latitud": 5.027062000000058,
+      "longitud": -75.58741799999996,
+      "sector": "CALDAS",
+      "sentido": "",
+      "actualizado": "2026-01-09"
+    },
+    {
+      "nombre": "LA PINTADA",
+      "fuente": "ANI",
+      "tarifaCategoriaI": 23900,
+      "latitud": 5.749470000000031,
+      "longitud": -75.62732699999998,
+      "sector": "ANTIOQUIA",
+      "sentido": "",
+      "actualizado": "2026-01-16"
+    },
+    {
+      "nombre": "LA PAZ",
+      "fuente": "ANI",
+      "tarifaCategoriaI": 22000,
+      "latitud": 7.131251970000051,
+      "longitud": -73.41382403999995,
+      "sector": "SANTANDER",
+      "sentido": "",
+      "actualizado": "2024-01-16"
+    },
+    {
+      "nombre": "SEMINARIO",
+      "sentido": "Oriente Occidente",
+      "latitud": 6.223260000000039,
+      "longitud": -75.53491799999995,
+      "tarifaCategoriaI": 26300,
+      "fuente": "https://arcgiswebadaptor.mintransporte.gov.co/server/rest/services/peajes_consulta/peajes_consulta/FeatureServer",
+      "sector": "Gobernación de Antioquía",
+      "actualizado": "2026-10-13"
+    },
+    {
+      "nombre": "SAJONIA",
+      "sentido": "Occidente Oriente",
+      "latitud": 6.1793290000000525,
+      "longitud": -75.45288699999998,
+      "tarifaCategoriaI": 26300,
+      "fuente": "https://arcgiswebadaptor.mintransporte.gov.co/server/rest/services/peajes_consulta/peajes_consulta/FeatureServer",
+      "sector": "Gobernación de Antioquía",
+      "actualizado": "2026-10-13"
+    },
+    {
+      "nombre": "ZONA FRANCA",
+      "sentido": "Ambos sentidos",
+      "latitud": 10.955190000000073,
+      "longitud": -74.76588999999996,
+      "tarifaCategoriaI": 11700,
+      "fuente": "https://arcgiswebadaptor.mintransporte.gov.co/server/rest/services/peajes_consulta/peajes_consulta/FeatureServer",
+      "sector": "Gobernación del Atlántico",
+      "actualizado": "2026-10-13"
+    }
+  ]
+}

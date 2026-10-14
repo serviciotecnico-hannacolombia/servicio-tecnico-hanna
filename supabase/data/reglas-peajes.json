@@ -1,0 +1,38 @@
+{
+  "PAVAS TRINIDAD I": {
+    "nombre": "PAVAS",
+    "sentido": "Ambos sentidos",
+    "tarifa": 16200,
+    "fuente": "https://ftp.autopistasdelcafe.com/informacionpeajes",
+    "nota": "Misma estación que PAVAS; contar una sola vez por sentido. Tarifa categoría I publicada por el operador para 2026."
+  },
+  "PAVAS": {
+    "nombre": "PAVAS",
+    "sentido": "Ambos sentidos",
+    "tarifa": 16200,
+    "fuente": "https://ftp.autopistasdelcafe.com/informacionpeajes"
+  },
+  "PAPIROS": {
+    "sentido": "Ambos sentidos",
+    "tarifa": 0,
+    "vigencia_hasta": "2027-05-11",
+    "fuente": "https://mintransporte.gov.co/info/mintransporte/media/anexos/JxwDCB38.pdf",
+    "nota": "Resolución 20263040017945 del 11/05/2026: suspensión categorías I/II por 12 meses desde 12/05/2026. Revisar al terminar la vigencia."
+  },
+  "CORREDOR PORTUARIO": {
+    "nombre": "ZONA FRANCA",
+    "sentido": "Ambos sentidos",
+    "tarifa": 11700,
+    "latitud": 10.95519,
+    "longitud": -74.76589,
+    "fuente": "https://arcgiswebadaptor.mintransporte.gov.co/server/rest/services/peajes_consulta/peajes_consulta/FeatureServer",
+    "nota": "Nombre anterior del mismo peaje, consolidado para contar una vez por sentido."
+  },
+  "PANDEQUESO": {
+    "sentido": "Ambos sentidos",
+    "tarifa": 17700,
+    "latitud": 6.5276,
+    "longitud": -75.39586,
+    "fuente": "https://arcgiswebadaptor.mintransporte.gov.co/server/rest/services/peajes_consulta/peajes_consulta/FeatureServer"
+  }
+}

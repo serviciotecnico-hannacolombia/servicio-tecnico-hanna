@@ -26,9 +26,9 @@ export interface PeajesVisita {
   motivo?: string | null
 }
 
-export function peajesPorVisita(destino: MantInSituDestino | undefined, pasos: MantInSituDestinoPeaje[], peajes: MantInSituPeaje[]): PeajesVisita {
+export function peajesPorVisita(destino: MantInSituDestino | undefined, pasos: MantInSituDestinoPeaje[], peajes: MantInSituPeaje[], codigoCiudadBase = CODIGO_BOGOTA_CALCULO): PeajesVisita {
   if (!destino) return { conocido: false, total: 0, detalle: [], manual: false }
-  if (destino.codigo === CODIGO_BOGOTA_CALCULO) return { conocido: true, total: 0, detalle: [], manual: false }
+  if (destino.codigo === codigoCiudadBase) return { conocido: true, total: 0, detalle: [], manual: false }
   if (destino.peaje_manual_valor != null) {
     return { conocido: true, total: Math.round(Number(destino.peaje_manual_valor)), detalle: [], manual: true, motivo: destino.peaje_manual_motivo }
   }
@@ -37,7 +37,11 @@ export function peajesPorVisita(destino: MantInSituDestino | undefined, pasos: M
   const porId = new Map(peajes.map(p => [p.id, p]))
   let conocido = true
   const detalle: PeajeVisita[] = []
+  const vistos = new Set<string>()
   for (const paso of pasos.filter(p => p.destino_codigo === destino.codigo)) {
+    const clave = `${paso.sentido}:${paso.peaje_id}`
+    if (vistos.has(clave)) continue
+    vistos.add(clave)
     const p = porId.get(paso.peaje_id)
     if (!p) { conocido = false; continue }
     detalle.push({ nombre: p.nombre, sentido: paso.sentido, precio: Math.round(Number(p.tarifa_categoria_i)) })
@@ -103,10 +107,11 @@ export function calcular(
   config: MantInSituConfig,
   pasos: MantInSituDestinoPeaje[],
   peajes: MantInSituPeaje[],
+  codigoCiudadBase = CODIGO_BOGOTA_CALCULO,
 ): ResultadoCalculo {
   const margen = 1 + Number(config.margen_recorrido_pct) / 100
   const jornada = Number(config.jornada_horas)
-  const esBogota = destino?.codigo === CODIGO_BOGOTA_CALCULO
+  const esBogota = destino?.codigo === codigoCiudadBase
 
   const filas: FilaCalculo[] = items.map(i => {
     const e = equipos.get(i.referencia)
@@ -133,7 +138,7 @@ export function calcular(
   const horasDisponibles = jornada - horasViaje
   const dias = filas.length && horas > 0 && horasDisponibles > 0 ? Math.ceil(Math.max(0, horas - 1e-9) / horasDisponibles) : 0
 
-  const peaje = peajesPorVisita(destino, pasos, peajes)
+  const peaje = peajesPorVisita(destino, pasos, peajes, codigoCiudadBase)
   const km = kmVisita * dias
   const vehiculo = Math.round(km * Number(config.costo_km))
   const combustible = Math.round(km / Number(config.rendimiento_km_galon) * Number(config.precio_galon))

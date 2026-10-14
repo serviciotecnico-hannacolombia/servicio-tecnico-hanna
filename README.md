@@ -77,6 +77,28 @@ Seguimiento de PNC, nota de venta, importación, informe y finalización, con re
 ### Mantenimiento In Situ
 Cálculo del servicio por equipos y destino, considerando horas de trabajo, desplazamiento, combustible, peajes y precios configurables.
 
+### Mantenimiento In Situ Regional
+Cotizador independiente en `/mant-in-situ-regional` para Barranquilla, Bucaramanga, Cali, Medellín y Pereira. Elige oficina, departamento, municipio y equipos. Solo ofrece cabeceras municipales a un máximo de 110 km **viales de ida desde la oficina**, antes del margen de recorrido; Bogotá queda fuera. En la ciudad de la sede se cobra únicamente el precio base. En otros municipios se suman vehículo/depreciación, combustible y peajes por jornada. Sobre los kilómetros de ida que excedan 60 km se aplica un recargo inicial de 300 COP/km por visita, editable por sede en Configuración regional. No incluye vuelos, alojamiento ni alimentación.
+
+El catálogo de precios y asignaciones es común a las cinco sedes regionales, independiente del de Bogotá. Los precios del Excel fueron revisados código por código; vehículo, combustible, jornada y peajes siguen configurándose por sede. El Excel aporta 792 referencias; los HI 839800-01/-02 se recuperan desde Bogotá y tienen precio regional de 900.000 COP. Las rutas se consultaron una sola vez con OpenStreetMap/OSRM y quedaron versionadas: no se consultan mapas durante una cotización. Son rutas a la cabecera municipal, no a una dirección específica del cliente.
+
+El catálogo de peajes extraído del HTML es una referencia histórica, no una asignación automática a rutas. Antes de cotizar fuera de la ciudad sede, quien tenga permiso debe confirmar el total de ida y regreso (también 0 si no hay cobro), con fuente y fecha de revisión.
+
+Para habilitar el módulo, ejecutar una sola vez, en orden y antes de desplegar el frontend:
+
+Para una instalación nueva, se puede copiar completo [el documento SQL unificado](docs/sql/instalar-mant-in-situ-regional.sql) en Supabase SQL Editor. Aplica todos los pasos en una única transacción y se detiene si ya hay tablas regionales. Este documento está fuera de `migrations/` para evitar aplicarlo junto con las migraciones individuales. Si ya se aplicó algún paso, usar solamente las migraciones individuales pendientes.
+
+1. `supabase/migrations/20261013b_mant_in_situ_regional.sql` (tablas y permisos).
+2. `supabase/migrations/20261013c_mant_in_situ_regional_datos.sql` (oficinas, rutas, referencias de peajes y copias iniciales).
+3. `supabase/migrations/20261013d_refractometros_in_situ.sql` (15 referencias HI 968XX en In Situ Bogotá).
+4. `supabase/migrations/20261013e_regional_catalogo_excel.sql` (catálogo regional común y precios confirmados del Excel).
+5. `supabase/migrations/20261013f_regional_acceso_roles.sql` (consulta para roles con In Situ Bogotá y asesores/Ventas; edición solo heredada de permisos existentes).
+6. `supabase/migrations/20261013g_regional_rutas_110_peajes.sql` (234 destinos hasta 110 km, recargo y pasos de peajes por sentido).
+
+Si ya se ejecutaron los pasos 1 y 2, aplicar solo 3 y 4; no repetir migraciones. La actualización de HI 968XX conserva los precios de Bogotá y los datos existentes del catálogo. Tras aplicar los permisos, cerrar sesión y volver a entrar. La entrada está en **Estratégico**; también hay un enlace regional desde la pantalla de Mant. In Situ cuando el usuario tiene acceso.
+
+Las migraciones conceden inicialmente acceso regional a los roles con acceso a Mant. In Situ y edición regional a los roles que ya pueden configurar ese módulo. Después se administran de forma independiente en Roles. Las nuevas tablas son `mant_regional_*`. Ver fuentes, criterios y reproducción del cálculo en [la documentación regional](docs/mant-in-situ-regional.md).
+
 ---
 
 ## Stack
@@ -193,3 +215,5 @@ Crear una rama por mejora o corrección, mantener los commits enfocados y abrir 
 ---
 
 Desarrollado por [@brayansgl](https://www.instagram.com/brayansgl) 🐱
+
+Para una instalación regional existente con b–f aplicadas, ejecutar una vez [la actualización de 110 km y peajes](docs/sql/actualizar-regional-110-peajes.sql), antes de actualizar el frontend. Para una instalación nueva, ejecutar el instalador unificado y después esta actualización. No repetir el instalador sobre tablas existentes. La actualización conserva precios base y ajustes manuales confirmados. Los peajes se cuentan una vez por estación y sentido; un total manual confirmado sustituye el cálculo automático. Hay 15 destinos con casetas o sentidos pendientes de verificar: muestran el detalle pendiente y requieren confirmar el total manual antes de copiar una cotización.
