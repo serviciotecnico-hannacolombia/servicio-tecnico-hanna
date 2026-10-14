@@ -136,8 +136,8 @@ export function TareasPage() {
               return (
                 <div key={t.id} style={{
                   display: 'flex', alignItems: 'flex-start', gap: 12, padding: '12px 16px',
-                  border: `1px solid ${vencida ? 'var(--red-border)' : hoy || proxima ? 'var(--yellow-border)' : 'var(--border)'}`,
-                  background: vencida ? 'var(--red-bg)' : hoy || proxima ? 'var(--yellow-bg)' : 'var(--surface2)', borderRadius: 10,
+                  border: `1px solid ${vencida ? 'var(--red-border)' : hoy || proxima ? 'var(--yellow-border)' : 'var(--green-border)'}`,
+                  background: vencida ? 'var(--red-bg)' : hoy || proxima ? 'var(--yellow-bg)' : 'var(--green-bg)', borderRadius: 10,
                 }}>
                   <button disabled={!soyParticipante} onClick={() => toggleCompletada(t)}
                     title={!soyParticipante ? 'Solo el creador y el asignado pueden cambiar el estado' : t.estado === 'pendiente' ? 'Marcar completada' : 'Reabrir'}
