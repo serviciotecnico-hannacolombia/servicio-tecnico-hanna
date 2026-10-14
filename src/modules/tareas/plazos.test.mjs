@@ -43,3 +43,11 @@ test('mañana cruza mes, año y febrero bisiesto', () => {
     ['2028-02-28T15:00:00Z', '2028-02-29'],
   ]) assert.equal(venceManana(tarea(fecha), new Date(ahora)), true)
 })
+
+test('marcas manuales priorizan sin fecha y desaparecen de alertas al completar',()=>{
+  for(const campo of ['importante','urgente']){
+    assert.equal(esPrioritaria({...tarea(null),[campo]:true}),true)
+    assert.equal(esUrgente({...tarea(null),[campo]:true}),true)
+    assert.equal(esPrioritaria({...tarea(null,'completada'),[campo]:true}),false)
+  }
+})

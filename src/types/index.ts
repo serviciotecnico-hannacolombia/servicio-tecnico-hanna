@@ -289,6 +289,8 @@ export interface TablaMantenimiento {
 export type EstadoTarea = 'pendiente' | 'completada'
 
 export interface Tarea {
+  importante?: boolean
+  urgente?: boolean
   id: string
   privada: boolean
   titulo: string

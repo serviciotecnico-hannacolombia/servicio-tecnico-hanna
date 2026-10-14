@@ -2,7 +2,7 @@ import { tiempoTarea } from './horasLaborales'
 import { faltaColumnaPrivada } from './compatibilidad'
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { Plus, Pencil, Trash2, CheckCircle2, Circle, AlertTriangle, ListTodo, Download } from 'lucide-react'
+import { Plus, Pencil, Trash2, CheckCircle2, Circle, AlertTriangle, ListTodo, Download, Pin } from 'lucide-react'
 import { ExportTareasModal } from './ExportTareasModal'
 import { supabase } from '../../lib/supabase'
 import { Header } from '../../components/layout/Header'
@@ -28,6 +28,9 @@ export function TareasPage() {
   const { data: tareas = [], isLoading } = useTareas()
   const invalidate = useInvalidateTareas()
 
+  const [orden,setOrden]=useState('prioridad')
+  const [fijadas,setFijadas]=useState<string[]>(()=>{try{const v=JSON.parse(localStorage.getItem('tareas-fijadas-'+user?.id)||'[]');return Array.isArray(v)?v.filter(x=>typeof x==='string'):[]}catch{return []}})
+  function fijar(id:string){setFijadas(prev=>{const n=prev.includes(id)?prev.filter(x=>x!==id):[...prev,id];try{localStorage.setItem('tareas-fijadas-'+user?.id,JSON.stringify(n))}catch{/* preferencia solo en sesión */}return n})}
   const [vista, setVista] = useState<Vista>('asignadas')
   const [estadoFiltro, setEstadoFiltro] = useState<EstadoFiltro>('pendiente')
   const [search, setSearch] = useState('')
@@ -45,6 +48,11 @@ export function TareasPage() {
     .filter(t => estadoFiltro === 'todas' || t.estado === estadoFiltro)
     .filter(t => !search.trim() || t.titulo.toLowerCase().includes(search.toLowerCase().trim()))
     .sort((a, b) => {
+      const pin=Number(fijadas.includes(b.id))-Number(fijadas.includes(a.id));if(pin)return pin
+      if(orden==='recientes')return b.created_at.localeCompare(a.created_at)
+      if(orden==='titulo')return a.titulo.localeCompare(b.titulo,'es')
+      if(orden==='vencimiento')return (a.fecha_vencimiento||'9999').localeCompare(b.fecha_vencimiento||'9999')
+      const prioridad=Number(!!b.urgente)*2+Number(!!b.importante)-Number(!!a.urgente)*2-Number(!!a.importante);if(prioridad)return prioridad
       const rank = (t: Tarea) => estaVencida(t) ? 0 : venceHoy(t) ? 1 : venceManana(t) ? 2 : t.estado === 'pendiente' ? 3 : 4
       const av = rank(a), bv = rank(b)
       if (av !== bv) return av - bv
@@ -86,7 +94,7 @@ export function TareasPage() {
       />
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 20 }}>
-        <Stat label="Urgentes (vencidas, hoy o mañana)" value={pendientesCount} color="var(--red)" />
+        <Stat label="Alertas (prioritarias, vencidas, hoy o mañana)" value={pendientesCount} color="var(--red)" />
         <Stat label="Asignadas a mí" value={tareas.filter(t => t.asignado_a === user?.id && t.estado === 'pendiente').length} color="var(--accent)" />
         <Stat label="Creadas por mí" value={tareas.filter(t => t.creado_por === user?.id).length} color="var(--purple)" />
       </div>
@@ -94,7 +102,7 @@ export function TareasPage() {
       <Card>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', marginBottom: 14 }}>
           <div style={{ display: 'flex', gap: 4, background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 9, padding: 3 }}>
-            {([['asignadas', 'Asignadas a mí'], ['creadas', 'Creadas por mí'], ['prioritarias', 'Prioritarias (hoy y vencidas)'], ['todas', 'Todas']] as [Vista, string][]).map(([v, label]) => (
+            {([['asignadas', 'Asignadas a mí'], ['creadas', 'Creadas por mí'], ['prioritarias', 'Prioritarias'], ['todas', 'Todas']] as [Vista, string][]).map(([v, label]) => (
               <button key={v} onClick={() => { setVista(v); if (v === 'prioritarias') setEstadoFiltro('pendiente') }} style={{
                 padding: '6px 12px', border: 'none', borderRadius: 7, cursor: 'pointer', fontSize: 12,
                 fontWeight: vista === v ? 600 : 500, fontFamily: 'var(--sans)',
@@ -108,6 +116,7 @@ export function TareasPage() {
             <option value="completada">Completadas</option>
             <option value="todas">Todas</option>
           </select>
+<select aria-label="Ordenar tareas" style={INP} value={orden} onChange={e=>setOrden(e.target.value)}><option value="prioridad">Orden: prioridad</option><option value="vencimiento">Orden: vencimiento</option><option value="recientes">Orden: más recientes</option><option value="titulo">Orden: título</option></select>
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por título..." style={{ ...INP, flex: 1, minWidth: 180 }} />
         </div>
 
@@ -144,6 +153,7 @@ export function TareasPage() {
                       <span style={{ ...B_PROXIMA, background: 'var(--surface)', color: 'var(--muted)', borderColor: 'var(--border)' }}>
                         {(t.privada ?? true) ? 'Privada' : 'Pública'}
                       </span>
+{t.importante&&<span style={B_PROXIMA}>Importante</span>}{t.urgente&&<span style={B_VENCIDA}>Urgente</span>}{fijadas.includes(t.id)&&<span style={B_PROXIMA}>Fijada</span>}
                       {vencida && <span style={B_VENCIDA}><AlertTriangle size={11} style={{ verticalAlign: -1, marginRight: 3 }} />Vencida</span>}
                       {hoy && <span style={B_PROXIMA}><AlertTriangle size={11} style={{ verticalAlign: -1, marginRight: 3 }} />Vence hoy</span>}
                       {!vencida && proxima && <span style={B_PROXIMA}><AlertTriangle size={11} style={{ verticalAlign: -1, marginRight: 3 }} />Vence mañana</span>}
@@ -156,6 +166,7 @@ export function TareasPage() {
                       <span>Vence: <strong style={{ color: vencida ? 'var(--red)' : undefined }}>{fmtFecha(t.fecha_vencimiento)}</strong></span>
                     </div>
                   </div>
+                  <IconBtn title={fijadas.includes(t.id)?'Desfijar tarea':'Fijar arriba (solo para mí)'} onClick={()=>fijar(t.id)}><Pin size={14} fill={fijadas.includes(t.id)?'currentColor':'none'}/></IconBtn>
                   {soyCreador && (
                     <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
                       <IconBtn title="Editar" onClick={() => setModal({ tarea: t })}><Pencil size={14} /></IconBtn>
@@ -203,6 +214,7 @@ function ModalTarea({ tarea, activos, miId, onClose, onSaved }: {
   const [descripcion, setDescripcion] = useState(tarea?.descripcion || '')
   const [asignadoA, setAsignadoA] = useState(tarea?.asignado_a || miId)
   const [vencimiento, setVencimiento] = useState(tarea?.fecha_vencimiento || '')
+  const [importante,setImportante]=useState(tarea?.importante??false),[urgente,setUrgente]=useState(tarea?.urgente??false)
   const [sinPrivacidad, setSinPrivacidad] = useState(false)
   const [saving, setSaving] = useState(false)
 
@@ -210,7 +222,7 @@ function ModalTarea({ tarea, activos, miId, onClose, onSaved }: {
     if (!titulo.trim()) { toast.error('Ingresa un título'); return }
     setSaving(true)
     try {
-      const datos={titulo:titulo.trim(),descripcion:descripcion.trim()||null,asignado_a:asignadoA,fecha_vencimiento:vencimiento||null}
+      const datos={...(importante||tarea?.importante!==undefined?{importante}:{}),...(urgente||tarea?.urgente!==undefined?{urgente}:{}),titulo:titulo.trim(),descripcion:descripcion.trim()||null,asignado_a:asignadoA,fecha_vencimiento:vencimiento||null}
       const guardar=(conPrivacidad:boolean)=>tarea
         ? supabase.from('tareas').update({...datos,...(conPrivacidad?{privada}:{}),updated_at:new Date().toISOString()}).eq('id',tarea.id)
         : supabase.from('tareas').insert({...datos,...(conPrivacidad?{privada}:{}),creado_por:miId,estado:'pendiente'})
@@ -223,7 +235,7 @@ function ModalTarea({ tarea, activos, miId, onClose, onSaved }: {
         const resultado=await guardar(false)
         error=resultado.error
       }
-      if(error){toast.error('Error: '+error.message);return}
+      if(error){toast.error(/importante|urgente/.test(error.message)?'Las marcas Importante y Urgente requieren aplicar la actualización SQL. Puedes guardar sin esas marcas mientras tanto.':'Error: '+error.message);return}
       toast.success(tarea?'Tarea actualizada':'Tarea creada')
     } catch {toast.error('No se pudo guardar la tarea. Revisa la conexión y vuelve a intentar.');return}
     finally {setSaving(false)}
@@ -252,6 +264,7 @@ function ModalTarea({ tarea, activos, miId, onClose, onSaved }: {
           {privada ? 'Solo la ven el creador y la persona asignada.' : 'La ven todos los usuarios activos con acceso a Tareas.'}
         </p>
       </div>
+      <div style={{display:'flex',gap:18,marginBottom:14}}><label><input type="checkbox" checked={importante} onChange={e=>setImportante(e.target.checked)}/> Importante</label><label><input type="checkbox" checked={urgente} onChange={e=>setUrgente(e.target.checked)}/> Urgente</label></div>
       <FG label="Título">
         <input value={titulo} onChange={e => setTitulo(e.target.value)} placeholder="Ej. Llamar al proveedor X" style={INP} autoFocus />
       </FG>

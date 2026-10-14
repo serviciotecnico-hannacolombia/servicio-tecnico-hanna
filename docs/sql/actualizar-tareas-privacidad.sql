@@ -56,5 +56,7 @@ DROP TRIGGER IF EXISTS proteger_edicion_tarea_trigger ON public.tareas;
 CREATE TRIGGER proteger_edicion_tarea_trigger BEFORE UPDATE ON public.tareas
   FOR EACH ROW EXECUTE FUNCTION public.proteger_edicion_tarea();
 
+ALTER TABLE public.tareas ADD COLUMN IF NOT EXISTS importante boolean NOT NULL DEFAULT false;
+ALTER TABLE public.tareas ADD COLUMN IF NOT EXISTS urgente boolean NOT NULL DEFAULT false;
 NOTIFY pgrst, 'reload schema';
 COMMIT;

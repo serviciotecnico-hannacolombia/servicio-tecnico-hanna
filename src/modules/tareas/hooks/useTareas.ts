@@ -33,11 +33,11 @@ export function useTareasBadgeCount(): { pendientes: number, urgentes: number } 
     queryKey: ['tareas_badge', user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('tareas').select('asignado_a, creado_por, fecha_vencimiento, estado')
+        .from('tareas').select('*')
         .eq('estado', 'pendiente')
         .or(`asignado_a.eq.${user!.id},creado_por.eq.${user!.id}`)
       if (error) throw error
-      return data as Pick<Tarea, 'asignado_a' | 'creado_por' | 'fecha_vencimiento' | 'estado'>[]
+      return data as Pick<Tarea, 'asignado_a' | 'creado_por' | 'fecha_vencimiento' | 'estado' | 'importante' | 'urgente'>[]
     },
     enabled: !!user && hasModule('tareas'),
     refetchInterval: 60_000,
