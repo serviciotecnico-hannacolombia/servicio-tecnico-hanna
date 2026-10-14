@@ -1,6 +1,6 @@
 import { SelectorBuscable } from './SelectorBuscable'
 import { useState } from 'react'
-import { Plus, Trash2, Copy, MapPinned, Search, CalendarDays, Settings, MessageCircle } from 'lucide-react'
+import { Plus, Trash2, Copy, MapPinned, Search, CalendarDays, Settings, MessageCircle, CircleHelp } from 'lucide-react'
 import { toast } from 'sonner'
 import { Header } from '../../components/layout/Header'
 import { Card } from '../../components/ui/Card'
@@ -22,9 +22,22 @@ export function RegionalPage() {
   const sede = sedes.find(s => s.id === sedeId)
   const { hasCapability } = useUser()
   const [configurar, setConfigurar] = useState(false)
+  const [ayuda,setAyuda]=useState(false)
   return <div className="regional-page">
     <Header title={`Mant. In Situ — ${sede?.nombre ?? 'Regional'}`} subtitle="Servicio desde la oficina regional — hasta 110 km por carretera, sin vuelos"
-      actions={<div className="regional-header-actions"><Link className="regional-link" to="/mant-in-situ">Mant. In Situ Bogotá</Link><nav className="regional-tabs" aria-label="Vista regional"><button aria-pressed={!configurar} onClick={()=>setConfigurar(false)}>Consulta</button>{hasCapability('mant_in_situ_regional_editar') && <button aria-pressed={configurar} onClick={()=>setConfigurar(true)}><Settings size={14} /> Configuración</button>}</nav></div>} />
+      actions={<div className="regional-header-actions"><Button variant="ghost" aria-label="Ayuda sobre la consulta regional" aria-expanded={ayuda} aria-controls="ayuda-regional" onClick={()=>setAyuda(v=>!v)}><CircleHelp size={18}/> Ayuda</Button><Link className="regional-link" to="/mant-in-situ">Mant. In Situ Bogotá</Link><nav className="regional-tabs" aria-label="Vista regional"><button aria-pressed={!configurar} onClick={()=>setConfigurar(false)}>Consulta</button>{hasCapability('mant_in_situ_regional_editar') && <button aria-pressed={configurar} onClick={()=>setConfigurar(true)}><Settings size={14} /> Configuración</button>}</nav></div>} />
+    {ayuda && <section id="ayuda-regional" className="regional-help" aria-label="Cómo consultar y programar el mantenimiento regional"><Card>
+      <div className="regional-office-heading"><h3>Cómo realizar la consulta</h3><Button variant="ghost" onClick={()=>setAyuda(false)}>Cerrar ayuda</Button></div>
+      <ol className="regional-help-steps">
+        <li><strong>Elige la oficina de origen.</strong> Selecciona la sede que atenderá el servicio. Puedes cambiarla con «Cambiar oficina».</li>
+        <li><strong>Selecciona la ciudad del cliente.</strong> Escribe o elige el departamento y municipio. Solo se muestran destinos hasta 110 km por carretera de ida desde esa oficina.</li>
+        <li><strong>Agrega los equipos.</strong> Busca la referencia o el nombre, elígelo de la lista y ajusta las cantidades.</li>
+        <li><strong>Revisa el resumen.</strong> En la ciudad de la sede se cobra el servicio base. Para otros destinos se añaden peajes, combustible y uso del vehículo. Los kilómetros de ida que excedan 60 km tienen un recargo según la tarifa configurada.</li>
+        <li><strong>Comparte el resultado.</strong> «Copiar valor» copia el total antes de IVA. «Resumen para WhatsApp» incluye los equipos, el IVA y las condiciones de programación.</li>
+      </ol>
+      <h4>¿Cómo se programa la visita?</h4><p className="regional-note">El servicio regional es compartido: agrupamos solicitudes de la zona y coordinamos la fecha según la cantidad recibida. Una visita exclusiva requiere una solicitud y cotización personalizada de desplazamiento, viáticos y demás gastos; su precio será mayor. La cotización formal se realiza en el ERP.</p>
+      <h4>Si aparecen peajes pendientes</h4><p className="regional-note">Una persona con permiso de Configuración debe revisar «Peajes por destino». Allí puede mostrar solo pendientes, editar los nombres y valores de ida y regreso o importar un CSV. Una lista vacía significa cero peajes solo después de confirmar la revisión. Guarda los cambios para habilitar la cotización.</p>
+    </Card></section>}
     {isLoading ? <Spinner /> : error ? <Card style={{overflow: 'visible'}}>No se pudo cargar la información regional. Verifica las migraciones y vuelve a intentar.</Card>
       : !sedes.length ? <Card style={{overflow: 'visible'}}>No hay sedes regionales configuradas.</Card> : !sede ? <Card style={{overflow:'visible'}}>
         <h2 style={{fontSize:22,marginBottom:8}}>¿Desde qué oficina se realizará el servicio?</h2>
