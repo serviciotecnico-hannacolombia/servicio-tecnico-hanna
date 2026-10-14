@@ -1,6 +1,6 @@
 import type { Tarea } from '../../types'
 
-type PlazoTarea = Pick<Tarea, 'fecha_vencimiento' | 'estado'>
+type PlazoTarea = Pick<Tarea, 'fecha_vencimiento' | 'estado' | 'importante' | 'urgente'>
 
 export function fechaColombia(ahora: Date): string {
   const partes = new Intl.DateTimeFormat('en', {
@@ -25,7 +25,7 @@ export function venceManana(t: PlazoTarea, ahora = new Date()): boolean {
 }
 
 export function esPrioritaria(t: PlazoTarea, ahora = new Date()): boolean {
-  return estaVencida(t, ahora) || venceHoy(t, ahora)
+  return t.estado==='pendiente' && (!!t.importante || !!t.urgente || estaVencida(t, ahora) || venceHoy(t, ahora))
 }
 
 export function esUrgente(t: PlazoTarea, ahora = new Date()): boolean {
