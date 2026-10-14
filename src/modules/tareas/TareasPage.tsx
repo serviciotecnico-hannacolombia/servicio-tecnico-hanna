@@ -1,3 +1,4 @@
+import { faltaColumnaPrivada } from './compatibilidad'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { Plus, Pencil, Trash2, CheckCircle2, Circle, AlertTriangle, ListTodo, Download } from 'lucide-react'
@@ -199,37 +200,38 @@ function ModalTarea({ tarea, activos, miId, onClose, onSaved }: {
   const [descripcion, setDescripcion] = useState(tarea?.descripcion || '')
   const [asignadoA, setAsignadoA] = useState(tarea?.asignado_a || miId)
   const [vencimiento, setVencimiento] = useState(tarea?.fecha_vencimiento || '')
+  const [sinPrivacidad, setSinPrivacidad] = useState(false)
   const [saving, setSaving] = useState(false)
 
   async function submit() {
     if (!titulo.trim()) { toast.error('Ingresa un título'); return }
     setSaving(true)
-    if (tarea) {
-      const { error } = await supabase.from('tareas').update({
-        privada,
-        titulo: titulo.trim(), descripcion: descripcion.trim() || null,
-        asignado_a: asignadoA, fecha_vencimiento: vencimiento || null,
-        updated_at: new Date().toISOString(),
-      }).eq('id', tarea.id)
-      setSaving(false)
-      if (error) { toast.error('Error: ' + error.message); return }
-      toast.success('Tarea actualizada')
-    } else {
-      const { error } = await supabase.from('tareas').insert({
-        privada,
-        titulo: titulo.trim(), descripcion: descripcion.trim() || null,
-        creado_por: miId, asignado_a: asignadoA, fecha_vencimiento: vencimiento || null, estado: 'pendiente',
-      })
-      setSaving(false)
-      if (error) { toast.error('Error: ' + error.message); return }
-      toast.success('Tarea creada')
-    }
+    try {
+      const datos={titulo:titulo.trim(),descripcion:descripcion.trim()||null,asignado_a:asignadoA,fecha_vencimiento:vencimiento||null}
+      const guardar=(conPrivacidad:boolean)=>tarea
+        ? supabase.from('tareas').update({...datos,...(conPrivacidad?{privada}:{}),updated_at:new Date().toISOString()}).eq('id',tarea.id)
+        : supabase.from('tareas').insert({...datos,...(conPrivacidad?{privada}:{}),creado_por:miId,estado:'pendiente'})
+      let {error}=await guardar(true)
+      if(faltaColumnaPrivada(error)) {
+        setSinPrivacidad(true)
+        if(!privada){toast.error('Las tareas públicas requieren la actualización de Supabase. Puedes guardar esta tarea como privada.');return}
+        // La petición rechazada por columna inexistente no escribió datos.
+        // El esquema anterior protege la lectura por creador/asignado.
+        const resultado=await guardar(false)
+        error=resultado.error
+      }
+      if(error){toast.error('Error: '+error.message);return}
+      toast.success(tarea?'Tarea actualizada':'Tarea creada')
+    } catch {toast.error('No se pudo guardar la tarea. Revisa la conexión y vuelve a intentar.');return}
+    finally {setSaving(false)}
+
     onSaved()
     onClose()
   }
 
   return (
     <Modal open onClose={onClose} title={tarea ? `Editar tarea` : 'Nueva tarea'}>
+      {sinPrivacidad&&<p role="status" style={{fontSize:12,color:'var(--muted)',marginBottom:12}}>Por ahora solo puedes guardar tareas privadas. Las tareas públicas estarán disponibles al actualizar Supabase.</p>}
       <div style={{ marginBottom: 14 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <button type="button" role="switch" aria-checked={privada} aria-labelledby="tarea-privacidad-label"
