@@ -19,15 +19,19 @@ import { Link } from 'react-router-dom'
 export function RegionalPage() {
   const { data: sedes = [], isLoading, error } = useSedesRegionales()
   const [sedeId, setSedeId] = useState('')
-  const sede = sedes.find(s => s.id === sedeId) ?? sedes[0]
+  const sede = sedes.find(s => s.id === sedeId)
   const { hasCapability } = useUser()
   const [configurar, setConfigurar] = useState(false)
   return <div className="regional-page">
     <Header title={`Mant. In Situ — ${sede?.nombre ?? 'Regional'}`} subtitle="Servicio desde la oficina regional — hasta 110 km por carretera, sin vuelos"
       actions={<div className="regional-header-actions"><Link className="regional-link" to="/mant-in-situ">Mant. In Situ Bogotá</Link><nav className="regional-tabs" aria-label="Vista regional"><button aria-pressed={!configurar} onClick={()=>setConfigurar(false)}>Consulta</button>{hasCapability('mant_in_situ_regional_editar') && <button aria-pressed={configurar} onClick={()=>setConfigurar(true)}><Settings size={14} /> Configuración</button>}</nav></div>} />
     {isLoading ? <Spinner /> : error ? <Card style={{overflow: 'visible'}}>No se pudo cargar la información regional. Verifica las migraciones y vuelve a intentar.</Card>
-      : !sede ? <Card style={{overflow: 'visible'}}>No hay sedes regionales configuradas.</Card> : <>
-        <Card style={{overflow: 'visible'}}><FG label="Oficina de origen"><SelectorBuscable style={INP} value={sede.id} onChange={e => setSedeId(e.target.value)}>
+      : !sedes.length ? <Card style={{overflow: 'visible'}}>No hay sedes regionales configuradas.</Card> : !sede ? <Card style={{overflow:'visible'}}>
+        <h2 style={{fontSize:22,marginBottom:8}}>¿Desde qué oficina se realizará el servicio?</h2>
+        <p className="regional-note">Elige primero la oficina de origen. Luego podrás seleccionar la ciudad del cliente y los equipos a atender.</p>
+        <div className="regional-office-options">{sedes.map(s=><button className="regional-office-option" key={s.id} onClick={()=>setSedeId(s.id)}><MapPinned size={22}/><strong>{s.nombre}</strong><span>{s.direccion}</span><small>Consultar desde esta oficina →</small></button>)}</div>
+      </Card> : <>
+        <Card style={{overflow: 'visible'}}><div className="regional-office-heading"><strong>Oficina de origen: {sede.nombre}</strong><Button variant="ghost" onClick={()=>setSedeId('')}>Cambiar oficina</Button></div><FG label="Consultar otra oficina"><SelectorBuscable style={INP} value={sede.id} onChange={e => setSedeId(e.target.value)}>
           {sedes.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
         </SelectorBuscable></FG>
       <p style={{ marginTop: 10, color: 'var(--muted)', fontSize: 13 }}><MapPinned size={14} /> {sede.direccion}</p>
