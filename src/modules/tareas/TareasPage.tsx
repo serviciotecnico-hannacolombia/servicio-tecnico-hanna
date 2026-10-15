@@ -73,8 +73,17 @@ export function TareasPage() {
   }
 
   async function eliminar(t: Tarea) {
-    const { error } = await supabase.from('tareas').delete().eq('id', t.id)
+    if (!user || t.creado_por !== user.id) {
+      toast.error('Solo quien creó la tarea puede eliminarla')
+      return
+    }
+    const { data, error } = await supabase.from('tareas').delete()
+      .eq('id', t.id).eq('creado_por', user.id).select('id')
     if (error) { toast.error('Error: ' + error.message); return }
+    if (data?.length !== 1) {
+      toast.error('No se eliminó la tarea. Verifica que siga existiendo y que seas su creador.')
+      return
+    }
     toast.success('Tarea eliminada')
     setEliminando(null)
     invalidate()
@@ -194,7 +203,7 @@ export function TareasPage() {
 
       {eliminando && (
         <Modal open onClose={() => setEliminando(null)} title="Eliminar tarea">
-          <p style={{ fontSize: 13 }}>¿Eliminar la tarea <strong>{eliminando.titulo}</strong>? Esta acción no se puede deshacer.</p>
+          <p style={{ fontSize: 13 }}>¿Eliminar la tarea <strong>{eliminando.titulo}</strong>? Solo quien creó la tarea puede eliminarla. Esta acción no se puede deshacer.</p>
           <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 20 }}>
             <button onClick={() => setEliminando(null)} style={GHOST}>Cancelar</button>
             <button onClick={() => eliminar(eliminando)} style={{ ...PRI, background: 'var(--red)' }}>🗑 Eliminar</button>
