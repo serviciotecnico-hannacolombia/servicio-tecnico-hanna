@@ -3,6 +3,7 @@ import { supabase, fetchAllRows } from '../../../lib/supabase'
 import { useUser } from '../../../hooks/useUser'
 import { useProfiles } from '../../../hooks/useProfiles'
 import { nivelPorFecha, type NivelSemaforo } from '../../calibraciones/hooks/useCalibraciones'
+import { linkSaci } from '../../calibraciones/vistas/CamposCompartidos'
 import type { EstadoGarantia, Garantia, GarantiaHistorial, GarantiaNota, Profile } from '../../../types'
 
 export function useGarantias() {
@@ -99,12 +100,14 @@ export const ESTADO_LABEL_GAR: Record<EstadoGarantia, string> = {
 export const CAMPO_LABEL_GAR: Record<string, string> = {
   creacion: 'Garantía creada',
   cliente: 'Cliente',
+  nit: 'NIT',
   referencia: 'Referencia',
   otst: 'OTST',
   asesor_correo: 'Asesor comercial',
   hay_stock: 'Hay stock',
   responsables: 'Responsables',
   estado: 'Estado',
+  requerimiento_nv: 'Requerimiento NV (SACI)',
   numero_nv: 'Número de NV',
   fecha_seguimiento: 'Fecha de seguimiento',
   numero_pnc: 'PNC',
@@ -145,6 +148,33 @@ export function linkPnc(numero: string | null): string | null {
   return v ? `https://intranet.hannacolombia.com/stecnico/producto_no_conforme/item/${encodeURIComponent(v)}` : null
 }
 
+// El requerimiento con el que se solicita la NV se abre en SACI.
+export function linkRequerimientoNv(numero: string | null): string | null {
+  return linkSaci(numero || '')
+}
+
+// Borrador del correo para solicitar la NV (ruta sin stock) — se copia y
+// se pega en el correo, no se envía desde la app.
+export function textoSolicitudNv(g: Pick<Garantia, 'cliente' | 'nit' | 'referencia' | 'otst'>) {
+  const asunto = `Solicitud de NV - ${g.cliente}`
+  const cuerpo = [
+    'Cordial saludo, espero estés bien, solicito la creación de la NV',
+    '',
+    `Cliente: ${g.cliente}`,
+    `NIT: ${g.nit || ''}`,
+    `Referencia: ${g.referencia}`,
+    `OTST: ${g.otst || '—'}`,
+    '',
+    'Agradezco la atención prestada',
+  ].join('\n')
+  return { asunto, cuerpo }
+}
+
+// NIT: solo dígitos, punto y guion (ej. 900.123.456-7).
+export function limpiarNit(valor: string): string {
+  return valor.replace(/[^0-9.-]/g, '')
+}
+
 export function fmtFecha(iso: string | null): string {
   if (!iso) return '—'
   const [y, m, d] = iso.slice(0, 10).split('-')
@@ -155,6 +185,7 @@ export function fmtFecha(iso: string | null): string {
 
 export interface GarantiaForm {
   cliente: string
+  nit: string
   referencia: string
   otst: string
   asesor_correo: string
@@ -174,6 +205,7 @@ export function estadoInicial(f: Pick<GarantiaForm, 'hay_stock' | 'numero_pnc'>)
 function camposBase(f: GarantiaForm) {
   return {
     cliente: f.cliente.trim(),
+    nit: f.nit.trim() || null,
     referencia: f.referencia.trim(),
     otst: f.otst.trim() || null,
     asesor_correo: f.asesor_correo,

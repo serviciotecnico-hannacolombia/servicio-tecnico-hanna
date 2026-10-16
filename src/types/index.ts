@@ -532,12 +532,14 @@ export interface Garantia {
   id: string
   numero: number
   cliente: string
+  nit: string | null
   referencia: string
   otst: string | null
   asesor_correo: string
   hay_stock: boolean
   responsables: string[]
   estado: EstadoGarantia
+  requerimiento_nv: string | null
   numero_nv: string | null
   fecha_seguimiento: string | null
   numero_pnc: string | null
