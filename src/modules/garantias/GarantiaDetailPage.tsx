@@ -13,7 +13,7 @@ import {
   useGarantias, useResponsablesGarantias, useInvalidateGarantias,
   crearGarantia, editarGarantia, actualizarGarantia,
   anularGarantia, reactivarGarantia, eliminarGarantia,
-  ESTADO_LABEL_GAR, estadoInicial, linkPnc, flujoGarantia, fmtFecha, type GarantiaForm,
+  ESTADO_LABEL_GAR, estadoInicial, linkPnc, linkRequerimientoNv, limpiarNit, flujoGarantia, fmtFecha, type GarantiaForm,
 } from './hooks/useGarantias'
 import { StepperGAR } from './StepperGAR'
 import { HistorialSidebarGAR } from './HistorialSidebarGAR'
@@ -26,7 +26,7 @@ import { FG, INP, PRI, GHOST, SemaforoGarantia, LinkPNC } from './ui'
 import type { Garantia } from '../../types'
 
 const FORM_VACIO: GarantiaForm = {
-  cliente: '', referencia: '', otst: '', asesor_correo: '', responsables: [],
+  cliente: '', nit: '', referencia: '', otst: '', asesor_correo: '', responsables: [],
   hay_stock: true, numero_pnc: '', fecha_limite_entrega: '',
 }
 
@@ -75,7 +75,7 @@ export function GarantiaDetailPage() {
   function iniciarEdicion() {
     if (!garantia) return
     setForm({
-      cliente: garantia.cliente, referencia: garantia.referencia, otst: garantia.otst || '',
+      cliente: garantia.cliente, nit: garantia.nit || '', referencia: garantia.referencia, otst: garantia.otst || '',
       asesor_correo: garantia.asesor_correo, responsables: garantia.responsables,
       hay_stock: garantia.hay_stock, numero_pnc: '', fecha_limite_entrega: '',
     })
@@ -90,6 +90,9 @@ export function GarantiaDetailPage() {
 
   function validar(): boolean {
     if (!form.cliente.trim()) { toast.error('Ingresa el cliente'); return false }
+    // Obligatorio al crear; las garantías anteriores al campo pueden seguir sin NIT.
+    if (esNueva && !form.nit.trim()) { toast.error('Ingresa el NIT'); return false }
+    if (form.nit.trim() && !/\d/.test(form.nit)) { toast.error('NIT inválido'); return false }
     if (!form.referencia.trim()) { toast.error('Ingresa la referencia'); return false }
     if (!form.asesor_correo) { toast.error('Selecciona el asesor comercial'); return false }
     if (esNueva && form.hay_stock && form.numero_pnc.trim() && !form.fecha_limite_entrega) {
@@ -187,6 +190,9 @@ export function GarantiaDetailPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 14 }}>
           <FG label="Cliente" required>
             <input value={form.cliente} onChange={e => set('cliente', e.target.value.toUpperCase())} placeholder="Ej. LABORATORIOS ABC S.A.S." style={INP} autoFocus />
+          </FG>
+          <FG label="NIT" required={esNueva}>
+            <input value={form.nit} onChange={e => set('nit', limpiarNit(e.target.value))} placeholder="Ej. 900.123.456-7" style={INP} />
           </FG>
           <FG label="Referencia" required>
             <input value={form.referencia} onChange={e => set('referencia', e.target.value.toUpperCase())} placeholder="Ej. HI98107" style={INP} />
@@ -343,12 +349,16 @@ export function GarantiaDetailPage() {
                     </div>
                   </div>
                   <div style={{ fontSize: 12, color: 'var(--muted)', fontFamily: 'var(--mono)', marginTop: 12, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                    {garantia.nit && <span>NIT: <strong>{garantia.nit}</strong></span>}
                     <span>Referencia: <strong>{garantia.referencia}</strong></span>
                     <span>OTST:{' '}
                       {parseOtstCodes(garantia.otst).length === 0 ? <strong>—</strong> : parseOtstCodes(garantia.otst).map((c, i) => (
                         <span key={c}>{i > 0 && ', '}<a href={linkOtst(c)!} target="_blank" rel="noopener noreferrer" style={{ fontWeight: 700, color: 'var(--accent)' }}>{c}</a></span>
                       ))}
                     </span>
+                    {garantia.requerimiento_nv && (
+                      <span>Req. NV: <a href={linkRequerimientoNv(garantia.requerimiento_nv)!} target="_blank" rel="noopener noreferrer" style={{ fontWeight: 700, color: 'var(--accent)' }}>{garantia.requerimiento_nv}</a></span>
+                    )}
                     {garantia.numero_nv && <span>NV: <strong>{garantia.numero_nv}</strong></span>}
                     {garantia.numero_pnc && <span>PNC: <LinkPNC numero={garantia.numero_pnc} /></span>}
                     <span>Asesor: <strong>{asesorNombre}</strong></span>
