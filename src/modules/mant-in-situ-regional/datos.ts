@@ -1,3 +1,5 @@
+import { completarCartagena } from './respaldoCartagena'
+import { destinoRegionalHabilitado } from './cobertura'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase, fetchAllRows } from '../../lib/supabase'
 import { useUser } from '../../hooks/useUser'
@@ -13,7 +15,7 @@ export interface DestinoRegional extends MantInSituDestino {
   peajes_ruta_verificados: boolean, revision_ruta: { pendientes?: {nombre: string, motivo: string, sentido: string}[] } | null
 }
 interface PasoRegional { sede_id: string, destino_codigo: string, peaje_nombre: string, sentido: 'ida' | 'regreso' }
-interface PeajeRegional extends MantInSituPeaje { vigencia_hasta: string | null, fuente_revision: string | null }
+export interface PeajeRegional extends MantInSituPeaje { vigencia_hasta: string | null, fuente_revision: string | null }
 interface Instrumento { codigo: string, descripcion: string | null, familia: string | null, codigo_mantenimiento: string | null }
 
 export function useSedesRegionales() {
@@ -22,9 +24,9 @@ export function useSedesRegionales() {
     queryFn: () => fetchAllRows<SedeRegional>('mant_regional_sedes', q => q.order('nombre')) })
 }
 
-export function useRegional(sede: SedeRegional | undefined) {
+export function useRegional(sede: SedeRegional | undefined, incluirRespaldo = false) {
   const { hasModule } = useUser()
-  return useQuery({ queryKey: ['regional', sede?.id], enabled: !!sede && hasModule('mant_in_situ_regional'),
+  return useQuery({ queryKey: ['regional', sede?.id, incluirRespaldo], enabled: !!sede && hasModule('mant_in_situ_regional'),
     queryFn: async () => {
       const id = sede!.id
       const [configResult, codigos, asignaciones, destinos, peajes, instrumentos, pasosRegional] = await Promise.all([
@@ -51,8 +53,9 @@ export function useRegional(sede: SedeRegional | undefined) {
           codigoNormal: i?.codigo_mantenimiento ?? '', excepcion: null }
       })
       const pasos = pasosRegional.map(p=>({destino_codigo:p.destino_codigo,peaje_id:p.peaje_nombre,sentido:p.sentido,revision_requerida:false}))
-      return { config, codigos, asignaciones, destinos: destinos.filter(d => Number(d.ida_km) <= 110),
-        peajes: peajes.map(p=>({...p,id:p.nombre})), equipos, pasos }
+      const rutas = {destinos: destinos.filter(d => destinoRegionalHabilitado(id, d)),
+        peajes: peajes.map(p=>({...p,id:p.nombre})), pasos}
+      return { config, codigos, asignaciones, equipos, ...(incluirRespaldo ? completarCartagena(id, rutas) : rutas) }
     } })
 }
 

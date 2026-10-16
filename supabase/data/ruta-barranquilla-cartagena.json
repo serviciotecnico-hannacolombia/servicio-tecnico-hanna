@@ -1,0 +1,50 @@
+{
+  "sede_id": "barranquilla",
+  "codigo": "13001",
+  "departamento": "BOLÍVAR",
+  "municipio": "CARTAGENA DE INDIAS",
+  "lat": 10.4265566,
+  "lng": -75.5441671,
+  "consultado_at": "2026-10-16T21:15:31.377Z",
+  "fuente_coordenadas": "https://nominatim.openstreetmap.org/search?city=Cartagena&country=Colombia&format=json&limit=1",
+  "ida": {
+    "url": "https://router.project-osrm.org/route/v1/driving/-74.813282,11.0042234;-75.5441671,10.4265566?overview=false",
+    "km": 118.1705,
+    "min": 114.61666666666666,
+    "pasos": [
+      "PUERTO COLOMBIA",
+      "MARAHUACO",
+      "PAPIROS"
+    ]
+  },
+  "regreso": {
+    "url": "https://router.project-osrm.org/route/v1/driving/-75.5441671,10.4265566;-74.813282,11.0042234?overview=false",
+    "km": 119.7114,
+    "min": 111.96499999999999,
+    "pasos": [
+      "MARAHUACO",
+      "PUERTO COLOMBIA",
+      "PAPIROS"
+    ]
+  },
+  "peajes": [
+    {
+      "nombre": "PUERTO COLOMBIA",
+      "tarifa_categoria_i": 20700,
+      "vigencia_hasta": "2027-01-15"
+    },
+    {
+      "nombre": "MARAHUACO",
+      "tarifa_categoria_i": 22200,
+      "vigencia_hasta": "2027-01-15"
+    },
+    {
+      "nombre": "PAPIROS",
+      "tarifa_categoria_i": 0,
+      "vigencia_hasta": "2027-05-11"
+    }
+  ],
+  "fuente_tarifas": "https://www.rutacostera.co/peajes/",
+  "fuente_papiros": "https://mintransporte.gov.co/info/mintransporte/media/anexos/JxwDCB38.pdf",
+  "peajes_ruta_verificados": true
+}

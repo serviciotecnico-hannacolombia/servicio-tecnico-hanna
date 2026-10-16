@@ -24,13 +24,13 @@ export function RegionalPage() {
   const [configurar, setConfigurar] = useState(false)
   const [ayuda,setAyuda]=useState(false)
   return <div className="regional-page">
-    <Header title={`Mant. In Situ — ${sede?.nombre ?? 'Regional'}`} subtitle="Servicio desde la oficina regional — hasta 110 km por carretera, sin vuelos"
+    <Header title={`Mant. In Situ — ${sede?.nombre ?? 'Regional'}`} subtitle="Servicio desde la oficina regional — hasta 110 km y Cartagena desde Barranquilla, sin vuelos"
       actions={<div className="regional-header-actions"><Button variant="ghost" aria-label="Ayuda sobre la consulta regional" aria-expanded={ayuda} aria-controls="ayuda-regional" onClick={()=>setAyuda(v=>!v)}><CircleHelp size={18}/> Ayuda</Button><Link className="regional-link" to="/mant-in-situ">Mant. In Situ Bogotá</Link><nav className="regional-tabs" aria-label="Vista regional"><button aria-pressed={!configurar} onClick={()=>setConfigurar(false)}>Consulta</button>{hasCapability('mant_in_situ_regional_editar') && <button aria-pressed={configurar} onClick={()=>setConfigurar(true)}><Settings size={14} /> Configuración</button>}</nav></div>} />
     {ayuda && <section id="ayuda-regional" className="regional-help" aria-label="Cómo consultar y programar el mantenimiento regional"><Card>
       <div className="regional-office-heading"><h3>Cómo realizar la consulta</h3><Button variant="ghost" onClick={()=>setAyuda(false)}>Cerrar ayuda</Button></div>
       <ol className="regional-help-steps">
         <li><strong>Elige la oficina de origen.</strong> Selecciona la sede que atenderá el servicio. Puedes cambiarla con «Cambiar oficina».</li>
-        <li><strong>Selecciona la ciudad del cliente.</strong> Escribe o elige el departamento y municipio. Solo se muestran destinos hasta 110 km por carretera de ida desde esa oficina.</li>
+        <li><strong>Selecciona la ciudad del cliente.</strong> Escribe o elige el departamento y municipio. Se muestran destinos hasta 110 km por carretera de ida y, como excepción, Cartagena desde Barranquilla.</li>
         <li><strong>Agrega los equipos.</strong> Busca la referencia o el nombre, elígelo de la lista y ajusta las cantidades.</li>
         <li><strong>Revisa el resumen.</strong> En la ciudad de la sede se cobra el servicio base. Para otros destinos se añaden peajes, combustible y uso del vehículo. Los kilómetros de ida que excedan 60 km tienen un recargo según la tarifa configurada.</li>
         <li><strong>Comparte el resultado.</strong> «Copiar valor» copia el total antes de IVA. «Resumen para WhatsApp» incluye los equipos, el IVA y las condiciones de programación.</li>
@@ -58,7 +58,7 @@ export function RegionalPage() {
 }
 
 function ConsultaRegional({ sede }: { sede: SedeRegional }) {
-  const { data, isLoading, error } = useRegional(sede)
+  const { data, isLoading, error } = useRegional(sede, true)
   const [departamento, setDepartamento] = useState('')
   const [codigoDestino, setCodigoDestino] = useState(sede.codigo)
   const [buscar, setBuscar] = useState('')
