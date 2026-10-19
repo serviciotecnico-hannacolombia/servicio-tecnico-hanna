@@ -1018,9 +1018,10 @@ function ModalAgregarPendiente({ item, onClose }: { item: OtstBodega, onClose: (
   const [saving, setSaving] = useState(false)
 
   async function submit() {
+    if (!nota.trim()) { toast.error('Ingresa el motivo de la solicitud'); return }
     setSaving(true)
     const { error } = await supabase.from('otst_bodega_pendientes').insert({
-      otst: item.otst, otst_id: item.id, nota: nota.trim() || null, solicitado_por: displayName, estado: 'pendiente',
+      otst: item.otst, otst_id: item.id, nota: nota.trim(), solicitado_por: displayName, estado: 'pendiente',
     })
     setSaving(false)
     if (error) { toast.error('Error: ' + error.message); return }
@@ -1037,12 +1038,12 @@ function ModalAgregarPendiente({ item, onClose }: { item: OtstBodega, onClose: (
         </div>
         <div style={{ fontSize: 20, fontWeight: 800, fontFamily: 'var(--mono)' }}>{codigoUbicacion(item.columna, item.fila, item.subcolumna)}</div>
       </div>
-      <FG label="Motivo de la solicitud" hint="Ej. Cliente pidió despacho por correo / pasar a logística para envío">
-        <textarea value={nota} onChange={e => setNota(e.target.value)} placeholder="Opcional..." rows={2} style={{ ...INP, resize: 'vertical' }} autoFocus />
+      <FG label="Motivo de la solicitud" required hint="Ej. Cliente pidió despacho por correo / pasar a logística para envío">
+        <textarea value={nota} onChange={e => setNota(e.target.value)} placeholder="¿Por qué se despacha?" rows={2} style={{ ...INP, resize: 'vertical' }} autoFocus />
       </FG>
       <Actions>
         <button onClick={onClose} style={GHOST}>Cancelar</button>
-        <button onClick={submit} disabled={saving} style={PRI}>{saving ? 'Guardando…' : '+ Agregar a pendientes'}</button>
+        <button onClick={submit} disabled={saving || !nota.trim()} style={{ ...PRI, opacity: nota.trim() ? 1 : .5 }}>{saving ? 'Guardando…' : '+ Agregar a pendientes'}</button>
       </Actions>
     </Modal>
   )
@@ -1600,6 +1601,7 @@ function TabPendientes({ bodega, pendientes, umbral, columnas }: { bodega: OtstB
   const canEliminar     = hasCapability('bodega_eliminar')
   const canRegistrarIngreso = hasCapability('bodega_registrar_ingreso')
   const otstRef          = useRef<HTMLInputElement>(null)
+  const notaRef          = useRef<HTMLInputElement>(null)
   const [otstInput, setOtstInput] = useState('')
   const [notaInput, setNotaInput] = useState('')
   const [saving,    setSaving]    = useState(false)
@@ -1622,10 +1624,12 @@ function TabPendientes({ bodega, pendientes, umbral, columnas }: { bodega: OtstB
     const otst = otstInput.trim()
     if (!otst) { toast.error('Ingresa el número de OTST'); return }
     if (yaTienePendiente.has(otst.toLowerCase())) { toast.error(`Ya existe una solicitud pendiente para la OTST ${otst}`); return }
+    const nota = notaInput.trim()
+    if (!nota) { toast.error('Ingresa el motivo del despacho'); notaRef.current?.focus(); return }
     setSaving(true)
     const match = bodega.find(b => b.otst.trim().toLowerCase() === otst.toLowerCase())
     const { error } = await supabase.from('otst_bodega_pendientes').insert({
-      otst, otst_id: match?.id ?? null, nota: notaInput.trim() || null, solicitado_por: displayName, estado: 'pendiente',
+      otst, otst_id: match?.id ?? null, nota, solicitado_por: displayName, estado: 'pendiente',
     })
     setSaving(false)
     if (error) { toast.error('Error: ' + error.message); return }
@@ -1704,9 +1708,9 @@ function TabPendientes({ bodega, pendientes, umbral, columnas }: { bodega: OtstB
             />
           </div>
           <div style={{ flex: 1, minWidth: 200 }}>
-            <FL>Motivo (opcional)</FL>
+            <FL required>Motivo</FL>
             <input
-              value={notaInput} onChange={e => setNotaInput(e.target.value)}
+              ref={notaRef} value={notaInput} onChange={e => setNotaInput(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); agregar() } }}
               placeholder="Ej. Cliente pidió despacho por correo..." style={INP}
             />
@@ -2532,18 +2536,24 @@ function SecTitle({ children }: { children: React.ReactNode }) {
   )
 }
 
-function FG({ label, hint, full, children }: { label: string, hint?: string, full?: boolean, children: React.ReactNode }) {
+function FG({ label, hint, full, required, children }: { label: string, hint?: string, full?: boolean, required?: boolean, children: React.ReactNode }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 5, ...(full ? { gridColumn: '1 / -1' } : {}) }}>
-      <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.8px', fontFamily: 'var(--mono)' }}>{label}</label>
+      <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.8px', fontFamily: 'var(--mono)' }}>
+        {label}{required && <span style={{ color: 'var(--red)' }}> *</span>}
+      </label>
       {children}
       {hint && <span style={{ fontSize: 10, color: 'var(--muted)', opacity: .75 }}>{hint}</span>}
     </div>
   )
 }
 
-function FL({ children }: { children: string }) {
-  return <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.7px', fontFamily: 'var(--mono)', marginBottom: 4 }}>{children}</div>
+function FL({ children, required }: { children: string, required?: boolean }) {
+  return (
+    <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.7px', fontFamily: 'var(--mono)', marginBottom: 4 }}>
+      {children}{required && <span style={{ color: 'var(--red)' }}> *</span>}
+    </div>
+  )
 }
 
 function Actions({ children }: { children: React.ReactNode }) {
