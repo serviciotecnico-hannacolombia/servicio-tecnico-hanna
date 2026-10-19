@@ -10,6 +10,7 @@ import { Input } from '../ui/Input'
 import { Spinner } from '../ui/Spinner'
 import { PercyBubble } from '../ui/PercyBubble'
 import { saludoPercy } from '../../lib/percy'
+import { normalizarNombre } from '../../lib/nombres'
 import logo from '../../assets/logo.svg'
 
 const ALLOWED_DOMAIN = 'hannacolombia.com'
@@ -67,7 +68,7 @@ export function LoginPage() {
     setSubmitting(true)
     try {
       const { data, error } = await supabase.functions.invoke('self-signup', {
-        body: { email, full_name: fullName, password },
+        body: { email, full_name: normalizarNombre(fullName), password },
       })
       if (error) throw error
       if (!data?.success) throw new Error(data?.error ?? 'Error al crear la cuenta')

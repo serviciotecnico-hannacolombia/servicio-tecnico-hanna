@@ -21,6 +21,7 @@ import { saludoPercy, primerNombre } from '../../lib/percy'
 import { useTareasBadgeCount } from '../../modules/tareas/hooks/useTareas'
 import { useCalibracionesBadgeCount } from '../../modules/calibraciones/hooks/useCalibraciones'
 import { useBodegaBadgeCount } from '../../modules/otst-bodega/hooks/useBodegaBadge'
+import { normalizarNombre } from '../../lib/nombres'
 import type { ModuleKey } from '../../types'
 
 // ── Hamburger animado ────────────────────────────────────────────────────────
@@ -195,7 +196,7 @@ export function Sidebar() {
     setSaving(true)
     try {
       await Promise.all([
-        updateDisplayName(nombre.trim()),
+        updateDisplayName(normalizarNombre(nombre)),
         updateAvatar(selectedEmoji, selectedColor),
       ])
       toast.success('Perfil actualizado')
