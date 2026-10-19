@@ -3,6 +3,7 @@ import { Modal } from '../../../components/ui/Modal'
 import { Input } from '../../../components/ui/Input'
 import { Button } from '../../../components/ui/Button'
 import { useRoles } from '../hooks/useRoles'
+import { normalizarNombre } from '../../../lib/nombres'
 
 interface Props {
   open: boolean
@@ -25,7 +26,7 @@ export function CreateUserModal({ open, onClose, onSubmit }: Props) {
     if (!effectiveRoleId) return
     setSaving(true)
     try {
-      await onSubmit({ ...form, role_id: effectiveRoleId })
+      await onSubmit({ ...form, full_name: normalizarNombre(form.full_name), role_id: effectiveRoleId })
       setForm({ email: '', full_name: '', role_id: '', password: '' })
       onClose()
     } finally {
