@@ -1,3 +1,6 @@
+import { IconoColombia } from './IconoColombia'
+import { PersonalizadoRegional } from './PersonalizadoRegional'
+import { useAccesoPersonalizado } from './useAccesoPersonalizado'
 import { SelectorBuscable } from './SelectorBuscable'
 import { useState } from 'react'
 import { Plus, Trash2, Copy, MapPinned, Search, CalendarDays, Settings, MessageCircle, CircleHelp } from 'lucide-react'
@@ -19,13 +22,15 @@ import { Link } from 'react-router-dom'
 export function RegionalPage() {
   const { data: sedes = [], isLoading, error } = useSedesRegionales()
   const [sedeId, setSedeId] = useState('')
+  const [personalizado, setPersonalizado] = useState(false)
+  const puedePersonalizar = useAccesoPersonalizado()
   const sede = sedes.find(s => s.id === sedeId)
   const { hasCapability } = useUser()
   const [configurar, setConfigurar] = useState(false)
   const [ayuda,setAyuda]=useState(false)
   return <div className="regional-page">
-    <Header title={`Mant. In Situ — ${sede?.nombre ?? 'Regional'}`} subtitle="Servicio desde la oficina regional — hasta 110 km y Cartagena desde Barranquilla, sin vuelos"
-      actions={<div className="regional-header-actions"><Button variant="ghost" aria-label="Ayuda sobre la consulta regional" aria-expanded={ayuda} aria-controls="ayuda-regional" onClick={()=>setAyuda(v=>!v)}><CircleHelp size={18}/> Ayuda</Button><Link className="regional-link" to="/mant-in-situ">Mant. In Situ Bogotá</Link><nav className="regional-tabs" aria-label="Vista regional"><button aria-pressed={!configurar} onClick={()=>setConfigurar(false)}>Consulta</button>{hasCapability('mant_in_situ_regional_editar') && <button aria-pressed={configurar} onClick={()=>setConfigurar(true)}><Settings size={14} /> Configuración</button>}</nav></div>} />
+    <Header title={`Mant. In Situ — ${personalizado && puedePersonalizar ? 'Personalizado' : sede?.nombre ?? 'Regional'}`} subtitle={personalizado && puedePersonalizar ? 'Cálculo manual de equipos y tipo de viaje — Servicio Técnico' : 'Servicio desde la oficina regional — hasta 110 km y Cartagena desde Barranquilla, sin vuelos'}
+      actions={<div className="regional-header-actions"><Button variant="ghost" aria-label="Ayuda sobre la consulta regional" aria-expanded={ayuda} aria-controls="ayuda-regional" onClick={()=>setAyuda(v=>!v)}><CircleHelp size={18}/> Ayuda</Button><Link className="regional-link" to="/mant-in-situ">Mant. In Situ Bogotá</Link><nav className="regional-tabs" aria-label="Vista regional"><button aria-pressed={!configurar} onClick={()=>{setConfigurar(false);setPersonalizado(false)}}>Consulta</button>{hasCapability('mant_in_situ_regional_editar') && <button aria-pressed={configurar} onClick={()=>{setPersonalizado(false);setConfigurar(true)}}><Settings size={14} /> Configuración</button>}</nav></div>} />
     {ayuda && <section id="ayuda-regional" className="regional-help" aria-label="Cómo consultar y programar el mantenimiento regional"><Card>
       <div className="regional-office-heading"><h3>Cómo realizar la consulta</h3><Button variant="ghost" onClick={()=>setAyuda(false)}>Cerrar ayuda</Button></div>
       <ol className="regional-help-steps">
@@ -38,10 +43,11 @@ export function RegionalPage() {
       <h4>¿Cómo se programa la visita?</h4><p className="regional-note">El servicio regional es compartido: agrupamos solicitudes de la zona y coordinamos la fecha según la cantidad recibida. Una visita exclusiva requiere una solicitud y cotización personalizada de desplazamiento, viáticos y demás gastos; su precio será mayor. La cotización formal se realiza en el ERP.</p>
     </Card></section>}
     {isLoading ? <Spinner /> : error ? <Card style={{overflow: 'visible'}}>No se pudo cargar la información regional. Verifica las migraciones y vuelve a intentar.</Card>
-      : !sedes.length ? <Card style={{overflow: 'visible'}}>No hay sedes regionales configuradas.</Card> : !sede ? <Card style={{overflow:'visible'}}>
+      : personalizado && puedePersonalizar && sedes[0] ? <PersonalizadoRegional sede={sedes[0]} onVolver={()=>setPersonalizado(false)} /> : !sedes.length ? <Card style={{overflow: 'visible'}}>No hay sedes regionales configuradas.</Card> : !sede ? <Card style={{overflow:'visible'}}>
         <h2 style={{fontSize:22,marginBottom:8}}>¿Desde qué oficina se realizará el servicio?</h2>
         <p className="regional-note">Elige primero la oficina de origen. Luego podrás seleccionar la ciudad del cliente y los equipos a atender.</p>
         <div className="regional-office-options">{sedes.map(s=><button className="regional-office-option" key={s.id} onClick={()=>setSedeId(s.id)}><MapPinned size={22}/><strong>{s.nombre}</strong><span>{s.direccion}</span><small>Consultar desde esta oficina →</small></button>)}</div>
+        {puedePersonalizar && <div className="regional-custom-entry"><button className="regional-office-option" onClick={()=>{setConfigurar(false);setPersonalizado(true)}}><IconoColombia/><strong>Personalizado</strong><span>Selecciona equipos, ajusta el valor base y elige el tipo de viaje.</span><small>Abrir cálculo manual →</small></button></div>}
       </Card> : <>
         <Card style={{overflow: 'visible'}}><div className="regional-office-heading"><strong>Oficina de origen: {sede.nombre}</strong><Button variant="ghost" onClick={()=>setSedeId('')}>Cambiar oficina</Button></div><FG label="Consultar otra oficina"><SelectorBuscable style={INP} value={sede.id} onChange={e => setSedeId(e.target.value)}>
           {sedes.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}

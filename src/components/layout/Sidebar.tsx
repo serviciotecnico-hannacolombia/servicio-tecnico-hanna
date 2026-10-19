@@ -1,3 +1,4 @@
+import { useAccesoPersonalizado } from '../../modules/mant-in-situ-regional/useAccesoPersonalizado'
 import { useState } from 'react'
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import logo from '../../assets/logo.svg'
@@ -91,6 +92,7 @@ const NAV_GROUPS: NavGroup[] = [
       { to: '/calibraciones',              label: 'Calibraciones',            icon: FlaskConical,  moduleKey: 'calibraciones' },
       { to: '/mantenimiento-programado',   label: 'Mantenimiento Programado', icon: CalendarClock, moduleKey: 'mantenimiento_programado' },
       { to: '/mant-in-situ',               label: 'Mant. In Situ',            icon: MapPinned,     moduleKey: 'mant_in_situ' },
+      { to: '/gestion-mantenimientos', label: 'Gestión de mantenimientos', icon: CalendarClock, moduleKey: 'gestion_mantenimientos' },
       { to: '/mant-in-situ-regional',      label: 'Mant. In Situ Regional',   icon: MapPinned,     moduleKey: 'mant_in_situ_regional' },
       { to: '/tickets',                    label: 'Tickets a Fábrica',        icon: Ticket,        moduleKey: 'tickets' },
       { to: '/equipos-sin-formato',        label: 'Equipos Sin Formato',      icon: PackageX,      moduleKey: 'equipos_sin_formato' },
@@ -135,7 +137,9 @@ const AVATAR_COLORS = [
 
 export function Sidebar() {
   const { collapsed, toggle } = useSidebar()
+  const tecnicoGestion = useAccesoPersonalizado()
   const { user, displayName, profile, isAdmin, hasModule, signOut, updateDisplayName, updateAvatar, updateFavoritos } = useUser()
+  const puedeVerModulo = (key: ModuleKey) => key === 'gestion_mantenimientos' ? tecnicoGestion && (import.meta.env.DEV || hasModule(key)) : hasModule(key)
   const navigate = useNavigate()
   const location = useLocation()
   const tareasBadge = useTareasBadgeCount()
@@ -210,7 +214,7 @@ export function Sidebar() {
   // del usuario — se filtran los que ya no existen o a los que perdió acceso,
   // para no romper el sidebar si un módulo se renombra o le quitan el rol.
   const favoritosKeys = (profile?.favoritos_modulos ?? [])
-    .filter((k): k is ModuleKey => ALL_ITEMS_BY_KEY.has(k as ModuleKey) && hasModule(k as ModuleKey))
+    .filter((k): k is ModuleKey => ALL_ITEMS_BY_KEY.has(k as ModuleKey) && puedeVerModulo(k as ModuleKey))
   const favoritosItems = favoritosKeys.map(k => ALL_ITEMS_BY_KEY.get(k)!)
 
   const toggleFavorito = async (moduleKey: ModuleKey) => {
@@ -460,7 +464,7 @@ export function Sidebar() {
         {!collapsed && NAV_GROUPS.map(group => {
               // Lo que ya está en Favoritos no se repite acá abajo — evita
               // verlo dos veces (y dos ítems "activos" resaltados a la vez).
-              const items = group.items.filter(item => hasModule(item.moduleKey) && !favoritosKeys.includes(item.moduleKey))
+              const items = group.items.filter(item => puedeVerModulo(item.moduleKey) && !favoritosKeys.includes(item.moduleKey))
               if (!items.length) return null
               // El grupo que contiene la ruta activa siempre se ve, aunque el
               // usuario lo haya colapsado antes — para no "perder" de vista

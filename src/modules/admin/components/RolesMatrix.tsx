@@ -19,6 +19,7 @@ const MODULE_LABELS: Record<ModuleKey, string> = {
   reporte_st: 'Reporte ST',
   tareas: 'Tareas',
   mantenimiento_programado: 'Mantenimiento Programado',
+  gestion_mantenimientos: 'Gestión de mantenimientos',
   calibraciones: 'Calibraciones',
   void: 'Control VOID',
   bodega_st: 'Bodega ST (Restauración)',

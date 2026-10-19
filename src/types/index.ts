@@ -19,7 +19,7 @@ export interface CorreoDestinatario {
 export type ModuleKey =
   | 'llamadas' | 'bodega' | 'consumibles' | 'tarifas' | 'codigos'
   | 'editor' | 'indicadores' | 'reporte_st' | 'tareas'
-  | 'mantenimiento_programado' | 'calibraciones' | 'void' | 'bodega_st' | 'tickets'
+  | 'gestion_mantenimientos' | 'mantenimiento_programado' | 'calibraciones' | 'void' | 'bodega_st' | 'tickets'
   | 'equipos_sin_formato' | 'certificados_calidad' | 'garantias' | 'mant_in_situ' | 'mant_in_situ_regional' | 'admin'
 
 export type CapabilityKey =
