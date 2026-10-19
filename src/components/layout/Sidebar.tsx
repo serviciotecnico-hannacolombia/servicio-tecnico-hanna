@@ -1,3 +1,4 @@
+import {useAccesoConsultas} from '../../modules/gestion-mantenimientos/useAccesoConsultas'
 import { useAccesoPersonalizado } from '../../modules/mant-in-situ-regional/useAccesoPersonalizado'
 import { useState } from 'react'
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'
@@ -138,8 +139,9 @@ const AVATAR_COLORS = [
 export function Sidebar() {
   const { collapsed, toggle } = useSidebar()
   const tecnicoGestion = useAccesoPersonalizado()
+  const accesoRegistroConsultas=useAccesoConsultas()
   const { user, displayName, profile, isAdmin, hasModule, signOut, updateDisplayName, updateAvatar, updateFavoritos } = useUser()
-  const puedeVerModulo = (key: ModuleKey) => key === 'gestion_mantenimientos' ? tecnicoGestion && (import.meta.env.DEV || hasModule(key)) : hasModule(key)
+  const puedeVerModulo = (key: ModuleKey) => key === 'gestion_mantenimientos' ? (tecnicoGestion && (import.meta.env.DEV || hasModule(key)) || accesoRegistroConsultas) : hasModule(key)
   const navigate = useNavigate()
   const location = useLocation()
   const tareasBadge = useTareasBadgeCount()

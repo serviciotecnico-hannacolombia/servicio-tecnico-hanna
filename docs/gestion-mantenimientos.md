@@ -24,3 +24,11 @@ Las RPC generan el historial en el servidor y verifican versión para detectar a
 ## Ciudades de origen y destino
 
 Al guardar se selecciona municipio con búsqueda por nombre o código DANE y filtro por departamento, tanto en origen como en destino. Se incluye un respaldo de 267 municipios ya guardados en los catálogos Bogotá y regionales, y se unen todos los destinos disponibles en las tablas existentes sin aplicar límites de distancia. La dirección es opcional. Código DANE, municipio, departamento y detalle quedan en la instantánea JSON, además del texto legible; no se requiere SQL adicional. Los registros anteriores siguen siendo compatibles.
+
+## Registro de consultas normal y regional
+
+Aplicar, después del SQL de gestión, docs/sql/instalar-registro-consultas-mantenimientos.sql. Añade permiso mant_consultas_reportes a Servicio Técnico (rol de Andrés Latorre confirmado por el usuario). Los demás usuarios pueden consultar las calculadoras según sus módulos, pero no leer el registro. El servidor determina el usuario, correo y fecha a partir de la sesión y perfiles. No admite edición ni eliminación directa de registros.
+
+Antes de revelar el precio se pide razón social y zona/barrio/sede. La consulta se registra al pulsar Consultar valor; modificar datos, equipos, cantidades o destino invalida el precio revelado. Se reutiliza el identificador al reintentar para no duplicar una misma consulta. Si falla el registro, no se revela el precio. En Vite dev la vista previa se guarda solo en el navegador; el reporte permite revisar las consultas hechas con distintos usuarios en ese mismo navegador.
+
+Gestión se divide en Solicitudes y seguimiento, y Registro de consultas. El CSV de consultas contiene una fila por equipo con la identificación de la consulta, fecha, usuario, razón social y ubicación. El total repetido es de la consulta completa; no sumarlo entre filas de sus equipos. Los filtros se aplican antes de exportar, con fechas de Bogotá. La capacidad nueva se carga al renovar la sesión.

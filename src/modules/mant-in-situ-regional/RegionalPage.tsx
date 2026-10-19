@@ -1,3 +1,6 @@
+import {useConsultaRegistrada} from '../gestion-mantenimientos/useConsultaRegistrada'
+import {IdentificarConsulta} from '../gestion-mantenimientos/IdentificarConsulta'
+import '../gestion-mantenimientos/gestion.css'
 import { IconoColombia } from './IconoColombia'
 import { PersonalizadoRegional } from './PersonalizadoRegional'
 import { useAccesoPersonalizado } from './useAccesoPersonalizado'
@@ -64,13 +67,16 @@ export function RegionalPage() {
 }
 
 function ConsultaRegional({ sede }: { sede: SedeRegional }) {
-  const { data, isLoading, error } = useRegional(sede, true)
+ const {data,isLoading,error}=useRegional(sede,true)
+ if(isLoading)return <Spinner/>
+ if(error||!data)return <Card>No se pudo cargar la configuración de {sede.nombre}.</Card>
+ return <ConsultaRegionalLista key={sede.id} sede={sede} data={data}/>
+}
+function ConsultaRegionalLista({sede,data}:{sede:SedeRegional,data:NonNullable<ReturnType<typeof useRegional>['data']>}) {
   const [departamento, setDepartamento] = useState('')
   const [codigoDestino, setCodigoDestino] = useState(sede.codigo)
   const [buscar, setBuscar] = useState('')
   const [items, setItems] = useState<ItemCalculo[]>([])
-  if (isLoading) return <Spinner />
-  if (error || !data) return <Card style={{overflow: 'visible'}}>No se pudo cargar la configuración de {sede.nombre}.</Card>
   const destinos = data.destinos.filter(d => d.activo)
   const departamentos = [...new Set(destinos.map(d => d.departamento))].sort()
   const destino = destinos.find(d => d.codigo === codigoDestino)
@@ -82,7 +88,9 @@ function ConsultaRegional({ sede }: { sede: SedeRegional }) {
     data.pasos.some(s=>s.destino_codigo===codigoDestino && s.peaje_id===p.nombre))
   const pendientePeajes = destino && destino.codigo !== sede.codigo && !destino.peajes_confirmados &&
     (!destino.peajes_ruta_verificados || peajesCaducados.length>0)
-  const valido = resultado.listo && !pendientePeajes
+  const calculoListo = resultado.listo && !pendientePeajes
+  const registro=useConsultaRegistrada(calculoListo&&destino?{modulo:'regional',origen:sede.nombre,destino_codigo:destino.codigo,departamento:destino.departamento,municipio:destino.municipio,equipos:resultado.filas.map(f=>({referencia:f.referencia,nombre:f.equipo?.nombre??'',cantidad:f.cantidad})),total:resultado.totalRedondeado,dias:resultado.dias}:null)
+  const valido = calculoListo && registro.visible
   const norm = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
   const sugerencias = buscar.trim().length >= 2 ? data.equipos.filter(e => norm(`${e.referencia} ${e.nombre}`).includes(norm(buscar))).slice(0, 8) : []
 
@@ -97,6 +105,8 @@ function ConsultaRegional({ sede }: { sede: SedeRegional }) {
     try {
       await navigator.clipboard.writeText([
         `Mantenimiento in situ regional — HANNA ${sede.nombre}`,
+        'Razón social: '+registro.razon.trim(),
+        'Zona / sede: '+registro.zona.trim(),
         `Destino: ${destino.municipio}, ${destino.departamento}`,
         ...resultado.filas.map(f => `${f.referencia} × ${f.cantidad}: ${fmtCOP(f.unitarioRedondeado)} c/u — ${fmtCOP(f.totalRedondeado)}`),
         `Total antes de IVA: ${fmtCOP(resultado.totalRedondeado)}`,
@@ -114,6 +124,7 @@ function ConsultaRegional({ sede }: { sede: SedeRegional }) {
     if (!valido || !destino) return
     const iva=Math.round(resultado.totalRedondeado*0.19)
     const lineas=['*Mantenimiento in situ regional — HANNA Servicio Técnico*',
+      'Razón social: '+registro.razon.trim(),'Zona / sede: '+registro.zona.trim(),
       '📍 Sede: '+sede.nombre+' · Destino: '+destino.municipio,'','*Equipos*',
       ...resultado.filas.map(f=>'• '+f.referencia+(f.equipo?.nombre?' — '+f.equipo.nombre:'')+' (x'+f.cantidad+'): '+fmtCOP(f.unitarioRedondeado)+' c/u → '+fmtCOP(f.totalRedondeado)),
       '', 'Subtotal (antes de IVA): '+fmtCOP(resultado.totalRedondeado), 'IVA (19 %): '+fmtCOP(iva),
@@ -151,22 +162,24 @@ function ConsultaRegional({ sede }: { sede: SedeRegional }) {
       <h3 className="regional-step"><span>2</span> Equipos a atender</h3>
       <div className="regional-search"><Search size={17} /><FG label="Buscar equipo"><input style={INP} value={buscar} onChange={e => setBuscar(e.target.value)} placeholder="Buscar por referencia o nombre — ej. HI 5522" /></FG></div>
       {sugerencias.map(e => <button key={e.referencia} onClick={() => agregar(e.referencia)} style={{ ...INP, textAlign: 'left', marginTop: 5, cursor: 'pointer' }}>
-        <Plus size={14} /> {e.referencia} — {e.nombre} · {e.codigo} · {fmtCOP(e.precio)}
+        <Plus size={14} /> {e.referencia} — {e.nombre} · {e.codigo} · {registro.visible?fmtCOP(e.precio):'Seleccionar'}
       </button>)}
       {buscar.length >= 2 && !sugerencias.length && <p style={{ marginTop: 10 }}>No hay equipos regionales con ese criterio. Revisa la asignación del servicio en Configuración.</p>}
       <div className="regional-list-heading"><strong>Equipos de la consulta</strong><span>{items.reduce((n,i)=>n+i.cantidad,0)} equipos · {items.length} referencias</span></div>
       {!items.length && <p className="regional-empty">Busca un equipo y selecciónalo de la lista para comenzar la consulta.</p>}
       {items.map(i => <div className="regional-equipo" key={i.referencia} style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 12 }}>
-        <div className="regional-equipo-info"><strong>{i.referencia}</strong><span>{porReferencia.get(i.referencia)?.nombre}</span><small>{porReferencia.get(i.referencia)?.codigo} · {fmtHoras(porReferencia.get(i.referencia)?.horas ?? 0)} · {fmtCOP(porReferencia.get(i.referencia)?.precio ?? 0)} c/u</small></div>
+        <div className="regional-equipo-info"><strong>{i.referencia}</strong><span>{porReferencia.get(i.referencia)?.nombre}</span><small>{porReferencia.get(i.referencia)?.codigo} · {fmtHoras(porReferencia.get(i.referencia)?.horas ?? 0)} · {registro.visible?fmtCOP(porReferencia.get(i.referencia)?.precio??0):'Precio al consultar'} c/u</small></div>
         <input type="number" min={1} max={9999} aria-label={`Cantidad de ${i.referencia}`} value={i.cantidad} style={{ ...INP, width: 90 }}
           onChange={e => setItems(prev => prev.map(p => p.referencia === i.referencia ? { ...p, cantidad: Math.max(1, Math.min(9999, Math.floor(Number(e.target.value)) || 1)) } : p))} />
         <Button variant="ghost" aria-label={`Quitar ${i.referencia}`} onClick={() => setItems(prev => prev.filter(p => p.referencia !== i.referencia))}><Trash2 size={14} /></Button>
       </div>)}
-      {!!items.length && <div className="regional-reset"><Button variant="ghost" onClick={()=>{setItems([]);setBuscar('')}}>+ Nueva consulta</Button></div>}
+      {!!items.length && <div className="regional-reset"><Button variant="ghost" onClick={()=>{setItems([]);setBuscar('');registro.reiniciar()}}>+ Nueva consulta</Button></div>}
     </Card>
     </section>
     <aside className="regional-summary">
     <Card style={{overflow: 'visible'}}>
+      <IdentificarConsulta registro={registro} mensaje={pendientePeajes?'La ruta requiere confirmar los peajes antes de consultar.':resultado.errores.join(' ')}/>
+      {registro.visible&&<>
       <div className="regional-summary-heading"><h3>Resumen de precios</h3><span className={valido?'regional-status ready':'regional-status'}>{valido?'Precio disponible':pendientePeajes?'Revisar peajes':'Completa la consulta'}</span></div>
       <p className="regional-destino">{destino?.municipio ?? 'Selecciona un destino'}</p>
       {[['Servicio base', resultado.base], ['Vehículo / depreciación', resultado.vehiculo], ['Combustible', resultado.combustible],
@@ -196,6 +209,7 @@ function ConsultaRegional({ sede }: { sede: SedeRegional }) {
       <div className="regional-copy-actions"><Button variant="ghost" disabled={!valido} onClick={copiarValor}><Copy size={14} /> Copiar valor</Button><Button className="regional-whatsapp" disabled={!valido} onClick={copiarWhatsApp}><MessageCircle size={14} /> Resumen para WhatsApp</Button></div>
       <details className="regional-details"><summary>Más opciones</summary><Button disabled={!valido} variant="ghost" onClick={copiar}>Copiar cotización sin IVA</Button></details>
       <p className="regional-note">El resumen se actualiza automáticamente. La cotización formal se realiza en el ERP.</p>
+      </>}
     </Card>
     </aside>
   </div>

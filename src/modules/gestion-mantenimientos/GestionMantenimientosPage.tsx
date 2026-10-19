@@ -1,3 +1,5 @@
+import {ReporteConsultas} from './ReporteConsultas'
+import {useAccesoConsultas} from './useAccesoConsultas'
 import {useState} from 'react'
 import {Link,useSearchParams} from 'react-router-dom'
 import {Download} from 'lucide-react'
@@ -20,6 +22,13 @@ function Semaforo({estado}:{estado:EstadoMantenimiento}) {
  return <span className="gestion-semaforo" style={{color:e.color}}><span aria-hidden="true"/>{e.label}</span>
 }
 export function GestionMantenimientosPage() {
+ const {autorizado}=useGestionMantenimientos(),reportes=useAccesoConsultas()
+ const [seccion,setSeccion]=useState<'solicitudes'|'consultas'>('solicitudes')
+ if(!autorizado&&!reportes)return <Card>No tienes acceso a Gestión de mantenimientos.</Card>
+ const actual=autorizado?seccion:'consultas'
+ return <div className="gestion-page"><nav className="regional-tabs" aria-label="Secciones de Gestión de mantenimientos">{autorizado&&<button aria-pressed={actual==='solicitudes'} onClick={()=>setSeccion('solicitudes')}>Solicitudes y seguimiento</button>}{reportes&&<button aria-pressed={actual==='consultas'} onClick={()=>setSeccion('consultas')}>Registro de consultas</button>}</nav>{actual==='consultas'?<ReporteConsultas/>:<SolicitudesMantenimientos/>}</div>
+}
+function SolicitudesMantenimientos() {
   const consulta=useGestionMantenimientos()
   const [params,setParams]=useSearchParams()
   const [buscar,setBuscar]=useState(''),[estado,setEstado]=useState('')

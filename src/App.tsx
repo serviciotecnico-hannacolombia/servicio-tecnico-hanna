@@ -74,7 +74,7 @@ export default function App() {
               <Route path="/equipos-sin-formato" element={<ModuleGuard moduleKey="equipos_sin_formato"><EquiposSinFormatoPage /></ModuleGuard>} />
               <Route path="/equipos-sin-formato/:id" element={<ModuleGuard moduleKey="equipos_sin_formato"><EquipoSinFormatoDetailPage /></ModuleGuard>} />
               <Route path="/mant-in-situ" element={<ModuleGuard moduleKey="mant_in_situ"><MantInSituPage /></ModuleGuard>} />
-              <Route path="/gestion-mantenimientos" element={<ModuleGuard moduleKey="mant_in_situ_regional"><GestionMantenimientosPage /></ModuleGuard>} />
+              <Route path="/gestion-mantenimientos" element={<GestionMantenimientosPage />} />
               <Route path="/mant-in-situ-regional" element={<ModuleGuard moduleKey="mant_in_situ_regional"><RegionalPage /></ModuleGuard>} />
               <Route path="/garantias" element={<ModuleGuard moduleKey="garantias"><GarantiasPage /></ModuleGuard>} />
               <Route path="/garantias/:id" element={<ModuleGuard moduleKey="garantias"><GarantiaDetailPage /></ModuleGuard>} />

@@ -1,3 +1,6 @@
+import {useConsultaRegistrada} from '../gestion-mantenimientos/useConsultaRegistrada'
+import {IdentificarConsulta} from '../gestion-mantenimientos/IdentificarConsulta'
+import '../gestion-mantenimientos/gestion.css'
 // Consulta: destino + equipos → resumen de precios con desplazamiento
 // (peajes, combustible, vehículo), duración en días y organización por día.
 // El cálculo vive en calculo.ts (misma fórmula que el HTML original).
@@ -51,6 +54,8 @@ export function ConsultaTab({ destino, setDestino, items, setItems, avisoOmitido
     [items, porReferencia, destinoSel, config, rutas],
   )
 
+  const registro = useConsultaRegistrada(r?.listo && destinoSel ? {modulo:'normal',origen:config?.origen_nombre??'Bogotá',destino_codigo:destinoSel.codigo,departamento:destinoSel.departamento,municipio:destinoSel.municipio,equipos:r.filas.map(f=>({referencia:f.referencia,nombre:f.equipo?.nombre??'',cantidad:f.cantidad})),total:r.totalRedondeado,dias:r.dias}:null)
+
   function agregar(e: EquipoInSitu) {
     setItems(prev => prev.some(i => i.referencia === e.referencia)
       ? prev.map(i => i.referencia === e.referencia ? { ...i, cantidad: i.cantidad + 1 } : i)
@@ -68,11 +73,13 @@ export function ConsultaTab({ destino, setDestino, items, setItems, avisoOmitido
   // (redondeado, con desplazamiento incluido), total y duración — sin el
   // detalle de cómo se calcula. *negrita* y _cursiva_ son formato de WhatsApp.
   async function copiarWhatsApp() {
-    if (!r?.listo || !r.destino) return
+    if (!registro.visible || !r?.listo || !r.destino) return
     const iva = Math.round(r.totalRedondeado * IVA_PCT / 100)
     const recortar = (t: string) => t.length > 60 ? t.slice(0, 57).trimEnd() + '…' : t
     const lineas = [
       '*Mantenimiento in situ — HANNA Servicio Técnico*',
+      'Razón social: '+registro.razon.trim(),
+      'Zona / sede: '+registro.zona.trim(),
       `📍 Destino: ${r.destino.municipio}`,
       '',
       '*Equipos*',
@@ -101,7 +108,7 @@ export function ConsultaTab({ destino, setDestino, items, setItems, avisoOmitido
   // Copia solo el total estimado (antes de IVA) como número, listo para
   // pegar en el ERP.
   async function copiarValor() {
-    if (!r?.listo) return
+    if (!registro.visible || !r?.listo) return
     try {
       await navigator.clipboard.writeText(String(r.totalRedondeado))
       toast.success(`${fmtCOP(r.totalRedondeado)} copiado`)
@@ -192,7 +199,7 @@ export function ConsultaTab({ destino, setDestino, items, setItems, avisoOmitido
                         <strong style={{ fontFamily: 'var(--mono)', fontSize: 12.5 }}>{e.referencia}</strong>
                         <span style={{ fontSize: 12, color: 'var(--muted)', marginLeft: 8 }}>{e.nombre}</span>
                       </span>
-                      <span style={{ fontSize: 12, color: e.completo ? 'var(--text)' : 'var(--red)', whiteSpace: 'nowrap' }}>{e.completo ? fmtCOP(e.precio) : 'Sin datos'}</span>
+                      <span style={{ fontSize: 12, color: e.completo ? 'var(--text)' : 'var(--red)', whiteSpace: 'nowrap' }}>{e.completo ? (registro.visible ? fmtCOP(e.precio) : 'Seleccionar') : 'Sin datos'}</span>
                     </button>
                   ))}
                 </div>
@@ -214,7 +221,7 @@ export function ConsultaTab({ destino, setDestino, items, setItems, avisoOmitido
                       <div style={{ fontSize: 12, color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.equipo?.nombre || 'Referencia no encontrada'}</div>
                       <div style={{ fontSize: 11, color: f.valido ? 'var(--muted)' : 'var(--red)', fontFamily: 'var(--mono)', marginTop: 2 }}>
                         {f.valido
-                          ? <>{f.equipo!.codigo} · {fmtHoras(f.equipo!.horas!)} · {fmtCOP(f.equipo!.precio)} c/u</>
+                          ? <>{f.equipo!.codigo} · {fmtHoras(f.equipo!.horas!)} · {(registro.visible ? fmtCOP(f.equipo!.precio) : 'Precio al consultar')} c/u</>
                           : 'Falta código in situ, horas o precio — solicita revisión en Configuración'}
                       </div>
                     </div>
@@ -224,9 +231,9 @@ export function ConsultaTab({ destino, setDestino, items, setItems, avisoOmitido
                       <button onClick={() => fijarCantidad(f.referencia, f.cantidad + 1)} title="Sumar" style={{ ...GHOST, padding: '5px 8px' }}><Plus size={12} /></button>
                     </div>
                     <div style={{ textAlign: 'right', minWidth: 110 }}>
-                      <div style={{ fontWeight: 700, fontSize: 13 }}>{r.listo ? fmtCOP(f.totalRedondeado) : '—'}</div>
+                      <div style={{ fontWeight: 700, fontSize: 13 }}>{registro.visible && r.listo ? fmtCOP(f.totalRedondeado) : '—'}</div>
                       <div style={{ fontSize: 10.5, color: 'var(--muted)' }}>
-                        {!r.listo ? 'Se completa al calcular'
+                        {!registro.visible || !r.listo ? 'Se completa al consultar'
                           : <>{f.cantidad > 1 && <>{fmtCOP(f.unitarioRedondeado)} c/u · </>}servicio {fmtCOP(f.base)}{f.transporte > 0 && <> + desplaz. {fmtCOP(f.transporte)}</>}</>}
                       </div>
                     </div>
@@ -240,13 +247,15 @@ export function ConsultaTab({ destino, setDestino, items, setItems, avisoOmitido
             )}
             {items.length > 0 && (
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
-                <button onClick={() => { setItems([]); setAvisoOmitido('') }} style={{ ...GHOST, padding: '6px 12px', fontSize: 12 }}>＋ Nueva consulta</button>
+                <button onClick={() => { setItems([]); setAvisoOmitido(''); registro.reiniciar() }} style={{ ...GHOST, padding: '6px 12px', fontSize: 12 }}>＋ Nueva consulta</button>
               </div>
             )}
           </Card>
         </div>
 
         <Card style={{ position: 'sticky', top: 20 }}>
+          <IdentificarConsulta registro={registro} mensaje={r.errores.join(' ')}/>
+          {registro.visible && <>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
             <div>
               <h3 style={{ ...TITULO_CARD, marginBottom: 2 }}>Resumen de precios</h3>
@@ -325,6 +334,7 @@ export function ConsultaTab({ destino, setDestino, items, setItems, avisoOmitido
             </div>
           )}
           <p style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 12 }}>El resumen se actualiza automáticamente. La cotización formal se realiza en el ERP.</p>
+          </>}
         </Card>
       </div>
 

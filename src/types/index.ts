@@ -23,6 +23,7 @@ export type ModuleKey =
   | 'equipos_sin_formato' | 'certificados_calidad' | 'garantias' | 'mant_in_situ' | 'mant_in_situ_regional' | 'admin'
 
 export type CapabilityKey =
+  | 'mant_consultas_reportes'
   | 'importar_csv_tarifas' | 'importar_csv_codigos' | 'importar_csv_llamadas'
   | 'bodega_registrar_ingreso' | 'editar_codigos' | 'gestion_codigos' | 'bodega_eliminar'
   | 'calibraciones_editar' | 'calibraciones_ver_todas' | 'ver_precios_codigos' | 'tablas_mantenimiento_editar'
