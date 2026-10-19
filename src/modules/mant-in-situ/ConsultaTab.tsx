@@ -79,7 +79,7 @@ export function ConsultaTab({ destino, setDestino, items, setItems, avisoOmitido
     const lineas = [
       '*Mantenimiento in situ — HANNA Servicio Técnico*',
       'Razón social: '+registro.razon.trim(),
-      'Zona / sede: '+registro.zona.trim(),
+
       `📍 Destino: ${r.destino.municipio}`,
       '',
       '*Equipos*',

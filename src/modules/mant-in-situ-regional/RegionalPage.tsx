@@ -106,7 +106,7 @@ function ConsultaRegionalLista({sede,data}:{sede:SedeRegional,data:NonNullable<R
       await navigator.clipboard.writeText([
         `Mantenimiento in situ regional — HANNA ${sede.nombre}`,
         'Razón social: '+registro.razon.trim(),
-        'Zona / sede: '+registro.zona.trim(),
+
         `Destino: ${destino.municipio}, ${destino.departamento}`,
         ...resultado.filas.map(f => `${f.referencia} × ${f.cantidad}: ${fmtCOP(f.unitarioRedondeado)} c/u — ${fmtCOP(f.totalRedondeado)}`),
         `Total antes de IVA: ${fmtCOP(resultado.totalRedondeado)}`,
@@ -124,7 +124,7 @@ function ConsultaRegionalLista({sede,data}:{sede:SedeRegional,data:NonNullable<R
     if (!valido || !destino) return
     const iva=Math.round(resultado.totalRedondeado*0.19)
     const lineas=['*Mantenimiento in situ regional — HANNA Servicio Técnico*',
-      'Razón social: '+registro.razon.trim(),'Zona / sede: '+registro.zona.trim(),
+      'Razón social: '+registro.razon.trim(),
       '📍 Sede: '+sede.nombre+' · Destino: '+destino.municipio,'','*Equipos*',
       ...resultado.filas.map(f=>'• '+f.referencia+(f.equipo?.nombre?' — '+f.equipo.nombre:'')+' (x'+f.cantidad+'): '+fmtCOP(f.unitarioRedondeado)+' c/u → '+fmtCOP(f.totalRedondeado)),
       '', 'Subtotal (antes de IVA): '+fmtCOP(resultado.totalRedondeado), 'IVA (19 %): '+fmtCOP(iva),
