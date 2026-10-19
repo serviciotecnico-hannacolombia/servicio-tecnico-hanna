@@ -92,12 +92,13 @@ export function CalibracionesPage() {
   const PAGE_SIZE = 30
 
   useEffect(() => { localStorage.setItem(TAB_KEY, tab) }, [tab])
-  // Si el reload cae en "Catálogo"/"Asesores" pero el usuario ya no tiene (o
-  // todavía no cargó) el permiso de edición, no se queda en una pestaña que
-  // ni siquiera aparece en la barra — espera a que el permiso resuelva antes
-  // de decidir, para no expulsar de golpe a un editor real mientras carga.
+  // Si el reload cae en "Asesores" pero el usuario ya no tiene (o todavía no
+  // cargó) el permiso de edición, no se queda en una pestaña que ni siquiera
+  // aparece en la barra — espera a que el permiso resuelva antes de decidir,
+  // para no expulsar de golpe a un editor real mientras carga. "Catálogo" lo
+  // ven todos (en solo lectura sin el permiso), así que no se expulsa.
   useEffect(() => {
-    if (!userLoading && (tab === 'catalogo' || tab === 'asesores') && !puedeEditar) setTab('ordenes')
+    if (!userLoading && tab === 'asesores' && !puedeEditar) setTab('ordenes')
   }, [tab, puedeEditar, userLoading])
 
   useEffect(() => { localStorage.setItem(FILTROS_KEY, JSON.stringify(filtros)) }, [filtros])
@@ -249,7 +250,7 @@ export function CalibracionesPage() {
       )}
 
       <div style={{ display: 'flex', gap: 4, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 4, marginBottom: 20, maxWidth: 820, flexWrap: 'wrap' }}>
-        {(['ordenes', 'analisis', 'sede_hanna', 'logistica', 'saci', ...(puedeEditar ? ['catalogo', 'asesores'] as const : [])] as Tab[]).map(t => (
+        {(['ordenes', 'analisis', 'sede_hanna', 'logistica', 'saci', 'catalogo', ...(puedeEditar ? ['asesores'] as const : [])] as Tab[]).map(t => (
           <button key={t} onClick={() => setTab(t)} style={{
             flex: 1, padding: '9px 14px', border: 'none', borderRadius: 9,
             background: tab === t ? 'var(--accent)' : 'transparent',
@@ -383,7 +384,7 @@ export function CalibracionesPage() {
       ) : tab === 'saci' ? (
         <SaciTab />
       ) : tab === 'catalogo' ? (
-        <CatalogoTab catalogo={catalogo} proveedores={proveedores} onSaved={invalidate.catalogo} />
+        <CatalogoTab catalogo={catalogo} proveedores={proveedores} puedeEditar={puedeEditar} onSaved={invalidate.catalogo} />
       ) : (
         <AsesoresTab asesores={asesores} profileEmails={profileEmails} onSaved={invalidate.asesores} />
       )}
@@ -402,13 +403,17 @@ const FILTRO_MODALIDAD_OPCIONES: [FiltroModalidad, string][] = [
   ['sede_hanna_dorado', 'Sede Hanna Dorado'],
 ]
 
-function CatalogoTab({ catalogo, proveedores, onSaved }: { catalogo: RvCalibrItem[], proveedores: CorreoProveedor[], onSaved: () => void }) {
+// Sin calibraciones_editar (ej. Ventas) se ve en solo lectura: sin crear ni
+// editar, y sin los servicios inactivos. La RLS de rv_calibr_catalogo ya
+// bloquea la escritura sin ese permiso.
+function CatalogoTab({ catalogo, proveedores, puedeEditar, onSaved }: { catalogo: RvCalibrItem[], proveedores: CorreoProveedor[], puedeEditar: boolean, onSaved: () => void }) {
   const [editando, setEditando] = useState<RvCalibrItem | null>(null)
   const [creando, setCreando] = useState(false)
   const [search, setSearch] = useState('')
   const [filtroModalidad, setFiltroModalidad] = useState<FiltroModalidad>('todas')
 
   const filtrado = catalogo
+    .filter(c => puedeEditar || c.activo)
     .filter(c => filtroModalidad === 'todas' || c.modalidades_permitidas.includes(filtroModalidad))
     .filter(c => {
       const q = search.toLowerCase().trim()
@@ -435,7 +440,7 @@ function CatalogoTab({ catalogo, proveedores, onSaved }: { catalogo: RvCalibrIte
           <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)', pointerEvents: 'none' }} />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por código, magnitud o descripción..." style={{ ...INP, paddingLeft: 34 }} />
         </div>
-        <button onClick={() => setCreando(true)} style={PRI}><Plus size={14} style={{ verticalAlign: -2 }} /> Nuevo servicio</button>
+        {puedeEditar && <button onClick={() => setCreando(true)} style={PRI}><Plus size={14} style={{ verticalAlign: -2 }} /> Nuevo servicio</button>}
       </div>
 
       {filtrado.length === 0 ? (
@@ -459,7 +464,7 @@ function CatalogoTab({ catalogo, proveedores, onSaved }: { catalogo: RvCalibrIte
                   {!c.activo && <span>Inactivo</span>}
                 </div>
               </div>
-              <IconBtn title="Editar" onClick={() => setEditando(c)}><Pencil size={14} /></IconBtn>
+              {puedeEditar && <IconBtn title="Editar" onClick={() => setEditando(c)}><Pencil size={14} /></IconBtn>}
             </div>
           ))}
         </div>
