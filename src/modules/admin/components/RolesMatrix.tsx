@@ -33,6 +33,7 @@ const MODULE_LABELS: Record<ModuleKey, string> = {
 }
 
 const CAPABILITY_LABELS: Record<CapabilityKey, string> = {
+  mant_in_situ_personalizado: 'Usar cotizador Personalizado (equipos y viajes)',
   mant_consultas_reportes: 'Ver y descargar registro de consultas de mantenimiento',
   importar_csv_tarifas: 'Importar CSV en Tarifas de Envío',
   importar_csv_codigos: 'Importar CSV en Códigos y Partes',
@@ -59,6 +60,7 @@ const CAPABILITY_KEYS = Object.keys(CAPABILITY_LABELS) as CapabilityKey[]
 // porque tablas_mantenimiento_editar es de "Editor de Informes" pese al
 // nombre (el prefijo engañaría hacia mantenimiento_programado).
 const CAPABILITY_MODULE: Record<CapabilityKey, ModuleKey> = {
+  mant_in_situ_personalizado: 'mant_in_situ_regional',
   mant_consultas_reportes: 'gestion_mantenimientos',
   importar_csv_tarifas: 'tarifas',
   importar_csv_codigos: 'codigos',
