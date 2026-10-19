@@ -29,7 +29,7 @@ export function GestionMantenimientosPage() {
   const seleccion=registros.find(r=>r.id===params.get('solicitud'))
   function exportar() {
     const seguro=(v:string)=>/^[=+@\-\t\r]/.test(v)?"'"+v:v
-    descargarCSV('gestion-mantenimientos',['id','creado','cliente','origen','destino','cotizacion','estado','transporte','dias','subtotal','margen_5_pct','total_antes_iva','creado_por'],filas.map(r=>[r.id,r.created_at,seguro(r.cliente),seguro(r.origen),seguro(r.destino),seguro(r.cotizacion??''),ESTADOS_MANTENIMIENTO[r.estado].label,r.calculo.transporte.viaje,r.calculo.dias,r.calculo.subtotal,r.calculo.margen,r.calculo.total,seguro(r.creado_por_nombre)]))
+    descargarCSV('gestion-mantenimientos',['id','creado','cliente','origen','origen_codigo_dane','origen_departamento','destino','destino_codigo_dane','destino_departamento','cotizacion','estado','transporte','dias','subtotal','margen_5_pct','total_antes_iva','creado_por'],filas.map(r=>[r.id,r.created_at,seguro(r.cliente),seguro(r.origen),r.calculo.ubicaciones?.origen.codigo??'',r.calculo.ubicaciones?.origen.departamento??'',seguro(r.destino),r.calculo.ubicaciones?.destino.codigo??'',r.calculo.ubicaciones?.destino.departamento??'',seguro(r.cotizacion??''),ESTADOS_MANTENIMIENTO[r.estado].label,r.calculo.transporte.viaje,r.calculo.dias,r.calculo.subtotal,r.calculo.margen,r.calculo.total,seguro(r.creado_por_nombre)]))
   }
   function respaldo() {
     const url=URL.createObjectURL(new Blob([JSON.stringify({version:1,exportado_at:new Date().toISOString(),vista_previa:VISTA_PREVIA_LOCAL,solicitudes:registros},null,2)],{type:'application/json'}))

@@ -15,11 +15,12 @@ globalThis.localStorage={getItem:k=>memoria.get(k)??null,setItem:(k,v)=>memoria.
 const calculo={version:1,items:[{referencia:'HI',nombre:'Equipo',codigo:'MAN',precio:'1000000',cantidad:'1'}],transporte:{viaje:'aereo'},estadia:{dias:'5'},dias:5,tarifas:{},desglose:{base:1000000,tiquetes:0,depreciacion:0,gasolina:0,peajes:0,desplazamiento:0,hospedaje:0,alimentacion:300000,otros:1500000},subtotal:2800000,margen_pct:5,margen:140000,total:2940000}
 const nueva=()=>({cliente:'Cliente prueba',origen:'Bogotá',destino:'Cartagena',cotizacion:'',nota:'Primera revisión',calculo:structuredClone(calculo)})
 test('guardar en vista previa conserva origen, destino, margen y cálculo al recargar',async()=>{
- const datos=nueva();const r=await almacen.crearSolicitud(datos,'usuario1','Técnico')
+ const datos=nueva();datos.calculo.ubicaciones={origen:{codigo:'11001',municipio:'BOGOTÁ, D.C.',departamento:'BOGOTÁ, D.C.',detalle:'Oficina'},destino:{codigo:'13001',municipio:'CARTAGENA DE INDIAS',departamento:'BOLÍVAR',detalle:'Planta'}};const r=await almacen.crearSolicitud(datos,'usuario1','Técnico')
  datos.calculo.total=1
  const filas=await almacen.listarSolicitudes('usuario1')
  assert.equal(filas[0].id,r.id);assert.equal(filas[0].calculo.total,2940000)
  assert.equal(filas[0].origen,'Bogotá');assert.equal(filas[0].destino,'Cartagena')
+ assert.equal(filas[0].calculo.ubicaciones.origen.codigo,'11001');assert.equal(filas[0].calculo.ubicaciones.destino.codigo,'13001')
  assert.equal(filas[0].estado,'pendiente');assert.equal(filas[0].historial.length,1)
  assert.equal((await almacen.listarSolicitudes('otro-usuario')).length,0)
 })

@@ -1,3 +1,6 @@
+import {SelectorCiudad} from './SelectorCiudad'
+import {useCiudadesGuardadas} from './useCiudadesGuardadas'
+import {textoUbicacion} from './ciudades'
 import {useState} from 'react'
 import {Link} from 'react-router-dom'
 import {Save} from 'lucide-react'
@@ -12,13 +15,19 @@ import type {CalculoGuardado} from './modelo'
 export function GuardarSolicitud({calculo}:{calculo:CalculoGuardado|null}) {
   const {autorizado,guardar}=useGestionMantenimientos()
   const [snapshot,setSnapshot]=useState<CalculoGuardado|null>(null)
-  const [cliente,setCliente]=useState(''),[origen,setOrigen]=useState(''),[destino,setDestino]=useState(''),[cotizacion,setCotizacion]=useState(''),[nota,setNota]=useState('')
+  const [cliente,setCliente]=useState(''),[codigoOrigen,setCodigoOrigen]=useState(''),[codigoDestino,setCodigoDestino]=useState(''),[cotizacion,setCotizacion]=useState(''),[nota,setNota]=useState('')
+  const [detalleOrigen,setDetalleOrigen]=useState(''),[detalleDestino,setDetalleDestino]=useState('')
+  const catalogo=useCiudadesGuardadas(autorizado&&!!snapshot)
+  const ciudades=catalogo.data?.ciudades??[]
+  const ciudadOrigen=ciudades.find(c=>c.codigo===codigoOrigen),ciudadDestino=ciudades.find(c=>c.codigo===codigoDestino)
   const [saving,setSaving]=useState(false),[guardada,setGuardada]=useState('')
   async function enviar(e:React.FormEvent) {
     e.preventDefault();if(!snapshot||saving)return
+    if(!ciudadOrigen||!ciudadDestino){toast.error('Selecciona la ciudad de origen y la ciudad de destino.');return}
     setSaving(true)
     try {
-      const r=await guardar({cliente,origen,destino,cotizacion,nota,calculo:snapshot})
+      const origen=textoUbicacion(ciudadOrigen,detalleOrigen),destino=textoUbicacion(ciudadDestino,detalleDestino)
+      const r=await guardar({cliente,origen,destino,cotizacion,nota,calculo:{...snapshot,ubicaciones:{origen:{...ciudadOrigen,detalle:detalleOrigen.trim()},destino:{...ciudadDestino,detalle:detalleDestino.trim()}}}})
       setGuardada(r.id);setSnapshot(null);toast.success(VISTA_PREVIA_LOCAL?'Solicitud guardada en la vista previa local':'Solicitud guardada')
     } catch(e) {toast.error(e instanceof Error?e.message:'No se pudo guardar')} finally {setSaving(false)}
   }
@@ -32,12 +41,14 @@ export function GuardarSolicitud({calculo}:{calculo:CalculoGuardado|null}) {
         {VISTA_PREVIA_LOCAL&&<p className="gestion-preview">{AVISO_GESTION_LOCAL}</p>}
         <p>Total con margen del 5 %: <strong>{fmtCOP(snapshot?.total)}</strong></p>
         <label>Cliente <span className="regional-required">*</span><input style={INP} required maxLength={200} value={cliente} onChange={e=>setCliente(e.target.value)}/></label>
-        <label>Inicio / origen del viaje <span className="regional-required">*</span><input style={INP} required maxLength={300} placeholder="Ciudad y punto de salida" value={origen} onChange={e=>setOrigen(e.target.value)}/></label>
-        <label>Destino final <span className="regional-required">*</span><input style={INP} required maxLength={300} placeholder="Ciudad y dirección o sede del cliente" value={destino} onChange={e=>setDestino(e.target.value)}/></label>
+        {catalogo.isFetching&&<p role="status" className="regional-note">Actualizando el catálogo de ciudades guardadas…</p>}
+        {catalogo.data?.aviso&&<p role="status" className="regional-note">{catalogo.data.aviso}</p>}
+        <SelectorCiudad titulo="Origen del viaje" ciudades={ciudades} codigo={codigoOrigen} onChange={setCodigoOrigen} detalle={detalleOrigen} onDetalle={setDetalleOrigen}/>
+        <SelectorCiudad titulo="Destino final" ciudades={ciudades} codigo={codigoDestino} onChange={setCodigoDestino} detalle={detalleDestino} onDetalle={setDetalleDestino}/>
         <label>Número de cotización (opcional al crear)<input style={INP} maxLength={100} value={cotizacion} onChange={e=>setCotizacion(e.target.value)}/></label>
         <p className="regional-note">Sin número queda pendiente de cotizar. Puedes asociarlo después desde Gestión de mantenimientos.</p>
         <label>Observaciones<textarea style={INP} maxLength={2000} rows={3} value={nota} onChange={e=>setNota(e.target.value)}/></label>
-        <Button type="submit" disabled={saving}>{saving?'Guardando…':'Guardar y crear seguimiento'}</Button>
+        <Button type="submit" disabled={saving||!ciudadOrigen||!ciudadDestino}>{saving?'Guardando…':'Guardar y crear seguimiento'}</Button>
       </form>
     </Modal>
   </div>

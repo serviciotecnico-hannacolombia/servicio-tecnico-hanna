@@ -20,3 +20,7 @@ El margen fijo es 5 % del subtotal completo (incluido Otros), redondeado a pesos
 El número de cotización se puede asociar después. Estados: pendiente, cotizada, aprobada, rechazada, programada, realizada y cancelada. Cotizada/aprobada/rechazada/programada/realizada requieren cotización. Rechazo y cancelación requieren motivo. Cada actualización genera un evento con fecha y usuario; se conserva la cotización histórica.
 
 Las RPC generan el historial en el servidor y verifican versión para detectar actualizaciones concurrentes. No hay eliminación física ni modificación de la instantánea desde la pantalla. Permitir correcciones de estado mantiene el historial.
+
+## Ciudades de origen y destino
+
+Al guardar se selecciona municipio con búsqueda por nombre o código DANE y filtro por departamento, tanto en origen como en destino. Se incluye un respaldo de 267 municipios ya guardados en los catálogos Bogotá y regionales, y se unen todos los destinos disponibles en las tablas existentes sin aplicar límites de distancia. La dirección es opcional. Código DANE, municipio, departamento y detalle quedan en la instantánea JSON, además del texto legible; no se requiere SQL adicional. Los registros anteriores siguen siendo compatibles.

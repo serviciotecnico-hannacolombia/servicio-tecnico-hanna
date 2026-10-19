@@ -1,3 +1,4 @@
+import type {UbicacionSolicitud} from './ciudades'
 import type { ItemPersonalizado, TransportePersonalizado, EstadiaPersonalizada } from '../mant-in-situ-regional/personalizado'
 export const ESTADOS_MANTENIMIENTO = {
   pendiente: {label:'Pendiente de cotizar',color:'#64748b'},
@@ -10,6 +11,7 @@ export const ESTADOS_MANTENIMIENTO = {
 } as const
 export type EstadoMantenimiento = keyof typeof ESTADOS_MANTENIMIENTO
 export interface CalculoGuardado {
+  ubicaciones?: {origen:UbicacionSolicitud,destino:UbicacionSolicitud}
   version: 1
   items: ItemPersonalizado[]
   transporte: TransportePersonalizado
