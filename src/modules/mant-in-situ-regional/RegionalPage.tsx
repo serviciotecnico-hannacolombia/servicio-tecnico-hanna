@@ -1,3 +1,9 @@
+import {useConsultaRegistrada} from '../gestion-mantenimientos/useConsultaRegistrada'
+import {IdentificarConsulta} from '../gestion-mantenimientos/IdentificarConsulta'
+import '../gestion-mantenimientos/gestion.css'
+import { IconoColombia } from './IconoColombia'
+import { PersonalizadoRegional } from './PersonalizadoRegional'
+import { useAccesoPersonalizado } from './useAccesoPersonalizado'
 import { SelectorBuscable } from './SelectorBuscable'
 import { useState } from 'react'
 import { Plus, Trash2, Copy, MapPinned, Search, CalendarDays, Settings, MessageCircle, CircleHelp } from 'lucide-react'
@@ -19,13 +25,15 @@ import { Link } from 'react-router-dom'
 export function RegionalPage() {
   const { data: sedes = [], isLoading, error } = useSedesRegionales()
   const [sedeId, setSedeId] = useState('')
+  const [personalizado, setPersonalizado] = useState(false)
+  const puedePersonalizar = useAccesoPersonalizado()
   const sede = sedes.find(s => s.id === sedeId)
   const { hasCapability } = useUser()
   const [configurar, setConfigurar] = useState(false)
   const [ayuda,setAyuda]=useState(false)
   return <div className="regional-page">
-    <Header title={`Mant. In Situ — ${sede?.nombre ?? 'Regional'}`} subtitle="Servicio desde la oficina regional — hasta 110 km y Cartagena desde Barranquilla, sin vuelos"
-      actions={<div className="regional-header-actions"><Button variant="ghost" aria-label="Ayuda sobre la consulta regional" aria-expanded={ayuda} aria-controls="ayuda-regional" onClick={()=>setAyuda(v=>!v)}><CircleHelp size={18}/> Ayuda</Button><Link className="regional-link" to="/mant-in-situ">Mant. In Situ Bogotá</Link><nav className="regional-tabs" aria-label="Vista regional"><button aria-pressed={!configurar} onClick={()=>setConfigurar(false)}>Consulta</button>{hasCapability('mant_in_situ_regional_editar') && <button aria-pressed={configurar} onClick={()=>setConfigurar(true)}><Settings size={14} /> Configuración</button>}</nav></div>} />
+    <Header title={`Mant. In Situ — ${personalizado && puedePersonalizar ? 'Personalizado' : sede?.nombre ?? 'Regional'}`} subtitle={personalizado && puedePersonalizar ? 'Cálculo manual de equipos y tipo de viaje — Servicio Técnico' : 'Servicio desde la oficina regional — hasta 110 km y Cartagena desde Barranquilla, sin vuelos'}
+      actions={<div className="regional-header-actions"><Button variant="ghost" aria-label="Ayuda sobre la consulta regional" aria-expanded={ayuda} aria-controls="ayuda-regional" onClick={()=>setAyuda(v=>!v)}><CircleHelp size={18}/> Ayuda</Button><Link className="regional-link" to="/mant-in-situ">Mant. In Situ Bogotá</Link><nav className="regional-tabs" aria-label="Vista regional"><button aria-pressed={!configurar} onClick={()=>{setConfigurar(false);setPersonalizado(false)}}>Consulta</button>{hasCapability('mant_in_situ_regional_editar') && <button aria-pressed={configurar} onClick={()=>{setPersonalizado(false);setConfigurar(true)}}><Settings size={14} /> Configuración</button>}</nav></div>} />
     {ayuda && <section id="ayuda-regional" className="regional-help" aria-label="Cómo consultar y programar el mantenimiento regional"><Card>
       <div className="regional-office-heading"><h3>Cómo realizar la consulta</h3><Button variant="ghost" onClick={()=>setAyuda(false)}>Cerrar ayuda</Button></div>
       <ol className="regional-help-steps">
@@ -38,10 +46,11 @@ export function RegionalPage() {
       <h4>¿Cómo se programa la visita?</h4><p className="regional-note">El servicio regional es compartido: agrupamos solicitudes de la zona y coordinamos la fecha según la cantidad recibida. Una visita exclusiva requiere una solicitud y cotización personalizada de desplazamiento, viáticos y demás gastos; su precio será mayor. La cotización formal se realiza en el ERP.</p>
     </Card></section>}
     {isLoading ? <Spinner /> : error ? <Card style={{overflow: 'visible'}}>No se pudo cargar la información regional. Verifica las migraciones y vuelve a intentar.</Card>
-      : !sedes.length ? <Card style={{overflow: 'visible'}}>No hay sedes regionales configuradas.</Card> : !sede ? <Card style={{overflow:'visible'}}>
+      : personalizado && puedePersonalizar && sedes[0] ? <PersonalizadoRegional sede={sedes[0]} onVolver={()=>setPersonalizado(false)} /> : !sedes.length ? <Card style={{overflow: 'visible'}}>No hay sedes regionales configuradas.</Card> : !sede ? <Card style={{overflow:'visible'}}>
         <h2 style={{fontSize:22,marginBottom:8}}>¿Desde qué oficina se realizará el servicio?</h2>
         <p className="regional-note">Elige primero la oficina de origen. Luego podrás seleccionar la ciudad del cliente y los equipos a atender.</p>
         <div className="regional-office-options">{sedes.map(s=><button className="regional-office-option" key={s.id} onClick={()=>setSedeId(s.id)}><MapPinned size={22}/><strong>{s.nombre}</strong><span>{s.direccion}</span><small>Consultar desde esta oficina →</small></button>)}</div>
+        {puedePersonalizar && <div className="regional-custom-entry"><button className="regional-office-option" onClick={()=>{setConfigurar(false);setPersonalizado(true)}}><IconoColombia/><strong>Personalizado</strong><span>Selecciona equipos, ajusta el valor base y elige el tipo de viaje.</span><small>Abrir cálculo manual →</small></button></div>}
       </Card> : <>
         <Card style={{overflow: 'visible'}}><div className="regional-office-heading"><strong>Oficina de origen: {sede.nombre}</strong><Button variant="ghost" onClick={()=>setSedeId('')}>Cambiar oficina</Button></div><FG label="Consultar otra oficina"><SelectorBuscable style={INP} value={sede.id} onChange={e => setSedeId(e.target.value)}>
           {sedes.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
@@ -58,13 +67,16 @@ export function RegionalPage() {
 }
 
 function ConsultaRegional({ sede }: { sede: SedeRegional }) {
-  const { data, isLoading, error } = useRegional(sede, true)
+ const {data,isLoading,error}=useRegional(sede,true)
+ if(isLoading)return <Spinner/>
+ if(error||!data)return <Card>No se pudo cargar la configuración de {sede.nombre}.</Card>
+ return <ConsultaRegionalLista key={sede.id} sede={sede} data={data}/>
+}
+function ConsultaRegionalLista({sede,data}:{sede:SedeRegional,data:NonNullable<ReturnType<typeof useRegional>['data']>}) {
   const [departamento, setDepartamento] = useState('')
   const [codigoDestino, setCodigoDestino] = useState(sede.codigo)
   const [buscar, setBuscar] = useState('')
   const [items, setItems] = useState<ItemCalculo[]>([])
-  if (isLoading) return <Spinner />
-  if (error || !data) return <Card style={{overflow: 'visible'}}>No se pudo cargar la configuración de {sede.nombre}.</Card>
   const destinos = data.destinos.filter(d => d.activo)
   const departamentos = [...new Set(destinos.map(d => d.departamento))].sort()
   const destino = destinos.find(d => d.codigo === codigoDestino)
@@ -76,7 +88,9 @@ function ConsultaRegional({ sede }: { sede: SedeRegional }) {
     data.pasos.some(s=>s.destino_codigo===codigoDestino && s.peaje_id===p.nombre))
   const pendientePeajes = destino && destino.codigo !== sede.codigo && !destino.peajes_confirmados &&
     (!destino.peajes_ruta_verificados || peajesCaducados.length>0)
-  const valido = resultado.listo && !pendientePeajes
+  const calculoListo = resultado.listo && !pendientePeajes
+  const registro=useConsultaRegistrada(calculoListo&&destino?{modulo:'regional',origen:sede.nombre,destino_codigo:destino.codigo,departamento:destino.departamento,municipio:destino.municipio,equipos:resultado.filas.map(f=>({referencia:f.referencia,nombre:f.equipo?.nombre??'',cantidad:f.cantidad})),total:resultado.totalRedondeado,dias:resultado.dias}:null)
+  const valido = calculoListo && registro.visible
   const norm = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
   const sugerencias = buscar.trim().length >= 2 ? data.equipos.filter(e => norm(`${e.referencia} ${e.nombre}`).includes(norm(buscar))).slice(0, 8) : []
 
@@ -91,6 +105,8 @@ function ConsultaRegional({ sede }: { sede: SedeRegional }) {
     try {
       await navigator.clipboard.writeText([
         `Mantenimiento in situ regional — HANNA ${sede.nombre}`,
+        'Razón social: '+registro.razon.trim(),
+
         `Destino: ${destino.municipio}, ${destino.departamento}`,
         ...resultado.filas.map(f => `${f.referencia} × ${f.cantidad}: ${fmtCOP(f.unitarioRedondeado)} c/u — ${fmtCOP(f.totalRedondeado)}`),
         `Total antes de IVA: ${fmtCOP(resultado.totalRedondeado)}`,
@@ -108,6 +124,7 @@ function ConsultaRegional({ sede }: { sede: SedeRegional }) {
     if (!valido || !destino) return
     const iva=Math.round(resultado.totalRedondeado*0.19)
     const lineas=['*Mantenimiento in situ regional — HANNA Servicio Técnico*',
+      'Razón social: '+registro.razon.trim(),
       '📍 Sede: '+sede.nombre+' · Destino: '+destino.municipio,'','*Equipos*',
       ...resultado.filas.map(f=>'• '+f.referencia+(f.equipo?.nombre?' — '+f.equipo.nombre:'')+' (x'+f.cantidad+'): '+fmtCOP(f.unitarioRedondeado)+' c/u → '+fmtCOP(f.totalRedondeado)),
       '', 'Subtotal (antes de IVA): '+fmtCOP(resultado.totalRedondeado), 'IVA (19 %): '+fmtCOP(iva),
@@ -145,22 +162,24 @@ function ConsultaRegional({ sede }: { sede: SedeRegional }) {
       <h3 className="regional-step"><span>2</span> Equipos a atender</h3>
       <div className="regional-search"><Search size={17} /><FG label="Buscar equipo"><input style={INP} value={buscar} onChange={e => setBuscar(e.target.value)} placeholder="Buscar por referencia o nombre — ej. HI 5522" /></FG></div>
       {sugerencias.map(e => <button key={e.referencia} onClick={() => agregar(e.referencia)} style={{ ...INP, textAlign: 'left', marginTop: 5, cursor: 'pointer' }}>
-        <Plus size={14} /> {e.referencia} — {e.nombre} · {e.codigo} · {fmtCOP(e.precio)}
+        <Plus size={14} /> {e.referencia} — {e.nombre} · {e.codigo} · {registro.visible?fmtCOP(e.precio):'Seleccionar'}
       </button>)}
       {buscar.length >= 2 && !sugerencias.length && <p style={{ marginTop: 10 }}>No hay equipos regionales con ese criterio. Revisa la asignación del servicio en Configuración.</p>}
       <div className="regional-list-heading"><strong>Equipos de la consulta</strong><span>{items.reduce((n,i)=>n+i.cantidad,0)} equipos · {items.length} referencias</span></div>
       {!items.length && <p className="regional-empty">Busca un equipo y selecciónalo de la lista para comenzar la consulta.</p>}
       {items.map(i => <div className="regional-equipo" key={i.referencia} style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 12 }}>
-        <div className="regional-equipo-info"><strong>{i.referencia}</strong><span>{porReferencia.get(i.referencia)?.nombre}</span><small>{porReferencia.get(i.referencia)?.codigo} · {fmtHoras(porReferencia.get(i.referencia)?.horas ?? 0)} · {fmtCOP(porReferencia.get(i.referencia)?.precio ?? 0)} c/u</small></div>
+        <div className="regional-equipo-info"><strong>{i.referencia}</strong><span>{porReferencia.get(i.referencia)?.nombre}</span><small>{porReferencia.get(i.referencia)?.codigo} · {fmtHoras(porReferencia.get(i.referencia)?.horas ?? 0)} · {registro.visible?fmtCOP(porReferencia.get(i.referencia)?.precio??0):'Precio al consultar'} c/u</small></div>
         <input type="number" min={1} max={9999} aria-label={`Cantidad de ${i.referencia}`} value={i.cantidad} style={{ ...INP, width: 90 }}
           onChange={e => setItems(prev => prev.map(p => p.referencia === i.referencia ? { ...p, cantidad: Math.max(1, Math.min(9999, Math.floor(Number(e.target.value)) || 1)) } : p))} />
         <Button variant="ghost" aria-label={`Quitar ${i.referencia}`} onClick={() => setItems(prev => prev.filter(p => p.referencia !== i.referencia))}><Trash2 size={14} /></Button>
       </div>)}
-      {!!items.length && <div className="regional-reset"><Button variant="ghost" onClick={()=>{setItems([]);setBuscar('')}}>+ Nueva consulta</Button></div>}
+      {!!items.length && <div className="regional-reset"><Button variant="ghost" onClick={()=>{setItems([]);setBuscar('');registro.reiniciar()}}>+ Nueva consulta</Button></div>}
     </Card>
     </section>
     <aside className="regional-summary">
     <Card style={{overflow: 'visible'}}>
+      <IdentificarConsulta registro={registro} mensaje={pendientePeajes?'La ruta requiere confirmar los peajes antes de consultar.':resultado.errores.join(' ')}/>
+      {registro.visible&&<>
       <div className="regional-summary-heading"><h3>Resumen de precios</h3><span className={valido?'regional-status ready':'regional-status'}>{valido?'Precio disponible':pendientePeajes?'Revisar peajes':'Completa la consulta'}</span></div>
       <p className="regional-destino">{destino?.municipio ?? 'Selecciona un destino'}</p>
       {[['Servicio base', resultado.base], ['Vehículo / depreciación', resultado.vehiculo], ['Combustible', resultado.combustible],
@@ -190,6 +209,7 @@ function ConsultaRegional({ sede }: { sede: SedeRegional }) {
       <div className="regional-copy-actions"><Button variant="ghost" disabled={!valido} onClick={copiarValor}><Copy size={14} /> Copiar valor</Button><Button className="regional-whatsapp" disabled={!valido} onClick={copiarWhatsApp}><MessageCircle size={14} /> Resumen para WhatsApp</Button></div>
       <details className="regional-details"><summary>Más opciones</summary><Button disabled={!valido} variant="ghost" onClick={copiar}>Copiar cotización sin IVA</Button></details>
       <p className="regional-note">El resumen se actualiza automáticamente. La cotización formal se realiza en el ERP.</p>
+      </>}
     </Card>
     </aside>
   </div>

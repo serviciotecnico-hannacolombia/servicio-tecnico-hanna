@@ -19,6 +19,7 @@ const MODULE_LABELS: Record<ModuleKey, string> = {
   reporte_st: 'Reporte ST',
   tareas: 'Tareas',
   mantenimiento_programado: 'Mantenimiento Programado',
+  gestion_mantenimientos: 'Gestión de mantenimientos',
   calibraciones: 'Calibraciones',
   void: 'Control VOID',
   bodega_st: 'Bodega ST (Restauración)',
@@ -32,6 +33,7 @@ const MODULE_LABELS: Record<ModuleKey, string> = {
 }
 
 const CAPABILITY_LABELS: Record<CapabilityKey, string> = {
+  mant_consultas_reportes: 'Ver y descargar registro de consultas de mantenimiento',
   importar_csv_tarifas: 'Importar CSV en Tarifas de Envío',
   importar_csv_codigos: 'Importar CSV en Códigos y Partes',
   importar_csv_llamadas: 'Importar CSV en Control de Llamadas',
@@ -57,6 +59,7 @@ const CAPABILITY_KEYS = Object.keys(CAPABILITY_LABELS) as CapabilityKey[]
 // porque tablas_mantenimiento_editar es de "Editor de Informes" pese al
 // nombre (el prefijo engañaría hacia mantenimiento_programado).
 const CAPABILITY_MODULE: Record<CapabilityKey, ModuleKey> = {
+  mant_consultas_reportes: 'gestion_mantenimientos',
   importar_csv_tarifas: 'tarifas',
   importar_csv_codigos: 'codigos',
   editar_codigos: 'codigos',

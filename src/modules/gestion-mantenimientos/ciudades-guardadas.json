@@ -1,0 +1,1337 @@
+[
+  {
+    "codigo": "05002",
+    "departamento": "ANTIOQUIA",
+    "municipio": "ABEJORRAL"
+  },
+  {
+    "codigo": "05021",
+    "departamento": "ANTIOQUIA",
+    "municipio": "ALEJANDRÍA"
+  },
+  {
+    "codigo": "05030",
+    "departamento": "ANTIOQUIA",
+    "municipio": "AMAGÁ"
+  },
+  {
+    "codigo": "05034",
+    "departamento": "ANTIOQUIA",
+    "municipio": "ANDES"
+  },
+  {
+    "codigo": "05036",
+    "departamento": "ANTIOQUIA",
+    "municipio": "ANGELÓPOLIS"
+  },
+  {
+    "codigo": "05044",
+    "departamento": "ANTIOQUIA",
+    "municipio": "ANZÁ"
+  },
+  {
+    "codigo": "05059",
+    "departamento": "ANTIOQUIA",
+    "municipio": "ARMENIA"
+  },
+  {
+    "codigo": "05079",
+    "departamento": "ANTIOQUIA",
+    "municipio": "BARBOSA"
+  },
+  {
+    "codigo": "05088",
+    "departamento": "ANTIOQUIA",
+    "municipio": "BELLO"
+  },
+  {
+    "codigo": "05086",
+    "departamento": "ANTIOQUIA",
+    "municipio": "BELMIRA"
+  },
+  {
+    "codigo": "05091",
+    "departamento": "ANTIOQUIA",
+    "municipio": "BETANIA"
+  },
+  {
+    "codigo": "05113",
+    "departamento": "ANTIOQUIA",
+    "municipio": "BURITICÁ"
+  },
+  {
+    "codigo": "05125",
+    "departamento": "ANTIOQUIA",
+    "municipio": "CAICEDO"
+  },
+  {
+    "codigo": "05129",
+    "departamento": "ANTIOQUIA",
+    "municipio": "CALDAS"
+  },
+  {
+    "codigo": "05150",
+    "departamento": "ANTIOQUIA",
+    "municipio": "CAROLINA"
+  },
+  {
+    "codigo": "05190",
+    "departamento": "ANTIOQUIA",
+    "municipio": "CISNEROS"
+  },
+  {
+    "codigo": "05101",
+    "departamento": "ANTIOQUIA",
+    "municipio": "CIUDAD BOLÍVAR"
+  },
+  {
+    "codigo": "05197",
+    "departamento": "ANTIOQUIA",
+    "municipio": "COCORNÁ"
+  },
+  {
+    "codigo": "05206",
+    "departamento": "ANTIOQUIA",
+    "municipio": "CONCEPCIÓN"
+  },
+  {
+    "codigo": "05209",
+    "departamento": "ANTIOQUIA",
+    "municipio": "CONCORDIA"
+  },
+  {
+    "codigo": "05212",
+    "departamento": "ANTIOQUIA",
+    "municipio": "COPACABANA"
+  },
+  {
+    "codigo": "05237",
+    "departamento": "ANTIOQUIA",
+    "municipio": "DONMATÍAS"
+  },
+  {
+    "codigo": "05240",
+    "departamento": "ANTIOQUIA",
+    "municipio": "EBÉJICO"
+  },
+  {
+    "codigo": "05148",
+    "departamento": "ANTIOQUIA",
+    "municipio": "EL CARMEN DE VIBORAL"
+  },
+  {
+    "codigo": "05697",
+    "departamento": "ANTIOQUIA",
+    "municipio": "EL SANTUARIO"
+  },
+  {
+    "codigo": "05264",
+    "departamento": "ANTIOQUIA",
+    "municipio": "ENTRERRÍOS"
+  },
+  {
+    "codigo": "05266",
+    "departamento": "ANTIOQUIA",
+    "municipio": "ENVIGADO"
+  },
+  {
+    "codigo": "05282",
+    "departamento": "ANTIOQUIA",
+    "municipio": "FREDONIA"
+  },
+  {
+    "codigo": "05306",
+    "departamento": "ANTIOQUIA",
+    "municipio": "GIRALDO"
+  },
+  {
+    "codigo": "05308",
+    "departamento": "ANTIOQUIA",
+    "municipio": "GIRARDOTA"
+  },
+  {
+    "codigo": "05310",
+    "departamento": "ANTIOQUIA",
+    "municipio": "GÓMEZ PLATA"
+  },
+  {
+    "codigo": "05313",
+    "departamento": "ANTIOQUIA",
+    "municipio": "GRANADA"
+  },
+  {
+    "codigo": "05318",
+    "departamento": "ANTIOQUIA",
+    "municipio": "GUARNE"
+  },
+  {
+    "codigo": "05321",
+    "departamento": "ANTIOQUIA",
+    "municipio": "GUATAPÉ"
+  },
+  {
+    "codigo": "05347",
+    "departamento": "ANTIOQUIA",
+    "municipio": "HELICONIA"
+  },
+  {
+    "codigo": "05353",
+    "departamento": "ANTIOQUIA",
+    "municipio": "HISPANIA"
+  },
+  {
+    "codigo": "05360",
+    "departamento": "ANTIOQUIA",
+    "municipio": "ITAGÜÍ"
+  },
+  {
+    "codigo": "05368",
+    "departamento": "ANTIOQUIA",
+    "municipio": "JERICÓ"
+  },
+  {
+    "codigo": "05376",
+    "departamento": "ANTIOQUIA",
+    "municipio": "LA CEJA"
+  },
+  {
+    "codigo": "05380",
+    "departamento": "ANTIOQUIA",
+    "municipio": "LA ESTRELLA"
+  },
+  {
+    "codigo": "05390",
+    "departamento": "ANTIOQUIA",
+    "municipio": "LA PINTADA"
+  },
+  {
+    "codigo": "05400",
+    "departamento": "ANTIOQUIA",
+    "municipio": "LA UNIÓN"
+  },
+  {
+    "codigo": "05411",
+    "departamento": "ANTIOQUIA",
+    "municipio": "LIBORINA"
+  },
+  {
+    "codigo": "05440",
+    "departamento": "ANTIOQUIA",
+    "municipio": "MARINILLA"
+  },
+  {
+    "codigo": "05001",
+    "departamento": "ANTIOQUIA",
+    "municipio": "MEDELLÍN"
+  },
+  {
+    "codigo": "05467",
+    "departamento": "ANTIOQUIA",
+    "municipio": "MONTEBELLO"
+  },
+  {
+    "codigo": "05501",
+    "departamento": "ANTIOQUIA",
+    "municipio": "OLAYA"
+  },
+  {
+    "codigo": "05541",
+    "departamento": "ANTIOQUIA",
+    "municipio": "PEÑOL"
+  },
+  {
+    "codigo": "05576",
+    "departamento": "ANTIOQUIA",
+    "municipio": "PUEBLORRICO"
+  },
+  {
+    "codigo": "05607",
+    "departamento": "ANTIOQUIA",
+    "municipio": "RETIRO"
+  },
+  {
+    "codigo": "05615",
+    "departamento": "ANTIOQUIA",
+    "municipio": "RIONEGRO"
+  },
+  {
+    "codigo": "05631",
+    "departamento": "ANTIOQUIA",
+    "municipio": "SABANETA"
+  },
+  {
+    "codigo": "05642",
+    "departamento": "ANTIOQUIA",
+    "municipio": "SALGAR"
+  },
+  {
+    "codigo": "05649",
+    "departamento": "ANTIOQUIA",
+    "municipio": "SAN CARLOS"
+  },
+  {
+    "codigo": "05652",
+    "departamento": "ANTIOQUIA",
+    "municipio": "SAN FRANCISCO"
+  },
+  {
+    "codigo": "05656",
+    "departamento": "ANTIOQUIA",
+    "municipio": "SAN JERÓNIMO"
+  },
+  {
+    "codigo": "05664",
+    "departamento": "ANTIOQUIA",
+    "municipio": "SAN PEDRO DE LOS MILAGROS"
+  },
+  {
+    "codigo": "05667",
+    "departamento": "ANTIOQUIA",
+    "municipio": "SAN RAFAEL"
+  },
+  {
+    "codigo": "05670",
+    "departamento": "ANTIOQUIA",
+    "municipio": "SAN ROQUE"
+  },
+  {
+    "codigo": "05674",
+    "departamento": "ANTIOQUIA",
+    "municipio": "SAN VICENTE FERRER"
+  },
+  {
+    "codigo": "05679",
+    "departamento": "ANTIOQUIA",
+    "municipio": "SANTA BÁRBARA"
+  },
+  {
+    "codigo": "05042",
+    "departamento": "ANTIOQUIA",
+    "municipio": "SANTA FÉ DE ANTIOQUIA"
+  },
+  {
+    "codigo": "05686",
+    "departamento": "ANTIOQUIA",
+    "municipio": "SANTA ROSA DE OSOS"
+  },
+  {
+    "codigo": "05690",
+    "departamento": "ANTIOQUIA",
+    "municipio": "SANTO DOMINGO"
+  },
+  {
+    "codigo": "05756",
+    "departamento": "ANTIOQUIA",
+    "municipio": "SONSÓN"
+  },
+  {
+    "codigo": "05761",
+    "departamento": "ANTIOQUIA",
+    "municipio": "SOPETRÁN"
+  },
+  {
+    "codigo": "05789",
+    "departamento": "ANTIOQUIA",
+    "municipio": "TÁMESIS"
+  },
+  {
+    "codigo": "05792",
+    "departamento": "ANTIOQUIA",
+    "municipio": "TARSO"
+  },
+  {
+    "codigo": "05809",
+    "departamento": "ANTIOQUIA",
+    "municipio": "TITIRIBÍ"
+  },
+  {
+    "codigo": "05861",
+    "departamento": "ANTIOQUIA",
+    "municipio": "VENECIA"
+  },
+  {
+    "codigo": "05890",
+    "departamento": "ANTIOQUIA",
+    "municipio": "YOLOMBÓ"
+  },
+  {
+    "codigo": "08078",
+    "departamento": "ATLÁNTICO",
+    "municipio": "BARANOA"
+  },
+  {
+    "codigo": "08001",
+    "departamento": "ATLÁNTICO",
+    "municipio": "BARRANQUILLA"
+  },
+  {
+    "codigo": "08137",
+    "departamento": "ATLÁNTICO",
+    "municipio": "CAMPO DE LA CRUZ"
+  },
+  {
+    "codigo": "08141",
+    "departamento": "ATLÁNTICO",
+    "municipio": "CANDELARIA"
+  },
+  {
+    "codigo": "08296",
+    "departamento": "ATLÁNTICO",
+    "municipio": "GALAPA"
+  },
+  {
+    "codigo": "08372",
+    "departamento": "ATLÁNTICO",
+    "municipio": "JUAN DE ACOSTA"
+  },
+  {
+    "codigo": "08421",
+    "departamento": "ATLÁNTICO",
+    "municipio": "LURUACO"
+  },
+  {
+    "codigo": "08433",
+    "departamento": "ATLÁNTICO",
+    "municipio": "MALAMBO"
+  },
+  {
+    "codigo": "08436",
+    "departamento": "ATLÁNTICO",
+    "municipio": "MANATÍ"
+  },
+  {
+    "codigo": "08520",
+    "departamento": "ATLÁNTICO",
+    "municipio": "PALMAR DE VARELA"
+  },
+  {
+    "codigo": "08549",
+    "departamento": "ATLÁNTICO",
+    "municipio": "PIOJÓ"
+  },
+  {
+    "codigo": "08558",
+    "departamento": "ATLÁNTICO",
+    "municipio": "POLONUEVO"
+  },
+  {
+    "codigo": "08560",
+    "departamento": "ATLÁNTICO",
+    "municipio": "PONEDERA"
+  },
+  {
+    "codigo": "08573",
+    "departamento": "ATLÁNTICO",
+    "municipio": "PUERTO COLOMBIA"
+  },
+  {
+    "codigo": "08606",
+    "departamento": "ATLÁNTICO",
+    "municipio": "REPELÓN"
+  },
+  {
+    "codigo": "08634",
+    "departamento": "ATLÁNTICO",
+    "municipio": "SABANAGRANDE"
+  },
+  {
+    "codigo": "08638",
+    "departamento": "ATLÁNTICO",
+    "municipio": "SABANALARGA"
+  },
+  {
+    "codigo": "08685",
+    "departamento": "ATLÁNTICO",
+    "municipio": "SANTO TOMÁS"
+  },
+  {
+    "codigo": "08758",
+    "departamento": "ATLÁNTICO",
+    "municipio": "SOLEDAD"
+  },
+  {
+    "codigo": "08770",
+    "departamento": "ATLÁNTICO",
+    "municipio": "SUAN"
+  },
+  {
+    "codigo": "08832",
+    "departamento": "ATLÁNTICO",
+    "municipio": "TUBARÁ"
+  },
+  {
+    "codigo": "08849",
+    "departamento": "ATLÁNTICO",
+    "municipio": "USIACURÍ"
+  },
+  {
+    "codigo": "11001",
+    "departamento": "BOGOTÁ, D.C.",
+    "municipio": "BOGOTÁ, D.C."
+  },
+  {
+    "codigo": "13001",
+    "departamento": "BOLÍVAR",
+    "municipio": "CARTAGENA DE INDIAS"
+  },
+  {
+    "codigo": "13222",
+    "departamento": "BOLÍVAR",
+    "municipio": "CLEMENCIA"
+  },
+  {
+    "codigo": "13647",
+    "departamento": "BOLÍVAR",
+    "municipio": "SAN ESTANISLAO"
+  },
+  {
+    "codigo": "13673",
+    "departamento": "BOLÍVAR",
+    "municipio": "SANTA CATALINA"
+  },
+  {
+    "codigo": "13760",
+    "departamento": "BOLÍVAR",
+    "municipio": "SOPLAVIENTO"
+  },
+  {
+    "codigo": "17042",
+    "departamento": "CALDAS",
+    "municipio": "ANSERMA"
+  },
+  {
+    "codigo": "17050",
+    "departamento": "CALDAS",
+    "municipio": "ARANZAZU"
+  },
+  {
+    "codigo": "17088",
+    "departamento": "CALDAS",
+    "municipio": "BELALCÁZAR"
+  },
+  {
+    "codigo": "17174",
+    "departamento": "CALDAS",
+    "municipio": "CHINCHINÁ"
+  },
+  {
+    "codigo": "17272",
+    "departamento": "CALDAS",
+    "municipio": "FILADELFIA"
+  },
+  {
+    "codigo": "17001",
+    "departamento": "CALDAS",
+    "municipio": "MANIZALES"
+  },
+  {
+    "codigo": "17486",
+    "departamento": "CALDAS",
+    "municipio": "NEIRA"
+  },
+  {
+    "codigo": "17524",
+    "departamento": "CALDAS",
+    "municipio": "PALESTINA"
+  },
+  {
+    "codigo": "17616",
+    "departamento": "CALDAS",
+    "municipio": "RISARALDA"
+  },
+  {
+    "codigo": "17665",
+    "departamento": "CALDAS",
+    "municipio": "SAN JOSÉ"
+  },
+  {
+    "codigo": "17777",
+    "departamento": "CALDAS",
+    "municipio": "SUPÍA"
+  },
+  {
+    "codigo": "17873",
+    "departamento": "CALDAS",
+    "municipio": "VILLAMARÍA"
+  },
+  {
+    "codigo": "17877",
+    "departamento": "CALDAS",
+    "municipio": "VITERBO"
+  },
+  {
+    "codigo": "19110",
+    "departamento": "CAUCA",
+    "municipio": "BUENOS AIRES"
+  },
+  {
+    "codigo": "19137",
+    "departamento": "CAUCA",
+    "municipio": "CALDONO"
+  },
+  {
+    "codigo": "19142",
+    "departamento": "CAUCA",
+    "municipio": "CALOTO"
+  },
+  {
+    "codigo": "19212",
+    "departamento": "CAUCA",
+    "municipio": "CORINTO"
+  },
+  {
+    "codigo": "19300",
+    "departamento": "CAUCA",
+    "municipio": "GUACHENÉ"
+  },
+  {
+    "codigo": "19455",
+    "departamento": "CAUCA",
+    "municipio": "MIRANDA"
+  },
+  {
+    "codigo": "19473",
+    "departamento": "CAUCA",
+    "municipio": "MORALES"
+  },
+  {
+    "codigo": "19513",
+    "departamento": "CAUCA",
+    "municipio": "PADILLA"
+  },
+  {
+    "codigo": "19548",
+    "departamento": "CAUCA",
+    "municipio": "PIENDAMÓ - TUNÍA"
+  },
+  {
+    "codigo": "19573",
+    "departamento": "CAUCA",
+    "municipio": "PUERTO TEJADA"
+  },
+  {
+    "codigo": "19698",
+    "departamento": "CAUCA",
+    "municipio": "SANTANDER DE QUILICHAO"
+  },
+  {
+    "codigo": "19780",
+    "departamento": "CAUCA",
+    "municipio": "SUÁREZ"
+  },
+  {
+    "codigo": "19821",
+    "departamento": "CAUCA",
+    "municipio": "TORIBÍO"
+  },
+  {
+    "codigo": "19845",
+    "departamento": "CAUCA",
+    "municipio": "VILLA RICA"
+  },
+  {
+    "codigo": "20710",
+    "departamento": "CESAR",
+    "municipio": "SAN ALBERTO"
+  },
+  {
+    "codigo": "27660",
+    "departamento": "CHOCÓ",
+    "municipio": "SAN JOSÉ DEL PALMAR"
+  },
+  {
+    "codigo": "25019",
+    "departamento": "CUNDINAMARCA",
+    "municipio": "ALBÁN"
+  },
+  {
+    "codigo": "25099",
+    "departamento": "CUNDINAMARCA",
+    "municipio": "BOJACÁ"
+  },
+  {
+    "codigo": "25123",
+    "departamento": "CUNDINAMARCA",
+    "municipio": "CACHIPAY"
+  },
+  {
+    "codigo": "25126",
+    "departamento": "CUNDINAMARCA",
+    "municipio": "CAJICÁ"
+  },
+  {
+    "codigo": "25151",
+    "departamento": "CUNDINAMARCA",
+    "municipio": "CÁQUEZA"
+  },
+  {
+    "codigo": "25175",
+    "departamento": "CUNDINAMARCA",
+    "municipio": "CHÍA"
+  },
+  {
+    "codigo": "25178",
+    "departamento": "CUNDINAMARCA",
+    "municipio": "CHIPAQUE"
+  },
+  {
+    "codigo": "25181",
+    "departamento": "CUNDINAMARCA",
+    "municipio": "CHOACHÍ"
+  },
+  {
+    "codigo": "25214",
+    "departamento": "CUNDINAMARCA",
+    "municipio": "COTA"
+  },
+  {
+    "codigo": "25260",
+    "departamento": "CUNDINAMARCA",
+    "municipio": "EL ROSAL"
+  },
+  {
+    "codigo": "25269",
+    "departamento": "CUNDINAMARCA",
+    "municipio": "FACATATIVÁ"
+  },
+  {
+    "codigo": "25286",
+    "departamento": "CUNDINAMARCA",
+    "municipio": "FUNZA"
+  },
+  {
+    "codigo": "25295",
+    "departamento": "CUNDINAMARCA",
+    "municipio": "GACHANCIPÁ"
+  },
+  {
+    "codigo": "25312",
+    "departamento": "CUNDINAMARCA",
+    "municipio": "GRANADA"
+  },
+  {
+    "codigo": "25322",
+    "departamento": "CUNDINAMARCA",
+    "municipio": "GUASCA"
+  },
+  {
+    "codigo": "25377",
+    "departamento": "CUNDINAMARCA",
+    "municipio": "LA CALERA"
+  },
+  {
+    "codigo": "25430",
+    "departamento": "CUNDINAMARCA",
+    "municipio": "MADRID"
+  },
+  {
+    "codigo": "25473",
+    "departamento": "CUNDINAMARCA",
+    "municipio": "MOSQUERA"
+  },
+  {
+    "codigo": "25645",
+    "departamento": "CUNDINAMARCA",
+    "municipio": "SAN ANTONIO DEL TEQUENDAMA"
+  },
+  {
+    "codigo": "25658",
+    "departamento": "CUNDINAMARCA",
+    "municipio": "SAN FRANCISCO"
+  },
+  {
+    "codigo": "25740",
+    "departamento": "CUNDINAMARCA",
+    "municipio": "SIBATÉ"
+  },
+  {
+    "codigo": "25754",
+    "departamento": "CUNDINAMARCA",
+    "municipio": "SOACHA"
+  },
+  {
+    "codigo": "25758",
+    "departamento": "CUNDINAMARCA",
+    "municipio": "SOPÓ"
+  },
+  {
+    "codigo": "25769",
+    "departamento": "CUNDINAMARCA",
+    "municipio": "SUBACHOQUE"
+  },
+  {
+    "codigo": "25785",
+    "departamento": "CUNDINAMARCA",
+    "municipio": "TABIO"
+  },
+  {
+    "codigo": "25797",
+    "departamento": "CUNDINAMARCA",
+    "municipio": "TENA"
+  },
+  {
+    "codigo": "25799",
+    "departamento": "CUNDINAMARCA",
+    "municipio": "TENJO"
+  },
+  {
+    "codigo": "25817",
+    "departamento": "CUNDINAMARCA",
+    "municipio": "TOCANCIPÁ"
+  },
+  {
+    "codigo": "25845",
+    "departamento": "CUNDINAMARCA",
+    "municipio": "UNE"
+  },
+  {
+    "codigo": "25898",
+    "departamento": "CUNDINAMARCA",
+    "municipio": "ZIPACÓN"
+  },
+  {
+    "codigo": "25899",
+    "departamento": "CUNDINAMARCA",
+    "municipio": "ZIPAQUIRÁ"
+  },
+  {
+    "codigo": "47161",
+    "departamento": "MAGDALENA",
+    "municipio": "CERRO DE SAN ANTONIO"
+  },
+  {
+    "codigo": "47189",
+    "departamento": "MAGDALENA",
+    "municipio": "CIÉNAGA"
+  },
+  {
+    "codigo": "47258",
+    "departamento": "MAGDALENA",
+    "municipio": "EL PIÑÓN"
+  },
+  {
+    "codigo": "47551",
+    "departamento": "MAGDALENA",
+    "municipio": "PIVIJAY"
+  },
+  {
+    "codigo": "47570",
+    "departamento": "MAGDALENA",
+    "municipio": "PUEBLOVIEJO"
+  },
+  {
+    "codigo": "47605",
+    "departamento": "MAGDALENA",
+    "municipio": "REMOLINO"
+  },
+  {
+    "codigo": "47675",
+    "departamento": "MAGDALENA",
+    "municipio": "SALAMINA"
+  },
+  {
+    "codigo": "47001",
+    "departamento": "MAGDALENA",
+    "municipio": "SANTA MARTA"
+  },
+  {
+    "codigo": "47745",
+    "departamento": "MAGDALENA",
+    "municipio": "SITIONUEVO"
+  },
+  {
+    "codigo": "54128",
+    "departamento": "NORTE DE SANTANDER",
+    "municipio": "CÁCHIRA"
+  },
+  {
+    "codigo": "54385",
+    "departamento": "NORTE DE SANTANDER",
+    "municipio": "LA ESPERANZA"
+  },
+  {
+    "codigo": "54480",
+    "departamento": "NORTE DE SANTANDER",
+    "municipio": "MUTISCUA"
+  },
+  {
+    "codigo": "54743",
+    "departamento": "NORTE DE SANTANDER",
+    "municipio": "SILOS"
+  },
+  {
+    "codigo": "63001",
+    "departamento": "QUINDÍO",
+    "municipio": "ARMENIA"
+  },
+  {
+    "codigo": "63111",
+    "departamento": "QUINDÍO",
+    "municipio": "BUENAVISTA"
+  },
+  {
+    "codigo": "63130",
+    "departamento": "QUINDÍO",
+    "municipio": "CALARCÁ"
+  },
+  {
+    "codigo": "63190",
+    "departamento": "QUINDÍO",
+    "municipio": "CIRCASIA"
+  },
+  {
+    "codigo": "63212",
+    "departamento": "QUINDÍO",
+    "municipio": "CÓRDOBA"
+  },
+  {
+    "codigo": "63272",
+    "departamento": "QUINDÍO",
+    "municipio": "FILANDIA"
+  },
+  {
+    "codigo": "63302",
+    "departamento": "QUINDÍO",
+    "municipio": "GÉNOVA"
+  },
+  {
+    "codigo": "63401",
+    "departamento": "QUINDÍO",
+    "municipio": "LA TEBAIDA"
+  },
+  {
+    "codigo": "63470",
+    "departamento": "QUINDÍO",
+    "municipio": "MONTENEGRO"
+  },
+  {
+    "codigo": "63548",
+    "departamento": "QUINDÍO",
+    "municipio": "PIJAO"
+  },
+  {
+    "codigo": "63594",
+    "departamento": "QUINDÍO",
+    "municipio": "QUIMBAYA"
+  },
+  {
+    "codigo": "63690",
+    "departamento": "QUINDÍO",
+    "municipio": "SALENTO"
+  },
+  {
+    "codigo": "66045",
+    "departamento": "RISARALDA",
+    "municipio": "APÍA"
+  },
+  {
+    "codigo": "66075",
+    "departamento": "RISARALDA",
+    "municipio": "BALBOA"
+  },
+  {
+    "codigo": "66088",
+    "departamento": "RISARALDA",
+    "municipio": "BELÉN DE UMBRÍA"
+  },
+  {
+    "codigo": "66170",
+    "departamento": "RISARALDA",
+    "municipio": "DOSQUEBRADAS"
+  },
+  {
+    "codigo": "66318",
+    "departamento": "RISARALDA",
+    "municipio": "GUÁTICA"
+  },
+  {
+    "codigo": "66383",
+    "departamento": "RISARALDA",
+    "municipio": "LA CELIA"
+  },
+  {
+    "codigo": "66400",
+    "departamento": "RISARALDA",
+    "municipio": "LA VIRGINIA"
+  },
+  {
+    "codigo": "66440",
+    "departamento": "RISARALDA",
+    "municipio": "MARSELLA"
+  },
+  {
+    "codigo": "66456",
+    "departamento": "RISARALDA",
+    "municipio": "MISTRATÓ"
+  },
+  {
+    "codigo": "66001",
+    "departamento": "RISARALDA",
+    "municipio": "PEREIRA"
+  },
+  {
+    "codigo": "66572",
+    "departamento": "RISARALDA",
+    "municipio": "PUEBLO RICO"
+  },
+  {
+    "codigo": "66594",
+    "departamento": "RISARALDA",
+    "municipio": "QUINCHÍA"
+  },
+  {
+    "codigo": "66682",
+    "departamento": "RISARALDA",
+    "municipio": "SANTA ROSA DE CABAL"
+  },
+  {
+    "codigo": "66687",
+    "departamento": "RISARALDA",
+    "municipio": "SANTUARIO"
+  },
+  {
+    "codigo": "68051",
+    "departamento": "SANTANDER",
+    "municipio": "ARATOCA"
+  },
+  {
+    "codigo": "68092",
+    "departamento": "SANTANDER",
+    "municipio": "BETULIA"
+  },
+  {
+    "codigo": "68001",
+    "departamento": "SANTANDER",
+    "municipio": "BUCARAMANGA"
+  },
+  {
+    "codigo": "68132",
+    "departamento": "SANTANDER",
+    "municipio": "CALIFORNIA"
+  },
+  {
+    "codigo": "68160",
+    "departamento": "SANTANDER",
+    "municipio": "CEPITÁ"
+  },
+  {
+    "codigo": "68169",
+    "departamento": "SANTANDER",
+    "municipio": "CHARTA"
+  },
+  {
+    "codigo": "68229",
+    "departamento": "SANTANDER",
+    "municipio": "CURITÍ"
+  },
+  {
+    "codigo": "68255",
+    "departamento": "SANTANDER",
+    "municipio": "EL PLAYÓN"
+  },
+  {
+    "codigo": "68276",
+    "departamento": "SANTANDER",
+    "municipio": "FLORIDABLANCA"
+  },
+  {
+    "codigo": "68307",
+    "departamento": "SANTANDER",
+    "municipio": "GIRÓN"
+  },
+  {
+    "codigo": "68318",
+    "departamento": "SANTANDER",
+    "municipio": "GUACA"
+  },
+  {
+    "codigo": "68370",
+    "departamento": "SANTANDER",
+    "municipio": "JORDÁN"
+  },
+  {
+    "codigo": "68406",
+    "departamento": "SANTANDER",
+    "municipio": "LEBRIJA"
+  },
+  {
+    "codigo": "68418",
+    "departamento": "SANTANDER",
+    "municipio": "LOS SANTOS"
+  },
+  {
+    "codigo": "68444",
+    "departamento": "SANTANDER",
+    "municipio": "MATANZA"
+  },
+  {
+    "codigo": "68547",
+    "departamento": "SANTANDER",
+    "municipio": "PIEDECUESTA"
+  },
+  {
+    "codigo": "68549",
+    "departamento": "SANTANDER",
+    "municipio": "PINCHOTE"
+  },
+  {
+    "codigo": "68615",
+    "departamento": "SANTANDER",
+    "municipio": "RIONEGRO"
+  },
+  {
+    "codigo": "68669",
+    "departamento": "SANTANDER",
+    "municipio": "SAN ANDRÉS"
+  },
+  {
+    "codigo": "68679",
+    "departamento": "SANTANDER",
+    "municipio": "SAN GIL"
+  },
+  {
+    "codigo": "68689",
+    "departamento": "SANTANDER",
+    "municipio": "SAN VICENTE DE CHUCURÍ"
+  },
+  {
+    "codigo": "68705",
+    "departamento": "SANTANDER",
+    "municipio": "SANTA BÁRBARA"
+  },
+  {
+    "codigo": "68780",
+    "departamento": "SANTANDER",
+    "municipio": "SURATÁ"
+  },
+  {
+    "codigo": "68820",
+    "departamento": "SANTANDER",
+    "municipio": "TONA"
+  },
+  {
+    "codigo": "68867",
+    "departamento": "SANTANDER",
+    "municipio": "VETAS"
+  },
+  {
+    "codigo": "68872",
+    "departamento": "SANTANDER",
+    "municipio": "VILLANUEVA"
+  },
+  {
+    "codigo": "68895",
+    "departamento": "SANTANDER",
+    "municipio": "ZAPATOCA"
+  },
+  {
+    "codigo": "73124",
+    "departamento": "TOLIMA",
+    "municipio": "CAJAMARCA"
+  },
+  {
+    "codigo": "76020",
+    "departamento": "VALLE DEL CAUCA",
+    "municipio": "ALCALÁ"
+  },
+  {
+    "codigo": "76036",
+    "departamento": "VALLE DEL CAUCA",
+    "municipio": "ANDALUCÍA"
+  },
+  {
+    "codigo": "76041",
+    "departamento": "VALLE DEL CAUCA",
+    "municipio": "ANSERMANUEVO"
+  },
+  {
+    "codigo": "76054",
+    "departamento": "VALLE DEL CAUCA",
+    "municipio": "ARGELIA"
+  },
+  {
+    "codigo": "76100",
+    "departamento": "VALLE DEL CAUCA",
+    "municipio": "BOLÍVAR"
+  },
+  {
+    "codigo": "76113",
+    "departamento": "VALLE DEL CAUCA",
+    "municipio": "BUGALAGRANDE"
+  },
+  {
+    "codigo": "76122",
+    "departamento": "VALLE DEL CAUCA",
+    "municipio": "CAICEDONIA"
+  },
+  {
+    "codigo": "76126",
+    "departamento": "VALLE DEL CAUCA",
+    "municipio": "CALIMA"
+  },
+  {
+    "codigo": "76130",
+    "departamento": "VALLE DEL CAUCA",
+    "municipio": "CANDELARIA"
+  },
+  {
+    "codigo": "76147",
+    "departamento": "VALLE DEL CAUCA",
+    "municipio": "CARTAGO"
+  },
+  {
+    "codigo": "76233",
+    "departamento": "VALLE DEL CAUCA",
+    "municipio": "DAGUA"
+  },
+  {
+    "codigo": "76243",
+    "departamento": "VALLE DEL CAUCA",
+    "municipio": "EL ÁGUILA"
+  },
+  {
+    "codigo": "76246",
+    "departamento": "VALLE DEL CAUCA",
+    "municipio": "EL CAIRO"
+  },
+  {
+    "codigo": "76248",
+    "departamento": "VALLE DEL CAUCA",
+    "municipio": "EL CERRITO"
+  },
+  {
+    "codigo": "76250",
+    "departamento": "VALLE DEL CAUCA",
+    "municipio": "EL DOVIO"
+  },
+  {
+    "codigo": "76275",
+    "departamento": "VALLE DEL CAUCA",
+    "municipio": "FLORIDA"
+  },
+  {
+    "codigo": "76306",
+    "departamento": "VALLE DEL CAUCA",
+    "municipio": "GINEBRA"
+  },
+  {
+    "codigo": "76318",
+    "departamento": "VALLE DEL CAUCA",
+    "municipio": "GUACARÍ"
+  },
+  {
+    "codigo": "76111",
+    "departamento": "VALLE DEL CAUCA",
+    "municipio": "GUADALAJARA DE BUGA"
+  },
+  {
+    "codigo": "76364",
+    "departamento": "VALLE DEL CAUCA",
+    "municipio": "JAMUNDÍ"
+  },
+  {
+    "codigo": "76377",
+    "departamento": "VALLE DEL CAUCA",
+    "municipio": "LA CUMBRE"
+  },
+  {
+    "codigo": "76400",
+    "departamento": "VALLE DEL CAUCA",
+    "municipio": "LA UNIÓN"
+  },
+  {
+    "codigo": "76403",
+    "departamento": "VALLE DEL CAUCA",
+    "municipio": "LA VICTORIA"
+  },
+  {
+    "codigo": "76497",
+    "departamento": "VALLE DEL CAUCA",
+    "municipio": "OBANDO"
+  },
+  {
+    "codigo": "76520",
+    "departamento": "VALLE DEL CAUCA",
+    "municipio": "PALMIRA"
+  },
+  {
+    "codigo": "76563",
+    "departamento": "VALLE DEL CAUCA",
+    "municipio": "PRADERA"
+  },
+  {
+    "codigo": "76606",
+    "departamento": "VALLE DEL CAUCA",
+    "municipio": "RESTREPO"
+  },
+  {
+    "codigo": "76616",
+    "departamento": "VALLE DEL CAUCA",
+    "municipio": "RIOFRÍO"
+  },
+  {
+    "codigo": "76622",
+    "departamento": "VALLE DEL CAUCA",
+    "municipio": "ROLDANILLO"
+  },
+  {
+    "codigo": "76670",
+    "departamento": "VALLE DEL CAUCA",
+    "municipio": "SAN PEDRO"
+  },
+  {
+    "codigo": "76001",
+    "departamento": "VALLE DEL CAUCA",
+    "municipio": "SANTIAGO DE CALI"
+  },
+  {
+    "codigo": "76736",
+    "departamento": "VALLE DEL CAUCA",
+    "municipio": "SEVILLA"
+  },
+  {
+    "codigo": "76823",
+    "departamento": "VALLE DEL CAUCA",
+    "municipio": "TORO"
+  },
+  {
+    "codigo": "76828",
+    "departamento": "VALLE DEL CAUCA",
+    "municipio": "TRUJILLO"
+  },
+  {
+    "codigo": "76834",
+    "departamento": "VALLE DEL CAUCA",
+    "municipio": "TULUÁ"
+  },
+  {
+    "codigo": "76845",
+    "departamento": "VALLE DEL CAUCA",
+    "municipio": "ULLOA"
+  },
+  {
+    "codigo": "76863",
+    "departamento": "VALLE DEL CAUCA",
+    "municipio": "VERSALLES"
+  },
+  {
+    "codigo": "76869",
+    "departamento": "VALLE DEL CAUCA",
+    "municipio": "VIJES"
+  },
+  {
+    "codigo": "76890",
+    "departamento": "VALLE DEL CAUCA",
+    "municipio": "YOTOCO"
+  },
+  {
+    "codigo": "76892",
+    "departamento": "VALLE DEL CAUCA",
+    "municipio": "YUMBO"
+  },
+  {
+    "codigo": "76895",
+    "departamento": "VALLE DEL CAUCA",
+    "municipio": "ZARZAL"
+  }
+]

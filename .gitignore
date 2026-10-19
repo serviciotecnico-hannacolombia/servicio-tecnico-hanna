@@ -32,3 +32,6 @@ supabase/.temp
 *.njsproj
 *.sln
 *.sw?
+
+# PostgreSQL embebido para validar Gestión de mantenimientos
+.cache/gestion-sql-check/
