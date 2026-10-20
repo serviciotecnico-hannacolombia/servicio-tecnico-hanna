@@ -38,7 +38,7 @@ export function TareasPage() {
   const [eliminando, setEliminando] = useState<Tarea | null>(null)
   const [exportando, setExportando] = useState(false)
 
-  const activos = profiles.filter(p => p.activo)
+  const activos = profiles.filter(p => p.activo && p.role_id)
   const profileName = (id: string) => profiles.find(p => p.id === id)?.full_name || profiles.find(p => p.id === id)?.email || '—'
 
   const rows = tareas

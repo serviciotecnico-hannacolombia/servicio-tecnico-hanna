@@ -20,7 +20,7 @@ export function ResponsablesConfigModal({ onClose }: { onClose: () => void }) {
 
   const q = search.toLowerCase().trim()
   const lista = profiles
-    .filter(p => p.activo)
+    .filter(p => p.activo && p.role_id)
     .filter(p => !q || (p.full_name || '').toLowerCase().includes(q) || p.email.toLowerCase().includes(q))
     .sort((a, b) => Number(habilitados.has(b.id)) - Number(habilitados.has(a.id)) || ordenarPorNombre(a, b))
 

@@ -1053,7 +1053,7 @@ function ModalNovedad({ item, onClose }: { item: OtstBodega, onClose: () => void
   const qc              = useQueryClient()
   const { displayName } = useUser()
   const { data: profiles = [] } = useProfiles()
-  const activos = profiles.filter(p => p.activo)
+  const activos = profiles.filter(p => p.activo && p.role_id)
   const [responsable, setResponsable] = useState('')
   const [motivo, setMotivo] = useState('No se encontró físicamente en la ubicación registrada')
   const [saving, setSaving] = useState(false)
@@ -1244,7 +1244,7 @@ function TabRotacion({ bodega, zonas, columnas }: { bodega: OtstBodega[], zonas:
   const qc              = useQueryClient()
   const { displayName } = useUser()
   const { data: profiles = [] } = useProfiles()
-  const activos = profiles.filter(p => p.activo)
+  const activos = profiles.filter(p => p.activo && p.role_id)
   const scanRef          = useRef<HTMLInputElement>(null)
 
   const [iniciada,   setIniciada]   = useState(false)

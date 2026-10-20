@@ -101,7 +101,7 @@ export function useProfileEmails() {
   return useQuery({
     queryKey: ['calibraciones_profile_emails'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('profiles').select('email')
+      const { data, error } = await supabase.from('profiles').select('email').not('role_id', 'is', null)
       if (error) throw error
       return new Set((data as { email: string }[]).map(p => p.email.trim().toLowerCase()))
     },

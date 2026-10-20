@@ -70,7 +70,7 @@ export function ImportTicketsModal({ open, onClose, profiles, onImport }: Props)
       const autoMap: Record<string, string | null> = {}
       const uniqueNames = new Set(parsed.map(r => r.creadoPorRaw).filter(Boolean))
       uniqueNames.forEach(name => {
-        const match = profiles.find(p => p.full_name && normalize(p.full_name) === normalize(name))
+        const match = profiles.find(p => p.role_id && p.full_name && normalize(p.full_name) === normalize(name))
         autoMap[name] = match ? match.id : null
       })
       setUserMap(autoMap)
@@ -144,7 +144,7 @@ export function ImportTicketsModal({ open, onClose, profiles, onImport }: Props)
                         onChange={e => handleUserMapChange(nombre, e.target.value)}
                       >
                         <option value="">Sin vincular (dejar sin usuario)</option>
-                        {profiles.map(p => (
+                        {profiles.filter(p => p.role_id).map(p => (
                           <option key={p.id} value={p.id}>{p.full_name || p.email}</option>
                         ))}
                       </select>
