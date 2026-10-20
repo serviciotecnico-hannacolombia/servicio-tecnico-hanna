@@ -4,6 +4,18 @@ import type { Profile } from '../../../types'
 
 const KEY = ['admin', 'users']
 
+// functions.invoke solo dice "non-2xx status code"; el motivo real viene en el body.
+async function edgeErrorMessage(error: unknown, fallback: string): Promise<string> {
+  const ctx = (error as { context?: Response })?.context
+  if (ctx && typeof ctx.json === 'function') {
+    try {
+      const body = await ctx.json()
+      if (body?.error) return body.error
+    } catch { /* body no es JSON */ }
+  }
+  return error instanceof Error ? error.message : fallback
+}
+
 export function useUsers() {
   const qc = useQueryClient()
 
@@ -51,7 +63,7 @@ export function useUsers() {
       const { data, error } = await supabase.functions.invoke('manage-users', {
         body: { action: 'create', ...payload },
       })
-      if (error) throw error
+      if (error) throw new Error(await edgeErrorMessage(error, 'Error al crear usuario'))
       if (!data?.success) throw new Error(data?.error ?? 'Error al crear usuario')
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
@@ -62,7 +74,7 @@ export function useUsers() {
       const { data, error } = await supabase.functions.invoke('manage-users', {
         body: { action: 'delete', userId },
       })
-      if (error) throw error
+      if (error) throw new Error(await edgeErrorMessage(error, 'Error al eliminar usuario'))
       if (!data?.success) throw new Error(data?.error ?? 'Error al eliminar usuario')
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
