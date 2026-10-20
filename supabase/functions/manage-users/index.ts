@@ -60,6 +60,8 @@ Deno.serve(async (req) => {
         password,
         email_confirm: true,
         user_metadata: { full_name, role_id },
+        // Ver self-signup: el rol real se lee de app_metadata.
+        app_metadata: { role_id },
       })
 
       if (error) throw error

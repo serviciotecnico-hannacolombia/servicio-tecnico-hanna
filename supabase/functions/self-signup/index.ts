@@ -51,6 +51,11 @@ Deno.serve(async (req) => {
       password,
       email_confirm: true,
       user_metadata: { full_name, role_id: ventasRole.id },
+      // handle_new_user() lee el rol de app_metadata (solo escribible con
+      // service role). user_metadata.role_id se mantiene únicamente para que
+      // esta función siga funcionando antes de aplicar la migración
+      // 20261021; después de ella la base lo ignora.
+      app_metadata: { role_id: ventasRole.id },
     })
 
     if (error) throw error
