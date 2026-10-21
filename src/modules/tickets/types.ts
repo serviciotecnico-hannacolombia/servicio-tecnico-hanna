@@ -15,7 +15,10 @@ export interface TicketFabrica {
   equipo_nombre?: string
   origen?: TicketOrigen | null
   estado?: TicketEstado | null
+  // Detalle inicial: al crear el ticket se vuelve el primer avance de la
+  // bitácora (trigger en BD). La UI ya no lo muestra ni lo edita.
   nota_estado?: string
+  otst?: string | null
 
   // Trazabilidad equipo madre/hijo: un electrodo o sonda (equipo hijo) que
   // falla se reporta con sus propios código/serial, pero sin el equipo
@@ -26,12 +29,37 @@ export interface TicketFabrica {
   equipo_madre_serial?: string
   equipo_madre_nombre?: string
 
+  // Resumen del avance más reciente, mantenido por trigger — la lista lo
+  // muestra sin cargar la bitácora completa de cada ticket.
+  ultimo_avance?: string | null
+  ultimo_avance_at?: string | null
+
   created_at?: string
+  updated_at?: string
+}
+
+export type TicketAvanceTipo = 'avance' | 'estado' | 'otst' | 'nombre' | 'origen'
+
+export interface TicketAvance {
+  id: string
+  ticket_id: string
+  usuario_id: string | null
+  tipo: TicketAvanceTipo
+  texto: string | null
+  valor_anterior: string | null
+  valor_nuevo: string | null
+  created_at: string
 }
 
 export const ORIGEN_LABEL: Record<TicketOrigen, string> = {
   control_calidad: 'Control de Calidad',
   orden_trabajo: 'Orden de Trabajo',
+}
+
+// Versión corta para el badge de la tabla, donde el nombre completo se cortaba.
+export const ORIGEN_CORTO: Record<TicketOrigen, string> = {
+  control_calidad: 'Calidad',
+  orden_trabajo: 'OT',
 }
 
 export const ORIGEN_COLOR: Record<TicketOrigen, { bg: string; text: string; border: string }> = {
@@ -59,6 +87,44 @@ export const ESTADO_COLOR: Record<TicketEstado, { bg: string; text: string; bord
   en_espera: { bg: '#fffbeb', text: '#b45309', border: '#fcd34d' },
   cambio_garantia: { bg: '#f0fdf4', text: '#16a34a', border: '#86efac' },
   boletin_tecnico: { bg: '#e0f2fe', text: '#0369a1', border: '#7dd3fc' },
+}
+
+// Grupos para las cards de la lista: 8 estados en cards sueltas eran
+// demasiados; se agrupan por lo que significan para el seguimiento.
+export type TicketGrupo = 'seguimiento' | 'exportacion' | 'resuelto' | 'denegado'
+
+export const GRUPO_LABEL: Record<TicketGrupo, string> = {
+  seguimiento: 'En seguimiento',
+  exportacion: 'Exportación',
+  resuelto: 'Resueltos',
+  denegado: 'Denegados',
+}
+
+export const GRUPO_COLOR: Record<TicketGrupo, string> = {
+  seguimiento: '#b45309',
+  exportacion: '#1d4ed8',
+  resuelto: '#16a34a',
+  denegado: '#dc2626',
+}
+
+// Sin estado cuenta como "en seguimiento": aún no hay respuesta de fábrica.
+export function grupoTicket(estado: TicketEstado | null | undefined): TicketGrupo {
+  switch (estado) {
+    case 'exportacion':
+    case 'exportacion_garantia': return 'exportacion'
+    case 'consulta_resuelta':
+    case 'cambio_garantia':
+    case 'boletin_tecnico': return 'resuelto'
+    case 'denegada_garantia': return 'denegado'
+    default: return 'seguimiento'
+  }
+}
+
+export const GRUPO_ESTADOS: Record<TicketGrupo, string> = {
+  seguimiento: 'En espera · Pendiente feedback · Sin estado',
+  exportacion: 'Exportación · Exportación/garantía',
+  resuelto: 'Consulta resuelta · Cambio garantía · Boletín técnico',
+  denegado: 'Denegada garantía',
 }
 
 // Ejemplo contextual del cuadro de texto "Detalle del estado" — cada estado
