@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { ArrowLeft, Trash2, Link2, ExternalLink } from 'lucide-react'
+import { ArrowLeft, Trash2, Link2, ExternalLink, Pencil } from 'lucide-react'
 import { Card } from '../../../components/ui/Card'
 import { Spinner } from '../../../components/ui/Spinner'
 import { supabase } from '../../../lib/supabase'
@@ -12,7 +12,7 @@ import { FG, Seccion, INP, PRI, GHOST } from '../../calibraciones/ui'
 import { linkOtst, parseOtstCodes } from '../../calibraciones/vistas/CamposCompartidos'
 import { EquipoQRFields, type EquipoValor } from '../components/EquipoQRFields'
 import { BitacoraTicket } from '../components/BitacoraTicket'
-import { useTickets } from '../hooks/useTickets'
+import { useTickets, agregarAvance } from '../hooks/useTickets'
 import { TICKET_ID_PREFIJO, numeroTid, fmtFechaLarga } from '../utils/formato'
 import {
   ORIGEN_LABEL, ORIGEN_COLOR, ESTADO_LABEL, ESTADO_COLOR, ESTADO_NOTA_PLACEHOLDER,
@@ -54,6 +54,63 @@ const badge = (c: { bg: string; text: string; border: string }): React.CSSProper
   background: c.bg, color: c.text, border: `1px solid ${c.border}`,
 })
 
+function Dato({ label, children, mono }: { label: string, children: React.ReactNode, mono?: boolean }) {
+  return (
+    <div style={{ minWidth: 0 }}>
+      <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.8px', fontFamily: 'var(--mono)', marginBottom: 4 }}>{label}</div>
+      <div style={{ fontSize: 13.5, color: 'var(--text)', fontFamily: mono ? 'var(--mono)' : undefined, wordBreak: 'break-word' }}>{children || <span style={{ color: 'var(--muted)' }}>—</span>}</div>
+    </div>
+  )
+}
+
+// Vista de solo lectura del ticket (lo que se edita con el botón "Editar").
+function FichaTicket({ ticket }: { ticket: TicketFabrica }) {
+  const codigosOtst = parseOtstCodes(ticket.otst)
+  const grid: React.CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14 }
+  return (
+    <Card>
+      <Seccion titulo="OTST relacionada">
+        {codigosOtst.length === 0 ? (
+          <p style={{ fontSize: 13, color: 'var(--muted)' }}>Sin OTST relacionada. Usa “Editar” para asociar una.</p>
+        ) : (
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {codigosOtst.map(codigo => (
+              <a
+                key={codigo}
+                href={linkOtst(codigo)!} target="_blank" rel="noopener noreferrer"
+                style={{ ...GHOST, padding: '7px 13px', fontSize: 12.5, textDecoration: 'none', color: 'var(--accent)', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+              >
+                Ir a la OTST {codigo} <ExternalLink size={12} />
+              </a>
+            ))}
+          </div>
+        )}
+      </Seccion>
+      <Seccion titulo="Equipo reportado">
+        <div style={grid}>
+          <Dato label="Código" mono>{ticket.codigo}</Dato>
+          <Dato label="Serial" mono>{ticket.serial}</Dato>
+          <Dato label="Nombre">{ticket.equipo_nombre}</Dato>
+        </div>
+      </Seccion>
+      <div>
+        <h4 style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Link2 size={13} /> Equipo madre
+        </h4>
+        {ticket.es_equipo_hijo ? (
+          <div style={grid}>
+            <Dato label="Código" mono>{ticket.equipo_madre_codigo}</Dato>
+            <Dato label="Serial" mono>{ticket.equipo_madre_serial}</Dato>
+            <Dato label="Nombre">{ticket.equipo_madre_nombre}</Dato>
+          </div>
+        ) : (
+          <p style={{ fontSize: 13, color: 'var(--muted)' }}>No es un equipo hijo (sonda/electrodo).</p>
+        )}
+      </div>
+    </Card>
+  )
+}
+
 export function TicketDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -67,12 +124,18 @@ export function TicketDetailPage() {
 
   const [form, setForm] = useState<FormTicket>(FORM_VACIO)
   const [saving, setSaving] = useState(false)
+  // El ticket se ve en modo lectura; para cambiar TID, origen, estado, OTST
+  // o equipo hay que entrar a editar y guardar a propósito — así un clic
+  // accidental no altera el ticket, y lo guardado queda en la bitácora.
+  const [editando, setEditando] = useState(false)
+  const [comentarioCambio, setComentarioCambio] = useState('')
 
   // Se reinicia el formulario cuando llega (o cambia en la BD) el ticket.
   // react-query conserva la misma referencia si los datos no cambiaron, así
   // un refetch sin cambios no borra lo que se está editando.
   const [sincronizadoCon, setSincronizadoCon] = useState<TicketFabrica | undefined>(undefined)
   if (ticket && ticket !== sincronizadoCon) {
+    if (ticket.id !== sincronizadoCon?.id) setEditando(false)
     setSincronizadoCon(ticket)
     setForm(formDesdeTicket(ticket))
   }
@@ -80,7 +143,7 @@ export function TicketDetailPage() {
   const set = <K extends keyof FormTicket>(key: K, value: FormTicket[K]) => setForm(f => ({ ...f, [key]: value }))
 
   const original = ticket ? formDesdeTicket(ticket) : FORM_VACIO
-  const hayCambios = esNuevo || JSON.stringify(form) !== JSON.stringify(original)
+  const hayCambios = esNuevo || JSON.stringify(form) !== JSON.stringify(original) || !!comentarioCambio.trim()
 
   const nombreCreador = (() => {
     const p = profiles.find(p => p.id === ticket?.creado_por)
@@ -129,11 +192,25 @@ export function TicketDetailPage() {
       const { error } = await supabase.from('tickets_fabrica')
         .update({ ...payload, updated_at: new Date().toISOString() })
         .eq('id', ticket.id)
+      if (error) { toast.error('Error al actualizar: ' + error.message); setSaving(false); return }
+      // Los cambios de TID/origen/estado/OTST los registra el trigger; el
+      // comentario opcional explica el porqué y queda como avance aparte.
+      if (comentarioCambio.trim() && user) {
+        try { await agregarAvance(ticket.id, comentarioCambio, user.id) }
+        catch (e) { toast.error('Se guardó el ticket, pero no el comentario: ' + (e as { message?: string }).message) }
+      }
       setSaving(false)
-      if (error) { toast.error('Error al actualizar: ' + error.message); return }
       invalidate()
       toast.success('Ticket actualizado')
+      setComentarioCambio('')
+      setEditando(false)
     }
+  }
+
+  function cancelarEdicion() {
+    if (ticket) setForm(formDesdeTicket(ticket))
+    setComentarioCambio('')
+    setEditando(false)
   }
 
   async function handleDelete() {
@@ -177,7 +254,7 @@ export function TicketDetailPage() {
                 {(Object.keys(ORIGEN_LABEL) as TicketOrigen[]).map(o => <option key={o} value={o}>{ORIGEN_LABEL[o]}</option>)}
               </select>
             </FG>
-            <FG label="Estado" hint={!esNuevo ? 'Cada cambio de estado queda en la bitácora' : undefined}>
+            <FG label="Estado">
               <select value={form.estado} onChange={e => set('estado', e.target.value as TicketEstado | '')} style={INP}>
                 <option value="">Selecciona un estado</option>
                 {(Object.keys(ESTADO_LABEL) as TicketEstado[]).map(e => <option key={e} value={e}>{ESTADO_LABEL[e]}</option>)}
@@ -241,6 +318,20 @@ export function TicketDetailPage() {
           </Seccion>
         )}
 
+        {!esNuevo && (
+          <Seccion titulo="Comentario del cambio">
+            <FG label="¿Por qué se modifica?" hint="Opcional — los cambios de TID, origen, estado y OTST quedan solos en la bitácora; este comentario se agrega junto a ellos">
+              <textarea
+                rows={2}
+                value={comentarioCambio}
+                onChange={e => setComentarioCambio(e.target.value)}
+                placeholder="Ej: Fábrica aprobó el cambio por garantía según correo del 21/10"
+                style={{ ...INP, resize: 'vertical' }}
+              />
+            </FG>
+          </Seccion>
+        )}
+
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
           {!esNuevo ? (
             <button type="button" onClick={handleDelete} style={{ ...GHOST, color: 'var(--red)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
@@ -248,8 +339,8 @@ export function TicketDetailPage() {
             </button>
           ) : <span />}
           <div style={{ display: 'flex', gap: 10 }}>
-            {!esNuevo && hayCambios && (
-              <button type="button" onClick={() => ticket && setForm(formDesdeTicket(ticket))} style={GHOST}>Descartar cambios</button>
+            {!esNuevo && (
+              <button type="button" onClick={cancelarEdicion} style={GHOST}>Cancelar</button>
             )}
             <button type="submit" disabled={saving || !hayCambios} style={{ ...PRI, opacity: saving || !hayCambios ? 0.6 : 1 }}>
               {saving ? 'Guardando…' : esNuevo ? '+ Crear ticket' : '✓ Guardar cambios'}
@@ -278,7 +369,7 @@ export function TicketDetailPage() {
             <Card>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
                 <div>
-                  <div style={{ fontSize: 11, fontFamily: 'var(--mono)', color: 'var(--muted)', fontWeight: 600 }}>Ticket #{ticket.numero}</div>
+                  <div style={{ fontSize: 11, fontFamily: 'var(--mono)', color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.6px' }}>Ticket a fábrica</div>
                   <h3 style={{ fontSize: 20, fontWeight: 700, marginTop: 2, fontFamily: 'var(--mono)' }}>{TICKET_ID_PREFIJO}{numeroTid(ticket.nombre)}</h3>
                   {(ticket.codigo || ticket.equipo_nombre) && (
                     <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 4 }}>
@@ -286,11 +377,16 @@ export function TicketDetailPage() {
                     </div>
                   )}
                 </div>
-                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
                   {ticket.origen && <span style={badge(ORIGEN_COLOR[ticket.origen])}>{ORIGEN_LABEL[ticket.origen]}</span>}
                   {ticket.estado
                     ? <span style={badge(ESTADO_COLOR[ticket.estado])}>{ESTADO_LABEL[ticket.estado]}</span>
                     : <span style={{ ...badge({ bg: 'var(--surface2)', text: 'var(--muted)', border: 'var(--border)' }) }}>Sin estado</span>}
+                  {!editando && (
+                    <button type="button" onClick={() => setEditando(true)} style={{ ...GHOST, padding: '6px 12px', fontSize: 12.5, display: 'inline-flex', alignItems: 'center', gap: 6, marginLeft: 4 }}>
+                      <Pencil size={13} /> Editar
+                    </button>
+                  )}
                 </div>
               </div>
               <div style={{ fontSize: 12, color: 'var(--muted)', fontFamily: 'var(--mono)', marginTop: 12, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
@@ -303,7 +399,7 @@ export function TicketDetailPage() {
                 </span>
               </div>
             </Card>
-            {formulario}
+            {editando ? formulario : <FichaTicket ticket={ticket} />}
           </div>
 
           <BitacoraTicket ticketId={ticket.id!} />

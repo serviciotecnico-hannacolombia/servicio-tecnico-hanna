@@ -17,9 +17,9 @@ CREATE TABLE IF NOT EXISTS tickets_fabrica_avances (
   id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   ticket_id       uuid NOT NULL REFERENCES tickets_fabrica(id) ON DELETE CASCADE,
   usuario_id      uuid REFERENCES profiles(id) ON DELETE SET NULL DEFAULT auth.uid(),
-  tipo            text NOT NULL DEFAULT 'avance' CHECK (tipo IN ('avance', 'estado', 'otst')),
+  tipo            text NOT NULL DEFAULT 'avance' CHECK (tipo IN ('avance', 'estado', 'otst', 'nombre', 'origen')),
   texto           text,           -- tipo 'avance': lo que escribió el usuario
-  valor_anterior  text,           -- tipos 'estado' / 'otst'
+  valor_anterior  text,           -- tipos 'estado' / 'otst' / 'nombre' (TID) / 'origen'
   valor_nuevo     text,
   created_at      timestamptz NOT NULL DEFAULT now()
 );
@@ -56,6 +56,15 @@ RETURNS text LANGUAGE sql IMMUTABLE AS $$
   END;
 $$;
 
+CREATE OR REPLACE FUNCTION ticket_fabrica_origen_label(_origen text)
+RETURNS text LANGUAGE sql IMMUTABLE AS $$
+  SELECT CASE _origen
+    WHEN 'control_calidad' THEN 'Control de Calidad'
+    WHEN 'orden_trabajo'   THEN 'Orden de Trabajo'
+    ELSE coalesce(_origen, 'Sin origen')
+  END;
+$$;
+
 -- ── Cada avance actualiza el resumen del ticket ─────────────────────────────
 -- Solo si es el más reciente: el backfill inserta avances con fechas viejas.
 
@@ -67,6 +76,8 @@ BEGIN
   _resumen := CASE NEW.tipo
     WHEN 'estado' THEN 'Estado: ' || ticket_fabrica_estado_label(NEW.valor_anterior) || ' → ' || ticket_fabrica_estado_label(NEW.valor_nuevo)
     WHEN 'otst'   THEN 'OTST: ' || coalesce(nullif(NEW.valor_nuevo, ''), 'sin OTST')
+    WHEN 'nombre' THEN 'Ticket: ' || coalesce(NEW.valor_anterior, '—') || ' → ' || coalesce(NEW.valor_nuevo, '—')
+    WHEN 'origen' THEN 'Origen: ' || ticket_fabrica_origen_label(NEW.valor_anterior) || ' → ' || ticket_fabrica_origen_label(NEW.valor_nuevo)
     ELSE NEW.texto
   END;
 
@@ -83,11 +94,19 @@ CREATE TRIGGER tickets_fabrica_avance_resumen
   AFTER INSERT ON tickets_fabrica_avances
   FOR EACH ROW EXECUTE FUNCTION tickets_fabrica_avance_resumen();
 
--- ── Cambios de estado / OTST quedan en la bitácora ──────────────────────────
+-- ── Cambios de TID / origen / estado / OTST quedan en la bitácora ───────────
 
 CREATE OR REPLACE FUNCTION tickets_fabrica_log_cambios() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 BEGIN
+  IF NEW.nombre IS DISTINCT FROM OLD.nombre THEN
+    INSERT INTO tickets_fabrica_avances (ticket_id, usuario_id, tipo, valor_anterior, valor_nuevo)
+    VALUES (NEW.id, auth.uid(), 'nombre', OLD.nombre, NEW.nombre);
+  END IF;
+  IF NEW.origen IS DISTINCT FROM OLD.origen THEN
+    INSERT INTO tickets_fabrica_avances (ticket_id, usuario_id, tipo, valor_anterior, valor_nuevo)
+    VALUES (NEW.id, auth.uid(), 'origen', OLD.origen, NEW.origen);
+  END IF;
   IF NEW.estado IS DISTINCT FROM OLD.estado THEN
     INSERT INTO tickets_fabrica_avances (ticket_id, usuario_id, tipo, valor_anterior, valor_nuevo)
     VALUES (NEW.id, auth.uid(), 'estado', OLD.estado, NEW.estado);
@@ -102,7 +121,7 @@ $$;
 
 DROP TRIGGER IF EXISTS tickets_fabrica_log_cambios ON tickets_fabrica;
 CREATE TRIGGER tickets_fabrica_log_cambios
-  AFTER UPDATE OF estado, otst ON tickets_fabrica
+  AFTER UPDATE OF nombre, origen, estado, otst ON tickets_fabrica
   FOR EACH ROW EXECUTE FUNCTION tickets_fabrica_log_cambios();
 
 -- ── El detalle inicial (nota_estado) se vuelve el primer avance ─────────────

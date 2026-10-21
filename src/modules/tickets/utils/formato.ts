@@ -2,11 +2,8 @@
 
 export const TICKET_ID_PREFIJO = 'TID: '
 
-// Los tickets importados de Notion guardan el prefijo largo "Ticket ID: ";
-// se acorta solo para mostrar, sin tocar el dato guardado en la base.
-export const formatNombre = (nombre: string) => nombre.replace(/^Ticket ID:\s*/i, TICKET_ID_PREFIJO)
-
-// Número del ticket sin prefijo ("TID: " o "Ticket ID: ").
+// Número del ticket sin prefijo ("TID: " o el "Ticket ID: " largo que traen
+// los importados de Notion) — solo para mostrar/ordenar, el dato no se toca.
 export const numeroTid = (nombre: string) => nombre.replace(/^(Ticket ID|TID):\s*/i, '').trim()
 
 export function fmtFechaCorta(iso?: string | null): string {

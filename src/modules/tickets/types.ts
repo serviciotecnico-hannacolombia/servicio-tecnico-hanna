@@ -38,7 +38,7 @@ export interface TicketFabrica {
   updated_at?: string
 }
 
-export type TicketAvanceTipo = 'avance' | 'estado' | 'otst'
+export type TicketAvanceTipo = 'avance' | 'estado' | 'otst' | 'nombre' | 'origen'
 
 export interface TicketAvance {
   id: string
@@ -87,6 +87,44 @@ export const ESTADO_COLOR: Record<TicketEstado, { bg: string; text: string; bord
   en_espera: { bg: '#fffbeb', text: '#b45309', border: '#fcd34d' },
   cambio_garantia: { bg: '#f0fdf4', text: '#16a34a', border: '#86efac' },
   boletin_tecnico: { bg: '#e0f2fe', text: '#0369a1', border: '#7dd3fc' },
+}
+
+// Grupos para las cards de la lista: 8 estados en cards sueltas eran
+// demasiados; se agrupan por lo que significan para el seguimiento.
+export type TicketGrupo = 'seguimiento' | 'exportacion' | 'resuelto' | 'denegado'
+
+export const GRUPO_LABEL: Record<TicketGrupo, string> = {
+  seguimiento: 'En seguimiento',
+  exportacion: 'Exportación',
+  resuelto: 'Resueltos',
+  denegado: 'Denegados',
+}
+
+export const GRUPO_COLOR: Record<TicketGrupo, string> = {
+  seguimiento: '#b45309',
+  exportacion: '#1d4ed8',
+  resuelto: '#16a34a',
+  denegado: '#dc2626',
+}
+
+// Sin estado cuenta como "en seguimiento": aún no hay respuesta de fábrica.
+export function grupoTicket(estado: TicketEstado | null | undefined): TicketGrupo {
+  switch (estado) {
+    case 'exportacion':
+    case 'exportacion_garantia': return 'exportacion'
+    case 'consulta_resuelta':
+    case 'cambio_garantia':
+    case 'boletin_tecnico': return 'resuelto'
+    case 'denegada_garantia': return 'denegado'
+    default: return 'seguimiento'
+  }
+}
+
+export const GRUPO_ESTADOS: Record<TicketGrupo, string> = {
+  seguimiento: 'En espera · Pendiente feedback · Sin estado',
+  exportacion: 'Exportación · Exportación/garantía',
+  resuelto: 'Consulta resuelta · Cambio garantía · Boletín técnico',
+  denegado: 'Denegada garantía',
 }
 
 // Ejemplo contextual del cuadro de texto "Detalle del estado" — cada estado

@@ -13,7 +13,10 @@ import { supabase } from '../../../lib/supabase'
 import { useProfiles } from '../../../hooks/useProfiles'
 import { INP, GHOST } from '../../calibraciones/ui'
 import { numeroTid } from '../utils/formato'
-import { ORIGEN_LABEL, ESTADO_LABEL, ESTADO_COLOR, type TicketOrigen, type TicketEstado } from '../types'
+import {
+  ORIGEN_LABEL, ESTADO_LABEL, GRUPO_LABEL, GRUPO_COLOR, GRUPO_ESTADOS, grupoTicket,
+  type TicketOrigen, type TicketEstado, type TicketGrupo,
+} from '../types'
 import type { ParsedTicketRow } from '../utils/parseTicketsExcel'
 
 const CLAVE_ELIMINAR_TODO = '2711'
@@ -27,11 +30,12 @@ const SIGUIENTE_ORDEN: Record<OrdenTid, OrdenTid> = { default: 'asc', asc: 'desc
 
 // Filtros recordados entre sesiones, igual que en Calibraciones.
 interface FiltrosTickets {
+  grupo: TicketGrupo | ''
   estado: FiltroEstado
   origen: TicketOrigen | ''
   orden: OrdenTid
 }
-const FILTROS_VACIOS: FiltrosTickets = { estado: '', origen: '', orden: 'default' }
+const FILTROS_VACIOS: FiltrosTickets = { grupo: '', estado: '', origen: '', orden: 'default' }
 const FILTROS_KEY = 'tickets_filtros'
 
 function cargarFiltros(): FiltrosTickets {
@@ -40,6 +44,7 @@ function cargarFiltros(): FiltrosTickets {
     if (!raw) return FILTROS_VACIOS
     const parsed = JSON.parse(raw)
     return {
+      grupo: parsed.grupo && parsed.grupo in GRUPO_LABEL ? parsed.grupo : '',
       estado: parsed.estado || '',
       origen: parsed.origen || '',
       orden: parsed.orden && parsed.orden in SIGUIENTE_ORDEN ? parsed.orden : 'default',
@@ -49,22 +54,22 @@ function cargarFiltros(): FiltrosTickets {
   }
 }
 
-function EstadoCard({ label, value, color, activo, onClick }: { label: string, value: number, color: string, activo: boolean, onClick: () => void }) {
+function GrupoCard({ label, detalle, value, color, activo, onClick }: { label: string, detalle?: string, value: number, color: string, activo: boolean, onClick: () => void }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      title={activo ? 'Quitar filtro' : `Ver solo: ${label}`}
+      title={detalle ? `${detalle}\n\n${activo ? 'Clic para quitar el filtro' : 'Clic para filtrar'}` : undefined}
       style={{
         textAlign: 'left', cursor: 'pointer', fontFamily: 'var(--sans)',
         background: activo ? 'var(--accent-bg)' : 'var(--surface)',
         border: `1px solid ${activo ? 'var(--accent)' : 'var(--border)'}`,
         boxShadow: activo ? '0 0 0 1px var(--accent)' : undefined,
-        borderRadius: 12, padding: '14px 18px', transition: 'all .15s',
+        borderRadius: 12, padding: '16px 20px', transition: 'all .15s',
       }}
     >
-      <div style={{ fontSize: 26, fontWeight: 700, fontFamily: 'var(--mono)', color }}>{value}</div>
-      <div style={{ fontSize: 10.5, color: 'var(--muted)', marginTop: 4, textTransform: 'uppercase', letterSpacing: '.8px' }}>{label}</div>
+      <div style={{ fontSize: 28, fontWeight: 700, fontFamily: 'var(--mono)', color }}>{value}</div>
+      <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4, textTransform: 'uppercase', letterSpacing: '.8px' }}>{label}</div>
     </button>
   )
 }
@@ -82,15 +87,15 @@ export function TicketsPage() {
   useEffect(() => { localStorage.setItem(FILTROS_KEY, JSON.stringify(filtros)) }, [filtros])
 
   const actualizarFiltro = (parcial: Partial<FiltrosTickets>) => setFiltros(f => ({ ...f, ...parcial }))
-  const hayFiltrosActivos = !!(filtros.estado || filtros.origen || search)
+  const hayFiltrosActivos = !!(filtros.grupo || filtros.estado || filtros.origen || search)
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ['tickets_fabrica'] })
 
-  const conteoPorEstado = useMemo(() => {
-    const conteo = new Map<FiltroEstado, number>()
+  const conteoPorGrupo = useMemo(() => {
+    const conteo = new Map<TicketGrupo, number>()
     for (const t of tickets) {
-      const k: FiltroEstado = t.estado ?? 'sin_estado'
-      conteo.set(k, (conteo.get(k) ?? 0) + 1)
+      const g = grupoTicket(t.estado)
+      conteo.set(g, (conteo.get(g) ?? 0) + 1)
     }
     return conteo
   }, [tickets])
@@ -99,6 +104,7 @@ export function TicketsPage() {
     const nombrePorId = new Map(profiles.map(p => [p.id, (p.full_name || p.email || '').toLowerCase()]))
     const q = search.toLowerCase().trim()
     const lista = tickets.filter(t => {
+      if (filtros.grupo && grupoTicket(t.estado) !== filtros.grupo) return false
       if (filtros.estado === 'sin_estado') { if (t.estado) return false }
       else if (filtros.estado && t.estado !== filtros.estado) return false
       if (filtros.origen && t.origen !== filtros.origen) return false
@@ -117,7 +123,8 @@ export function TicketsPage() {
     })
   }, [tickets, profiles, filtros, search])
 
-  const toggleEstado = (e: FiltroEstado) => actualizarFiltro({ estado: filtros.estado === e ? '' : e })
+  // La card y el select de estado son excluyentes: elegir uno limpia el otro.
+  const toggleGrupo = (g: TicketGrupo) => actualizarFiltro({ grupo: filtros.grupo === g ? '' : g, estado: '' })
 
   const handleImport = async (rows: ParsedTicketRow[], userMap: Record<string, string | null>) => {
     // El Excel de Notion trae las filas del ticket más nuevo al más antiguo.
@@ -187,13 +194,12 @@ export function TicketsPage() {
   }
 
   const OrdenIcon = filtros.orden === 'asc' ? ArrowUp : filtros.orden === 'desc' ? ArrowDown : ArrowUpDown
-  const sinEstado = conteoPorEstado.get('sin_estado') ?? 0
 
   return (
     <div>
       <Header
         title="Tickets a Fábrica"
-        subtitle="Reporte de fallas y novedades de equipos ante fábrica — reemplaza el seguimiento en Notion"
+        subtitle="Reporte de fallas y novedades de equipos ante fábrica"
         actions={
           <>
             <Button variant="ghost" size="sm" onClick={() => setImportOpen(true)}>
@@ -209,21 +215,19 @@ export function TicketsPage() {
         }
       />
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 12, marginBottom: 20 }}>
-        <EstadoCard label="Total" value={tickets.length} color="var(--text)" activo={!filtros.estado} onClick={() => actualizarFiltro({ estado: '' })} />
-        {(Object.keys(ESTADO_LABEL) as TicketEstado[]).map(e => (
-          <EstadoCard
-            key={e}
-            label={ESTADO_LABEL[e]}
-            value={conteoPorEstado.get(e) ?? 0}
-            color={ESTADO_COLOR[e].text}
-            activo={filtros.estado === e}
-            onClick={() => toggleEstado(e)}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 14, marginBottom: 20 }}>
+        <GrupoCard label="Total" value={tickets.length} color="var(--text)" activo={!filtros.grupo && !filtros.estado} onClick={() => actualizarFiltro({ grupo: '', estado: '' })} />
+        {(Object.keys(GRUPO_LABEL) as TicketGrupo[]).map(g => (
+          <GrupoCard
+            key={g}
+            label={GRUPO_LABEL[g]}
+            detalle={GRUPO_ESTADOS[g]}
+            value={conteoPorGrupo.get(g) ?? 0}
+            color={GRUPO_COLOR[g]}
+            activo={filtros.grupo === g}
+            onClick={() => toggleGrupo(g)}
           />
         ))}
-        {sinEstado > 0 && (
-          <EstadoCard label="Sin estado" value={sinEstado} color="var(--muted)" activo={filtros.estado === 'sin_estado'} onClick={() => toggleEstado('sin_estado')} />
-        )}
       </div>
 
       <Card bodyStyle={{ padding: 0 }}>
@@ -241,7 +245,7 @@ export function TicketsPage() {
             <option value="">Origen: todos</option>
             {(Object.keys(ORIGEN_LABEL) as TicketOrigen[]).map(o => <option key={o} value={o}>{ORIGEN_LABEL[o]}</option>)}
           </select>
-          <select value={filtros.estado} onChange={e => actualizarFiltro({ estado: e.target.value as FiltroEstado })} style={{ ...INP, width: 'auto', minWidth: 170 }}>
+          <select value={filtros.estado} onChange={e => actualizarFiltro({ estado: e.target.value as FiltroEstado, grupo: '' })} style={{ ...INP, width: 'auto', minWidth: 170 }}>
             <option value="">Estado: todos</option>
             {(Object.keys(ESTADO_LABEL) as TicketEstado[]).map(e => <option key={e} value={e}>{ESTADO_LABEL[e]}</option>)}
             <option value="sin_estado">Sin estado</option>
@@ -254,14 +258,14 @@ export function TicketsPage() {
             <OrdenIcon size={13} /> {filtros.orden === 'default' ? 'Más recientes' : filtros.orden === 'asc' ? 'TID ascendente' : 'TID descendente'}
           </button>
           {hayFiltrosActivos && (
-            <button type="button" onClick={() => { setSearch(''); actualizarFiltro({ estado: '', origen: '' }) }} style={GHOST}>Limpiar filtros</button>
+            <button type="button" onClick={() => { setSearch(''); actualizarFiltro({ grupo: '', estado: '', origen: '' }) }} style={GHOST}>Limpiar filtros</button>
           )}
         </div>
 
         <TicketsTable
           tickets={filtrados}
           isLoading={isLoading}
-          resetKey={`${filtros.estado}|${filtros.origen}|${filtros.orden}|${search}`}
+          resetKey={`${filtros.grupo}|${filtros.estado}|${filtros.origen}|${filtros.orden}|${search}`}
         />
       </Card>
 

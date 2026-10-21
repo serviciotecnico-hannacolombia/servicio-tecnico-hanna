@@ -4,7 +4,7 @@
 import { useMemo, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { MessageSquarePlus, ArrowRightLeft, Link2 } from 'lucide-react'
+import { MessageSquarePlus, ArrowRightLeft, Link2, Hash, Tag } from 'lucide-react'
 import { Card } from '../../../components/ui/Card'
 import { Spinner } from '../../../components/ui/Spinner'
 import { Avatar } from '../../../components/ui/Avatar'
@@ -12,26 +12,38 @@ import { useProfiles } from '../../../hooks/useProfiles'
 import { useUser } from '../../../hooks/useUser'
 import { INP, PRI, fmtFecha, fechaLocalISO } from '../../calibraciones/ui'
 import { useTicketAvances, agregarAvance } from '../hooks/useTickets'
-import { ESTADO_LABEL, type TicketAvance, type TicketEstado } from '../types'
+import { ESTADO_LABEL, ORIGEN_LABEL, type TicketAvance, type TicketAvanceTipo, type TicketEstado, type TicketOrigen } from '../types'
+import { numeroTid } from '../utils/formato'
 
 function horaLocal(iso: string): string {
   return new Date(iso).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: false })
 }
 
-const estadoLabel = (v: string | null) => v ? (ESTADO_LABEL[v as TicketEstado] ?? v) : 'Sin estado'
+type TipoCambio = Exclude<TicketAvanceTipo, 'avance'>
+
+// Cómo se describe cada cambio que registra el trigger.
+const CAMBIO: Record<TipoCambio, { titulo: string, Icono: typeof Link2, formato: (v: string) => string }> = {
+  estado: { titulo: 'Cambió el estado', Icono: ArrowRightLeft, formato: v => ESTADO_LABEL[v as TicketEstado] ?? v },
+  otst:   { titulo: 'Cambió la OTST', Icono: Link2, formato: v => v },
+  nombre: { titulo: 'Cambió el No. de ticket', Icono: Hash, formato: numeroTid },
+  origen: { titulo: 'Cambió el origen', Icono: Tag, formato: v => ORIGEN_LABEL[v as TicketOrigen] ?? v },
+}
+const CAMBIO_VACIO: Record<TipoCambio, string> = {
+  estado: 'Sin estado', otst: 'sin OTST', nombre: '—', origen: 'Sin origen',
+}
 
 function ContenidoAvance({ a }: { a: TicketAvance }) {
   if (a.tipo === 'avance') {
     return <div style={{ fontSize: 12.5, color: 'var(--text)', whiteSpace: 'pre-wrap', wordBreak: 'break-word', lineHeight: 1.45 }}>{a.texto}</div>
   }
-  const Icono = a.tipo === 'estado' ? ArrowRightLeft : Link2
-  const antes = a.tipo === 'estado' ? estadoLabel(a.valor_anterior) : (a.valor_anterior || null)
-  const despues = a.tipo === 'estado' ? estadoLabel(a.valor_nuevo) : (a.valor_nuevo || 'sin OTST')
+  const { titulo, Icono, formato } = CAMBIO[a.tipo]
+  const antes = a.valor_anterior ? formato(a.valor_anterior) : null
+  const despues = a.valor_nuevo ? formato(a.valor_nuevo) : CAMBIO_VACIO[a.tipo]
   return (
     <div style={{ fontSize: 11.5, color: 'var(--muted)', display: 'flex', gap: 6, alignItems: 'flex-start' }}>
       <Icono size={12} style={{ flexShrink: 0, marginTop: 2 }} />
       <span>
-        {a.tipo === 'estado' ? 'Cambió el estado' : 'Cambió la OTST'}
+        {titulo}
         {': '}
         {antes && <span style={{ textDecoration: 'line-through' }}>{antes}</span>}
         {antes && ' → '}

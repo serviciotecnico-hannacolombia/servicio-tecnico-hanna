@@ -6,7 +6,7 @@ import { useProfiles } from '../../../hooks/useProfiles'
 import { GHOST, EMPTY } from '../../calibraciones/ui'
 import { linkOtst, parseOtstCodes } from '../../calibraciones/vistas/CamposCompartidos'
 import { ORIGEN_LABEL, ORIGEN_CORTO, ORIGEN_COLOR, ESTADO_LABEL, ESTADO_COLOR, type TicketFabrica } from '../types'
-import { formatNombre, fmtFechaCorta, haceCuanto } from '../utils/formato'
+import { numeroTid, fmtFechaCorta, haceCuanto } from '../utils/formato'
 
 interface TicketsTableProps {
   tickets: TicketFabrica[]
@@ -46,16 +46,13 @@ export function TicketsTable({ tickets, isLoading, resetKey }: TicketsTableProps
 
   const columns: Column<TicketFabrica>[] = [
     {
-      key: 'ticket', header: 'Ticket', width: '10%',
+      key: 'ticket', header: 'Ticket', width: '8%',
       render: t => (
-        <div style={{ minWidth: 0 }}>
-          <span title={t.nombre} style={{ ...ELLIPSIS, fontWeight: 700, fontFamily: 'var(--mono)', fontSize: '0.8rem', color: 'var(--text)' }}>{formatNombre(t.nombre)}</span>
-          <span style={{ fontFamily: 'var(--mono)', fontSize: '0.68rem', color: 'var(--muted)' }}>#{t.numero ?? '—'}</span>
-        </div>
+        <span title={t.nombre} style={{ ...ELLIPSIS, fontWeight: 700, fontFamily: 'var(--mono)', fontSize: '0.8rem', color: 'var(--text)' }}>{numeroTid(t.nombre)}</span>
       ),
     },
     {
-      key: 'equipo', header: 'Equipo', width: '19%',
+      key: 'equipo', header: 'Equipo', width: '21%',
       render: t => (
         <div style={{ minWidth: 0 }}>
           <span title={t.codigo || ''} style={{ ...ELLIPSIS, fontFamily: 'var(--mono)', fontSize: '0.78rem' }}>{t.codigo || '—'}</span>
