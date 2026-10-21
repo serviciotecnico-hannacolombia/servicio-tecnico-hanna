@@ -1,74 +1,123 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Upload, Trash2 } from 'lucide-react'
-import { TicketForm } from '../components/TicketForm'
+import { Upload, Trash2, Plus, Search, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react'
 import { TicketsTable } from '../components/TicketsTable'
-import { EditTicketModal } from '../components/EditTicketModal'
 import { ImportTicketsModal } from '../components/ImportTicketsModal'
 import { useTickets } from '../hooks/useTickets'
 import { Header } from '../../../components/layout/Header'
 import { Button } from '../../../components/ui/Button'
+import { Card } from '../../../components/ui/Card'
 import { supabase } from '../../../lib/supabase'
-import { useUser } from '../../../hooks/useUser'
 import { useProfiles } from '../../../hooks/useProfiles'
-import type { TicketFabrica } from '../types'
+import { INP, GHOST } from '../../calibraciones/ui'
+import { numeroTid } from '../utils/formato'
+import { ORIGEN_LABEL, ESTADO_LABEL, ESTADO_COLOR, type TicketOrigen, type TicketEstado } from '../types'
 import type { ParsedTicketRow } from '../utils/parseTicketsExcel'
 
 const CLAVE_ELIMINAR_TODO = '2711'
 
+// 'sin_estado' agrupa los tickets que aún no tienen estado asignado.
+type FiltroEstado = TicketEstado | 'sin_estado' | ''
+
+// Ciclo al hacer clic en "Ordenar por TID": por defecto → ascendente → descendente.
+type OrdenTid = 'default' | 'asc' | 'desc'
+const SIGUIENTE_ORDEN: Record<OrdenTid, OrdenTid> = { default: 'asc', asc: 'desc', desc: 'default' }
+
+// Filtros recordados entre sesiones, igual que en Calibraciones.
+interface FiltrosTickets {
+  estado: FiltroEstado
+  origen: TicketOrigen | ''
+  orden: OrdenTid
+}
+const FILTROS_VACIOS: FiltrosTickets = { estado: '', origen: '', orden: 'default' }
+const FILTROS_KEY = 'tickets_filtros'
+
+function cargarFiltros(): FiltrosTickets {
+  try {
+    const raw = localStorage.getItem(FILTROS_KEY)
+    if (!raw) return FILTROS_VACIOS
+    const parsed = JSON.parse(raw)
+    return {
+      estado: parsed.estado || '',
+      origen: parsed.origen || '',
+      orden: parsed.orden && parsed.orden in SIGUIENTE_ORDEN ? parsed.orden : 'default',
+    }
+  } catch {
+    return FILTROS_VACIOS
+  }
+}
+
+function EstadoCard({ label, value, color, activo, onClick }: { label: string, value: number, color: string, activo: boolean, onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={activo ? 'Quitar filtro' : `Ver solo: ${label}`}
+      style={{
+        textAlign: 'left', cursor: 'pointer', fontFamily: 'var(--sans)',
+        background: activo ? 'var(--accent-bg)' : 'var(--surface)',
+        border: `1px solid ${activo ? 'var(--accent)' : 'var(--border)'}`,
+        boxShadow: activo ? '0 0 0 1px var(--accent)' : undefined,
+        borderRadius: 12, padding: '14px 18px', transition: 'all .15s',
+      }}
+    >
+      <div style={{ fontSize: 26, fontWeight: 700, fontFamily: 'var(--mono)', color }}>{value}</div>
+      <div style={{ fontSize: 10.5, color: 'var(--muted)', marginTop: 4, textTransform: 'uppercase', letterSpacing: '.8px' }}>{label}</div>
+    </button>
+  )
+}
+
 export function TicketsPage() {
   const qc = useQueryClient()
-  const { user } = useUser()
-  const { data: tickets = [] } = useTickets()
+  const navigate = useNavigate()
+  const { data: tickets = [], isLoading } = useTickets()
   const { data: profiles = [] } = useProfiles()
-  const [selected, setSelected] = useState<TicketFabrica | null>(null)
   const [importOpen, setImportOpen] = useState(false)
   const [deletingAll, setDeletingAll] = useState(false)
+  const [search, setSearch] = useState('')
+  const [filtros, setFiltros] = useState<FiltrosTickets>(cargarFiltros)
+
+  useEffect(() => { localStorage.setItem(FILTROS_KEY, JSON.stringify(filtros)) }, [filtros])
+
+  const actualizarFiltro = (parcial: Partial<FiltrosTickets>) => setFiltros(f => ({ ...f, ...parcial }))
+  const hayFiltrosActivos = !!(filtros.estado || filtros.origen || search)
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ['tickets_fabrica'] })
 
-  const handleSave = async (ticket: TicketFabrica) => {
-    const { error } = await supabase.from('tickets_fabrica').insert({
-      nombre: ticket.nombre,
-      codigo: ticket.codigo || null,
-      serial: ticket.serial || null,
-      equipo_nombre: ticket.equipo_nombre || null,
-      origen: ticket.origen || null,
-      estado: ticket.estado || null,
-      nota_estado: ticket.nota_estado || null,
-      es_equipo_hijo: ticket.es_equipo_hijo ?? false,
-      equipo_madre_codigo: ticket.es_equipo_hijo ? (ticket.equipo_madre_codigo || null) : null,
-      equipo_madre_serial: ticket.es_equipo_hijo ? (ticket.equipo_madre_serial || null) : null,
-      equipo_madre_nombre: ticket.es_equipo_hijo ? (ticket.equipo_madre_nombre || null) : null,
-      creado_por: user?.id ?? null,
-    })
-    if (error) { toast.error('Error al guardar: ' + error.message); return }
-    invalidate()
-    toast.success('Ticket guardado')
-  }
+  const conteoPorEstado = useMemo(() => {
+    const conteo = new Map<FiltroEstado, number>()
+    for (const t of tickets) {
+      const k: FiltroEstado = t.estado ?? 'sin_estado'
+      conteo.set(k, (conteo.get(k) ?? 0) + 1)
+    }
+    return conteo
+  }, [tickets])
 
-  const handleUpdate = async (ticket: TicketFabrica) => {
-    if (!ticket.id) return
-    const { error } = await supabase.from('tickets_fabrica').update({
-      nombre: ticket.nombre,
-      codigo: ticket.codigo || null,
-      serial: ticket.serial || null,
-      equipo_nombre: ticket.equipo_nombre || null,
-      origen: ticket.origen || null,
-      estado: ticket.estado || null,
-      nota_estado: ticket.nota_estado || null,
-      es_equipo_hijo: ticket.es_equipo_hijo ?? false,
-      equipo_madre_codigo: ticket.es_equipo_hijo ? (ticket.equipo_madre_codigo || null) : null,
-      equipo_madre_serial: ticket.es_equipo_hijo ? (ticket.equipo_madre_serial || null) : null,
-      equipo_madre_nombre: ticket.es_equipo_hijo ? (ticket.equipo_madre_nombre || null) : null,
-      updated_at: new Date().toISOString(),
-    }).eq('id', ticket.id)
-    if (error) { toast.error('Error al actualizar: ' + error.message); return }
-    invalidate()
-    toast.success('Ticket actualizado')
-    setSelected(null)
-  }
+  const filtrados = useMemo(() => {
+    const nombrePorId = new Map(profiles.map(p => [p.id, (p.full_name || p.email || '').toLowerCase()]))
+    const q = search.toLowerCase().trim()
+    const lista = tickets.filter(t => {
+      if (filtros.estado === 'sin_estado') { if (t.estado) return false }
+      else if (filtros.estado && t.estado !== filtros.estado) return false
+      if (filtros.origen && t.origen !== filtros.origen) return false
+      if (!q) return true
+      return [
+        t.nombre, t.codigo, t.serial, t.equipo_nombre, t.otst,
+        t.equipo_madre_codigo, t.equipo_madre_serial,
+        t.creado_por ? nombrePorId.get(t.creado_por) : null,
+      ].some(v => (v || '').toLowerCase().includes(q))
+    })
+    if (filtros.orden === 'default') return lista
+    // Comparación "numeric" para que TID 9 quede antes de TID 10.
+    return [...lista].sort((a, b) => {
+      const cmp = numeroTid(a.nombre).localeCompare(numeroTid(b.nombre), 'es', { numeric: true, sensitivity: 'base' })
+      return filtros.orden === 'asc' ? cmp : -cmp
+    })
+  }, [tickets, profiles, filtros, search])
+
+  const toggleEstado = (e: FiltroEstado) => actualizarFiltro({ estado: filtros.estado === e ? '' : e })
 
   const handleImport = async (rows: ParsedTicketRow[], userMap: Record<string, string | null>) => {
     // El Excel de Notion trae las filas del ticket más nuevo al más antiguo.
@@ -81,6 +130,8 @@ export function TicketsPage() {
       return ta - tb
     })
 
+    // nota_estado se convierte en el primer avance de la bitácora por trigger
+    // (ver migración 20261021c_tickets_fabrica_detalle_avances.sql).
     const toInsert = rowsOrdenadas.map(r => ({
       nombre: r.nombre,
       codigo: r.codigo || null,
@@ -110,15 +161,6 @@ export function TicketsPage() {
     return { inserted }
   }
 
-  const handleDelete = async (ticket: TicketFabrica) => {
-    if (!ticket.id) return
-    if (!window.confirm(`¿Eliminar el ticket "${ticket.nombre}"?`)) return
-    const { error } = await supabase.from('tickets_fabrica').delete().eq('id', ticket.id)
-    if (error) { toast.error('Error al eliminar: ' + error.message); return }
-    invalidate()
-    toast.success('Ticket eliminado')
-  }
-
   const handleDeleteAll = async () => {
     const clave = window.prompt('Esta acción eliminará TODOS los tickets a fábrica registrados.\n\nEscribe la clave de seguridad para continuar:')
     if (clave === null) return
@@ -144,6 +186,9 @@ export function TicketsPage() {
     invalidate()
   }
 
+  const OrdenIcon = filtros.orden === 'asc' ? ArrowUp : filtros.orden === 'desc' ? ArrowDown : ArrowUpDown
+  const sinEstado = conteoPorEstado.get('sin_estado') ?? 0
+
   return (
     <div>
       <Header
@@ -157,14 +202,68 @@ export function TicketsPage() {
             <Button variant="danger" size="sm" onClick={handleDeleteAll} disabled={deletingAll}>
               <Trash2 size={14} /> {deletingAll ? 'Eliminando…' : 'Eliminar todos'}
             </Button>
+            <Button size="sm" onClick={() => navigate('/tickets/nuevo')}>
+              <Plus size={14} /> Nuevo ticket
+            </Button>
           </>
         }
       />
 
-      <TicketForm onSave={handleSave} />
-      <TicketsTable tickets={tickets} onEdit={setSelected} onDelete={handleDelete} />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 12, marginBottom: 20 }}>
+        <EstadoCard label="Total" value={tickets.length} color="var(--text)" activo={!filtros.estado} onClick={() => actualizarFiltro({ estado: '' })} />
+        {(Object.keys(ESTADO_LABEL) as TicketEstado[]).map(e => (
+          <EstadoCard
+            key={e}
+            label={ESTADO_LABEL[e]}
+            value={conteoPorEstado.get(e) ?? 0}
+            color={ESTADO_COLOR[e].text}
+            activo={filtros.estado === e}
+            onClick={() => toggleEstado(e)}
+          />
+        ))}
+        {sinEstado > 0 && (
+          <EstadoCard label="Sin estado" value={sinEstado} color="var(--muted)" activo={filtros.estado === 'sin_estado'} onClick={() => toggleEstado('sin_estado')} />
+        )}
+      </div>
 
-      <EditTicketModal ticket={selected} onClose={() => setSelected(null)} onSave={handleUpdate} />
+      <Card bodyStyle={{ padding: 0 }}>
+        <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <div style={{ position: 'relative', flex: 1, minWidth: 240 }}>
+            <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)', pointerEvents: 'none' }} />
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Buscar por TID, código, serial, OTST, equipo madre o creador..."
+              style={{ ...INP, paddingLeft: 34 }}
+            />
+          </div>
+          <select value={filtros.origen} onChange={e => actualizarFiltro({ origen: e.target.value as TicketOrigen | '' })} style={{ ...INP, width: 'auto', minWidth: 170 }}>
+            <option value="">Origen: todos</option>
+            {(Object.keys(ORIGEN_LABEL) as TicketOrigen[]).map(o => <option key={o} value={o}>{ORIGEN_LABEL[o]}</option>)}
+          </select>
+          <select value={filtros.estado} onChange={e => actualizarFiltro({ estado: e.target.value as FiltroEstado })} style={{ ...INP, width: 'auto', minWidth: 170 }}>
+            <option value="">Estado: todos</option>
+            {(Object.keys(ESTADO_LABEL) as TicketEstado[]).map(e => <option key={e} value={e}>{ESTADO_LABEL[e]}</option>)}
+            <option value="sin_estado">Sin estado</option>
+          </select>
+          <button
+            type="button"
+            onClick={() => actualizarFiltro({ orden: SIGUIENTE_ORDEN[filtros.orden] })}
+            style={{ ...GHOST, display: 'flex', alignItems: 'center', gap: 6, color: filtros.orden === 'default' ? 'var(--text)' : 'var(--accent)' }}
+          >
+            <OrdenIcon size={13} /> {filtros.orden === 'default' ? 'Más recientes' : filtros.orden === 'asc' ? 'TID ascendente' : 'TID descendente'}
+          </button>
+          {hayFiltrosActivos && (
+            <button type="button" onClick={() => { setSearch(''); actualizarFiltro({ estado: '', origen: '' }) }} style={GHOST}>Limpiar filtros</button>
+          )}
+        </div>
+
+        <TicketsTable
+          tickets={filtrados}
+          isLoading={isLoading}
+          resetKey={`${filtros.estado}|${filtros.origen}|${filtros.orden}|${search}`}
+        />
+      </Card>
 
       <ImportTicketsModal
         open={importOpen}

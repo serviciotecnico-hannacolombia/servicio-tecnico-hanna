@@ -1,232 +1,159 @@
 import { useState } from 'react'
-import { Search, Pencil, Trash2, Link2, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react'
-import { Card } from '../../../components/ui/Card'
+import { useNavigate } from 'react-router-dom'
+import { Ticket as TicketIcon, CornerDownRight } from 'lucide-react'
 import { Table, type Column } from '../../../components/ui/Table'
 import { useProfiles } from '../../../hooks/useProfiles'
-import { ORIGEN_LABEL, ORIGEN_COLOR, ESTADO_LABEL, ESTADO_COLOR, type TicketFabrica, type TicketOrigen, type TicketEstado } from '../types'
+import { GHOST, EMPTY } from '../../calibraciones/ui'
+import { linkOtst, parseOtstCodes } from '../../calibraciones/vistas/CamposCompartidos'
+import { ORIGEN_LABEL, ORIGEN_CORTO, ORIGEN_COLOR, ESTADO_LABEL, ESTADO_COLOR, type TicketFabrica } from '../types'
+import { formatNombre, fmtFechaCorta, haceCuanto } from '../utils/formato'
 
 interface TicketsTableProps {
   tickets: TicketFabrica[]
-  onEdit: (ticket: TicketFabrica) => void
-  onDelete: (ticket: TicketFabrica) => void
+  isLoading?: boolean
+  /** Firma de los filtros activos: al cambiar, la paginación vuelve a la primera página. */
+  resetKey: string
 }
 
-const fmtFecha = (iso?: string) => {
-  if (!iso) return '—'
-  const d = new Date(iso)
-  return `${d.toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: '2-digit' })} ${d.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}`
-}
+const PAGE_SIZE = 30
 
-const truncateText = (text: string | undefined | null, maxLength = 40) => {
-  if (!text) return '—'
-  return text.length > maxLength ? text.substring(0, maxLength) + '...' : text
-}
+const ELLIPSIS: React.CSSProperties = { display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }
+const MUTED_DASH = <span style={{ color: 'var(--muted)' }}>—</span>
 
-// Los tickets importados de Notion guardan el prefijo largo "Ticket ID: ";
-// se acorta solo para mostrar, sin tocar el dato guardado en la base.
-const formatNombre = (nombre: string) => nombre.replace(/^Ticket ID:\s*/i, 'TID: ')
+const badge = (c: { bg: string; text: string; border: string }): React.CSSProperties => ({
+  display: 'inline-block', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+  padding: '3px 8px', borderRadius: 20, fontSize: '0.7rem', fontWeight: 600,
+  background: c.bg, color: c.text, border: `1px solid ${c.border}`,
+})
 
-// Número del ticket sin prefijo ("TID: " o "Ticket ID: ") para ordenar.
-const numeroTid = (nombre: string) => nombre.replace(/^(Ticket ID|TID):\s*/i, '').trim()
-
-// Ciclo al hacer clic en el encabezado: por defecto → ascendente → descendente.
-type OrdenTid = 'default' | 'asc' | 'desc'
-const SIGUIENTE_ORDEN: Record<OrdenTid, OrdenTid> = { default: 'asc', asc: 'desc', desc: 'default' }
-
-export function TicketsTable({ tickets, onEdit, onDelete }: TicketsTableProps) {
-  const [searchTerm, setSearchTerm] = useState('')
-  const [origenFilter, setOrigenFilter] = useState<TicketOrigen | ''>('')
-  const [estadoFilter, setEstadoFilter] = useState<TicketEstado | ''>('')
-  const [ordenTid, setOrdenTid] = useState<OrdenTid>('default')
+export function TicketsTable({ tickets, isLoading, resetKey }: TicketsTableProps) {
+  const navigate = useNavigate()
   const { data: profiles = [] } = useProfiles()
+  // La página se guarda junto a la firma de filtros con la que se eligió:
+  // si los filtros cambian, se vuelve a la primera página en vez de quedar
+  // en una que ya no existe.
+  const [paginaGuardada, setPaginaGuardada] = useState({ key: resetKey, page: 0 })
+  const totalPages = Math.max(1, Math.ceil(tickets.length / PAGE_SIZE))
+  const page = paginaGuardada.key === resetKey ? Math.min(paginaGuardada.page, totalPages - 1) : 0
+  const setPage = (fn: (p: number) => number) => setPaginaGuardada({ key: resetKey, page: fn(page) })
+  const pageItems = tickets.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
 
   const profileName = (id?: string | null) => {
-    if (!id) return '—'
+    if (!id) return null
     const p = profiles.find(p => p.id === id)
-    return p?.full_name || p?.email || '—'
+    return p?.full_name || p?.email || null
   }
 
-  const filteredTickets = tickets.filter(t => {
-    const term = searchTerm.toLowerCase()
-    const matchesSearch = (
-      t.nombre?.toLowerCase().includes(term) ||
-      t.codigo?.toLowerCase().includes(term) ||
-      t.serial?.toLowerCase().includes(term) ||
-      t.equipo_madre_codigo?.toLowerCase().includes(term) ||
-      t.equipo_madre_serial?.toLowerCase().includes(term) ||
-      profileName(t.creado_por).toLowerCase().includes(term)
-    )
-    const matchesOrigen = !origenFilter || t.origen === origenFilter
-    const matchesEstado = !estadoFilter || t.estado === estadoFilter
-    return matchesSearch && matchesOrigen && matchesEstado
-  })
-
-  // Comparación "numeric" para que TID 9 quede antes de TID 10.
-  const sortedTickets = ordenTid === 'default'
-    ? filteredTickets
-    : [...filteredTickets].sort((a, b) => {
-        const cmp = numeroTid(a.nombre).localeCompare(numeroTid(b.nombre), 'es', { numeric: true, sensitivity: 'base' })
-        return ordenTid === 'asc' ? cmp : -cmp
-      })
-
-  const OrdenIcon = ordenTid === 'asc' ? ArrowUp : ordenTid === 'desc' ? ArrowDown : ArrowUpDown
-
-  // Anchos en porcentaje (suman 100%): con tableLayout "fixed" el navegador
-  // los respeta de forma proporcional al ancho disponible, así la tabla
-  // siempre cabe en pantalla sin scroll horizontal, sin importar el tamaño.
   const columns: Column<TicketFabrica>[] = [
-    { key: 'numero', header: 'ID', width: '4%', render: t => <span style={{ fontFamily: 'var(--mono)', fontSize: '0.76rem', color: 'var(--muted)', whiteSpace: 'nowrap' }}>{t.numero ?? '—'}</span> },
     {
-      key: 'nombre', width: '8%',
-      header: (
-        <button
-          type="button"
-          onClick={() => setOrdenTid(o => SIGUIENTE_ORDEN[o])}
-          title={ordenTid === 'default' ? 'Ordenar por TID ascendente' : ordenTid === 'asc' ? 'Ordenar por TID descendente' : 'Quitar orden'}
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: 4, padding: 0, border: 'none', background: 'none', cursor: 'pointer',
-            font: 'inherit', letterSpacing: 'inherit', textTransform: 'inherit',
-            color: ordenTid === 'default' ? 'inherit' : 'var(--accent)',
-          }}
-        >
-          Nombre <OrdenIcon size={11} />
-        </button>
-      ),
+      key: 'ticket', header: 'Ticket', width: '10%',
       render: t => (
-        <span
-          title={t.nombre}
-          style={{ fontWeight: 600, fontFamily: 'var(--mono)', fontSize: '0.78rem', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
-        >
-          {formatNombre(t.nombre)}
-        </span>
-      ),
-    },
-    {
-      key: 'creado_por', header: 'Creador', width: '13%',
-      render: t => (
-        <span
-          title={profileName(t.creado_por)}
-          style={{ fontSize: '0.78rem', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
-        >
-          {profileName(t.creado_por)}
-        </span>
-      ),
-    },
-    {
-      key: 'codigo', header: 'Código', width: '9%',
-      render: t => (
-        <div style={{ overflow: 'hidden' }}>
-          <div title={t.codigo || ''} style={{ fontFamily: 'var(--mono)', fontSize: '0.78rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.codigo || '—'}</div>
-          {t.equipo_nombre && <div title={t.equipo_nombre} style={{ fontSize: '0.68rem', color: 'var(--muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.equipo_nombre}</div>}
+        <div style={{ minWidth: 0 }}>
+          <span title={t.nombre} style={{ ...ELLIPSIS, fontWeight: 700, fontFamily: 'var(--mono)', fontSize: '0.8rem', color: 'var(--text)' }}>{formatNombre(t.nombre)}</span>
+          <span style={{ fontFamily: 'var(--mono)', fontSize: '0.68rem', color: 'var(--muted)' }}>#{t.numero ?? '—'}</span>
         </div>
       ),
     },
     {
-      key: 'serial', header: 'Serial', width: '7%',
+      key: 'equipo', header: 'Equipo', width: '19%',
       render: t => (
-        <span title={t.serial || ''} style={{ fontFamily: 'var(--mono)', fontSize: '0.78rem', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-          {t.serial || '—'}
-        </span>
+        <div style={{ minWidth: 0 }}>
+          <span title={t.codigo || ''} style={{ ...ELLIPSIS, fontFamily: 'var(--mono)', fontSize: '0.78rem' }}>{t.codigo || '—'}</span>
+          {t.equipo_nombre && <span title={t.equipo_nombre} style={{ ...ELLIPSIS, fontSize: '0.7rem', color: 'var(--muted)' }}>{t.equipo_nombre}</span>}
+          {t.es_equipo_hijo && (
+            <span
+              title={`Equipo madre: ${[t.equipo_madre_nombre, t.equipo_madre_codigo, t.equipo_madre_serial].filter(Boolean).join(' · ')}`}
+              style={{ ...ELLIPSIS, fontSize: '0.7rem', color: 'var(--accent)' }}
+            >
+              <CornerDownRight size={11} style={{ verticalAlign: -1, marginRight: 3 }} />
+              Madre: {[t.equipo_madre_codigo, t.equipo_madre_serial].filter(Boolean).join(' · ') || '—'}
+            </span>
+          )}
+        </div>
       ),
     },
     {
-      key: 'equipo_madre', header: 'Eq. Madre', width: '10%',
-      render: t => t.es_equipo_hijo ? (
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 5, overflow: 'hidden' }}>
-          <Link2 size={12} style={{ color: 'var(--accent)', flexShrink: 0, marginTop: 2 }} />
-          <div style={{ fontSize: '0.72rem', minWidth: 0 }}>
-            <div title={t.equipo_madre_nombre || ''} style={{ fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.equipo_madre_nombre || '—'}</div>
-            <div style={{ color: 'var(--muted)', fontFamily: 'var(--mono)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {[t.equipo_madre_codigo, t.equipo_madre_serial].filter(Boolean).join(' · ') || '—'}
-            </div>
+      key: 'serial', header: 'Serial', width: '10%',
+      render: t => <span title={t.serial || ''} style={{ ...ELLIPSIS, fontFamily: 'var(--mono)', fontSize: '0.78rem' }}>{t.serial || '—'}</span>,
+    },
+    {
+      key: 'otst', header: 'OTST', width: '9%',
+      render: t => {
+        const codigos = parseOtstCodes(t.otst)
+        if (!codigos.length) return MUTED_DASH
+        return (
+          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+            {codigos.map(codigo => (
+              <a
+                key={codigo}
+                href={linkOtst(codigo)!}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={e => e.stopPropagation()}
+                title={`Abrir la OTST ${codigo}`}
+                style={{ fontFamily: 'var(--mono)', fontSize: '0.72rem', fontWeight: 600, color: 'var(--accent)', textDecoration: 'underline' }}
+              >{codigo}</a>
+            ))}
           </div>
+        )
+      },
+    },
+    {
+      key: 'origen', header: 'Origen', width: '7%',
+      render: t => t.origen
+        ? <span title={ORIGEN_LABEL[t.origen]} style={badge(ORIGEN_COLOR[t.origen])}>{ORIGEN_CORTO[t.origen]}</span>
+        : MUTED_DASH,
+    },
+    {
+      key: 'estado', header: 'Estado', width: '13%',
+      render: t => t.estado
+        ? <span style={badge(ESTADO_COLOR[t.estado])}>{ESTADO_LABEL[t.estado]}</span>
+        : MUTED_DASH,
+    },
+    {
+      key: 'ultimo_avance', header: 'Último avance', width: '20%',
+      render: t => t.ultimo_avance ? (
+        <div style={{ minWidth: 0 }}>
+          <span title={t.ultimo_avance} style={{ ...ELLIPSIS, fontSize: '0.76rem', color: 'var(--text)' }}>{t.ultimo_avance}</span>
+          <span style={{ fontSize: '0.68rem', color: 'var(--muted)' }}>{haceCuanto(t.ultimo_avance_at)}</span>
         </div>
-      ) : <span style={{ color: 'var(--muted)' }}>—</span>,
+      ) : MUTED_DASH,
     },
     {
-      key: 'origen', header: 'Origen', width: '8%',
-      render: t => t.origen ? (
-        <span style={{
-          display: 'inline-block', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis',
-          padding: '3px 8px', borderRadius: 20, fontSize: '0.7rem', fontWeight: 600, whiteSpace: 'nowrap',
-          background: ORIGEN_COLOR[t.origen].bg, color: ORIGEN_COLOR[t.origen].text, border: `1px solid ${ORIGEN_COLOR[t.origen].border}`,
-        }}>{ORIGEN_LABEL[t.origen]}</span>
-      ) : <span style={{ color: 'var(--muted)' }}>—</span>,
-    },
-    {
-      key: 'estado', header: 'Estado', width: '12%',
-      render: t => t.estado ? (
-        <span style={{
-          display: 'inline-block', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis',
-          padding: '3px 8px', borderRadius: 20, fontSize: '0.7rem', fontWeight: 600, whiteSpace: 'nowrap',
-          background: ESTADO_COLOR[t.estado].bg, color: ESTADO_COLOR[t.estado].text, border: `1px solid ${ESTADO_COLOR[t.estado].border}`,
-        }}>{ESTADO_LABEL[t.estado]}</span>
-      ) : <span style={{ color: 'var(--muted)' }}>—</span>,
-    },
-    {
-      key: 'nota_estado', header: 'Detalle', width: '14%',
+      key: 'creado', header: 'Creado', width: '12%',
       render: t => (
-        <span title={t.nota_estado || ''} style={{ color: 'var(--muted)', fontSize: '0.76rem', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-          {truncateText(t.nota_estado)}
-        </span>
-      ),
-    },
-    {
-      key: 'created_at', header: 'Fecha', width: '8%',
-      render: t => <span style={{ fontSize: '0.74rem', color: 'var(--muted)', whiteSpace: 'nowrap' }}>{fmtFecha(t.created_at)}</span>,
-    },
-    {
-      key: 'acciones', header: 'Acciones', width: '7%', align: 'center',
-      render: t => (
-        <div style={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
-          <button title="Editar" onClick={() => onEdit(t)} style={{ border: 'none', background: 'var(--accent-bg)', color: 'var(--accent)', padding: 6, borderRadius: 'var(--radius-sm)', cursor: 'pointer', display: 'flex' }}><Pencil size={13} /></button>
-          <button title="Eliminar" onClick={() => onDelete(t)} style={{ border: 'none', background: 'var(--red-bg)', color: 'var(--red)', padding: 6, borderRadius: 'var(--radius-sm)', cursor: 'pointer', display: 'flex' }}><Trash2 size={13} /></button>
+        <div style={{ minWidth: 0 }}>
+          <span style={{ ...ELLIPSIS, fontSize: '0.74rem', color: 'var(--muted)', fontFamily: 'var(--mono)' }}>{fmtFechaCorta(t.created_at)}</span>
+          <span title={profileName(t.creado_por) || ''} style={{ ...ELLIPSIS, fontSize: '0.72rem' }}>{profileName(t.creado_por) || '—'}</span>
         </div>
       ),
     },
   ]
 
-  return (
-    <Card bodyStyle={{ padding: 0 }}>
-      <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
-        <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text)' }}>
-          Tickets a Fábrica <span style={{ color: 'var(--muted)', fontWeight: 500 }}>({filteredTickets.length}/{tickets.length})</span>
-        </h3>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-          <select
-            value={origenFilter}
-            onChange={e => setOrigenFilter(e.target.value as TicketOrigen | '')}
-            style={{ padding: '7px 10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontFamily: 'var(--sans)', fontSize: '0.8rem' }}
-          >
-            <option value="">Todos los orígenes</option>
-            {(Object.keys(ORIGEN_LABEL) as TicketOrigen[]).map(o => (
-              <option key={o} value={o}>{ORIGEN_LABEL[o]}</option>
-            ))}
-          </select>
-          <select
-            value={estadoFilter}
-            onChange={e => setEstadoFilter(e.target.value as TicketEstado | '')}
-            style={{ padding: '7px 10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontFamily: 'var(--sans)', fontSize: '0.8rem' }}
-          >
-            <option value="">Todos los estados</option>
-            {(Object.keys(ESTADO_LABEL) as TicketEstado[]).map(e => (
-              <option key={e} value={e}>{ESTADO_LABEL[e]}</option>
-            ))}
-          </select>
-          <div style={{ position: 'relative', width: 280 }}>
-            <Search size={15} style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)' }} />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              placeholder="Buscar por nombre, código, serial, equipo madre o creador..."
-              style={{ width: '100%', padding: '7px 12px 7px 34px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontFamily: 'var(--sans)', fontSize: '0.8rem' }}
-            />
-          </div>
-        </div>
-      </div>
+  if (isLoading) return <div style={EMPTY}><p>Cargando…</p></div>
+  if (tickets.length === 0) return <div style={EMPTY}><TicketIcon size={32} strokeWidth={1.5} /><p>No hay tickets para este filtro</p></div>
 
-      <Table columns={columns} data={sortedTickets} emptyMessage="No hay tickets registrados aún." keyExtractor={(t, i) => t.id ?? i} compact />
-    </Card>
+  return (
+    <>
+      <Table
+        columns={columns}
+        data={pageItems}
+        keyExtractor={(t, i) => t.id ?? i}
+        onRowClick={t => t.id && navigate(`/tickets/${t.id}`)}
+        compact
+      />
+
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '12px 16px', borderTop: '1px solid var(--border)', flexWrap: 'wrap' }}>
+        <span style={{ fontSize: '0.78rem', color: 'var(--muted)', fontFamily: 'var(--mono)' }}>
+          {tickets.length} ticket{tickets.length !== 1 ? 's' : ''} — página {page + 1} de {totalPages}
+        </span>
+        {totalPages > 1 && (
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0} style={{ ...GHOST, opacity: page === 0 ? 0.5 : 1 }}>← Anterior</button>
+            <button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1} style={{ ...GHOST, opacity: page >= totalPages - 1 ? 0.5 : 1 }}>Siguiente →</button>
+          </div>
+        )}
+      </div>
+    </>
   )
 }

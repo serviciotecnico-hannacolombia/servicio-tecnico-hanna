@@ -27,6 +27,7 @@ import { CertificadosCalidadPage } from './modules/certificados-calidad/Certific
 import { CalibracionesPage } from './modules/calibraciones/CalibracionesPage'
 import { OrdenCalibracionDetailPage } from './modules/calibraciones/OrdenCalibracionDetailPage'
 import { TicketsPage } from './modules/tickets/pages/TicketsPage'
+import { TicketDetailPage } from './modules/tickets/pages/TicketDetailPage'
 import { EquiposSinFormatoPage } from './modules/equipos-sin-formato/EquiposSinFormatoPage'
 import { EquipoSinFormatoDetailPage } from './modules/equipos-sin-formato/EquipoSinFormatoDetailPage'
 import { GarantiasPage } from './modules/garantias/GarantiasPage'
@@ -71,6 +72,7 @@ export default function App() {
               <Route path="/calibraciones" element={<ModuleGuard moduleKey="calibraciones"><CalibracionesPage /></ModuleGuard>} />
               <Route path="/calibraciones/:id" element={<ModuleGuard moduleKey="calibraciones"><OrdenCalibracionDetailPage /></ModuleGuard>} />
               <Route path="/tickets" element={<ModuleGuard moduleKey="tickets"><TicketsPage /></ModuleGuard>} />
+              <Route path="/tickets/:id" element={<ModuleGuard moduleKey="tickets"><TicketDetailPage /></ModuleGuard>} />
               <Route path="/equipos-sin-formato" element={<ModuleGuard moduleKey="equipos_sin_formato"><EquiposSinFormatoPage /></ModuleGuard>} />
               <Route path="/equipos-sin-formato/:id" element={<ModuleGuard moduleKey="equipos_sin_formato"><EquipoSinFormatoDetailPage /></ModuleGuard>} />
               <Route path="/mant-in-situ" element={<ModuleGuard moduleKey="mant_in_situ"><MantInSituPage /></ModuleGuard>} />
