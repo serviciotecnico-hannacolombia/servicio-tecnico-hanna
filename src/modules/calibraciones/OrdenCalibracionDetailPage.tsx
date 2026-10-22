@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, Fragment } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { ArrowLeft, Trash2, Ban, RotateCcw, AlertTriangle, Clock } from 'lucide-react'
+import { ArrowLeft, Trash2, Ban, RotateCcw, AlertTriangle, Clock, UserCog } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { Spinner } from '../../components/ui/Spinner'
 import { Modal } from '../../components/ui/Modal'
@@ -109,6 +109,9 @@ export function OrdenCalibracionDetailPage() {
   const [anulando, setAnulando] = useState(false)
   const [motivoAnulacionInput, setMotivoAnulacionInput] = useState('')
   const [guardandoAnulacion, setGuardandoAnulacion] = useState(false)
+  const [cambiandoAsesor, setCambiandoAsesor] = useState(false)
+  const [correoAsesorInput, setCorreoAsesorInput] = useState('')
+  const [guardandoAsesor, setGuardandoAsesor] = useState(false)
 
   useEffect(() => { if (orden) setForm(orden) }, [orden])
   useEffect(() => { if (parametrosActuales) setCodigosSel(new Set(parametrosActuales.map(p => p.rv_calibr_codigo))) }, [parametrosActuales])
@@ -436,6 +439,24 @@ export function OrdenCalibracionDetailPage() {
     }
   }
 
+  // Solo Admin, en cualquier etapa (incluso terminada o anulada): corrige a
+  // quién le llegan los correos sin depender de la vista "OC creada".
+  async function guardarCorreoAsesor() {
+    if (!orden) return
+    const correo = correoAsesorInput.trim()
+    if (!correo || !correo.includes('@')) { toast.error('Ingresa un correo válido'); return }
+    setGuardandoAsesor(true)
+    const { error } = await supabase.from('ordenes_calibracion')
+      .update({ correo_asesor: correo, updated_at: new Date().toISOString() }).eq('id', orden.id)
+    setGuardandoAsesor(false)
+    if (error) { toast.error('Error: ' + error.message); return }
+    setForm(f => ({ ...f, correo_asesor: correo }))
+    toast.success('Correo del asesor(a) actualizado')
+    setCambiandoAsesor(false)
+    invalidate.ordenes()
+    invalidate.historial(orden.id)
+  }
+
   async function confirmarReactivar() {
     if (!orden) return
     if (!confirm('¿Reactivar esta orden? Vuelve a las vistas activas y al semáforo de vencimiento.')) return
@@ -548,6 +569,13 @@ export function OrdenCalibracionDetailPage() {
               borderRadius: 9, border: '1px solid var(--border)', background: 'var(--surface)',
               color: 'var(--accent)', cursor: 'pointer', flexShrink: 0,
             }}><RotateCcw size={16} /></button>
+          )}
+          {isAdmin && orden && (
+            <button onClick={() => { setCorreoAsesorInput(form.correo_asesor || ''); setCambiandoAsesor(true) }} title="Cambiar correo asesor(a) (solo Admin)" style={{
+              width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              borderRadius: 9, border: '1px solid var(--border)', background: 'var(--surface)',
+              color: 'var(--accent)', cursor: 'pointer', flexShrink: 0,
+            }}><UserCog size={16} /></button>
           )}
           {isAdmin && orden && (
             <button onClick={() => setEliminando(true)} title="Eliminar orden permanentemente (solo Admin)" style={{
@@ -929,6 +957,36 @@ export function OrdenCalibracionDetailPage() {
           </div>
         )}
       </div>
+
+      {cambiandoAsesor && orden && (() => {
+        const sugerido = asesores.find(a => a.correo.toLowerCase() === correoAsesorInput.trim().toLowerCase())
+        return (
+          <Modal open onClose={() => setCambiandoAsesor(false)} title="Cambiar correo asesor(a)">
+            <p style={{ fontSize: 12.5, color: 'var(--muted)', marginBottom: 12 }}>
+              Actual: <strong style={{ color: 'var(--text)' }}>{form.correo_asesor || '—'}</strong>. Los correos de esta orden se enviarán al nuevo asesor(a).
+            </p>
+            <FG label="Nuevo correo asesor(a)" required>
+              <input
+                value={correoAsesorInput} onChange={e => setCorreoAsesorInput(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); guardarCorreoAsesor() } }}
+                list="asesores-cambio" style={INP} autoFocus
+              />
+              <datalist id="asesores-cambio">
+                {asesores.filter(a => a.activo).map(a => <option key={a.id} value={a.correo}>{a.nombre}{a.plataforma ? ` — ${a.plataforma}` : ''}</option>)}
+              </datalist>
+              {sugerido && (
+                <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 5 }}>
+                  {sugerido.nombre}{sugerido.plataforma ? ` — ${sugerido.plataforma}` : ''}
+                </div>
+              )}
+            </FG>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 20 }}>
+              <button onClick={() => setCambiandoAsesor(false)} style={GHOST}>Cancelar</button>
+              <button onClick={guardarCorreoAsesor} disabled={guardandoAsesor} style={PRI}>{guardandoAsesor ? 'Guardando…' : 'Guardar'}</button>
+            </div>
+          </Modal>
+        )
+      })()}
 
       {eliminando && orden && (
         <Modal open onClose={() => setEliminando(false)} title="Eliminar orden permanentemente">
