@@ -12,6 +12,7 @@ import { useUser } from '../../hooks/useUser'
 import { useProfiles } from '../../hooks/useProfiles'
 import { exportToCSV, todayISO } from '../../lib/utils'
 import { INTRANET_URL } from '../../lib/constants'
+import { parseOtstCodes } from '../equipos-sin-formato/hooks/useEquiposSinFormato'
 import type { OtstBodega, OtstBodegaMovimiento, OtstBodegaZona, OtstBodegaConfig, EstadoOtstBodega, OtstBodegaPendiente } from '../../types'
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -1620,20 +1621,37 @@ function TabPendientes({ bodega, pendientes, umbral, columnas }: { bodega: OtstB
 
   const yaTienePendiente = new Set(pendientes.filter(p => p.estado === 'pendiente').map(p => p.otst.trim().toLowerCase()))
 
+  // Se pueden relacionar varias OTST separadas por coma; todas comparten el motivo.
+  const otstsInput = [...new Set(parseOtstCodes(otstInput))]
+
   async function agregar() {
-    const otst = otstInput.trim()
-    if (!otst) { toast.error('Ingresa el número de OTST'); return }
-    if (yaTienePendiente.has(otst.toLowerCase())) { toast.error(`Ya existe una solicitud pendiente para la OTST ${otst}`); return }
+    if (otstsInput.length === 0) { toast.error('Ingresa el número de OTST'); return }
+    const repetidas = otstsInput.filter(o => yaTienePendiente.has(o.toLowerCase()))
+    const nuevas = otstsInput.filter(o => !yaTienePendiente.has(o.toLowerCase()))
+    if (nuevas.length === 0) {
+      toast.error(repetidas.length === 1
+        ? `Ya existe una solicitud pendiente para la OTST ${repetidas[0]}`
+        : `Todas ya tienen solicitud pendiente: ${repetidas.join(', ')}`)
+      return
+    }
     const nota = notaInput.trim()
     if (!nota) { toast.error('Ingresa el motivo del despacho'); notaRef.current?.focus(); return }
     setSaving(true)
-    const match = bodega.find(b => b.otst.trim().toLowerCase() === otst.toLowerCase())
-    const { error } = await supabase.from('otst_bodega_pendientes').insert({
-      otst, otst_id: match?.id ?? null, nota, solicitado_por: displayName, estado: 'pendiente',
+    const filas = nuevas.map(otst => {
+      const match = bodega.find(b => b.otst.trim().toLowerCase() === otst.toLowerCase())
+      return { otst, otst_id: match?.id ?? null, nota, solicitado_por: displayName, estado: 'pendiente' }
     })
+    const { error } = await supabase.from('otst_bodega_pendientes').insert(filas)
     setSaving(false)
     if (error) { toast.error('Error: ' + error.message); return }
-    toast.success(match ? 'Agregada a pendientes de despacho' : 'Agregada a pendientes (aún no está registrada en bodega)')
+    const sinRegistrar = filas.filter(f => !f.otst_id).length
+    if (filas.length === 1) {
+      toast.success(sinRegistrar ? 'Agregada a pendientes (aún no está registrada en bodega)' : 'Agregada a pendientes de despacho')
+    } else {
+      toast.success(`${filas.length} OTST agregadas a pendientes de despacho`
+        + (sinRegistrar ? ` (${sinRegistrar} aún no están registradas en bodega)` : ''))
+    }
+    if (repetidas.length) toast.warning(`Ya tenían pendiente (no se agregaron): ${repetidas.join(', ')}`)
     qc.invalidateQueries({ queryKey: ['otst_bodega_pendientes'] })
     setOtstInput(''); setNotaInput('')
     otstRef.current?.focus()
@@ -1698,11 +1716,11 @@ function TabPendientes({ bodega, pendientes, umbral, columnas }: { bodega: OtstB
       <Card>
         <SecTitle>Agregar solicitud de despacho</SecTitle>
         <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap' }}>
-          <div style={{ flex: '0 0 160px' }}>
+          <div style={{ flex: '0 0 260px', maxWidth: '100%' }}>
             <FL>OTST</FL>
             <input
-              ref={otstRef} value={otstInput}
-              onChange={e => setOtstInput(e.target.value)}
+              ref={otstRef} value={otstInput} inputMode="numeric"
+              onChange={e => setOtstInput(e.target.value.replace(/[^0-9,]/g, ''))}
               onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); agregar() } }}
               placeholder="Número..." style={INP} autoFocus
             />
@@ -1716,6 +1734,11 @@ function TabPendientes({ bodega, pendientes, umbral, columnas }: { bodega: OtstB
             />
           </div>
           <button onClick={agregar} disabled={saving} style={PRI}>{saving ? 'Guardando…' : '+ Agregar'}</button>
+        </div>
+        <div style={{ marginTop: 6, fontSize: 11.5, color: 'var(--muted)' }}>
+          {otstInput.includes(',')
+            ? <>Se están enlistando las OTST: <strong style={{ fontFamily: 'var(--mono)', color: 'var(--text)' }}>{otstsInput.join(', ')}</strong></>
+            : 'Si quieres relacionar varias, sepáralas por coma (,)'}
         </div>
       </Card>
 
