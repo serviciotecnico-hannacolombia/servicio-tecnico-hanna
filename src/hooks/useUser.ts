@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode, createElement } from 'react'
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode, createElement } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import type { Profile, ModuleKey, CapabilityKey } from '../types'
@@ -62,6 +62,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [modules, setModules] = useState<Set<ModuleKey>>(new Set())
   const [capabilities, setCapabilities] = useState<Set<CapabilityKey>>(new Set())
   const [loading, setLoading] = useState(true)
+  // Usuario cuyos permisos ya están cargados. Si entra otro (login), hay que
+  // volver a loading=true; si no, DefaultRedirect decide con los permisos
+  // vacíos y manda a /llamadas ("Sin acceso a este módulo").
+  const loadedUserId = useRef<string | null>(null)
 
   const loadProfileAndPermissions = async (userId: string) => {
     const p = await fetchProfileById(userId)
@@ -83,6 +87,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       setUser(u)
 
       if (!u) {
+        loadedUserId.current = null
         setProfile(null)
         setModules(new Set())
         setCapabilities(new Set())
@@ -93,9 +98,12 @@ export function UserProvider({ children }: { children: ReactNode }) {
       // Token refreshes don't change profile or permissions.
       if (event === 'TOKEN_REFRESHED') return
 
+      if (loadedUserId.current !== u.id) setLoading(true)
+
       setTimeout(async () => {
         try {
           await loadProfileAndPermissions(u.id)
+          loadedUserId.current = u.id
         } catch (err) {
           console.error('Error cargando perfil y permisos', err)
         } finally {
