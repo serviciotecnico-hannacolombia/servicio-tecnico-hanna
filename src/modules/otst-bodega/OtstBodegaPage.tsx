@@ -1601,6 +1601,8 @@ function TabPendientes({ bodega, pendientes, umbral, columnas }: { bodega: OtstB
   const { displayName, hasCapability } = useUser()
   const canEliminar     = hasCapability('bodega_eliminar')
   const canRegistrarIngreso = hasCapability('bodega_registrar_ingreso')
+  // Ventas no ve la ubicación física en Despacho (permiso configurable en Admin).
+  const verUbicacion    = hasCapability('bodega_ver_ubicacion')
   const otstRef          = useRef<HTMLInputElement>(null)
   const notaRef          = useRef<HTMLInputElement>(null)
   const [otstInput, setOtstInput] = useState('')
@@ -1705,7 +1707,7 @@ function TabPendientes({ bodega, pendientes, umbral, columnas }: { bodega: OtstB
       || (p.cancelado_por || '').toLowerCase().includes(q)
       || (p.nota || '').toLowerCase().includes(q)
       || (p.motivo_cancelacion || '').toLowerCase().includes(q)
-      || (item ? codigoUbicacion(item.columna, item.fila, item.subcolumna).toLowerCase().includes(q) : false)
+      || (item && verUbicacion ? codigoUbicacion(item.columna, item.fila, item.subcolumna).toLowerCase().includes(q) : false)
   })
   const historialTotalPages = Math.max(1, Math.ceil(completadosFiltrados.length / HISTORIAL_PAGE_SIZE))
   const historialPageActual = Math.min(historialPage, historialTotalPages - 1)
@@ -1752,7 +1754,7 @@ function TabPendientes({ bodega, pendientes, umbral, columnas }: { bodega: OtstB
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                 <thead>
                   <tr>
-                    {['OTST', 'Ubicación', 'Antigüedad', 'Solicitado por', 'Hace', 'Nota', 'Acciones'].map(h => (
+                    {['OTST', ...(verUbicacion ? ['Ubicación'] : []), 'Antigüedad', 'Solicitado por', 'Hace', 'Nota', 'Acciones'].map(h => (
                       <th key={h} style={TH}>{h}</th>
                     ))}
                   </tr>
@@ -1764,7 +1766,7 @@ function TabPendientes({ bodega, pendientes, umbral, columnas }: { bodega: OtstB
                     return (
                       <tr key={p.id} style={{ borderBottom: '1px solid rgba(221,227,237,.5)' }}>
                         <td style={{ padding: '10px 14px', fontWeight: 600 }}><OtstLink otst={p.otst} /></td>
-                        <td style={{ padding: '10px 14px' }}>
+                        {verUbicacion && <td style={{ padding: '10px 14px' }}>
                           {!item ? (
                             <span style={B_ABANDONADA}><AlertTriangle size={11} style={{ marginRight: 3, verticalAlign: -1 }} />No encontrada en bodega</span>
                           ) : item.estado === 'novedad' ? (
@@ -1775,7 +1777,7 @@ function TabPendientes({ bodega, pendientes, umbral, columnas }: { bodega: OtstB
                           ) : (
                             <span style={{ ...B_LOC, fontSize: 13, fontWeight: 700 }}>{codigoUbicacion(item.columna, item.fila, item.subcolumna)}</span>
                           )}
-                        </td>
+                        </td>}
                         <td style={{ padding: '10px 14px' }}>
                           {antig === null ? '—' : (
                             <span style={antig >= umbral ? B_ABANDONADA : B_OK}>{antig} mes{antig !== 1 ? 'es' : ''}</span>
@@ -1843,7 +1845,7 @@ function TabPendientes({ bodega, pendientes, umbral, columnas }: { bodega: OtstB
                 {completadosPagina.map(({ p, item }) => (
                   <div key={p.id} style={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 16px', fontSize: 12, opacity: .8, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
                     <div>
-                      <strong>OTST <OtstLink otst={p.otst} /></strong>{item ? ` (${codigoUbicacion(item.columna, item.fila, item.subcolumna)})` : ''}
+                      <strong>OTST <OtstLink otst={p.otst} /></strong>{item && verUbicacion ? ` (${codigoUbicacion(item.columna, item.fila, item.subcolumna)})` : ''}
                       {p.estado === 'cancelado'
                         ? <> — <span style={{ color: '#c0392b', fontWeight: 600 }}>✕ cancelado</span> por {p.cancelado_por || '—'} el {p.cancelado_at ? new Date(p.cancelado_at).toLocaleString() : '—'}</>
                         : <> — despachado por {p.completado_por || '—'} el {p.completado_at ? new Date(p.completado_at).toLocaleString() : '—'}</>}

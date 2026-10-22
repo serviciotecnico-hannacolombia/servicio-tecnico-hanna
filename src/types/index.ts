@@ -26,7 +26,7 @@ export type CapabilityKey =
   | 'mant_in_situ_personalizado'
   | 'mant_consultas_reportes'
   | 'importar_csv_tarifas' | 'importar_csv_codigos' | 'importar_csv_llamadas'
-  | 'bodega_registrar_ingreso' | 'editar_codigos' | 'gestion_codigos' | 'bodega_eliminar'
+  | 'bodega_registrar_ingreso' | 'editar_codigos' | 'gestion_codigos' | 'bodega_eliminar' | 'bodega_ver_ubicacion'
   | 'calibraciones_editar' | 'calibraciones_ver_todas' | 'ver_precios_codigos' | 'tablas_mantenimiento_editar'
   | 'equipos_sin_formato_editar' | 'garantias_editar' | 'garantias_ver_todas' | 'mant_in_situ_editar' | 'mant_in_situ_regional_editar'
 
