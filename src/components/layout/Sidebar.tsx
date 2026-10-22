@@ -21,6 +21,7 @@ import { saludoPercy, primerNombre } from '../../lib/percy'
 import { useTareasBadgeCount } from '../../modules/tareas/hooks/useTareas'
 import { useCalibracionesBadgeCount } from '../../modules/calibraciones/hooks/useCalibraciones'
 import { useBodegaBadgeCount } from '../../modules/otst-bodega/hooks/useBodegaBadge'
+import { useEquiposSinFormatoBadgeCount } from '../../modules/equipos-sin-formato/hooks/useEquiposSinFormatoBadge'
 import { normalizarNombre } from '../../lib/nombres'
 import type { ModuleKey } from '../../types'
 
@@ -148,6 +149,7 @@ export function Sidebar() {
   const tareasBadge = useTareasBadgeCount()
   const calibracionesBadge = useCalibracionesBadgeCount()
   const bodegaBadge = useBodegaBadgeCount()
+  const sinFormatoBadge = useEquiposSinFormatoBadgeCount()
   const [gruposColapsados, setGruposColapsados] = useState<Set<string>>(leerGruposColapsados)
   const [dragIdx, setDragIdx] = useState<number | null>(null)
   const [profileOpen, setProfileOpen] = useState(false)
@@ -253,7 +255,7 @@ export function Sidebar() {
 
   const renderNavItem = ({ to, label, icon: Icon, moduleKey }: NavItem, favoritoCtx?: { index: number }) => {
     const isTareas = moduleKey === 'tareas'
-    const badge = isTareas ? tareasBadge.pendientes : moduleKey === 'calibraciones' ? calibracionesBadge : moduleKey === 'bodega' ? bodegaBadge : 0
+    const badge = isTareas ? tareasBadge.pendientes : moduleKey === 'calibraciones' ? calibracionesBadge : moduleKey === 'bodega' ? bodegaBadge : moduleKey === 'equipos_sin_formato' ? sinFormatoBadge : 0
     const tareasAviso = `${tareasBadge.pendientes} tareas pendientes relacionadas contigo; ${tareasBadge.urgentes} de ellas vencidas o con vencimiento hoy o mañana`
     const esFavorito = favoritosKeys.includes(moduleKey)
 

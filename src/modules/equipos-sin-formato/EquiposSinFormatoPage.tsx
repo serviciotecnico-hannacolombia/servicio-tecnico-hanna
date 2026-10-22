@@ -19,6 +19,8 @@ const B_ESTADO: Record<EstadoEquipoSinFormato, React.CSSProperties> = {
   ingresado: { background: 'var(--green-bg, #dcfce7)', border: '1px solid var(--green-border, #86efac)', color: 'var(--green, #16a34a)' },
 }
 
+const SECCION: React.CSSProperties = { margin: '0 0 10px', fontSize: 13.5, fontWeight: 700, color: 'var(--text)' }
+
 function fmtFecha(iso: string | null): string {
   if (!iso) return '—'
   const [y, m, d] = iso.split('-')
@@ -56,19 +58,17 @@ export function EquiposSinFormatoPage() {
       const items = itemsPorRegistro.get(r.id) || []
       return items.some(it => it.referencia.toLowerCase().includes(q) || (it.serial || '').toLowerCase().includes(q))
     })
-    // Ahora cualquiera ve todos los registros (no solo Ventas los suyos),
-    // pero si el usuario logueado es el asesor de un equipo, ese le
-    // interesa primero — sort estable: conserva el orden por fecha dentro
-    // de cada grupo (lo mío / lo de los demás).
-    .sort((a, b) => {
-      const aMio = user?.email && a.asesor_correo === user.email ? 0 : 1
-      const bMio = user?.email && b.asesor_correo === user.email ? 0 : 1
-      return aMio - bMio
-    })
+
+  // Cualquiera ve todos los registros, pero los del asesor logueado van en
+  // su propio apartado, antes que los demás (cada grupo conserva el orden).
+  const correoUsuario = user?.email?.toLowerCase()
+  const esMio = (r: EquipoSinFormato) => !!correoUsuario && r.asesor_correo?.toLowerCase() === correoUsuario
+  const mios = filtrados.filter(esMio)
+  const demas = filtrados.filter(r => !esMio(r))
 
   function exportarCSV() {
     const headers = ['N°', 'Razón social', 'Asesor', 'Fecha llegada', 'Estado', 'Número de preingreso', 'OTST', 'Referencias', 'Seriales']
-    const rows = filtrados.map(r => {
+    const rows = [...mios, ...demas].map(r => {
       const items = itemsPorRegistro.get(r.id) || []
       return [
         `SF-${r.numero}`, r.razon_social, nombrePorCorreo.get(r.asesor_correo) || r.asesor_correo,
@@ -138,8 +138,21 @@ export function EquiposSinFormatoPage() {
           <div style={EMPTY}><p>Cargando…</p></div>
         ) : filtrados.length === 0 ? (
           <div style={EMPTY}><PackageX size={32} strokeWidth={1.5} /><p>No hay registros para este filtro</p></div>
+        ) : mios.length === 0 ? (
+          <Table columns={columns} data={demas} keyExtractor={r => r.id} onRowClick={r => navigate(`/equipos-sin-formato/${r.id}`)} />
         ) : (
-          <Table columns={columns} data={filtrados} keyExtractor={r => r.id} onRowClick={r => navigate(`/equipos-sin-formato/${r.id}`)} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
+            <section>
+              <h3 style={SECCION}>Mis equipos sin formato <span style={{ color: 'var(--muted)', fontWeight: 500 }}>({mios.length})</span></h3>
+              <Table columns={columns} data={mios} keyExtractor={r => r.id} onRowClick={r => navigate(`/equipos-sin-formato/${r.id}`)} />
+            </section>
+            {demas.length > 0 && (
+              <section>
+                <h3 style={SECCION}>Demás equipos sin formato <span style={{ color: 'var(--muted)', fontWeight: 500 }}>({demas.length})</span></h3>
+                <Table columns={columns} data={demas} keyExtractor={r => r.id} onRowClick={r => navigate(`/equipos-sin-formato/${r.id}`)} />
+              </section>
+            )}
+          </div>
         )}
       </Card>
     </div>
