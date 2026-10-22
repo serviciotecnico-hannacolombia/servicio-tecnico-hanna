@@ -74,28 +74,34 @@ export function UserProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true
 
-    const init = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!mounted) return
+    // The callback runs while supabase-js holds its auth lock; awaiting any
+    // supabase call inside it deadlocks (e.g. on first load with an expired
+    // token). Keep it synchronous and defer the queries out of the lock.
+    // INITIAL_SESSION covers the initial load, so no separate getSession().
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       const u = session?.user ?? null
       setUser(u)
-      if (u) await loadProfileAndPermissions(u.id)
-      setLoading(false)
-    }
 
-    init()
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_, session) => {
-      const u = session?.user ?? null
-      setUser(u)
-      if (u) {
-        await loadProfileAndPermissions(u.id)
-      } else {
+      if (!u) {
         setProfile(null)
         setModules(new Set())
         setCapabilities(new Set())
+        setLoading(false)
+        return
       }
-      setLoading(false)
+
+      // Token refreshes don't change profile or permissions.
+      if (event === 'TOKEN_REFRESHED') return
+
+      setTimeout(async () => {
+        try {
+          await loadProfileAndPermissions(u.id)
+        } catch (err) {
+          console.error('Error cargando perfil y permisos', err)
+        } finally {
+          if (mounted) setLoading(false)
+        }
+      }, 0)
     })
 
     return () => {
