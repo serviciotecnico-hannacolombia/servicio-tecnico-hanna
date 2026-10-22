@@ -21,6 +21,8 @@ const FILTROS: [VistaFiltro, string][] = [
   ['informe', 'Informe'], ['finalizada', 'Finalizadas'],
 ]
 
+const SECCION: React.CSSProperties = { margin: '0 0 10px', fontSize: 13.5, fontWeight: 700, color: 'var(--text)' }
+
 export function GarantiasPage() {
   const navigate = useNavigate()
   const { user, hasCapability, isAdmin } = useUser()
@@ -52,16 +54,17 @@ export function GarantiasPage() {
       return [g.cliente, g.referencia, g.otst, g.numero_nv, g.numero_pnc, `gar-${g.numero}`, nombreAsesor.get(g.asesor_correo)]
         .some(v => (v || '').toLowerCase().includes(q))
     })
-    // Lo del asesor logueado primero (sort estable, conserva el orden por fecha).
-    .sort((a, b) => {
-      const aMio = user?.email && a.asesor_correo === user.email ? 0 : 1
-      const bMio = user?.email && b.asesor_correo === user.email ? 0 : 1
-      return aMio - bMio
-    })
+
+  // Las del asesor logueado van en su propio apartado, antes que las demás
+  // (cada grupo conserva el orden por fecha).
+  const correoUsuario = user?.email?.toLowerCase()
+  const esMia = (g: Garantia) => !!correoUsuario && g.asesor_correo?.toLowerCase() === correoUsuario
+  const mias = filtrados.filter(esMia)
+  const demas = filtrados.filter(g => !esMia(g))
 
   function exportarCSV() {
     const headers = ['N°', 'Cliente', 'Referencia', 'OTST', 'Asesor', 'Responsables', 'Hay stock', 'Estado', 'NV', 'Fecha seguimiento', 'PNC', 'Fecha límite entrega', 'Anulada']
-    const rows = filtrados.map(g => [
+    const rows = [...mias, ...demas].map(g => [
       `GAR-${g.numero}`, g.cliente, g.referencia, parseOtstCodes(g.otst).join(', '),
       nombreAsesor.get(g.asesor_correo) || g.asesor_correo, responsablesTexto(g),
       g.hay_stock ? 'Sí' : 'No', ESTADO_LABEL_GAR[g.estado], g.numero_nv || '',
@@ -157,8 +160,21 @@ export function GarantiasPage() {
           <div style={EMPTY}><p>Cargando…</p></div>
         ) : filtrados.length === 0 ? (
           <div style={EMPTY}><BadgeCheck size={32} strokeWidth={1.5} /><p>No hay garantías para este filtro</p></div>
+        ) : mias.length === 0 ? (
+          <Table columns={columns} data={demas} keyExtractor={g => g.id} onRowClick={g => navigate(`/garantias/${g.id}`)} />
         ) : (
-          <Table columns={columns} data={filtrados} keyExtractor={g => g.id} onRowClick={g => navigate(`/garantias/${g.id}`)} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
+            <section>
+              <h3 style={SECCION}>Mis garantías <span style={{ color: 'var(--muted)', fontWeight: 500 }}>({mias.length})</span></h3>
+              <Table columns={columns} data={mias} keyExtractor={g => g.id} onRowClick={g => navigate(`/garantias/${g.id}`)} />
+            </section>
+            {demas.length > 0 && (
+              <section>
+                <h3 style={SECCION}>Demás garantías <span style={{ color: 'var(--muted)', fontWeight: 500 }}>({demas.length})</span></h3>
+                <Table columns={columns} data={demas} keyExtractor={g => g.id} onRowClick={g => navigate(`/garantias/${g.id}`)} />
+              </section>
+            )}
+          </div>
         )}
       </Card>
 
