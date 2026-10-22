@@ -1603,6 +1603,8 @@ function TabPendientes({ bodega, pendientes, umbral, columnas }: { bodega: OtstB
   const canRegistrarIngreso = hasCapability('bodega_registrar_ingreso')
   // Ventas no ve la ubicación física en Despacho (permiso configurable en Admin).
   const verUbicacion    = hasCapability('bodega_ver_ubicacion')
+  // Completar y marcar/resolver novedad; sin esto (Ventas) solo se puede cancelar.
+  const puedeGestionarDespacho = hasCapability('bodega_gestionar_despacho')
   const otstRef          = useRef<HTMLInputElement>(null)
   const notaRef          = useRef<HTMLInputElement>(null)
   const [otstInput, setOtstInput] = useState('')
@@ -1788,12 +1790,12 @@ function TabPendientes({ bodega, pendientes, umbral, columnas }: { bodega: OtstB
                         <td style={{ padding: '10px 14px', maxWidth: 220 }}>{p.nota || '—'}</td>
                         <td style={{ padding: '8px 14px', whiteSpace: 'nowrap' }}>
                           <div style={{ display: 'flex', gap: 6 }}>
-                            {item && (
+                            {item && puedeGestionarDespacho && (
                               <button onClick={() => setCompletando({ pendiente: p, item })} style={{ ...PRI, padding: '6px 12px', fontSize: 12 }}>
                                 ✓ Completar
                               </button>
                             )}
-                            {item && (
+                            {item && puedeGestionarDespacho && (
                               item.estado === 'novedad' ? (
                                 <IconBtn title="Resolver novedad" onClick={() => setResolviendoNovedad(item)}>
                                   <CheckCircle2 size={14} color="#7c3aed" />
