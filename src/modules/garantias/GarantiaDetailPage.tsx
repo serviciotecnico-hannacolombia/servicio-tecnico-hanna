@@ -18,6 +18,7 @@ import {
 import { StepperGAR } from './StepperGAR'
 import { HistorialSidebarGAR } from './HistorialSidebarGAR'
 import { ResponsablesConfigModal } from './ResponsablesConfigModal'
+import { RecordatoriosGarantia } from './RecordatoriosGarantia'
 import { VistaPncPendiente } from './vistas/VistaPncPendiente'
 import { VistaNV } from './vistas/VistaNV'
 import { VistaImportacion } from './vistas/VistaImportacion'
@@ -372,6 +373,7 @@ export function GarantiaDetailPage() {
                       ? <em>sin asignar</em>
                       : <strong style={{ color: 'var(--text)' }}>{garantia.responsables.map(r => nombreResponsable.get(r) || 'Usuario').join(', ')}</strong>}
                   </div>
+                  <RecordatoriosGarantia garantia={garantia} />
                 </Card>
 
                 {garantia.anulada && (

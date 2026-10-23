@@ -182,8 +182,19 @@ Las migraciones versionan la evolución de tablas, permisos, auditoría y catál
 | `self-signup` | Registro de usuarios según las validaciones de la función. |
 | `calibraciones-notificar` | Notificaciones por correo de cambios de estado de calibraciones. |
 | `logistica-notificar-pendiente` | Notificaciones por correo de pendientes logísticos. |
+| `garantias-recordatorios` | Envío programado de los recordatorios de Garantías (lo invoca pg_cron cada 5 minutos). |
 
 Según la función, se utilizan `SUPABASE_URL`, `SUPABASE_ANON_KEY` y `SUPABASE_SERVICE_ROLE_KEY`; las funciones de correo también requieren `RESEND_API_KEY` y `RESEND_FROM_EMAIL`. Estos secretos se configuran en Supabase y permanecen en el servidor.
+
+### Recordatorios de Garantías
+
+La migración `20261023_garantias_recordatorios.sql` crea la tabla, habilita `pg_net` y programa el job `garantias-recordatorios` en pg_cron (cada 5 minutos). Configuración adicional, una sola vez:
+
+1. Desplegar la función sin verificación de JWT (la llama la base de datos, no un usuario): `supabase functions deploy garantias-recordatorios --no-verify-jwt`.
+2. Secrets de la función: `CRON_SECRET` (valor aleatorio largo), `RESEND_API_KEY`, `RESEND_FROM_EMAIL` y `APP_URL` (URL pública de la app, para el botón "Ver garantía").
+3. En el SQL Editor, guardar en Vault la URL de la función y el mismo valor de `CRON_SECRET`:
+   `SELECT vault.create_secret('https://<proyecto>.supabase.co/functions/v1/garantias-recordatorios', 'garantias_recordatorios_url');`
+   `SELECT vault.create_secret('<CRON_SECRET>', 'garantias_recordatorios_secret');`
 
 Los scripts de `userscripts/` generan QR para Mantenimiento Programado y transfieren datos de Certificados de Calidad a la intranet Hanna. Se instalan por separado en un gestor de userscripts compatible; no forman parte del bundle de Vite.
 
