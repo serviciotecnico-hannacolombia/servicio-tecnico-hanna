@@ -93,7 +93,7 @@ function clientesCoinciden(a: string, b: string): boolean {
 // ("RMV 123 / FV 456") — se parte en tokens numéricos para comparar cada
 // número por separado, no como substring (evita falsos positivos tipo "123"
 // encontrado dentro de "45123").
-function tokensNumericos(raw: string | null | undefined): string[] {
+export function tokensNumericos(raw: string | null | undefined): string[] {
   return (raw || '').split(/\D+/).filter(Boolean)
 }
 
