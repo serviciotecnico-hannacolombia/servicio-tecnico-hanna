@@ -563,6 +563,20 @@ export interface GarantiaNota {
   created_at: string
 }
 
+export interface GarantiaRecordatorio {
+  id: string
+  garantia_id: string
+  fecha_hora: string
+  nota: string | null
+  creado_por: string | null
+  created_at: string
+  enviado_at: string | null
+  cancelado_at: string | null
+  cancelado_por: string | null
+  intentos: number
+  error: string | null
+}
+
 export interface GarantiaHistorial {
   id: string
   garantia_id: string
