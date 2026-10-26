@@ -23,6 +23,9 @@ const RANGOS: { col: RangoKey; label: string; min: number; max: number }[] = [
   { col: 'tarifa_mas_6m',   label: 'Más de $6M', min: 6_000_000, max: Infinity  },
 ]
 
+// Minúsculas y sin tildes (á→a, ñ→n) para comparar en las búsquedas.
+const norm = (v: string) => v.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+
 const fmtCOP = (n: number) =>
   '$' + n.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
 
@@ -44,7 +47,7 @@ function parseLine(line: string): string[] {
 }
 
 function parseCSV(text: string): Record<string, string>[] {
-  const lines = text.replace(/^﻿/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').filter(l => l.trim())
+  const lines = text.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').filter(l => l.trim())
   if (lines.length < 2) return []
   const headers = parseLine(lines[0]).map(h => h.trim().toLowerCase())
   return lines.slice(1).map(line => {
@@ -192,14 +195,15 @@ export function TarifasPage() {
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
-  // Sugerencias: prioriza las que empiezan con el query
+  // Sugerencias: sin importar tildes ni mayúsculas (MEDELLIN encuentra
+  // MEDELLÍN); prioriza las que empiezan con el query
+  const queryNorm = norm(ciudadQuery)
   const suggestions = ciudadQuery.trim().length >= 1
     ? tarifas
-        .filter(t => t.ciudad.toLowerCase().includes(ciudadQuery.toLowerCase()))
+        .filter(t => norm(t.ciudad).includes(queryNorm))
         .sort((a, b) => {
-          const q = ciudadQuery.toLowerCase()
-          const aS = a.ciudad.toLowerCase().startsWith(q) ? 0 : 1
-          const bS = b.ciudad.toLowerCase().startsWith(q) ? 0 : 1
+          const aS = norm(a.ciudad).startsWith(queryNorm) ? 0 : 1
+          const bS = norm(b.ciudad).startsWith(queryNorm) ? 0 : 1
           return aS - bS || a.ciudad.localeCompare(b.ciudad)
         })
         .slice(0, 12)
@@ -258,14 +262,18 @@ export function TarifasPage() {
     })
   }
 
-  const highlight = (text: string, q: string) => {
-    const idx = text.toLowerCase().indexOf(q.toLowerCase())
+  // En NFC quitar la tilde no cambia la longitud, así que el índice
+  // encontrado en el texto normalizado sirve sobre el original.
+  const highlight = (raw: string, q: string) => {
+    const text = raw.normalize('NFC')
+    const qNorm = norm(q)
+    const idx = norm(text).indexOf(qNorm)
     if (idx === -1) return <>{text}</>
     return (
       <>
         {text.slice(0, idx)}
-        <strong style={{ color: 'var(--accent)' }}>{text.slice(idx, idx + q.length)}</strong>
-        {text.slice(idx + q.length)}
+        <strong style={{ color: 'var(--accent)' }}>{text.slice(idx, idx + qNorm.length)}</strong>
+        {text.slice(idx + qNorm.length)}
       </>
     )
   }
