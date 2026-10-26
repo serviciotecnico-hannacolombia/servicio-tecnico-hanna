@@ -8,7 +8,7 @@ import { ubicarEnMapa, type MapaColombiaData } from './mapaNombres'
 import type { TarifaEnvio } from '../../types'
 
 const CSS = `
-@keyframes mapa-pulso { 0% { r: 3; opacity: .7 } 100% { r: 14; opacity: 0 } }
+@keyframes mapa-pulso { 0% { r: 5; opacity: .75 } 100% { r: 22; opacity: 0 } }
 .mapa-pulso { animation: mapa-pulso 1.6s ease-out infinite; transform-box: fill-box }
 .mapa-depto { transition: fill .35s ease, stroke .35s ease }
 `
@@ -69,8 +69,8 @@ export function MapaColombia({ ciudad }: { ciudad: TarifaEnvio | null }) {
           ))}
           {punto && (
             <g key={`${punto.c}-${punto.n}`}>
-              <circle cx={punto.x} cy={punto.y} r={3} fill="#f59e0b" className="mapa-pulso" />
-              <circle cx={punto.x} cy={punto.y} r={4} fill="#f59e0b" stroke="#fff" strokeWidth={1.5} />
+              <circle cx={punto.x} cy={punto.y} r={5} fill="#f59e0b" className="mapa-pulso" />
+              <circle cx={punto.x} cy={punto.y} r={6} fill="#f59e0b" stroke="#fff" strokeWidth={2} />
             </g>
           )}
         </svg>
