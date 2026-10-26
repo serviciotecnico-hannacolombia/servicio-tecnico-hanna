@@ -9,6 +9,7 @@ import { Modal } from '../../components/ui/Modal'
 import { supabase, fetchAllRows } from '../../lib/supabase'
 import { useUser } from '../../hooks/useUser'
 import type { TarifaEnvio } from '../../types'
+import { MapaColombia } from './MapaColombia'
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
@@ -296,7 +297,8 @@ export function TarifasPage() {
           <Spinner size={32} />
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 680 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 380px), 1fr))', gap: 24, alignItems: 'start', maxWidth: 1180 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20, minWidth: 0 }}>
 
           {/* ── Card búsqueda ── */}
           <div style={{
@@ -592,6 +594,10 @@ export function TarifasPage() {
             </div>
           )}
 
+        </div>
+
+          {/* ── Mapa ── */}
+          <MapaColombia ciudad={ciudadSel} />
         </div>
       )}
 
