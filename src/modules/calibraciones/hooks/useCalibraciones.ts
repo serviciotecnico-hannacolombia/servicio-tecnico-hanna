@@ -2,7 +2,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase, fetchAllRows } from '../../../lib/supabase'
 import { useUser } from '../../../hooks/useUser'
 import { businessDaysBetween } from '../../../lib/colombiaCalendar'
-import type { Asesor, CorreoProveedor, EstadoCalibracion, LogisticaPendiente, LogisticaPendienteOrden, Modalidad, OrdenCalibracion, OrdenCalibracionHistorial, OrdenCalibracionParametro, RvCalibrItem, UbicacionEquipo } from '../../../types'
+import type { CambioCodigosEquipo } from '../equipos'
+import type { Asesor, CorreoProveedor, EstadoCalibracion, LogisticaPendiente, LogisticaPendienteOrden, Modalidad, OrdenCalibracion, OrdenCalibracionEquipo, OrdenCalibracionHistorial, OrdenCalibracionParametro, RvCalibrItem, UbicacionEquipo } from '../../../types'
 
 export function useOrdenesCalibracion() {
   const { user } = useUser()
@@ -59,6 +60,68 @@ export function useTodosParametros() {
     queryFn: () => fetchAllRows<OrdenCalibracionParametro>('ordenes_calibracion_parametros'),
     enabled: !!user,
   })
+}
+
+// ── Equipos de la orden (referencia, serial, ID y códigos por equipo) ──────
+
+export function useOrdenEquipos(ordenId: string | null) {
+  return useQuery({
+    queryKey: ['ordenes_calibracion_equipos', ordenId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('ordenes_calibracion_equipos').select('*').eq('orden_id', ordenId as string)
+        .order('posicion').order('created_at')
+      if (error) throw error
+      return data as OrdenCalibracionEquipo[]
+    },
+    enabled: !!ordenId,
+  })
+}
+
+// Seriales/IDs de todas las órdenes, para buscar órdenes por serial en la lista.
+export function useTodosEquiposCalibracion() {
+  const { user } = useUser()
+  return useQuery({
+    queryKey: ['ordenes_calibracion_equipos_todos'],
+    queryFn: () => fetchAllRows<OrdenCalibracionEquipo>('ordenes_calibracion_equipos'),
+    enabled: !!user,
+  })
+}
+
+export interface EquipoNuevo { referencia: string, serial: string, id_equipo: string | null }
+
+export async function agregarEquiposOrden(ordenId: string, equipos: EquipoNuevo[], posicionInicial: number) {
+  if (!equipos.length) return { error: null }
+  return supabase.from('ordenes_calibracion_equipos').insert(equipos.map((e, i) => ({
+    orden_id: ordenId,
+    referencia: e.referencia.trim(),
+    serial: e.serial.trim(),
+    id_equipo: e.id_equipo?.trim() || null,
+    posicion: posicionInicial + i,
+  })))
+}
+
+// Corrige referencia/serial/ID de un equipo (solo Admin, ver EquiposOrden).
+export async function editarEquipoOrden(id: string, e: EquipoNuevo) {
+  return supabase.from('ordenes_calibracion_equipos').update({
+    referencia: e.referencia.trim(),
+    serial: e.serial.trim(),
+    id_equipo: e.id_equipo?.trim() || null,
+  }).eq('id', id)
+}
+
+export async function eliminarEquipoOrden(id: string) {
+  return supabase.from('ordenes_calibracion_equipos').delete().eq('id', id)
+}
+
+// Guarda los códigos de cada equipo (solo las filas que cambiaron).
+export async function guardarCodigosEquipos(cambios: CambioCodigosEquipo[]) {
+  for (const c of cambios) {
+    const { id, ...campos } = c
+    const { error } = await supabase.from('ordenes_calibracion_equipos').update(campos).eq('id', id)
+    if (error) return { error }
+  }
+  return { error: null }
 }
 
 export function useCatalogoRvCalibr() {
@@ -172,6 +235,11 @@ export function useInvalidateCalibraciones() {
   return {
     ordenes: () => qc.invalidateQueries({ queryKey: ['ordenes_calibracion', user?.id] }),
     parametros: (ordenId: string) => qc.invalidateQueries({ queryKey: ['ordenes_calibracion_parametros', ordenId] }),
+    equipos: (ordenId: string) => {
+      qc.invalidateQueries({ queryKey: ['ordenes_calibracion_equipos', ordenId] })
+      qc.invalidateQueries({ queryKey: ['ordenes_calibracion_equipos_todos'] })
+      qc.invalidateQueries({ queryKey: ['ordenes_calibracion_historial', ordenId] })
+    },
     catalogo: () => qc.invalidateQueries({ queryKey: ['rv_calibr_catalogo'] }),
     asesores: () => qc.invalidateQueries({ queryKey: ['calibraciones_asesores'] }),
     historial: (ordenId: string) => qc.invalidateQueries({ queryKey: ['ordenes_calibracion_historial', ordenId] }),
@@ -897,6 +965,11 @@ export const CAMPO_LABEL: Record<string, string> = {
   ubicacion_equipo: 'Ubicación del equipo',
   anulada: 'Anulada',
   motivo_anulacion: 'Motivo de anulación',
+  equipo_agregado: 'Equipo agregado',
+  equipo_eliminado: 'Equipo eliminado',
+  equipo_editado: 'Equipo editado',
+  equipo_codigos_referencia: 'Códigos de referencia del equipo',
+  equipo_codigos_certificado: 'Códigos de certificado del equipo',
 }
 
 const CAMPOS_FECHA = new Set([

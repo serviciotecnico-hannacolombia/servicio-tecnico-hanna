@@ -423,6 +423,20 @@ export interface OrdenCalibracionParametro {
   rv_calibr_codigo: string
 }
 
+// Equipo de una orden de calibración — trazabilidad por serial y códigos
+// de referencia / certificado por equipo.
+export interface OrdenCalibracionEquipo {
+  id: string
+  orden_id: string
+  referencia: string
+  serial: string
+  id_equipo: string | null
+  codigos_referencia: string[]
+  codigos_certificado: string[]
+  posicion: number
+  created_at: string
+}
+
 export interface OrdenCalibracionHistorial {
   id: string
   orden_id: string

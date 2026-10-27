@@ -8,7 +8,7 @@ import { Modal } from '../../components/ui/Modal'
 import { useUser } from '../../hooks/useUser'
 import { useProfiles } from '../../hooks/useProfiles'
 import {
-  useOrdenesCalibracion, useOrdenParametros, useCatalogoRvCalibr, useAsesores, useProveedores, useHistorialOrden,
+  useOrdenesCalibracion, useOrdenParametros, useOrdenEquipos, agregarEquiposOrden, editarEquipoOrden, eliminarEquipoOrden, guardarCodigosEquipos, useCatalogoRvCalibr, useAsesores, useProveedores, useHistorialOrden,
   useInvalidateCalibraciones, grupoEstado, ESTADO_LABEL, MODALIDAD_LABEL, CAMPO_LABEL,
   formatValorHistorial, estaVencido, proximoAVencer, descripcionSemaforo, logServiciosChange,
   flujoPorModalidad, PROVEEDOR_SEDE_HANNA, miercolesSiguiente,
@@ -28,6 +28,8 @@ import { VistaEnCalibracionSitio } from './vistas/VistaEnCalibracionSitio'
 import { VistaEnRetorno } from './vistas/VistaEnRetorno'
 import { VistaControlCalidad } from './vistas/VistaControlCalidad'
 import { VistaCargaAlSistema } from './vistas/VistaCargaAlSistema'
+import { EquiposOrden, type FilaEquipo } from './EquiposOrden'
+import type { CambioCodigosEquipo, EquipoLeido } from './equipos'
 import { VistaEnvioCertificados } from './vistas/VistaEnvioCertificados'
 import { VistaTerminado } from './vistas/VistaTerminado'
 import type { EstadoCalibracion, Modalidad, OrdenCalibracion } from '../../types'
@@ -91,6 +93,9 @@ export function OrdenCalibracionDetailPage() {
   const { data: asesores = [] } = useAsesores()
   const { data: proveedores = [] } = useProveedores()
   const { data: parametrosActuales } = useOrdenParametros(orden?.id || null)
+  const { data: equiposOrden = [] } = useOrdenEquipos(orden?.id || null)
+  // Orden nueva: los equipos se guardan junto con la orden al crearla.
+  const [equiposBorrador, setEquiposBorrador] = useState<FilaEquipo[]>([])
   const { data: historial = [], isLoading: cargandoHistorial } = useHistorialOrden(orden?.id || null)
   const { data: profiles = [] } = useProfiles()
   const invalidate = useInvalidateCalibraciones()
@@ -311,6 +316,12 @@ export function OrdenCalibracionDetailPage() {
       await logServiciosChange(ordenId, codigosAntes, codigosSel)
     }
 
+    if (!orden && ordenId && equiposBorrador.length) {
+      const { error } = await agregarEquiposOrden(ordenId, equiposBorrador, 0)
+      if (error) toast.error('Error al guardar los equipos: ' + error.message)
+      else invalidate.equipos(ordenId)
+    }
+
     if (ordenId && payload.estado && payload.estado !== orden?.estado) {
       notificarCambioEstado(ordenId, orden?.estado, payload.estado, payload, catalogo.filter(c => codigosSel.has(c.codigo)), displayName || user?.email || null)
     }
@@ -514,6 +525,58 @@ export function OrdenCalibracionDetailPage() {
   // reactivar, pero no guardar cambios de estado/fechas mientras lo esté.
   const puedeEditarFlujo = puedeEditar && !form.anulada
 
+  // Equipos: se pueden agregar/quitar hasta "Carga al sistema" (las órdenes
+  // que llegaron ahí antes de existir los equipos los registran ahí); una
+  // vez cargados los certificados quedan fijos.
+  const ESTADOS_EQUIPOS_FIJOS: EstadoCalibracion[] = ['envio_certificados', 'terminado']
+  const equiposEditables = puedeEditarFlujo && (esNueva || !ESTADOS_EQUIPOS_FIJOS.includes(estadoReal))
+  const filasEquipos: FilaEquipo[] = esNueva
+    ? equiposBorrador
+    : equiposOrden.map(e => ({ key: e.id, referencia: e.referencia, serial: e.serial, id_equipo: e.id_equipo }))
+
+  async function agregarEquipos(nuevos: EquipoLeido[]): Promise<boolean> {
+    if (esNueva) {
+      setEquiposBorrador(prev => [...prev, ...nuevos.map(e => ({ ...e, key: crypto.randomUUID() }))])
+      return true
+    }
+    if (!orden) return false
+    const { error } = await agregarEquiposOrden(orden.id, nuevos, equiposOrden.length)
+    if (error) { toast.error('Error al agregar equipos: ' + error.message); return false }
+    toast.success(nuevos.length === 1 ? 'Equipo agregado' : `${nuevos.length} equipos agregados`)
+    invalidate.equipos(orden.id)
+    return true
+  }
+
+  async function guardarCodigos(cambios: CambioCodigosEquipo[]): Promise<boolean> {
+    if (!orden) return false
+    const { error } = await guardarCodigosEquipos(cambios)
+    invalidate.equipos(orden.id)
+    if (error) { toast.error('Error al guardar los códigos: ' + error.message); return false }
+    return true
+  }
+
+  // Corregir o quitar equipos ya guardados: solo Admin, en cualquier estado.
+  async function editarEquipo(key: string, datos: EquipoLeido): Promise<boolean> {
+    if (esNueva) {
+      setEquiposBorrador(prev => prev.map(e => e.key === key ? { ...e, ...datos } : e))
+      return true
+    }
+    if (!orden) return false
+    const { error } = await editarEquipoOrden(key, datos)
+    if (error) { toast.error('Error al editar el equipo: ' + error.message); return false }
+    toast.success('Equipo actualizado')
+    invalidate.equipos(orden.id)
+    return true
+  }
+
+  async function quitarEquipo(key: string) {
+    if (esNueva) { setEquiposBorrador(prev => prev.filter(e => e.key !== key)); return }
+    if (!orden) return
+    const { error } = await eliminarEquipoOrden(key)
+    if (error) { toast.error('Error al quitar el equipo: ' + error.message); return }
+    invalidate.equipos(orden.id)
+  }
+
   return (
     <div style={{ maxWidth: 980, margin: '0 auto' }}>
       {/* Encabezado */}
@@ -656,6 +719,7 @@ export function OrdenCalibracionDetailPage() {
       )}
 
       <div style={{ display: 'grid', gridTemplateColumns: esNueva ? '1fr' : '1fr 340px', gap: 24, alignItems: 'flex-start' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
         {/* Formulario */}
         {/* Las vistas dedicadas solo aplican a órdenes que ya existen — una
             orden nueva siempre se llena en el formulario completo, sin
@@ -698,8 +762,8 @@ export function OrdenCalibracionDetailPage() {
           />
         ) : !esNueva && etapaMostrada?.key === 'carga_al_sistema' ? (
           <VistaCargaAlSistema
-            form={form} catalogo={catalogo} codigosSel={codigosSel} puedeEditar={puedeEditarFlujo} soloLectura={soloLectura}
-            saving={saving} onAvanzar={avanzarEtapa}
+            form={form} catalogo={catalogo} codigosSel={codigosSel} equipos={equiposOrden} puedeEditar={puedeEditarFlujo} soloLectura={soloLectura}
+            saving={saving} onGuardarCodigos={guardarCodigos} onAvanzar={avanzarEtapa}
           />
         ) : !esNueva && etapaMostrada?.key === 'envio_certificados' ? (
           <VistaEnvioCertificados
@@ -709,8 +773,8 @@ export function OrdenCalibracionDetailPage() {
         ) : !esNueva && etapaMostrada?.key === 'en_calibracion' ? (
           <VistaEnCalibracionSitio
             form={form} catalogo={catalogo} codigosSel={codigosSel} metrologosSugeridos={metrologosSugeridos}
-            puedeEditar={puedeEditarFlujo} soloLectura={soloLectura}
-            saving={saving} onAvanzar={avanzarEtapa}
+            equipos={equiposOrden} puedeEditar={puedeEditarFlujo} soloLectura={soloLectura}
+            saving={saving} onGuardarCodigos={guardarCodigos} onAvanzar={avanzarEtapa}
           />
         ) : (
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: 24 }}>
@@ -829,6 +893,13 @@ export function OrdenCalibracionDetailPage() {
               </div>
             </Seccion>
 
+            {esNueva && (
+              <Seccion titulo="Equipos (opcional — se pueden completar después)">
+                <EquiposOrden equipos={filasEquipos} cantidad={form.cantidad_equipos} editable={equiposEditables}
+                  onAgregar={agregarEquipos} onEliminar={esNueva || isAdmin ? quitarEquipo : undefined} onEditar={isAdmin ? editarEquipo : undefined} />
+              </Seccion>
+            )}
+
             {(esNueva || grupoEstado(form.estado as EstadoCalibracion) === 'pendiente') && (
               <Seccion titulo={esNueva ? 'Siguiente paso *' : 'Siguiente paso'}>
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -901,6 +972,17 @@ export function OrdenCalibracionDetailPage() {
         </div>
         )}
 
+        {/* Equipos de la orden (existente) — en la creación van dentro del formulario */}
+        {!esNueva && (
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: 24 }}>
+            <Seccion titulo="Equipos">
+              <EquiposOrden equipos={filasEquipos} cantidad={form.cantidad_equipos} editable={equiposEditables}
+                onAgregar={agregarEquipos} onEliminar={esNueva || isAdmin ? quitarEquipo : undefined} onEditar={isAdmin ? editarEquipo : undefined} />
+            </Seccion>
+          </div>
+        )}
+        </div>
+
         {/* Historial */}
         {!esNueva && (
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: 20, position: 'sticky', top: 20 }}>
@@ -929,8 +1011,10 @@ export function OrdenCalibracionDetailPage() {
                           </div>
                           <div style={{ color: 'var(--muted)', marginTop: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
                             {grupo.entradas.map(h => {
-                              const contenido = h.campo === 'creacion' || h.campo === 'servicios' || h.campo === 'novedad_avance' || h.campo === 'novedad_resuelta' ? (
+                              const contenido = h.campo === 'creacion' || h.campo === 'servicios' || h.campo === 'novedad_avance' || h.campo === 'novedad_resuelta' || h.campo === 'equipo_agregado' ? (
                                 <span>{CAMPO_LABEL[h.campo]}{h.valor_nuevo ? `: ${h.valor_nuevo}` : ''}</span>
+                              ) : h.campo === 'equipo_eliminado' ? (
+                                <span>{CAMPO_LABEL[h.campo]}: <em style={{ fontStyle: 'normal', textDecoration: 'line-through', opacity: 0.7 }}>{h.valor_anterior}</em></span>
                               ) : (
                                 <span>
                                   {CAMPO_LABEL[h.campo] || h.campo}: <em style={{ fontStyle: 'normal', textDecoration: 'line-through', opacity: 0.7 }}>{formatValorHistorial(h.campo, h.valor_anterior)}</em> → <strong style={{ color: 'var(--text)' }}>{formatValorHistorial(h.campo, h.valor_nuevo)}</strong>

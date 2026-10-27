@@ -9,7 +9,7 @@ import { Modal } from '../../components/ui/Modal'
 import { Table, type Column } from '../../components/ui/Table'
 import { useUser } from '../../hooks/useUser'
 import {
-  useOrdenesCalibracion, useCatalogoRvCalibr, useAsesores, useProfileEmails, useProveedores, useInvalidateCalibraciones, useTodosParametros,
+  useOrdenesCalibracion, useCatalogoRvCalibr, useAsesores, useProfileEmails, useProveedores, useInvalidateCalibraciones, useTodosParametros, useTodosEquiposCalibracion,
   grupoEstado, ESTADO_LABEL, MODALIDAD_LABEL, estaVencido, proximoAVencer, visitaSinProgramar, fechaObjetivo, descripcionSemaforo,
 } from './hooks/useCalibraciones'
 import {
@@ -69,6 +69,28 @@ function cargarTab(): Tab {
   }
 }
 
+// Vista de la lista (Activas, Vencidas…) — se recuerda para que al entrar
+// a una orden y volver no se pierda la que estaba seleccionada.
+const VISTAS_VALIDAS: VistaFiltro[] = ['activas', 'vencidas', 'completadas', 'anuladas', 'todas']
+const VISTA_KEY = 'calibraciones_vista'
+
+function cargarVista(): VistaFiltro {
+  try {
+    const raw = localStorage.getItem(VISTA_KEY)
+    return raw && (VISTAS_VALIDAS as string[]).includes(raw) ? raw as VistaFiltro : 'activas'
+  } catch {
+    return 'activas'
+  }
+}
+
+// Minúsculas y sin tildes, para el buscador.
+const norm = (v: string | null | undefined) => (v || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+
+// Un filtro aplicado se resalta con el borde en azul corporativo.
+const conFiltro = (activo: boolean): React.CSSProperties => activo
+  ? { borderColor: 'var(--accent)', boxShadow: '0 0 0 1px var(--accent)' }
+  : {}
+
 export function CalibracionesPage() {
   const navigate = useNavigate()
   const { hasCapability, loading: userLoading } = useUser()
@@ -79,12 +101,16 @@ export function CalibracionesPage() {
   const { data: profileEmails } = useProfileEmails()
   const { data: proveedores = [] } = useProveedores()
   const { data: parametros = [] } = useTodosParametros()
+  const { data: equiposTodos = [] } = useTodosEquiposCalibracion()
+  // Referencias, seriales e IDs de cada orden en un solo texto, para el buscador.
+  const equiposPorOrden = new Map<string, string>()
+  for (const e of equiposTodos) equiposPorOrden.set(e.orden_id, `${equiposPorOrden.get(e.orden_id) || ''} ${e.referencia} ${e.serial} ${e.id_equipo || ''}`)
+  const nombreAsesor = new Map(asesores.map(a => [a.correo.toLowerCase(), a.nombre]))
   const invalidate = useInvalidateCalibraciones()
 
   const [tab, setTab] = useState<Tab>(cargarTab)
-  const [vista, setVista] = useState<VistaFiltro>('activas')
+  const [vista, setVista] = useState<VistaFiltro>(cargarVista)
   const [search, setSearch] = useState('')
-  const [searchOtstRmv, setSearchOtstRmv] = useState('')
   const [page, setPage] = useState(0)
   const [filtros, setFiltros] = useState<FiltrosOrdenes>(cargarFiltros)
   const [verFlujo, setVerFlujo] = useState(false)
@@ -102,6 +128,7 @@ export function CalibracionesPage() {
   }, [tab, puedeEditar, userLoading])
 
   useEffect(() => { localStorage.setItem(FILTROS_KEY, JSON.stringify(filtros)) }, [filtros])
+  useEffect(() => { try { localStorage.setItem(VISTA_KEY, vista) } catch { /* sin almacenamiento */ } }, [vista])
 
   const hayFiltrosActivos = !!(filtros.estado || filtros.modalidad || filtros.asesorCorreo)
   const actualizarFiltro = (parcial: Partial<FiltrosOrdenes>) => { setFiltros(f => ({ ...f, ...parcial })); setPage(0) }
@@ -119,16 +146,15 @@ export function CalibracionesPage() {
     .filter(o => !filtros.modalidad || o.modalidad === filtros.modalidad)
     .filter(o => !filtros.asesorCorreo || (o.correo_asesor || '').toLowerCase() === filtros.asesorCorreo.toLowerCase())
     .filter(o => {
-      const q = search.toLowerCase().trim()
+      // Un solo buscador para todo: cliente, OC, asesor, OTST, RMV/FV, SACI,
+      // proveedor, códigos y los equipos (referencia, serial, ID).
+      const q = norm(search).trim()
       if (!q) return true
-      return (o.cliente || '').toLowerCase().includes(q)
-        || (o.numero_oc || '').toLowerCase().includes(q)
-        || (o.correo_asesor || '').toLowerCase().includes(q)
-    })
-    .filter(o => {
-      const q = searchOtstRmv.toLowerCase().trim()
-      if (!q) return true
-      return (o.otst || '').toLowerCase().includes(q) || (o.rmv_fv || '').toLowerCase().includes(q)
+      return [
+        o.cliente, o.numero_oc, o.correo_asesor, nombreAsesor.get((o.correo_asesor || '').toLowerCase()),
+        o.otst, o.rmv_fv, o.saci, o.proveedor, o.codigo_recepcion, o.codigos_referencia, o.codigos_certificados,
+        equiposPorOrden.get(o.id),
+      ].some(v => norm(v).includes(q))
     })
     .sort((a, b) => {
       // El No. de OC es el identificador de la orden (ST{número}-{año}) —
@@ -302,13 +328,11 @@ export function CalibracionesPage() {
                   }}>{label}</button>
                 ))}
               </div>
-              <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
-                <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)', pointerEvents: 'none' }} />
-                <input value={search} onChange={e => { setSearch(e.target.value); setPage(0) }} placeholder="Buscar por cliente, OC o asesor..." style={{ ...INP, paddingLeft: 34 }} />
-              </div>
-              <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
-                <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)', pointerEvents: 'none' }} />
-                <input value={searchOtstRmv} onChange={e => { setSearchOtstRmv(e.target.value); setPage(0) }} placeholder="Buscar por OTST o RMV..." style={{ ...INP, paddingLeft: 34 }} />
+              <div style={{ position: 'relative', flex: 1, minWidth: 260 }}>
+                <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: search.trim() ? 'var(--accent)' : 'var(--muted)', pointerEvents: 'none' }} />
+                <input value={search} onChange={e => { setSearch(e.target.value); setPage(0) }}
+                  placeholder="Buscar por cliente, OC, asesor, OTST, RMV, SACI, serial o ID..."
+                  style={{ ...INP, paddingLeft: 34, ...conFiltro(!!search.trim()) }} />
               </div>
             </div>
 
@@ -316,7 +340,7 @@ export function CalibracionesPage() {
               <select
                 value={filtros.estado}
                 onChange={e => actualizarFiltro({ estado: e.target.value as EstadoCalibracion | '' })}
-                style={{ ...INP, width: 'auto', minWidth: 170 }}
+                style={{ ...INP, width: 'auto', minWidth: 170, ...conFiltro(!!filtros.estado) }}
               >
                 <option value="">Estado: todos</option>
                 {(Object.keys(ESTADO_LABEL) as EstadoCalibracion[]).map(e => (
@@ -326,7 +350,7 @@ export function CalibracionesPage() {
               <select
                 value={filtros.modalidad}
                 onChange={e => actualizarFiltro({ modalidad: e.target.value as Modalidad | '' })}
-                style={{ ...INP, width: 'auto', minWidth: 170 }}
+                style={{ ...INP, width: 'auto', minWidth: 170, ...conFiltro(!!filtros.modalidad) }}
               >
                 <option value="">Modalidad: todas</option>
                 {(['laboratorio_externo', 'in_situ', 'sede_hanna_dorado'] as Modalidad[]).map(m => (
@@ -336,7 +360,7 @@ export function CalibracionesPage() {
               <select
                 value={filtros.asesorCorreo}
                 onChange={e => actualizarFiltro({ asesorCorreo: e.target.value })}
-                style={{ ...INP, width: 'auto', minWidth: 190 }}
+                style={{ ...INP, width: 'auto', minWidth: 190, ...conFiltro(!!filtros.asesorCorreo) }}
               >
                 <option value="">Asesor(a): todos</option>
                 {asesores.map(a => (
