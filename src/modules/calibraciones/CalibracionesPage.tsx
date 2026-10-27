@@ -9,7 +9,7 @@ import { Modal } from '../../components/ui/Modal'
 import { Table, type Column } from '../../components/ui/Table'
 import { useUser } from '../../hooks/useUser'
 import {
-  useOrdenesCalibracion, useCatalogoRvCalibr, useAsesores, useProfileEmails, useProveedores, useInvalidateCalibraciones, useTodosParametros,
+  useOrdenesCalibracion, useCatalogoRvCalibr, useAsesores, useProfileEmails, useProveedores, useInvalidateCalibraciones, useTodosParametros, useTodosEquiposCalibracion,
   grupoEstado, ESTADO_LABEL, MODALIDAD_LABEL, estaVencido, proximoAVencer, visitaSinProgramar, fechaObjetivo, descripcionSemaforo,
 } from './hooks/useCalibraciones'
 import {
@@ -79,6 +79,10 @@ export function CalibracionesPage() {
   const { data: profileEmails } = useProfileEmails()
   const { data: proveedores = [] } = useProveedores()
   const { data: parametros = [] } = useTodosParametros()
+  const { data: equiposTodos = [] } = useTodosEquiposCalibracion()
+  // Seriales e IDs de cada orden en un solo texto, para el buscador.
+  const equiposPorOrden = new Map<string, string>()
+  for (const e of equiposTodos) equiposPorOrden.set(e.orden_id, `${equiposPorOrden.get(e.orden_id) || ''} ${e.serial} ${e.id_equipo || ''}`)
   const invalidate = useInvalidateCalibraciones()
 
   const [tab, setTab] = useState<Tab>(cargarTab)
@@ -129,6 +133,7 @@ export function CalibracionesPage() {
       const q = searchOtstRmv.toLowerCase().trim()
       if (!q) return true
       return (o.otst || '').toLowerCase().includes(q) || (o.rmv_fv || '').toLowerCase().includes(q)
+        || (equiposPorOrden.get(o.id) || '').toLowerCase().includes(q)
     })
     .sort((a, b) => {
       // El No. de OC es el identificador de la orden (ST{número}-{año}) —
@@ -308,7 +313,7 @@ export function CalibracionesPage() {
               </div>
               <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
                 <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)', pointerEvents: 'none' }} />
-                <input value={searchOtstRmv} onChange={e => { setSearchOtstRmv(e.target.value); setPage(0) }} placeholder="Buscar por OTST o RMV..." style={{ ...INP, paddingLeft: 34 }} />
+                <input value={searchOtstRmv} onChange={e => { setSearchOtstRmv(e.target.value); setPage(0) }} placeholder="Buscar por OTST, RMV, serial o ID..." style={{ ...INP, paddingLeft: 34 }} />
               </div>
             </div>
 
