@@ -34,13 +34,14 @@ export function EquiposOrden({ equipos, cantidad, editable, onAgregar, onElimina
   cantidad: number | null | undefined
   editable: boolean
   onAgregar: (nuevos: EquipoLeido[]) => Promise<boolean>
-  onEliminar: (key: string) => Promise<void>
-  // Solo se pasa a Admin: corregir referencia/serial/ID de un equipo ya registrado.
+  // Solo se pasan a Admin (o en el borrador de una orden nueva, que aún no se guarda).
+  onEliminar?: (key: string) => Promise<void>
+  // Corrige referencia/serial/ID de un equipo ya registrado.
   onEditar?: (key: string, datos: EquipoLeido) => Promise<boolean>
 }) {
   const [nuevo, setNuevo] = useState({ referencia: '', serial: '', id_equipo: '' })
   const [editando, setEditando] = useState<{ key: string, referencia: string, serial: string, id_equipo: string } | null>(null)
-  const conAcciones = editable || !!onEditar
+  const conAcciones = editable || !!onEliminar || !!onEditar
   const [pegando, setPegando] = useState(false)
   const [texto, setTexto] = useState('')
   const [guardando, setGuardando] = useState(false)
@@ -98,7 +99,7 @@ export function EquiposOrden({ equipos, cantidad, editable, onAgregar, onElimina
                 <th style={TH}>Referencia</th>
                 <th style={TH}>Serial</th>
                 <th style={TH}>ID</th>
-                {conAcciones && <th style={{ ...TH, width: onEditar && editable ? 64 : 44 }} />}
+                {conAcciones && <th style={{ ...TH, width: onEditar && onEliminar ? 64 : 44 }} />}
               </tr>
             </thead>
             <tbody>
@@ -137,7 +138,7 @@ export function EquiposOrden({ equipos, cantidad, editable, onAgregar, onElimina
                           <Pencil size={14} />
                         </button>
                       )}
-                      {editable && (
+                      {onEliminar && (
                         <button type="button" title="Quitar equipo"
                           onClick={() => { if (confirm(`¿Quitar el equipo ${e.serial}?`)) onEliminar(e.key) }}
                           style={BTN_ICONO}>

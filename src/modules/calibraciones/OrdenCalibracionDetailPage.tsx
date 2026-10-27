@@ -555,7 +555,7 @@ export function OrdenCalibracionDetailPage() {
     return true
   }
 
-  // Corrección de referencia/serial/ID: solo Admin, en cualquier estado.
+  // Corregir o quitar equipos ya guardados: solo Admin, en cualquier estado.
   async function editarEquipo(key: string, datos: EquipoLeido): Promise<boolean> {
     if (esNueva) {
       setEquiposBorrador(prev => prev.map(e => e.key === key ? { ...e, ...datos } : e))
@@ -896,7 +896,7 @@ export function OrdenCalibracionDetailPage() {
             {esNueva && (
               <Seccion titulo="Equipos (opcional — se pueden completar después)">
                 <EquiposOrden equipos={filasEquipos} cantidad={form.cantidad_equipos} editable={equiposEditables}
-                  onAgregar={agregarEquipos} onEliminar={quitarEquipo} onEditar={isAdmin ? editarEquipo : undefined} />
+                  onAgregar={agregarEquipos} onEliminar={esNueva || isAdmin ? quitarEquipo : undefined} onEditar={isAdmin ? editarEquipo : undefined} />
               </Seccion>
             )}
 
@@ -977,7 +977,7 @@ export function OrdenCalibracionDetailPage() {
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: 24 }}>
             <Seccion titulo="Equipos">
               <EquiposOrden equipos={filasEquipos} cantidad={form.cantidad_equipos} editable={equiposEditables}
-                onAgregar={agregarEquipos} onEliminar={quitarEquipo} onEditar={isAdmin ? editarEquipo : undefined} />
+                onAgregar={agregarEquipos} onEliminar={esNueva || isAdmin ? quitarEquipo : undefined} onEditar={isAdmin ? editarEquipo : undefined} />
             </Seccion>
           </div>
         )}
