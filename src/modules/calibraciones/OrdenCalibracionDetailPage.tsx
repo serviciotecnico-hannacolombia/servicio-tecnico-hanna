@@ -8,7 +8,7 @@ import { Modal } from '../../components/ui/Modal'
 import { useUser } from '../../hooks/useUser'
 import { useProfiles } from '../../hooks/useProfiles'
 import {
-  useOrdenesCalibracion, useOrdenParametros, useOrdenEquipos, agregarEquiposOrden, eliminarEquipoOrden, guardarCodigosEquipos, useCatalogoRvCalibr, useAsesores, useProveedores, useHistorialOrden,
+  useOrdenesCalibracion, useOrdenParametros, useOrdenEquipos, agregarEquiposOrden, editarEquipoOrden, eliminarEquipoOrden, guardarCodigosEquipos, useCatalogoRvCalibr, useAsesores, useProveedores, useHistorialOrden,
   useInvalidateCalibraciones, grupoEstado, ESTADO_LABEL, MODALIDAD_LABEL, CAMPO_LABEL,
   formatValorHistorial, estaVencido, proximoAVencer, descripcionSemaforo, logServiciosChange,
   flujoPorModalidad, PROVEEDOR_SEDE_HANNA, miercolesSiguiente,
@@ -555,6 +555,20 @@ export function OrdenCalibracionDetailPage() {
     return true
   }
 
+  // Corrección de referencia/serial/ID: solo Admin, en cualquier estado.
+  async function editarEquipo(key: string, datos: EquipoLeido): Promise<boolean> {
+    if (esNueva) {
+      setEquiposBorrador(prev => prev.map(e => e.key === key ? { ...e, ...datos } : e))
+      return true
+    }
+    if (!orden) return false
+    const { error } = await editarEquipoOrden(key, datos)
+    if (error) { toast.error('Error al editar el equipo: ' + error.message); return false }
+    toast.success('Equipo actualizado')
+    invalidate.equipos(orden.id)
+    return true
+  }
+
   async function quitarEquipo(key: string) {
     if (esNueva) { setEquiposBorrador(prev => prev.filter(e => e.key !== key)); return }
     if (!orden) return
@@ -882,7 +896,7 @@ export function OrdenCalibracionDetailPage() {
             {esNueva && (
               <Seccion titulo="Equipos (opcional — se pueden completar después)">
                 <EquiposOrden equipos={filasEquipos} cantidad={form.cantidad_equipos} editable={equiposEditables}
-                  onAgregar={agregarEquipos} onEliminar={quitarEquipo} />
+                  onAgregar={agregarEquipos} onEliminar={quitarEquipo} onEditar={isAdmin ? editarEquipo : undefined} />
               </Seccion>
             )}
 
@@ -963,7 +977,7 @@ export function OrdenCalibracionDetailPage() {
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: 24 }}>
             <Seccion titulo="Equipos">
               <EquiposOrden equipos={filasEquipos} cantidad={form.cantidad_equipos} editable={equiposEditables}
-                onAgregar={agregarEquipos} onEliminar={quitarEquipo} />
+                onAgregar={agregarEquipos} onEliminar={quitarEquipo} onEditar={isAdmin ? editarEquipo : undefined} />
             </Seccion>
           </div>
         )}

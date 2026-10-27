@@ -5,7 +5,7 @@
 // Serie, ID), la marca se ignora — ver parsearEquiposExcel.
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { ClipboardPaste, Plus, Trash2 } from 'lucide-react'
+import { Check, ClipboardPaste, Pencil, Plus, Trash2, X } from 'lucide-react'
 import { Modal } from '../../components/ui/Modal'
 import { INP, PRI, GHOST } from './ui'
 import { parsearEquiposExcel, normalizarSerial, TH_EQUIPOS as TH, TD_EQUIPOS as TD, type EquipoLeido } from './equipos'
@@ -13,6 +13,7 @@ import { parsearEquiposExcel, normalizarSerial, TH_EQUIPOS as TH, TD_EQUIPOS as 
 export interface FilaEquipo { key: string, referencia: string, serial: string, id_equipo: string | null }
 
 const INP_SM: React.CSSProperties = { ...INP, padding: '7px 10px', fontSize: 13 }
+const BTN_ICONO: React.CSSProperties = { background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', padding: 2, marginRight: 4 }
 
 export function ContadorEquipos({ registrados, cantidad }: { registrados: number, cantidad: number | null | undefined }) {
   const cuadra = !!cantidad && registrados === cantidad
@@ -28,14 +29,18 @@ export function ContadorEquipos({ registrados, cantidad }: { registrados: number
   )
 }
 
-export function EquiposOrden({ equipos, cantidad, editable, onAgregar, onEliminar }: {
+export function EquiposOrden({ equipos, cantidad, editable, onAgregar, onEliminar, onEditar }: {
   equipos: FilaEquipo[]
   cantidad: number | null | undefined
   editable: boolean
   onAgregar: (nuevos: EquipoLeido[]) => Promise<boolean>
   onEliminar: (key: string) => Promise<void>
+  // Solo se pasa a Admin: corregir referencia/serial/ID de un equipo ya registrado.
+  onEditar?: (key: string, datos: EquipoLeido) => Promise<boolean>
 }) {
   const [nuevo, setNuevo] = useState({ referencia: '', serial: '', id_equipo: '' })
+  const [editando, setEditando] = useState<{ key: string, referencia: string, serial: string, id_equipo: string } | null>(null)
+  const conAcciones = editable || !!onEditar
   const [pegando, setPegando] = useState(false)
   const [texto, setTexto] = useState('')
   const [guardando, setGuardando] = useState(false)
@@ -50,6 +55,19 @@ export function EquiposOrden({ equipos, cantidad, editable, onAgregar, onElimina
     const ok = await onAgregar([{ referencia, serial, id_equipo: nuevo.id_equipo.trim() || null }])
     setGuardando(false)
     if (ok) setNuevo({ referencia: '', serial: '', id_equipo: '' })
+  }
+
+  async function guardarEdicion() {
+    if (!editando || !onEditar) return
+    const referencia = editando.referencia.trim(), serial = editando.serial.trim()
+    if (!referencia || !serial) { toast.error('Ingresa la referencia y el serial'); return }
+    if (equipos.some(e => e.key !== editando.key && normalizarSerial(e.serial) === normalizarSerial(serial))) {
+      toast.error(`El serial ${serial} ya está en la orden`); return
+    }
+    setGuardando(true)
+    const ok = await onEditar(editando.key, { referencia, serial, id_equipo: editando.id_equipo.trim() || null })
+    setGuardando(false)
+    if (ok) setEditando(null)
   }
 
   async function confirmarPegado() {
@@ -80,23 +98,52 @@ export function EquiposOrden({ equipos, cantidad, editable, onAgregar, onElimina
                 <th style={TH}>Referencia</th>
                 <th style={TH}>Serial</th>
                 <th style={TH}>ID</th>
-                {editable && <th style={{ ...TH, width: 44 }} />}
+                {conAcciones && <th style={{ ...TH, width: onEditar && editable ? 64 : 44 }} />}
               </tr>
             </thead>
             <tbody>
-              {equipos.map((e, i) => (
+              {equipos.map((e, i) => editando?.key === e.key ? (
+                <tr key={e.key}>
+                  <td style={{ ...TD, color: 'var(--muted)', fontFamily: 'var(--mono)', fontSize: 11.5 }}>{i + 1}</td>
+                  <td style={TD}><input value={editando.referencia} autoFocus onChange={ev => setEditando(d => d && { ...d, referencia: ev.target.value })} style={INP_SM} /></td>
+                  <td style={TD}><input value={editando.serial} onChange={ev => setEditando(d => d && { ...d, serial: ev.target.value })} style={INP_SM} /></td>
+                  <td style={TD}>
+                    <input value={editando.id_equipo} onChange={ev => setEditando(d => d && { ...d, id_equipo: ev.target.value })}
+                      onKeyDown={ev => {
+                        if (ev.key === 'Enter') { ev.preventDefault(); guardarEdicion() }
+                        if (ev.key === 'Escape') setEditando(null)
+                      }}
+                      style={INP_SM} />
+                  </td>
+                  <td style={{ ...TD, whiteSpace: 'nowrap' }}>
+                    <button type="button" title="Guardar cambios" onClick={guardarEdicion} disabled={guardando}
+                      style={{ ...BTN_ICONO, color: 'var(--accent)' }}><Check size={15} /></button>
+                    <button type="button" title="Cancelar" onClick={() => setEditando(null)}
+                      style={BTN_ICONO}><X size={15} /></button>
+                  </td>
+                </tr>
+              ) : (
                 <tr key={e.key}>
                   <td style={{ ...TD, color: 'var(--muted)', fontFamily: 'var(--mono)', fontSize: 11.5 }}>{i + 1}</td>
                   <td style={TD}>{e.referencia}</td>
                   <td style={{ ...TD, fontFamily: 'var(--mono)' }}>{e.serial}</td>
                   <td style={{ ...TD, fontFamily: 'var(--mono)' }}>{e.id_equipo || '—'}</td>
-                  {editable && (
-                    <td style={TD}>
-                      <button type="button" title="Quitar equipo"
-                        onClick={() => { if (confirm(`¿Quitar el equipo ${e.serial}?`)) onEliminar(e.key) }}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', padding: 2 }}>
-                        <Trash2 size={14} />
-                      </button>
+                  {conAcciones && (
+                    <td style={{ ...TD, whiteSpace: 'nowrap' }}>
+                      {onEditar && (
+                        <button type="button" title="Editar equipo (Admin)"
+                          onClick={() => setEditando({ key: e.key, referencia: e.referencia, serial: e.serial, id_equipo: e.id_equipo ?? '' })}
+                          style={BTN_ICONO}>
+                          <Pencil size={14} />
+                        </button>
+                      )}
+                      {editable && (
+                        <button type="button" title="Quitar equipo"
+                          onClick={() => { if (confirm(`¿Quitar el equipo ${e.serial}?`)) onEliminar(e.key) }}
+                          style={BTN_ICONO}>
+                          <Trash2 size={14} />
+                        </button>
+                      )}
                     </td>
                   )}
                 </tr>

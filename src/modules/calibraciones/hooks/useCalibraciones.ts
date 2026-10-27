@@ -101,6 +101,15 @@ export async function agregarEquiposOrden(ordenId: string, equipos: EquipoNuevo[
   })))
 }
 
+// Corrige referencia/serial/ID de un equipo (solo Admin, ver EquiposOrden).
+export async function editarEquipoOrden(id: string, e: EquipoNuevo) {
+  return supabase.from('ordenes_calibracion_equipos').update({
+    referencia: e.referencia.trim(),
+    serial: e.serial.trim(),
+    id_equipo: e.id_equipo?.trim() || null,
+  }).eq('id', id)
+}
+
 export async function eliminarEquipoOrden(id: string) {
   return supabase.from('ordenes_calibracion_equipos').delete().eq('id', id)
 }
