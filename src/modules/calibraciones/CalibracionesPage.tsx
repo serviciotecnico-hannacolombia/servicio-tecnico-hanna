@@ -258,7 +258,7 @@ export function CalibracionesPage() {
     <div>
       <Header
         title="Calibraciones"
-        subtitle="Gestión de calibración acreditada ONAC — reemplaza el seguimiento en Notion"
+        subtitle="Gestión de calibración acreditada ONAC"
         actions={
           <>
             <button onClick={() => setVerFlujo(true)} style={GHOST}><Workflow size={14} style={{ verticalAlign: -2 }} /> Ver flujo</button>
