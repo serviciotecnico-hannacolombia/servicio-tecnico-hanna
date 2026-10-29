@@ -12,13 +12,15 @@ import {
   useInvalidateCalibraciones, grupoEstado, ESTADO_LABEL, MODALIDAD_LABEL, CAMPO_LABEL,
   formatValorHistorial, estaVencido, proximoAVencer, descripcionSemaforo, logServiciosChange,
   flujoPorModalidad, PROVEEDOR_SEDE_HANNA, miercolesSiguiente,
-  marcarNovedad, agregarAvanceNovedad, resolverNovedad, anularOrden, reactivarOrden,
+  useNovedadesOrden, abrirNovedad, agregarAvanceNovedad, resolverNovedad, anularOrden, reactivarOrden,
 } from './hooks/useCalibraciones'
 import type { EtapaFlujo } from './hooks/useCalibraciones'
 import { FG, Seccion, Grid2, INP, PRI, GHOST, B_INFO, B_VENCIDA, B_PROXIMA, B_NOVEDAD, GRUPO_COLOR, fmtFecha, fmtCOP, fechaLocalISO } from './ui'
 import { IdentificacionFields, ReferenciasFields, linkOtst, parseOtstCodes } from './vistas/CamposCompartidos'
-import { generarMailtoOC, generarMailtoNovedad } from './correo'
-import { notificarCambioEstado } from './notificaciones'
+import { generarMailtoOC } from './correo'
+import { notificarCambioEstado, notificarNovedad, type EventoNovedad } from './notificaciones'
+import { ModalAbrirNovedad, NovedadesActivas, MarcaNovedadPaso } from './NovedadesOrden'
+import { NovedadesProvider } from './vistas/NovedadesSlot'
 import { VistaMantenimiento } from './vistas/VistaMantenimiento'
 import { VistaVisitaProgramada } from './vistas/VistaVisitaProgramada'
 import { VistaParaEnviar } from './vistas/VistaParaEnviar'
@@ -32,7 +34,13 @@ import { EquiposOrden, type FilaEquipo } from './EquiposOrden'
 import type { CambioCodigosEquipo, EquipoLeido } from './equipos'
 import { VistaEnvioCertificados } from './vistas/VistaEnvioCertificados'
 import { VistaTerminado } from './vistas/VistaTerminado'
-import type { EstadoCalibracion, Modalidad, OrdenCalibracion } from '../../types'
+import type { EstadoCalibracion, Modalidad, OrdenCalibracion, OrdenCalibracionNovedad } from '../../types'
+
+// Etapas con vista dedicada (tienen Resumen + NovedadesSlot).
+const ETAPAS_CON_VISTA: EstadoCalibracion[] = [
+  'en_mantenimiento_reparacion', 'visita_programada', 'para_enviar', 'enviado', 'en_calibracion',
+  'en_retorno', 'control_calidad', 'carga_al_sistema', 'envio_certificados',
+]
 
 function horaLocal(iso: string): string {
   const d = new Date(iso)
@@ -97,6 +105,7 @@ export function OrdenCalibracionDetailPage() {
   // Orden nueva: los equipos se guardan junto con la orden al crearla.
   const [equiposBorrador, setEquiposBorrador] = useState<FilaEquipo[]>([])
   const { data: historial = [], isLoading: cargandoHistorial } = useHistorialOrden(orden?.id || null)
+  const { data: novedades = [] } = useNovedadesOrden(orden?.id || null)
   const { data: profiles = [] } = useProfiles()
   const invalidate = useInvalidateCalibraciones()
 
@@ -106,11 +115,6 @@ export function OrdenCalibracionDetailPage() {
   const [eliminando, setEliminando] = useState(false)
   const [vistaIdx, setVistaIdx] = useState<number | null>(null)
   const [marcandoNovedad, setMarcandoNovedad] = useState(false)
-  const [detalleNovedadInput, setDetalleNovedadInput] = useState('')
-  const [resolviendoNovedad, setResolviendoNovedad] = useState(false)
-  const [resolucionNovedadInput, setResolucionNovedadInput] = useState('')
-  const [avanceNovedad, setAvanceNovedad] = useState('')
-  const [guardandoNovedad, setGuardandoNovedad] = useState(false)
   const [anulando, setAnulando] = useState(false)
   const [motivoAnulacionInput, setMotivoAnulacionInput] = useState('')
   const [guardandoAnulacion, setGuardandoAnulacion] = useState(false)
@@ -152,43 +156,16 @@ export function OrdenCalibracionDetailPage() {
     return p?.full_name || p?.email || 'Usuario'
   }
 
-  // Marca (novedad_detalle con texto) más reciente en el historial — el
-  // inicio de la novedad actualmente activa. historial viene descendente,
-  // así que .find da la más reciente.
-  const marcaNovedadActiva = () => historial.find(h => h.campo === 'novedad_detalle' && h.valor_nuevo) ?? null
-
-  // Avances posteriores a esa marca, en orden cronológico (para el
-  // mini-timeline del card y para el cuerpo del correo de seguimiento).
-  const avancesNovedadActiva = () => {
-    const marca = marcaNovedadActiva()
-    if (!marca) return []
-    return historial
-      .filter(h => h.campo === 'novedad_avance' && h.created_at > marca.created_at)
-      .sort((a, b) => a.created_at.localeCompare(b.created_at))
-  }
-
-  // Línea de texto "• fecha hora — usuario: mensaje" para el cuerpo del
-  // correo de seguimiento — marca + avances, y opcionalmente la resolución
-  // que se acaba de enviar (todavía no está en `historial` en ese momento).
-  const eventosNovedadTexto = (resolucionExtra?: string): string[] => {
-    const marca = marcaNovedadActiva()
-    if (!marca) return []
-    const linea = (usuarioId: string | null, createdAt: string, texto: string | null) =>
-      `• ${fmtFecha(fechaLocalISO(createdAt))} ${horaLocal(createdAt)} — ${profileName(usuarioId)}: ${texto || ''}`
-    const lineas = [marca, ...avancesNovedadActiva()].map(h => linea(h.usuario_id, h.created_at, h.valor_nuevo))
-    if (resolucionExtra) lineas.push(linea(user?.id ?? null, new Date().toISOString(), resolucionExtra))
-    return lineas
-  }
-
-  function enviarCorreoNovedad(resuelta: boolean, resolucionExtra?: string) {
+  // Correo de novedad al asesor (apertura, avance marcado o solución) con el
+  // historial completo de esa novedad. Si la orden no tiene asesor, avisa.
+  function enviarCorreoNovedad(evento: EventoNovedad, novedad: OrdenCalibracionNovedad) {
     if (!orden) return
     if (!orden.correo_asesor) {
-      toast.error('La orden no tiene correo de asesor(a) configurado — no se pudo armar el correo de novedad')
+      toast.warning('La orden no tiene correo de asesor(a): la novedad se guardó sin enviar correo')
       return
     }
-    const eventos = eventosNovedadTexto(resolucionExtra)
-    const url = generarMailtoNovedad(orden.correo_asesor, orden.numero_oc || '', orden.cliente, eventos, resuelta)
-    window.location.href = url
+    notificarNovedad(evento, novedad, orden, equiposOrden, catalogo.filter(c => codigosSel.has(c.codigo)),
+      profileName, displayName || user?.email || null)
   }
 
   const set = <K extends keyof OrdenCalibracion>(key: K, value: OrdenCalibracion[K]) =>
@@ -378,55 +355,48 @@ export function OrdenCalibracionDetailPage() {
     navigate('/calibraciones')
   }
 
-  // La novedad es una bandera aparte del estado real de la orden — no toca
-  // fechas ni el semáforo. Se puede marcar/avanzar/resolver sin importar en
-  // qué etapa del flujo esté la orden.
-  async function confirmarMarcarNovedad(detalle: string) {
-    if (!orden || !detalle.trim()) { toast.error('Ingresa el detalle de la novedad'); return }
-    setGuardandoNovedad(true)
+  // Cada novedad es un evento aparte del estado real de la orden — no toca
+  // fechas ni el semáforo. Se registra en la etapa actual; puede haber varias
+  // abiertas a la vez.
+  async function confirmarAbrirNovedad(detalle: string, equiposIds: string[]): Promise<boolean> {
+    if (!orden) return false
     try {
-      await marcarNovedad(orden.id, detalle)
-      toast.success('Novedad marcada')
-      invalidate.ordenes()
-      setMarcandoNovedad(false)
-      setDetalleNovedadInput('')
+      const novedad = await abrirNovedad(orden.id, orden.estado, detalle, equiposIds)
+      toast.success('Novedad registrada')
+      invalidate.novedades(orden.id)
+      enviarCorreoNovedad('abierta', novedad)
+      return true
     } catch (e) {
       toast.error('Error: ' + mensajeError(e))
-    } finally {
-      setGuardandoNovedad(false)
+      return false
     }
   }
 
-  async function confirmarAvanceNovedad() {
-    if (!orden || !avanceNovedad.trim()) { toast.error('Escribe el avance'); return }
-    setGuardandoNovedad(true)
+  async function confirmarAvanceNovedad(novedad: OrdenCalibracionNovedad, mensaje: string, notificar: boolean): Promise<boolean> {
+    if (!orden) return false
     try {
-      await agregarAvanceNovedad(orden.id, avanceNovedad, user?.id ?? null)
+      const avance = await agregarAvanceNovedad(novedad.id, mensaje, notificar && !!orden.correo_asesor)
       toast.success('Avance agregado')
-      invalidate.historial(orden.id)
-      setAvanceNovedad('')
+      invalidate.novedades(orden.id)
+      if (notificar) enviarCorreoNovedad('avance', { ...novedad, avances: [...novedad.avances, avance] })
+      return true
     } catch (e) {
       toast.error('Error: ' + mensajeError(e))
-    } finally {
-      setGuardandoNovedad(false)
+      return false
     }
   }
 
-  async function confirmarResolverNovedad(resolucion: string) {
-    if (!orden || !resolucion.trim()) { toast.error('Ingresa cómo se resolvió la novedad'); return }
-    setGuardandoNovedad(true)
+  async function confirmarResolverNovedad(novedad: OrdenCalibracionNovedad, resolucion: string): Promise<boolean> {
+    if (!orden) return false
     try {
-      await resolverNovedad(orden.id, resolucion, user?.id ?? null)
+      const resuelta = await resolverNovedad(novedad.id, resolucion, user?.id ?? null)
       toast.success('Novedad resuelta')
-      enviarCorreoNovedad(true, resolucion)
-      invalidate.ordenes()
-      invalidate.historial(orden.id)
-      setResolviendoNovedad(false)
-      setResolucionNovedadInput('')
+      invalidate.novedades(orden.id)
+      enviarCorreoNovedad('resuelta', { ...resuelta, avances: novedad.avances })
+      return true
     } catch (e) {
       toast.error('Error: ' + mensajeError(e))
-    } finally {
-      setGuardandoNovedad(false)
+      return false
     }
   }
 
@@ -577,6 +547,20 @@ export function OrdenCalibracionDetailPage() {
     invalidate.equipos(orden.id)
   }
 
+  // Novedades abiertas: van dentro de la vista de la etapa, entre el Resumen
+  // y los campos para pasar al siguiente estado (ver vistas/NovedadesSlot).
+  const panelNovedades = orden ? (
+    <NovedadesActivas
+      novedades={novedades}
+      equipos={equiposOrden}
+      puedeEditar={puedeEditar}
+      nombre={profileName}
+      onAvance={confirmarAvanceNovedad}
+      onResolver={confirmarResolverNovedad}
+    />
+  ) : null
+  const vistaConNovedades = !esNueva && !!etapaMostrada && (ETAPAS_CON_VISTA as string[]).includes(etapaMostrada.key)
+
   return (
     <div style={{ maxWidth: 980, margin: '0 auto' }}>
       {/* Encabezado */}
@@ -612,7 +596,7 @@ export function OrdenCalibracionDetailPage() {
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-          {puedeEditar && orden && !orden.novedad_detalle && !orden.anulada && (
+          {puedeEditar && orden && !orden.anulada && (
             <button onClick={() => setMarcandoNovedad(true)} title="Marcar novedad" style={{
               width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center',
               borderRadius: 9, border: '1px solid var(--border)', background: 'var(--surface)',
@@ -665,51 +649,10 @@ export function OrdenCalibracionDetailPage() {
         </div>
       )}
 
-      {orden?.novedad_detalle && (
-        <div style={{
-          padding: '14px 18px', borderRadius: 'var(--radius)', background: 'var(--yellow-bg)',
-          border: '1px solid var(--yellow-border)', marginBottom: 24,
-        }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-            <AlertTriangle size={16} color="var(--yellow)" style={{ flexShrink: 0, marginTop: 2 }} />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--yellow)', marginBottom: 4 }}>Novedad activa</div>
-              <div style={{ fontSize: 13, color: 'var(--text)' }}>{orden.novedad_detalle}</div>
-              {avancesNovedadActiva().length > 0 && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 12, borderLeft: '2px solid var(--yellow-border)', paddingLeft: 10 }}>
-                  {avancesNovedadActiva().map(h => (
-                    <div key={h.id} style={{ fontSize: 12 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-                        <strong style={{ color: 'var(--text)' }}>{profileName(h.usuario_id)}</strong>
-                        <span style={{ color: 'var(--muted)', fontFamily: 'var(--mono)', fontSize: 10.5, flexShrink: 0 }}>
-                          {fmtFecha(fechaLocalISO(h.created_at))} {horaLocal(h.created_at)}
-                        </span>
-                      </div>
-                      <div style={{ color: 'var(--muted)', marginTop: 2 }}>{h.valor_nuevo}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {puedeEditar && (
-                <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-                  <input
-                    value={avanceNovedad}
-                    onChange={e => setAvanceNovedad(e.target.value)}
-                    placeholder="Agregar un avance..."
-                    style={{ ...INP, flex: 1, minWidth: 220 }}
-                  />
-                  <button onClick={confirmarAvanceNovedad} disabled={guardandoNovedad} style={GHOST}>+ Avance</button>
-                  <button onClick={() => enviarCorreoNovedad(false)} disabled={guardandoNovedad} style={GHOST}>✉ Enviar seguimiento</button>
-                  <button onClick={() => setResolviendoNovedad(true)} disabled={guardandoNovedad} style={PRI}>✓ Dar solución</button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
       {!esNueva && (
         <Stepper
+          novedades={novedades}
+          nombre={profileName}
           flujo={flujo}
           estado={estadoReal}
           idxActual={idxActual}
@@ -718,8 +661,12 @@ export function OrdenCalibracionDetailPage() {
         />
       )}
 
+      <NovedadesProvider contenido={panelNovedades}>
       <div style={{ display: 'grid', gridTemplateColumns: esNueva ? '1fr' : '1fr 340px', gap: 24, alignItems: 'flex-start' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
+        {/* Las vistas de etapa muestran las novedades debajo de su Resumen
+            (NovedadesSlot); el formulario completo y Terminado, aquí arriba. */}
+        {!vistaConNovedades && panelNovedades}
         {/* Formulario */}
         {/* Las vistas dedicadas solo aplican a órdenes que ya existen — una
             orden nueva siempre se llena en el formulario completo, sin
@@ -1011,7 +958,7 @@ export function OrdenCalibracionDetailPage() {
                           </div>
                           <div style={{ color: 'var(--muted)', marginTop: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
                             {grupo.entradas.map(h => {
-                              const contenido = h.campo === 'creacion' || h.campo === 'servicios' || h.campo === 'novedad_avance' || h.campo === 'novedad_resuelta' || h.campo === 'equipo_agregado' ? (
+                              const contenido = h.campo === 'creacion' || h.campo === 'servicios' || h.campo === 'novedad_abierta' || h.campo === 'novedad_avance' || h.campo === 'novedad_resuelta' || h.campo === 'equipo_agregado' ? (
                                 <span>{CAMPO_LABEL[h.campo]}{h.valor_nuevo ? `: ${h.valor_nuevo}` : ''}</span>
                               ) : h.campo === 'equipo_eliminado' ? (
                                 <span>{CAMPO_LABEL[h.campo]}: <em style={{ fontStyle: 'normal', textDecoration: 'line-through', opacity: 0.7 }}>{h.valor_anterior}</em></span>
@@ -1020,7 +967,7 @@ export function OrdenCalibracionDetailPage() {
                                   {CAMPO_LABEL[h.campo] || h.campo}: <em style={{ fontStyle: 'normal', textDecoration: 'line-through', opacity: 0.7 }}>{formatValorHistorial(h.campo, h.valor_anterior)}</em> → <strong style={{ color: 'var(--text)' }}>{formatValorHistorial(h.campo, h.valor_nuevo)}</strong>
                                 </span>
                               )
-                              const esNovedad = h.campo === 'novedad_detalle' || h.campo === 'novedad_avance' || h.campo === 'novedad_resuelta'
+                              const esNovedad = h.campo === 'novedad_detalle' || h.campo === 'novedad_abierta' || h.campo === 'novedad_avance' || h.campo === 'novedad_resuelta'
                               return (
                                 <div key={h.id} style={esNovedad ? {
                                   background: 'var(--yellow-bg)', border: '1px solid var(--yellow-border)',
@@ -1041,6 +988,7 @@ export function OrdenCalibracionDetailPage() {
           </div>
         )}
       </div>
+      </NovedadesProvider>
 
       {cambiandoAsesor && orden && (() => {
         const sugerido = asesores.find(a => a.correo.toLowerCase() === correoAsesorInput.trim().toLowerCase())
@@ -1113,66 +1061,44 @@ export function OrdenCalibracionDetailPage() {
       )}
 
       {marcandoNovedad && orden && (
-        <Modal open onClose={() => setMarcandoNovedad(false)} title="Marcar novedad">
-          <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 10 }}>
-            No cambia el estado ni las fechas de la orden — solo la marca con una alerta visible hasta que se resuelva.
-          </p>
-          <FG label="Detalle de la novedad">
-            <textarea
-              value={detalleNovedadInput}
-              onChange={e => setDetalleNovedadInput(e.target.value)}
-              rows={3}
-              autoFocus
-              style={{ ...INP, resize: 'vertical' }}
-            />
-          </FG>
-          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 20 }}>
-            <button onClick={() => setMarcandoNovedad(false)} style={GHOST}>Cancelar</button>
-            <button onClick={() => confirmarMarcarNovedad(detalleNovedadInput)} disabled={guardandoNovedad} style={PRI}>
-              {guardandoNovedad ? 'Guardando…' : '⚠ Marcar novedad'}
-            </button>
-          </div>
-        </Modal>
-      )}
-
-      {resolviendoNovedad && orden && (
-        <Modal open onClose={() => setResolviendoNovedad(false)} title="Dar solución a la novedad">
-          <FG label="¿Cómo se resolvió?">
-            <textarea
-              value={resolucionNovedadInput}
-              onChange={e => setResolucionNovedadInput(e.target.value)}
-              rows={3}
-              autoFocus
-              style={{ ...INP, resize: 'vertical' }}
-            />
-          </FG>
-          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 20 }}>
-            <button onClick={() => setResolviendoNovedad(false)} style={GHOST}>Cancelar</button>
-            <button onClick={() => confirmarResolverNovedad(resolucionNovedadInput)} disabled={guardandoNovedad} style={PRI}>
-              {guardandoNovedad ? 'Guardando…' : '✓ Dar solución'}
-            </button>
-          </div>
-        </Modal>
+        <ModalAbrirNovedad
+          etapaLabel={ESTADO_LABEL[orden.estado]}
+          equipos={equiposOrden}
+          onClose={() => setMarcandoNovedad(false)}
+          onConfirmar={confirmarAbrirNovedad}
+        />
       )}
     </div>
   )
 }
 
-function Stepper({ flujo, estado, idxActual, idxMostrado, onSeleccionar }: {
+function Stepper({ flujo, estado, idxActual, idxMostrado, onSeleccionar, novedades, nombre }: {
   flujo: EtapaFlujo[]
   estado: EstadoCalibracion
   idxActual: number
   idxMostrado: number
   onSeleccionar: (idx: number | null) => void
+  novedades: OrdenCalibracionNovedad[]
+  nombre: (id: string | null) => string
 }) {
+  // Novedades agrupadas por el paso donde se abrieron; si su etapa no está
+  // en el flujo de esta modalidad (dato heredado), van en el paso actual.
+  const novedadesPorPaso = new Map<number, OrdenCalibracionNovedad[]>()
+  for (const n of novedades) {
+    const idx = flujo.findIndex(s => s.key === n.etapa)
+    const paso = idx >= 0 ? idx : idxActual
+    novedadesPorPaso.set(paso, [...(novedadesPorPaso.get(paso) ?? []), n])
+  }
   return (
-    <div style={{ marginBottom: 24 }}>
+    <div style={{ marginBottom: 24, paddingTop: novedades.length ? 26 : 0 }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', padding: '0 4px' }}>
         {flujo.map((s, i) => {
           const navegable = i <= idxActual
           const esMostrado = i === idxMostrado
           return (
             <Fragment key={s.key}>
+              <div style={{ position: 'relative', flex: '0 0 auto', width: 96 }}>
+              {novedadesPorPaso.has(i) && <MarcaNovedadPaso novedades={novedadesPorPaso.get(i)!} nombre={nombre} />}
               <div
                 onClick={() => navegable && onSeleccionar(i === idxActual ? null : i)}
                 onMouseEnter={e => { if (navegable) (e.currentTarget as HTMLElement).style.opacity = '0.65' }}
@@ -1186,6 +1112,7 @@ function Stepper({ flujo, estado, idxActual, idxMostrado, onSeleccionar }: {
                   width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   background: i <= idxActual ? 'var(--accent)' : 'var(--surface2)',
                   color: i <= idxActual ? '#fff' : 'var(--muted)',
+                  outline: novedadesPorPaso.get(i)?.some(n => !n.resuelta_at) ? '2px solid #f59e0b' : undefined, outlineOffset: 2,
                   border: esMostrado ? '2px solid var(--text)' : `1px solid ${i <= idxActual ? 'var(--accent)' : 'var(--border)'}`,
                   fontSize: 12, fontWeight: 700, flexShrink: 0,
                 }}>
@@ -1197,6 +1124,7 @@ function Stepper({ flujo, estado, idxActual, idxMostrado, onSeleccionar }: {
                 }}>
                   {i === idxActual ? ESTADO_LABEL[estado] : s.label}
                 </span>
+              </div>
               </div>
               {i < flujo.length - 1 && (
                 <div style={{ flex: 1, height: 2, background: i < idxActual ? 'var(--accent)' : 'var(--border)', marginTop: 13 }} />

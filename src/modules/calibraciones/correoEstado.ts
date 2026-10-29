@@ -31,7 +31,7 @@ function filas(...items: [string, string][]): FilaCorreo[] {
   return items.filter(([, valor]) => valor).map(([label, valor]) => ({ label, valor }))
 }
 
-function resumenOrden(o: Orden, servicios: RvCalibrItem[]): FilaCorreo[] {
+export function resumenOrden(o: Orden, servicios: RvCalibrItem[]): FilaCorreo[] {
   const resumen = filas(
     ['N° OC', texto(o.numero_oc)],
     ['Cliente', texto(o.cliente)],

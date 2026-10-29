@@ -437,6 +437,29 @@ export interface OrdenCalibracionEquipo {
   created_at: string
 }
 
+export interface NovedadAvance {
+  id: string
+  novedad_id: string
+  mensaje: string
+  usuario_id: string | null
+  notificado: boolean
+  created_at: string
+}
+
+export interface OrdenCalibracionNovedad {
+  id: string
+  orden_id: string
+  etapa: EstadoCalibracion
+  detalle: string
+  equipos_ids: string[]
+  abierta_por: string | null
+  created_at: string
+  resuelta_at: string | null
+  resuelta_por: string | null
+  resolucion: string | null
+  avances: NovedadAvance[]
+}
+
 export interface OrdenCalibracionHistorial {
   id: string
   orden_id: string

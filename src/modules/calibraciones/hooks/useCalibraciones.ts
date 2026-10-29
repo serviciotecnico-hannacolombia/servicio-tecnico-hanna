@@ -3,7 +3,7 @@ import { supabase, fetchAllRows } from '../../../lib/supabase'
 import { useUser } from '../../../hooks/useUser'
 import { businessDaysBetween } from '../../../lib/colombiaCalendar'
 import type { CambioCodigosEquipo } from '../equipos'
-import type { Asesor, CorreoProveedor, EstadoCalibracion, LogisticaPendiente, LogisticaPendienteOrden, Modalidad, OrdenCalibracion, OrdenCalibracionEquipo, OrdenCalibracionHistorial, OrdenCalibracionParametro, RvCalibrItem, UbicacionEquipo } from '../../../types'
+import type { Asesor, CorreoProveedor, EstadoCalibracion, LogisticaPendiente, LogisticaPendienteOrden, Modalidad, NovedadAvance, OrdenCalibracion, OrdenCalibracionEquipo, OrdenCalibracionHistorial, OrdenCalibracionNovedad, OrdenCalibracionParametro, RvCalibrItem, UbicacionEquipo } from '../../../types'
 
 export function useOrdenesCalibracion() {
   const { user } = useUser()
@@ -243,6 +243,11 @@ export function useInvalidateCalibraciones() {
     catalogo: () => qc.invalidateQueries({ queryKey: ['rv_calibr_catalogo'] }),
     asesores: () => qc.invalidateQueries({ queryKey: ['calibraciones_asesores'] }),
     historial: (ordenId: string) => qc.invalidateQueries({ queryKey: ['ordenes_calibracion_historial', ordenId] }),
+    novedades: (ordenId: string) => {
+      qc.invalidateQueries({ queryKey: ['ordenes_calibracion_novedades', ordenId] })
+      qc.invalidateQueries({ queryKey: ['ordenes_calibracion_historial', ordenId] })
+      qc.invalidateQueries({ queryKey: ['ordenes_calibracion', user?.id] })
+    },
     pendientesLogistica: () => qc.invalidateQueries({ queryKey: ['calibraciones_logistica_pendientes'] }),
     pendientesLogisticaOrdenes: () => qc.invalidateQueries({ queryKey: ['calibraciones_logistica_pendientes_ordenes'] }),
   }
@@ -265,33 +270,52 @@ export async function logServiciosChange(ordenId: string, antes: Set<string>, de
 }
 
 // ── Novedad ──────────────────────────────────────────────────────────────────
-// Bandera independiente del estado real de la orden (novedad_detalle no nulo
-// = activa) — a diferencia del viejo diseño, no reemplaza el estado ni toca
-// fechas/semáforo. "Marcar" y "resolver" cambian esa columna (ya auditada
-// por el trigger de BD); los avances intermedios se registran directo en el
-// historial desde el cliente, igual que logServiciosChange.
+// Cada novedad es un evento (ordenes_calibracion_novedades) con la etapa en
+// que se abrió, equipos afectados opcionales y sus avances. Puede haber
+// varias abiertas. No toca el estado, las fechas ni el semáforo de la orden.
+// El historial y ordenes_calibracion.novedad_detalle (etiqueta de la lista)
+// los mantienen los triggers de BD (20261029_calibraciones_novedades.sql).
 
-export async function marcarNovedad(ordenId: string, detalle: string) {
-  const { error } = await supabase.from('ordenes_calibracion')
-    .update({ novedad_detalle: detalle.trim() }).eq('id', ordenId)
-  if (error) throw error
+export function useNovedadesOrden(ordenId: string | null) {
+  return useQuery({
+    queryKey: ['ordenes_calibracion_novedades', ordenId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('ordenes_calibracion_novedades')
+        .select('*, avances:ordenes_calibracion_novedad_avances(*)')
+        .eq('orden_id', ordenId as string)
+        .order('created_at')
+      if (error) throw error
+      return (data as OrdenCalibracionNovedad[]).map(n => ({
+        ...n, avances: [...(n.avances ?? [])].sort((a, b) => a.created_at.localeCompare(b.created_at)),
+      }))
+    },
+    enabled: !!ordenId,
+  })
 }
 
-export async function agregarAvanceNovedad(ordenId: string, mensaje: string, usuarioId: string | null) {
-  const { error } = await supabase.from('ordenes_calibracion_historial').insert({
-    orden_id: ordenId, usuario_id: usuarioId, campo: 'novedad_avance', valor_nuevo: mensaje.trim(),
-  })
+export async function abrirNovedad(ordenId: string, etapa: EstadoCalibracion, detalle: string, equiposIds: string[]) {
+  const { data, error } = await supabase.from('ordenes_calibracion_novedades')
+    .insert({ orden_id: ordenId, etapa, detalle: detalle.trim(), equipos_ids: equiposIds })
+    .select('*').single()
   if (error) throw error
+  return { ...(data as OrdenCalibracionNovedad), avances: [] }
 }
 
-export async function resolverNovedad(ordenId: string, resolucion: string, usuarioId: string | null) {
-  const { error: e1 } = await supabase.from('ordenes_calibracion_historial').insert({
-    orden_id: ordenId, usuario_id: usuarioId, campo: 'novedad_resuelta', valor_nuevo: resolucion.trim(),
-  })
-  if (e1) throw e1
-  const { error: e2 } = await supabase.from('ordenes_calibracion')
-    .update({ novedad_detalle: null }).eq('id', ordenId)
-  if (e2) throw e2
+export async function agregarAvanceNovedad(novedadId: string, mensaje: string, notificado: boolean) {
+  const { data, error } = await supabase.from('ordenes_calibracion_novedad_avances')
+    .insert({ novedad_id: novedadId, mensaje: mensaje.trim(), notificado })
+    .select('*').single()
+  if (error) throw error
+  return data as NovedadAvance
+}
+
+export async function resolverNovedad(novedadId: string, resolucion: string, usuarioId: string | null) {
+  const { data, error } = await supabase.from('ordenes_calibracion_novedades')
+    .update({ resuelta_at: new Date().toISOString(), resuelta_por: usuarioId, resolucion: resolucion.trim() })
+    .eq('id', novedadId).select('*').single()
+  if (error) throw error
+  return data as Omit<OrdenCalibracionNovedad, 'avances'>
 }
 
 // Anular reemplaza al DELETE para el flujo normal — la orden y su historial
@@ -935,6 +959,7 @@ export const CAMPO_LABEL: Record<string, string> = {
   proveedor: 'Proveedor',
   estado: 'Estado',
   novedad_detalle: 'Detalle de novedad',
+  novedad_abierta: 'Novedad registrada',
   novedad_avance: 'Avance de novedad',
   novedad_resuelta: 'Novedad resuelta',
   enviado_cliente_final: 'Enviado a cliente final',

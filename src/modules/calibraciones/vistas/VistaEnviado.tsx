@@ -9,6 +9,7 @@ import { FG, Seccion, Grid2, INP, PRI, B_INFO } from '../ui'
 import { linkOtst, parseOtstCodes } from './CamposCompartidos'
 import { semaforoOrden, descripcionSemaforo } from '../hooks/useCalibraciones'
 import type { OrdenCalibracion, RvCalibrItem } from '../../../types'
+import { NovedadesSlot } from './NovedadesSlot'
 
 export function VistaEnviado({ form, catalogo, codigosSel, puedeEditar, soloLectura, saving, onAvanzar }: {
   form: Partial<OrdenCalibracion>
@@ -134,6 +135,7 @@ export function VistaEnviado({ form, catalogo, codigosSel, puedeEditar, soloLect
           </FG>
         </div>
       </Seccion>
+      <NovedadesSlot />
 
       <Seccion titulo="Recepción y calibración">
         <Grid2>

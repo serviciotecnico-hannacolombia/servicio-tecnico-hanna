@@ -7,6 +7,7 @@ import { Truck } from 'lucide-react'
 import { FG, Seccion, Grid2, INP, PRI, fmtFecha } from '../ui'
 import { semaforoOrden, descripcionSemaforo } from '../hooks/useCalibraciones'
 import type { OrdenCalibracion } from '../../../types'
+import { NovedadesSlot } from './NovedadesSlot'
 
 export function VistaEnRetorno({ form, puedeEditar, soloLectura, saving, onAvanzar }: {
   form: Partial<OrdenCalibracion>
@@ -89,6 +90,7 @@ export function VistaEnRetorno({ form, puedeEditar, soloLectura, saving, onAvanz
           </FG>
         </div>
       </Seccion>
+      <NovedadesSlot />
 
       <Seccion titulo="Entrega">
         <Grid2>
