@@ -9,6 +9,7 @@ import { FG, Seccion, Grid2, INP, PRI, GHOST, fmtFecha } from '../ui'
 import { hoyISO } from '../hooks/useCalibraciones'
 import { linkOtst, parseOtstCodes } from './CamposCompartidos'
 import type { OrdenCalibracion } from '../../../types'
+import { NovedadesSlot } from './NovedadesSlot'
 
 export function VistaParaEnviar({ form, puedeEditar, soloLectura, saving, onAvanzar }: {
   form: Partial<OrdenCalibracion>
@@ -119,6 +120,7 @@ export function VistaParaEnviar({ form, puedeEditar, soloLectura, saving, onAvan
           </FG>
         </Grid2>
       </Seccion>
+      <NovedadesSlot />
 
       <Seccion titulo="Datos de envío">
         <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>

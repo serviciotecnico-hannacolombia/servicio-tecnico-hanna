@@ -213,7 +213,7 @@ export function NovedadesActivas({ novedades, ...props }: {
   const abiertas = novedades.filter(n => !n.resuelta_at)
   if (!abiertas.length) return null
   return (
-    <div id="novedades-orden" style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 24 }}>
+    <div id="novedades-orden" style={{ display: 'flex', flexDirection: 'column', gap: 12, margin: '4px 0' }}>
       {abiertas.map(n => <TarjetaNovedad key={n.id} novedad={n} {...props} />)}
     </div>
   )

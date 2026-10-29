@@ -8,6 +8,7 @@ import { Wrench } from 'lucide-react'
 import { FG, Seccion, Grid2, INP, PRI, GHOST, fmtFecha } from '../ui'
 import { linkOtst, parseOtstCodes } from './CamposCompartidos'
 import type { Asesor, OrdenCalibracion } from '../../../types'
+import { NovedadesSlot } from './NovedadesSlot'
 
 export function VistaMantenimiento({ form, asesorSeleccionado, puedeEditar, soloLectura, saving, onTerminar, onGuardarFechaEstimada }: {
   form: Partial<OrdenCalibracion>
@@ -107,6 +108,7 @@ export function VistaMantenimiento({ form, asesorSeleccionado, puedeEditar, solo
           </FG>
         </Grid2>
       </Seccion>
+      <NovedadesSlot />
 
       <Seccion titulo="Mantenimiento">
         <Grid2>

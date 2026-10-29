@@ -13,6 +13,7 @@ import { MODALIDAD_LABEL, sumarDias } from '../hooks/useCalibraciones'
 import { linkOtst, parseOtstCodes } from './CamposCompartidos'
 import { parsearCodigos, unirCodigos, TH_EQUIPOS as TH, TD_EQUIPOS as TD, type CambioCodigosEquipo } from '../equipos'
 import type { OrdenCalibracion, OrdenCalibracionEquipo, RvCalibrItem } from '../../../types'
+import { NovedadesSlot } from './NovedadesSlot'
 
 export function VistaEnCalibracionSitio({ form, catalogo, codigosSel, metrologosSugeridos, equipos, puedeEditar, soloLectura, saving, onGuardarCodigos, onAvanzar }: {
   form: Partial<OrdenCalibracion>
@@ -137,6 +138,7 @@ export function VistaEnCalibracionSitio({ form, catalogo, codigosSel, metrologos
           </FG>
         </div>
       </Seccion>
+      <NovedadesSlot />
 
       <Seccion titulo="Calibración">
         <Grid2>

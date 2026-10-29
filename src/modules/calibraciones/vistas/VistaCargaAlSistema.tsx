@@ -10,6 +10,7 @@ import { FG, Seccion, Grid2, INP, PRI, B_INFO, fmtFecha } from '../ui'
 import { sumarDias } from '../hooks/useCalibraciones'
 import { parsearCodigos, mismosCodigos, unirCodigos, TH_EQUIPOS as TH, TD_EQUIPOS as TD, type CambioCodigosEquipo } from '../equipos'
 import type { OrdenCalibracion, OrdenCalibracionEquipo, RvCalibrItem } from '../../../types'
+import { NovedadesSlot } from './NovedadesSlot'
 
 // Los códigos de certificado de cada equipo deben coincidir con sus códigos
 // de referencia (registrados en "En calibración"). Órdenes que llegaron
@@ -135,6 +136,7 @@ export function VistaCargaAlSistema({ form, catalogo, codigosSel, equipos, puede
           </FG>
         </div>
       </Seccion>
+      <NovedadesSlot />
 
       <Seccion titulo="Carga al sistema">
         <Grid2>

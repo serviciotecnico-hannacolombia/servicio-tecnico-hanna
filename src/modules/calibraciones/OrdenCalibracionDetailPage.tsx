@@ -20,6 +20,7 @@ import { IdentificacionFields, ReferenciasFields, linkOtst, parseOtstCodes } fro
 import { generarMailtoOC } from './correo'
 import { notificarCambioEstado, notificarNovedad, type EventoNovedad } from './notificaciones'
 import { ModalAbrirNovedad, NovedadesActivas, MarcaNovedadPaso } from './NovedadesOrden'
+import { NovedadesProvider } from './vistas/NovedadesSlot'
 import { VistaMantenimiento } from './vistas/VistaMantenimiento'
 import { VistaVisitaProgramada } from './vistas/VistaVisitaProgramada'
 import { VistaParaEnviar } from './vistas/VistaParaEnviar'
@@ -34,6 +35,12 @@ import type { CambioCodigosEquipo, EquipoLeido } from './equipos'
 import { VistaEnvioCertificados } from './vistas/VistaEnvioCertificados'
 import { VistaTerminado } from './vistas/VistaTerminado'
 import type { EstadoCalibracion, Modalidad, OrdenCalibracion, OrdenCalibracionNovedad } from '../../types'
+
+// Etapas con vista dedicada (tienen Resumen + NovedadesSlot).
+const ETAPAS_CON_VISTA: EstadoCalibracion[] = [
+  'en_mantenimiento_reparacion', 'visita_programada', 'para_enviar', 'enviado', 'en_calibracion',
+  'en_retorno', 'control_calidad', 'carga_al_sistema', 'envio_certificados',
+]
 
 function horaLocal(iso: string): string {
   const d = new Date(iso)
@@ -540,6 +547,20 @@ export function OrdenCalibracionDetailPage() {
     invalidate.equipos(orden.id)
   }
 
+  // Novedades abiertas: van dentro de la vista de la etapa, entre el Resumen
+  // y los campos para pasar al siguiente estado (ver vistas/NovedadesSlot).
+  const panelNovedades = orden ? (
+    <NovedadesActivas
+      novedades={novedades}
+      equipos={equiposOrden}
+      puedeEditar={puedeEditar}
+      nombre={profileName}
+      onAvance={confirmarAvanceNovedad}
+      onResolver={confirmarResolverNovedad}
+    />
+  ) : null
+  const vistaConNovedades = !esNueva && !!etapaMostrada && (ETAPAS_CON_VISTA as string[]).includes(etapaMostrada.key)
+
   return (
     <div style={{ maxWidth: 980, margin: '0 auto' }}>
       {/* Encabezado */}
@@ -628,17 +649,6 @@ export function OrdenCalibracionDetailPage() {
         </div>
       )}
 
-      {orden && (
-        <NovedadesActivas
-          novedades={novedades}
-          equipos={equiposOrden}
-          puedeEditar={puedeEditar}
-          nombre={profileName}
-          onAvance={confirmarAvanceNovedad}
-          onResolver={confirmarResolverNovedad}
-        />
-      )}
-
       {!esNueva && (
         <Stepper
           novedades={novedades}
@@ -651,8 +661,12 @@ export function OrdenCalibracionDetailPage() {
         />
       )}
 
+      <NovedadesProvider contenido={panelNovedades}>
       <div style={{ display: 'grid', gridTemplateColumns: esNueva ? '1fr' : '1fr 340px', gap: 24, alignItems: 'flex-start' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
+        {/* Las vistas de etapa muestran las novedades debajo de su Resumen
+            (NovedadesSlot); el formulario completo y Terminado, aquí arriba. */}
+        {!vistaConNovedades && panelNovedades}
         {/* Formulario */}
         {/* Las vistas dedicadas solo aplican a órdenes que ya existen — una
             orden nueva siempre se llena en el formulario completo, sin
@@ -974,6 +988,7 @@ export function OrdenCalibracionDetailPage() {
           </div>
         )}
       </div>
+      </NovedadesProvider>
 
       {cambiandoAsesor && orden && (() => {
         const sugerido = asesores.find(a => a.correo.toLowerCase() === correoAsesorInput.trim().toLowerCase())
