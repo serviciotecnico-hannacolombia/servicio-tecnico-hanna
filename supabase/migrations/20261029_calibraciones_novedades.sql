@@ -51,6 +51,7 @@ ALTER TABLE ordenes_calibracion_novedad_avances ENABLE ROW LEVEL SECURITY;
 
 -- ── RLS (mismo criterio que ordenes_calibracion_equipos; sin DELETE) ────────
 
+DROP POLICY IF EXISTS "ordenes_calibracion_novedades select" ON ordenes_calibracion_novedades;
 CREATE POLICY "ordenes_calibracion_novedades select" ON ordenes_calibracion_novedades FOR SELECT TO authenticated
   USING (has_module('calibraciones') AND (
     has_capability('calibraciones_editar')
@@ -62,13 +63,16 @@ CREATE POLICY "ordenes_calibracion_novedades select" ON ordenes_calibracion_nove
     )
   ));
 
+DROP POLICY IF EXISTS "ordenes_calibracion_novedades insert" ON ordenes_calibracion_novedades;
 CREATE POLICY "ordenes_calibracion_novedades insert" ON ordenes_calibracion_novedades FOR INSERT TO authenticated
   WITH CHECK (has_module('calibraciones') AND has_capability('calibraciones_editar'));
 
+DROP POLICY IF EXISTS "ordenes_calibracion_novedades update" ON ordenes_calibracion_novedades;
 CREATE POLICY "ordenes_calibracion_novedades update" ON ordenes_calibracion_novedades FOR UPDATE TO authenticated
   USING (has_module('calibraciones') AND has_capability('calibraciones_editar'))
   WITH CHECK (has_module('calibraciones') AND has_capability('calibraciones_editar'));
 
+DROP POLICY IF EXISTS "ordenes_calibracion_novedad_avances select" ON ordenes_calibracion_novedad_avances;
 CREATE POLICY "ordenes_calibracion_novedad_avances select" ON ordenes_calibracion_novedad_avances FOR SELECT TO authenticated
   USING (has_module('calibraciones') AND (
     has_capability('calibraciones_editar')
@@ -81,6 +85,7 @@ CREATE POLICY "ordenes_calibracion_novedad_avances select" ON ordenes_calibracio
     )
   ));
 
+DROP POLICY IF EXISTS "ordenes_calibracion_novedad_avances insert" ON ordenes_calibracion_novedad_avances;
 CREATE POLICY "ordenes_calibracion_novedad_avances insert" ON ordenes_calibracion_novedad_avances FOR INSERT TO authenticated
   WITH CHECK (has_module('calibraciones') AND has_capability('calibraciones_editar'));
 
@@ -119,6 +124,7 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS trg_sync_novedad_detalle_orden ON ordenes_calibracion_novedades;
 CREATE TRIGGER trg_sync_novedad_detalle_orden
   AFTER INSERT OR UPDATE ON ordenes_calibracion_novedades
   FOR EACH ROW EXECUTE FUNCTION sync_novedad_detalle_orden();
@@ -139,6 +145,7 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS trg_log_ordenes_calibracion_novedades ON ordenes_calibracion_novedades;
 CREATE TRIGGER trg_log_ordenes_calibracion_novedades
   AFTER INSERT OR UPDATE ON ordenes_calibracion_novedades
   FOR EACH ROW EXECUTE FUNCTION log_ordenes_calibracion_novedades();
@@ -155,6 +162,7 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS trg_log_ordenes_calibracion_novedad_avances ON ordenes_calibracion_novedad_avances;
 CREATE TRIGGER trg_log_ordenes_calibracion_novedad_avances
   AFTER INSERT ON ordenes_calibracion_novedad_avances
   FOR EACH ROW EXECUTE FUNCTION log_ordenes_calibracion_novedad_avances();
@@ -171,17 +179,23 @@ DECLARE
   h        record;
   v_estado text;
   v_abierta uuid;
+  v_actual  text;
 BEGIN
+  -- Si ya hay novedades (la migración se corrió antes), no se duplican.
+  IF EXISTS (SELECT 1 FROM ordenes_calibracion_novedades) THEN RETURN; END IF;
+
   PERFORM set_config('calibraciones.migrando_novedades', 'on', true);
 
   FOR o IN
     SELECT DISTINCT oc.id, oc.estado, oc.novedad_detalle, oc.updated_at
     FROM ordenes_calibracion oc
-    WHERE oc.novedad_detalle IS NOT NULL
+    WHERE nullif(btrim(oc.novedad_detalle), '') IS NOT NULL
        OR EXISTS (SELECT 1 FROM ordenes_calibracion_historial x
                   WHERE x.orden_id = oc.id AND x.campo IN ('novedad_detalle', 'novedad_avance', 'novedad_resuelta'))
   LOOP
     v_abierta := NULL;
+    -- Algunas órdenes tienen novedad_detalle = '' (vacío): cuenta como sin novedad.
+    v_actual := nullif(btrim(o.novedad_detalle), '');
     SELECT coalesce(x.valor_anterior, x.valor_nuevo) INTO v_estado
     FROM ordenes_calibracion_historial x
     WHERE x.orden_id = o.id AND x.campo = 'estado'
@@ -220,10 +234,10 @@ BEGIN
       END IF;
     END LOOP;
 
-    IF o.novedad_detalle IS NOT NULL AND v_abierta IS NULL THEN
+    IF v_actual IS NOT NULL AND v_abierta IS NULL THEN
       INSERT INTO ordenes_calibracion_novedades (orden_id, etapa, detalle, abierta_por, created_at)
-      VALUES (o.id, o.estado, o.novedad_detalle, NULL, coalesce(o.updated_at, now()));
-    ELSIF o.novedad_detalle IS NULL AND v_abierta IS NOT NULL THEN
+      VALUES (o.id, o.estado, v_actual, NULL, coalesce(o.updated_at, now()));
+    ELSIF v_actual IS NULL AND v_abierta IS NOT NULL THEN
       UPDATE ordenes_calibracion_novedades SET resuelta_at = coalesce(o.updated_at, now()) WHERE id = v_abierta;
     END IF;
   END LOOP;
