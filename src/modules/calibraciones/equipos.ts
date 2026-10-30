@@ -76,9 +76,22 @@ export function parsearEquiposExcel(texto: string, existentes: string[] = []): {
   return { equipos, errores }
 }
 
-// "C1, c2; C3" → ["C1", "C2", "C3"] (sin vacíos ni repetidos)
+// Quita repetidos sin distinguir mayúsculas (se queda con la primera forma escrita).
+function sinRepetidos(codigos: string[]): string[] {
+  const vistos = new Set<string>()
+  return codigos.filter(c => {
+    const k = c.toUpperCase()
+    if (vistos.has(k)) return false
+    vistos.add(k)
+    return true
+  })
+}
+
+// "pH26-123, Cl26-256; C3" → ["pH26-123", "Cl26-256", "C3"] (sin vacíos ni
+// repetidos). Se respetan mayúsculas/minúsculas: hay certificados como
+// pH26-123 o Cl26-256. La comparación (mismosCodigos) sí las ignora.
 export function parsearCodigos(texto: string): string[] {
-  return [...new Set(texto.split(/[,;\n]+/).map(c => c.trim().toUpperCase().replace(/\s+/g, ' ')).filter(Boolean))]
+  return sinRepetidos(texto.split(/[,;\n]+/).map(c => c.trim().replace(/\s+/g, ' ')).filter(Boolean))
 }
 
 export function mismosCodigos(a: string[], b: string[]): boolean {
@@ -93,5 +106,5 @@ export const TD_EQUIPOS: React.CSSProperties = { padding: '7px 8px', fontSize: 1
 
 // Unión de los códigos de todos los equipos, para los campos de texto de la orden.
 export function unirCodigos(listas: string[][]): string {
-  return [...new Set(listas.flat())].join(', ')
+  return sinRepetidos(listas.flat()).join(', ')
 }
