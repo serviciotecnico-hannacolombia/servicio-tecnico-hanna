@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase, fetchAllRows } from '../../../lib/supabase'
 import { useUser } from '../../../hooks/useUser'
 import { businessDaysBetween } from '../../../lib/colombiaCalendar'
-import type { CambioCodigosEquipo } from '../equipos'
+import { normalizarSerial, type CambioCodigosEquipo } from '../equipos'
 import type { Asesor, CorreoProveedor, EstadoCalibracion, LogisticaPendiente, LogisticaPendienteOrden, Modalidad, NovedadAvance, OrdenCalibracion, OrdenCalibracionEquipo, OrdenCalibracionHistorial, OrdenCalibracionNovedad, OrdenCalibracionParametro, RvCalibrItem, UbicacionEquipo } from '../../../types'
 
 export function useOrdenesCalibracion() {
@@ -95,7 +95,7 @@ export async function agregarEquiposOrden(ordenId: string, equipos: EquipoNuevo[
   return supabase.from('ordenes_calibracion_equipos').insert(equipos.map((e, i) => ({
     orden_id: ordenId,
     referencia: e.referencia.trim(),
-    serial: e.serial.trim(),
+    serial: normalizarSerial(e.serial),
     id_equipo: e.id_equipo?.trim() || null,
     posicion: posicionInicial + i,
   })))
@@ -105,7 +105,7 @@ export async function agregarEquiposOrden(ordenId: string, equipos: EquipoNuevo[
 export async function editarEquipoOrden(id: string, e: EquipoNuevo) {
   return supabase.from('ordenes_calibracion_equipos').update({
     referencia: e.referencia.trim(),
-    serial: e.serial.trim(),
+    serial: normalizarSerial(e.serial),
     id_equipo: e.id_equipo?.trim() || null,
   }).eq('id', id)
 }

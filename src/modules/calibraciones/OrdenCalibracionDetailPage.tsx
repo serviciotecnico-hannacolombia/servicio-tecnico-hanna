@@ -31,7 +31,7 @@ import { VistaEnRetorno } from './vistas/VistaEnRetorno'
 import { VistaControlCalidad } from './vistas/VistaControlCalidad'
 import { VistaCargaAlSistema } from './vistas/VistaCargaAlSistema'
 import { EquiposOrden, type FilaEquipo } from './EquiposOrden'
-import type { CambioCodigosEquipo, EquipoLeido } from './equipos'
+import { unirCodigos, type CambioCodigosEquipo, type EdicionEquipo, type EquipoLeido } from './equipos'
 import { VistaEnvioCertificados } from './vistas/VistaEnvioCertificados'
 import { VistaTerminado } from './vistas/VistaTerminado'
 import type { EstadoCalibracion, Modalidad, OrdenCalibracion, OrdenCalibracionNovedad } from '../../types'
@@ -55,6 +55,8 @@ function mensajeError(e: unknown): string {
   if (e && typeof e === 'object' && 'message' in e) return String((e as { message: unknown }).message)
   return String(e)
 }
+
+const mismaLista = (a: string[], b: string[]) => a.join('|') === b.join('|')
 
 function segBtnStyle(activo: boolean, deshabilitado?: boolean): React.CSSProperties {
   return {
@@ -502,7 +504,12 @@ export function OrdenCalibracionDetailPage() {
   const equiposEditables = puedeEditarFlujo && (esNueva || !ESTADOS_EQUIPOS_FIJOS.includes(estadoReal))
   const filasEquipos: FilaEquipo[] = esNueva
     ? equiposBorrador
-    : equiposOrden.map(e => ({ key: e.id, referencia: e.referencia, serial: e.serial, id_equipo: e.id_equipo }))
+    : equiposOrden.map(e => ({
+      key: e.id, referencia: e.referencia, serial: e.serial, id_equipo: e.id_equipo,
+      codigos_referencia: e.codigos_referencia, codigos_certificado: e.codigos_certificado,
+    }))
+  // Solo in situ / sede Hanna manejan códigos de referencia por equipo.
+  const flujoSitio = form.modalidad === 'in_situ' || form.modalidad === 'sede_hanna_dorado'
 
   async function agregarEquipos(nuevos: EquipoLeido[]): Promise<boolean> {
     if (esNueva) {
@@ -526,14 +533,40 @@ export function OrdenCalibracionDetailPage() {
   }
 
   // Corregir o quitar equipos ya guardados: solo Admin, en cualquier estado.
-  async function editarEquipo(key: string, datos: EquipoLeido): Promise<boolean> {
+  // Los códigos corregidos quedan en el historial (trigger del equipo) y la
+  // unión de toda la orden (codigos_referencia / codigos_certificados, que
+  // leen correos y reportes) se recalcula — también queda en el historial.
+  async function editarEquipo(key: string, datos: EdicionEquipo): Promise<boolean> {
+    const { codigos_referencia, codigos_certificado, ...basicos } = datos
     if (esNueva) {
-      setEquiposBorrador(prev => prev.map(e => e.key === key ? { ...e, ...datos } : e))
+      setEquiposBorrador(prev => prev.map(e => e.key === key ? { ...e, ...basicos } : e))
       return true
     }
     if (!orden) return false
-    const { error } = await editarEquipoOrden(key, datos)
+    const actual = equiposOrden.find(e => e.id === key)
+    if (!actual) return false
+    const { error } = await editarEquipoOrden(key, basicos)
     if (error) { toast.error('Error al editar el equipo: ' + error.message); return false }
+
+    const cambio: CambioCodigosEquipo = { id: key }
+    if (codigos_referencia && !mismaLista(codigos_referencia, actual.codigos_referencia)) cambio.codigos_referencia = codigos_referencia
+    if (codigos_certificado && !mismaLista(codigos_certificado, actual.codigos_certificado)) cambio.codigos_certificado = codigos_certificado
+    if (cambio.codigos_referencia || cambio.codigos_certificado) {
+      const { error: errCodigos } = await guardarCodigosEquipos([cambio])
+      if (errCodigos) { toast.error('Error al guardar los códigos: ' + errCodigos.message); invalidate.equipos(orden.id); return false }
+      const despues = equiposOrden.map(e => e.id === key ? { ...e, ...cambio } : e)
+      const union: Partial<OrdenCalibracion> = {}
+      const ref = unirCodigos(despues.map(e => e.codigos_referencia))
+      const cert = unirCodigos(despues.map(e => e.codigos_certificado))
+      // Si la unión queda vacía (orden anterior a los equipos) se conserva el texto de la orden.
+      if (cambio.codigos_referencia && ref && ref !== (orden.codigos_referencia || '')) union.codigos_referencia = ref
+      if (cambio.codigos_certificado && cert && cert !== (orden.codigos_certificados || '')) union.codigos_certificados = cert
+      if (Object.keys(union).length) {
+        const { error: errOrden } = await supabase.from('ordenes_calibracion').update(union).eq('id', orden.id)
+        if (errOrden) toast.error('Se guardó el equipo, pero no se actualizaron los códigos de la orden: ' + errOrden.message)
+        invalidate.ordenes()
+      }
+    }
     toast.success('Equipo actualizado')
     invalidate.equipos(orden.id)
     return true
@@ -689,8 +722,8 @@ export function OrdenCalibracionDetailPage() {
           />
         ) : !esNueva && etapaMostrada?.key === 'enviado' ? (
           <VistaEnviado
-            form={form} catalogo={catalogo} codigosSel={codigosSel} puedeEditar={puedeEditarFlujo} soloLectura={soloLectura}
-            saving={saving} onAvanzar={avanzarEtapa}
+            form={form} catalogo={catalogo} codigosSel={codigosSel} equipos={equiposOrden} puedeEditar={puedeEditarFlujo} soloLectura={soloLectura}
+            saving={saving} onGuardarCodigos={guardarCodigos} onAvanzar={avanzarEtapa}
           />
         ) : !esNueva && etapaMostrada?.key === 'en_calibracion' && form.modalidad === 'laboratorio_externo' ? (
           <VistaEnCalibracion
@@ -843,6 +876,7 @@ export function OrdenCalibracionDetailPage() {
             {esNueva && (
               <Seccion titulo="Equipos (opcional — se pueden completar después)">
                 <EquiposOrden equipos={filasEquipos} cantidad={form.cantidad_equipos} editable={equiposEditables}
+                  mostrarCodigos={!esNueva} mostrarReferencia={flujoSitio}
                   onAgregar={agregarEquipos} onEliminar={esNueva || isAdmin ? quitarEquipo : undefined} onEditar={isAdmin ? editarEquipo : undefined} />
               </Seccion>
             )}
@@ -924,6 +958,7 @@ export function OrdenCalibracionDetailPage() {
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: 24 }}>
             <Seccion titulo="Equipos">
               <EquiposOrden equipos={filasEquipos} cantidad={form.cantidad_equipos} editable={equiposEditables}
+                mostrarCodigos={!esNueva} mostrarReferencia={flujoSitio}
                 onAgregar={agregarEquipos} onEliminar={esNueva || isAdmin ? quitarEquipo : undefined} onEditar={isAdmin ? editarEquipo : undefined} />
             </Seccion>
           </div>

@@ -8,9 +8,23 @@ import { toast } from 'sonner'
 import { Check, ClipboardPaste, Pencil, Plus, Trash2, X } from 'lucide-react'
 import { Modal } from '../../components/ui/Modal'
 import { INP, PRI, GHOST } from './ui'
-import { parsearEquiposExcel, normalizarSerial, TH_EQUIPOS as TH, TD_EQUIPOS as TD, type EquipoLeido } from './equipos'
+import { parsearEquiposExcel, normalizarSerial, parsearCodigos, mismosCodigos, TH_EQUIPOS as TH, TD_EQUIPOS as TD, type EquipoLeido, type EdicionEquipo } from './equipos'
 
-export interface FilaEquipo { key: string, referencia: string, serial: string, id_equipo: string | null }
+// Los códigos solo existen en equipos ya guardados (no en el borrador).
+export interface FilaEquipo {
+  key: string, referencia: string, serial: string, id_equipo: string | null
+  codigos_referencia?: string[], codigos_certificado?: string[]
+}
+
+function CodigosCelda({ codigos, error }: { codigos: string[] | undefined, error?: boolean }) {
+  if (!codigos?.length) return <span style={{ color: 'var(--muted)' }}>—</span>
+  return (
+    <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: error ? 'var(--red)' : 'var(--text)' }}
+      title={error ? 'No coincide con los códigos de referencia' : undefined}>
+      {codigos.join(', ')}{error && ' ✗'}
+    </span>
+  )
+}
 
 const INP_SM: React.CSSProperties = { ...INP, padding: '7px 10px', fontSize: 13 }
 const BTN_ICONO: React.CSSProperties = { background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', padding: 2, marginRight: 4 }
@@ -29,19 +43,29 @@ export function ContadorEquipos({ registrados, cantidad }: { registrados: number
   )
 }
 
-export function EquiposOrden({ equipos, cantidad, editable, onAgregar, onEliminar, onEditar }: {
+export function EquiposOrden({ equipos, cantidad, editable, mostrarCodigos = false, mostrarReferencia = false, onAgregar, onEliminar, onEditar }: {
   equipos: FilaEquipo[]
   cantidad: number | null | undefined
   editable: boolean
+  // Columnas de códigos (orden ya guardada); la de referencia solo en in situ / sede.
+  mostrarCodigos?: boolean
+  mostrarReferencia?: boolean
   onAgregar: (nuevos: EquipoLeido[]) => Promise<boolean>
   // Solo se pasan a Admin (o en el borrador de una orden nueva, que aún no se guarda).
   onEliminar?: (key: string) => Promise<void>
-  // Corrige referencia/serial/ID de un equipo ya registrado.
-  onEditar?: (key: string, datos: EquipoLeido) => Promise<boolean>
+  // Corrige referencia/serial/ID y, con mostrarCodigos, los códigos del equipo.
+  onEditar?: (key: string, datos: EdicionEquipo) => Promise<boolean>
 }) {
   const [nuevo, setNuevo] = useState({ referencia: '', serial: '', id_equipo: '' })
-  const [editando, setEditando] = useState<{ key: string, referencia: string, serial: string, id_equipo: string } | null>(null)
+  const [editando, setEditando] = useState<{
+    key: string, referencia: string, serial: string, id_equipo: string, codRef: string, codCert: string
+  } | null>(null)
   const conAcciones = editable || !!onEliminar || !!onEditar
+  const verRef = mostrarCodigos && mostrarReferencia
+  // Celdas vacías extra (fila de agregar) para alinear con las de códigos.
+  const columnasCodigos = mostrarCodigos ? (verRef ? 2 : 1) : 0
+  const noCoincide = (e: FilaEquipo) => verRef && !!e.codigos_referencia?.length && !!e.codigos_certificado?.length
+    && !mismosCodigos(e.codigos_referencia, e.codigos_certificado)
   const [pegando, setPegando] = useState(false)
   const [texto, setTexto] = useState('')
   const [guardando, setGuardando] = useState(false)
@@ -65,10 +89,26 @@ export function EquiposOrden({ equipos, cantidad, editable, onAgregar, onElimina
     if (equipos.some(e => e.key !== editando.key && normalizarSerial(e.serial) === normalizarSerial(serial))) {
       toast.error(`El serial ${serial} ya está en la orden`); return
     }
+    const datos: EdicionEquipo = { referencia, serial, id_equipo: editando.id_equipo.trim() || null }
+    if (mostrarCodigos) {
+      datos.codigos_certificado = parsearCodigos(editando.codCert)
+      if (verRef) datos.codigos_referencia = parsearCodigos(editando.codRef)
+    }
+    // En in situ / sede se permite guardar aunque no coincidan (corrección de
+    // Admin), pero se avisa y la fila queda marcada con ✗.
+    if (verRef && datos.codigos_referencia?.length && datos.codigos_certificado?.length
+      && !mismosCodigos(datos.codigos_referencia, datos.codigos_certificado)) {
+      toast.warning(`Los certificados no coinciden con la referencia en ${serial}`)
+    }
     setGuardando(true)
-    const ok = await onEditar(editando.key, { referencia, serial, id_equipo: editando.id_equipo.trim() || null })
+    const ok = await onEditar(editando.key, datos)
     setGuardando(false)
     if (ok) setEditando(null)
+  }
+
+  function teclasEdicion(ev: React.KeyboardEvent) {
+    if (ev.key === 'Enter') { ev.preventDefault(); guardarEdicion() }
+    if (ev.key === 'Escape') setEditando(null)
   }
 
   async function confirmarPegado() {
@@ -99,6 +139,8 @@ export function EquiposOrden({ equipos, cantidad, editable, onAgregar, onElimina
                 <th style={TH}>Referencia</th>
                 <th style={TH}>Serial</th>
                 <th style={TH}>ID</th>
+                {verRef && <th style={TH}>Cód. referencia</th>}
+                {mostrarCodigos && <th style={TH}>Cód. certificado</th>}
                 {conAcciones && <th style={{ ...TH, width: onEditar && onEliminar ? 64 : 44 }} />}
               </tr>
             </thead>
@@ -110,12 +152,20 @@ export function EquiposOrden({ equipos, cantidad, editable, onAgregar, onElimina
                   <td style={TD}><input value={editando.serial} onChange={ev => setEditando(d => d && { ...d, serial: ev.target.value })} style={INP_SM} /></td>
                   <td style={TD}>
                     <input value={editando.id_equipo} onChange={ev => setEditando(d => d && { ...d, id_equipo: ev.target.value })}
-                      onKeyDown={ev => {
-                        if (ev.key === 'Enter') { ev.preventDefault(); guardarEdicion() }
-                        if (ev.key === 'Escape') setEditando(null)
-                      }}
-                      style={INP_SM} />
+                      onKeyDown={teclasEdicion} style={INP_SM} />
                   </td>
+                  {verRef && (
+                    <td style={TD}>
+                      <input value={editando.codRef} onChange={ev => setEditando(d => d && { ...d, codRef: ev.target.value })}
+                        onKeyDown={teclasEdicion} placeholder="Separa con coma" style={INP_SM} />
+                    </td>
+                  )}
+                  {mostrarCodigos && (
+                    <td style={TD}>
+                      <input value={editando.codCert} onChange={ev => setEditando(d => d && { ...d, codCert: ev.target.value })}
+                        onKeyDown={teclasEdicion} placeholder="Separa con coma" style={INP_SM} />
+                    </td>
+                  )}
                   <td style={{ ...TD, whiteSpace: 'nowrap' }}>
                     <button type="button" title="Guardar cambios" onClick={guardarEdicion} disabled={guardando}
                       style={{ ...BTN_ICONO, color: 'var(--accent)' }}><Check size={15} /></button>
@@ -129,11 +179,16 @@ export function EquiposOrden({ equipos, cantidad, editable, onAgregar, onElimina
                   <td style={TD}>{e.referencia}</td>
                   <td style={{ ...TD, fontFamily: 'var(--mono)' }}>{e.serial}</td>
                   <td style={{ ...TD, fontFamily: 'var(--mono)' }}>{e.id_equipo || '—'}</td>
+                  {verRef && <td style={TD}><CodigosCelda codigos={e.codigos_referencia} /></td>}
+                  {mostrarCodigos && <td style={TD}><CodigosCelda codigos={e.codigos_certificado} error={noCoincide(e)} /></td>}
                   {conAcciones && (
                     <td style={{ ...TD, whiteSpace: 'nowrap' }}>
                       {onEditar && (
                         <button type="button" title="Editar equipo (Admin)"
-                          onClick={() => setEditando({ key: e.key, referencia: e.referencia, serial: e.serial, id_equipo: e.id_equipo ?? '' })}
+                          onClick={() => setEditando({
+                            key: e.key, referencia: e.referencia, serial: e.serial, id_equipo: e.id_equipo ?? '',
+                            codRef: (e.codigos_referencia ?? []).join(', '), codCert: (e.codigos_certificado ?? []).join(', '),
+                          })}
                           style={BTN_ICONO}>
                           <Pencil size={14} />
                         </button>
@@ -159,6 +214,7 @@ export function EquiposOrden({ equipos, cantidad, editable, onAgregar, onElimina
                       onKeyDown={ev => { if (ev.key === 'Enter') { ev.preventDefault(); agregarUno() } }}
                       placeholder="0889" style={INP_SM} />
                   </td>
+                  {Array.from({ length: columnasCodigos }, (_, i) => <td key={i} style={TD} />)}
                   <td style={TD}>
                     <button type="button" title="Agregar equipo" onClick={agregarUno} disabled={guardando}
                       style={{ ...PRI, padding: '7px 9px' }}><Plus size={14} /></button>

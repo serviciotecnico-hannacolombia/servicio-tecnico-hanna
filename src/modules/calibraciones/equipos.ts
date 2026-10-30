@@ -4,6 +4,10 @@
 export interface EquipoLeido { referencia: string, serial: string, id_equipo: string | null }
 
 // Códigos de un equipo a guardar (solo los campos que cambiaron).
+// Corrección de un equipo por Admin: datos básicos y, en una orden ya
+// guardada, también sus códigos (referencia solo aplica a in situ / sede).
+export interface EdicionEquipo extends EquipoLeido { codigos_referencia?: string[], codigos_certificado?: string[] }
+
 export interface CambioCodigosEquipo { id: string, codigos_referencia?: string[], codigos_certificado?: string[] }
 
 const ETIQUETAS: Record<string, keyof EquipoLeido | 'marca'> = {
@@ -72,9 +76,22 @@ export function parsearEquiposExcel(texto: string, existentes: string[] = []): {
   return { equipos, errores }
 }
 
-// "C1, c2; C3" → ["C1", "C2", "C3"] (sin vacíos ni repetidos)
+// Quita repetidos sin distinguir mayúsculas (se queda con la primera forma escrita).
+function sinRepetidos(codigos: string[]): string[] {
+  const vistos = new Set<string>()
+  return codigos.filter(c => {
+    const k = c.toUpperCase()
+    if (vistos.has(k)) return false
+    vistos.add(k)
+    return true
+  })
+}
+
+// "pH26-123, Cl26-256; C3" → ["pH26-123", "Cl26-256", "C3"] (sin vacíos ni
+// repetidos). Se respetan mayúsculas/minúsculas: hay certificados como
+// pH26-123 o Cl26-256. La comparación (mismosCodigos) sí las ignora.
 export function parsearCodigos(texto: string): string[] {
-  return [...new Set(texto.split(/[,;\n]+/).map(c => c.trim().toUpperCase().replace(/\s+/g, ' ')).filter(Boolean))]
+  return sinRepetidos(texto.split(/[,;\n]+/).map(c => c.trim().replace(/\s+/g, ' ')).filter(Boolean))
 }
 
 export function mismosCodigos(a: string[], b: string[]): boolean {
@@ -85,9 +102,9 @@ export function mismosCodigos(a: string[], b: string[]): boolean {
 
 // Estilos de las tablas de equipos (aquí y no en el .tsx para no romper Fast Refresh).
 export const TH_EQUIPOS: React.CSSProperties = { textAlign: 'left', padding: '6px 8px', fontSize: 10.5, fontFamily: 'var(--mono)', textTransform: 'uppercase', letterSpacing: '.5px', color: 'var(--muted)', borderBottom: '1px solid var(--border)', fontWeight: 600 }
-export const TD_EQUIPOS: React.CSSProperties = { padding: '7px 8px', fontSize: 13, borderBottom: '1px solid var(--border)', verticalAlign: 'top' }
+export const TD_EQUIPOS: React.CSSProperties = { padding: '7px 8px', fontSize: 13, borderBottom: '1px solid var(--border)', verticalAlign: 'middle' }
 
 // Unión de los códigos de todos los equipos, para los campos de texto de la orden.
 export function unirCodigos(listas: string[][]): string {
-  return [...new Set(listas.flat())].join(', ')
+  return sinRepetidos(listas.flat()).join(', ')
 }
