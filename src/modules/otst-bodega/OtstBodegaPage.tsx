@@ -216,7 +216,7 @@ export function OtstBodegaPage() {
       {tab === 'bodega'     && <TabBodega     bodega={bodega} umbral={umbral} columnas={columnas} pendientes={pendientes} />}
       {tab === 'rotacion'   && <TabRotacion   bodega={bodega} zonas={zonas} columnas={columnas} />}
       {tab === 'pendientes' && <TabPendientes bodega={bodega} pendientes={pendientes} umbral={umbral} columnas={columnas} />}
-      {tab === 'historial'  && <TabHistorial  bodega={bodega} movimientos={movimientos} />}
+      {tab === 'historial'  && <TabHistorial  bodega={bodega} movimientos={movimientos} pendientes={pendientes} />}
       {tab === 'config'     && <TabConfig     zonas={zonas} config={config} bodega={bodega} />}
     </div>
   )
@@ -1985,7 +1985,7 @@ function ModalCancelarPendiente({ pendiente, onClose }: { pendiente: OtstBodegaP
 
 // ── Tab Historial ──────────────────────────────────────────────────────────────
 
-function TabHistorial({ bodega, movimientos }: { bodega: OtstBodega[], movimientos: OtstBodegaMovimiento[] }) {
+function TabHistorial({ bodega, movimientos, pendientes }: { bodega: OtstBodega[], movimientos: OtstBodegaMovimiento[], pendientes: OtstBodegaPendiente[] }) {
   const [q, setQ] = useState('')
   const ql = q.toLowerCase()
   const results = ql.length >= 2 ? bodega.filter(r => r.otst.toLowerCase().includes(ql)) : []
@@ -2002,7 +2002,8 @@ function TabHistorial({ bodega, movimientos }: { bodega: OtstBodega[], movimient
       ) : (
         <div>
           {results.map(r => (
-            <TimelineCard key={r.id} item={r} movimientos={movimientos.filter(m => m.otst_id === r.id)} />
+            <TimelineCard key={r.id} item={r} movimientos={movimientos.filter(m => m.otst_id === r.id)}
+              pendientes={pendientes.filter(p => p.otst_id === r.id || p.otst.trim().toLowerCase() === r.otst.trim().toLowerCase())} />
           ))}
         </div>
       )}
@@ -2010,11 +2011,51 @@ function TabHistorial({ bodega, movimientos }: { bodega: OtstBodega[], movimient
   )
 }
 
-function TimelineCard({ item, movimientos }: { item: OtstBodega, movimientos: OtstBodegaMovimiento[] }) {
+// Evento de la línea de tiempo: un movimiento de bodega o una solicitud de
+// despacho (otst_bodega_pendientes), que vive en otra tabla pero también es
+// parte del historial de la OTST — quién la pidió y a dónde.
+interface EventoHistorial {
+  id: string
+  fecha: string
+  icono: string
+  titulo: string
+  usuario: string | null
+  ubicacion?: string
+  texto: string | null
+  pendiente?: boolean
+}
+
+const ICONOS_MOVIMIENTO: Record<string, string> = { ingreso: '📥', traslado: '🔄', contacto: '✉️', retiro: '✅', novedad: '⚠️', edicion: '✏️', reingreso: '📥' }
+
+function eventosHistorial(movimientos: OtstBodegaMovimiento[], pendientes: OtstBodegaPendiente[]): EventoHistorial[] {
+  const eventos: EventoHistorial[] = movimientos.map(m => ({
+    id: m.id, fecha: m.created_at, icono: ICONOS_MOVIMIENTO[m.tipo] || '•',
+    titulo: m.tipo.charAt(0).toUpperCase() + m.tipo.slice(1), usuario: m.usuario,
+    ubicacion: m.ubicacion_origen && m.ubicacion_destino && m.ubicacion_origen !== m.ubicacion_destino
+      ? `${m.ubicacion_origen} → ${m.ubicacion_destino}` : undefined,
+    texto: m.motivo,
+  }))
+  for (const p of pendientes) {
+    eventos.push({
+      id: `sol-${p.id}`, fecha: p.created_at, icono: '📋', titulo: 'Solicitud de despacho',
+      usuario: p.solicitado_por, texto: p.nota ? `A dónde / motivo: ${p.nota}` : null,
+      pendiente: p.estado === 'pendiente',
+    })
+    if (p.estado === 'cancelado' && p.cancelado_at) {
+      eventos.push({
+        id: `can-${p.id}`, fecha: p.cancelado_at, icono: '🚫', titulo: 'Solicitud de despacho cancelada',
+        usuario: p.cancelado_por, texto: p.motivo_cancelacion,
+      })
+    }
+  }
+  return eventos.sort((a, b) => b.fecha.localeCompare(a.fecha))
+}
+
+function TimelineCard({ item, movimientos, pendientes }: { item: OtstBodega, movimientos: OtstBodegaMovimiento[], pendientes: OtstBodegaPendiente[] }) {
   const { hasCapability } = useUser()
   const canEliminar = hasCapability('bodega_eliminar')
   const [eliminando, setEliminando] = useState(false)
-  const iconos: Record<string, string> = { ingreso: '📥', traslado: '🔄', contacto: '✉️', retiro: '✅', novedad: '⚠️', edicion: '✏️' }
+  const eventos = eventosHistorial(movimientos, pendientes)
   return (
     <div style={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 12, padding: 20, marginBottom: 12 }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 12 }}>
@@ -2029,21 +2070,28 @@ function TimelineCard({ item, movimientos }: { item: OtstBodega, movimientos: Ot
         )}
       </div>
       {eliminando && <ModalEliminar item={item} onClose={() => setEliminando(false)} />}
-      {movimientos.length === 0 ? (
+      {eventos.length === 0 ? (
         <p style={{ fontSize: 12, color: 'var(--muted)' }}>Sin movimientos registrados.</p>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {movimientos.map(m => (
-            <div key={m.id} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '8px 0', borderTop: '1px solid var(--border)' }}>
-              <span>{iconos[m.tipo] || '•'}</span>
+          {eventos.map(ev => (
+            <div key={ev.id} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '8px 0', borderTop: '1px solid var(--border)' }}>
+              <span>{ev.icono}</span>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 12, fontWeight: 600, textTransform: 'capitalize' }}>{m.tipo}</div>
-                <div style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--mono)' }}>
-                  {new Date(m.created_at).toLocaleString()} · {m.usuario || '—'}
-                  {m.ubicacion_origen && m.ubicacion_destino && m.ubicacion_origen !== m.ubicacion_destino
-                    ? ` · ${m.ubicacion_origen} → ${m.ubicacion_destino}` : ''}
+                <div style={{ fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {ev.titulo}
+                  {ev.pendiente && (
+                    <span style={{
+                      fontSize: 10, fontWeight: 700, fontFamily: 'var(--mono)', padding: '1px 7px', borderRadius: 20,
+                      background: 'var(--yellow-bg)', color: 'var(--yellow)', border: '1px solid var(--yellow-border)',
+                    }}>Pendiente</span>
+                  )}
                 </div>
-                {m.motivo && <div style={{ fontSize: 12, marginTop: 2 }}>{m.motivo}</div>}
+                <div style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--mono)' }}>
+                  {new Date(ev.fecha).toLocaleString()} · {ev.usuario || '—'}
+                  {ev.ubicacion ? ` · ${ev.ubicacion}` : ''}
+                </div>
+                {ev.texto && <div style={{ fontSize: 12, marginTop: 2 }}>{ev.texto}</div>}
               </div>
             </div>
           ))}
