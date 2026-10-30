@@ -4,6 +4,10 @@
 export interface EquipoLeido { referencia: string, serial: string, id_equipo: string | null }
 
 // Códigos de un equipo a guardar (solo los campos que cambiaron).
+// Corrección de un equipo por Admin: datos básicos y, en una orden ya
+// guardada, también sus códigos (referencia solo aplica a in situ / sede).
+export interface EdicionEquipo extends EquipoLeido { codigos_referencia?: string[], codigos_certificado?: string[] }
+
 export interface CambioCodigosEquipo { id: string, codigos_referencia?: string[], codigos_certificado?: string[] }
 
 const ETIQUETAS: Record<string, keyof EquipoLeido | 'marca'> = {

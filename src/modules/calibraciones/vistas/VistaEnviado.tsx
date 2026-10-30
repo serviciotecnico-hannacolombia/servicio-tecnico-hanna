@@ -1,27 +1,39 @@
 // Vista dedicada para el estado "Enviado": resume lo que ya se definió antes
 // (cantidad de equipos, proveedor, servicios RV CALIBR, OTST, RMV/FV) y pide
 // los datos propios de esta transición — código de recepción, códigos de
-// certificados y las fechas de calibración — antes de pasar a "En calibración".
+// certificado de cada equipo y las fechas de calibración — antes de pasar a
+// "En calibración". En laboratorio externo no hay códigos de referencia: el
+// certificado de cada equipo se registra aquí y la orden guarda la unión.
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { PackageCheck } from 'lucide-react'
 import { FG, Seccion, Grid2, INP, PRI, B_INFO } from '../ui'
 import { linkOtst, parseOtstCodes } from './CamposCompartidos'
 import { semaforoOrden, descripcionSemaforo } from '../hooks/useCalibraciones'
-import type { OrdenCalibracion, RvCalibrItem } from '../../../types'
+import { parsearCodigos, unirCodigos, TH_EQUIPOS as TH, TD_EQUIPOS as TD, type CambioCodigosEquipo } from '../equipos'
+import { ContadorEquipos } from '../EquiposOrden'
+import type { OrdenCalibracion, OrdenCalibracionEquipo, RvCalibrItem } from '../../../types'
 import { NovedadesSlot } from './NovedadesSlot'
 
-export function VistaEnviado({ form, catalogo, codigosSel, puedeEditar, soloLectura, saving, onAvanzar }: {
+export function VistaEnviado({ form, catalogo, codigosSel, equipos, puedeEditar, soloLectura, saving, onGuardarCodigos, onAvanzar }: {
   form: Partial<OrdenCalibracion>
   catalogo: RvCalibrItem[]
   codigosSel: Set<string>
+  equipos: OrdenCalibracionEquipo[]
   puedeEditar: boolean
   soloLectura: boolean
   saving: boolean
+  onGuardarCodigos: (cambios: CambioCodigosEquipo[]) => Promise<boolean>
   onAvanzar: (overrides: Partial<OrdenCalibracion>) => void
 }) {
   const [codigoRecepcion, setCodigoRecepcion] = useState(form.codigo_recepcion || '')
-  const [codigosCertificados, setCodigosCertificados] = useState(form.codigos_certificados || '')
+  const [certEquipo, setCertEquipo] = useState<Record<string, string>>({})
+  const [guardandoCodigos, setGuardandoCodigos] = useState(false)
+  const editable = !soloLectura && puedeEditar
+  const textoCert = (e: OrdenCalibracionEquipo) => certEquipo[e.id] ?? e.codigos_certificado.join(', ')
+  const filas = equipos.map(e => ({ e, cert: parsearCodigos(textoCert(e)) }))
+  // Órdenes anteriores a los equipos: solo tienen el texto de toda la orden.
+  const sinCodigosPorEquipo = equipos.every(e => !e.codigos_certificado.length)
   const [fechaInicio, setFechaInicio] = useState(form.certificado_fecha_inicio || '')
   const [fechaFinEstimada, setFechaFinEstimada] = useState(form.certificado_fecha_fin || '')
   const otstCodigos = parseOtstCodes(form.otst)
@@ -45,15 +57,30 @@ export function VistaEnviado({ form, catalogo, codigosSel, puedeEditar, soloLect
   const nivelTransporte = semaforoInfo ? semaforoOrden(semaforoInfo) : 'ok'
   const colorTransporte = nivelTransporte === 'vencida' ? 'var(--red)' : nivelTransporte === 'proxima' ? 'var(--yellow)' : 'var(--text)'
 
-  function confirmar() {
+  async function confirmar() {
     if (!codigoRecepcion.trim()) { toast.error('Ingresa el código de recepción'); return }
     if (!fechaInicio) { toast.error('Ingresa la fecha de inicio de calibración'); return }
     if (!fechaFinEstimada) { toast.error('Ingresa la fecha estimada de finalización'); return }
-    if (!codigosCertificados.trim()) { toast.error('Ingresa los códigos de certificados'); return }
+    const cantidad = form.cantidad_equipos ?? 0
+    if (equipos.length !== cantidad) {
+      toast.error(`La orden es de ${cantidad} equipos y hay ${equipos.length} registrados — complétalos en la sección Equipos`)
+      return
+    }
+    const sinCert = filas.filter(f => !f.cert.length)
+    if (sinCert.length) { toast.error(`Falta el código de certificado de: ${sinCert.map(f => f.e.serial).join(', ')}`); return }
+    const cambios: CambioCodigosEquipo[] = filas
+      .filter(f => f.cert.join('|') !== f.e.codigos_certificado.join('|'))
+      .map(f => ({ id: f.e.id, codigos_certificado: f.cert }))
+    if (cambios.length) {
+      setGuardandoCodigos(true)
+      const ok = await onGuardarCodigos(cambios)
+      setGuardandoCodigos(false)
+      if (!ok) return
+    }
     onAvanzar({
       estado: 'en_calibracion',
       codigo_recepcion: codigoRecepcion.trim(),
-      codigos_certificados: codigosCertificados.trim(),
+      codigos_certificados: unirCodigos(filas.map(f => f.cert)),
       certificado_fecha_inicio: fechaInicio,
       certificado_fecha_fin: fechaFinEstimada,
     })
@@ -167,21 +194,53 @@ export function VistaEnviado({ form, catalogo, codigosSel, puedeEditar, soloLect
           </FG>
         </Grid2>
         <div style={{ marginTop: 14 }}>
-          <FG label="Códigos de certificados" required>
-            <input
-              value={soloLectura ? (form.codigos_certificados || '') : codigosCertificados}
-              onChange={e => setCodigosCertificados(e.target.value)}
-              placeholder="Separa varios códigos con coma: CERT-001, CERT-002"
-              disabled={soloLectura || !puedeEditar}
-              style={INP}
-            />
+          <FG label="Códigos de certificado por equipo" required>
+            {equipos.length === 0 || (soloLectura && sinCodigosPorEquipo && form.codigos_certificados) ? (
+              <div style={{ ...INP, color: 'var(--muted)' }}>
+                {form.codigos_certificados
+                  ? `Registrados para toda la orden: ${form.codigos_certificados}`
+                  : 'Registra los equipos de la orden (sección Equipos) para cargar sus certificados.'}
+              </div>
+            ) : (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr>
+                      <th style={TH}>Referencia</th><th style={TH}>Serial</th><th style={TH}>ID</th>
+                      <th style={{ ...TH, width: '38%' }}>Códigos de certificado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filas.map(({ e }) => (
+                      <tr key={e.id}>
+                        <td style={TD}>{e.referencia}</td>
+                        <td style={{ ...TD, fontFamily: 'var(--mono)' }}>{e.serial}</td>
+                        <td style={{ ...TD, fontFamily: 'var(--mono)' }}>{e.id_equipo || '—'}</td>
+                        <td style={TD}>
+                          <input
+                            value={soloLectura ? e.codigos_certificado.join(', ') : textoCert(e)}
+                            onChange={ev => setCertEquipo(c => ({ ...c, [e.id]: ev.target.value }))}
+                            placeholder="Separa varios con coma"
+                            disabled={!editable}
+                            style={{ ...INP, padding: '7px 10px', fontSize: 13 }}
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </FG>
+          {!soloLectura && (
+            <div style={{ marginTop: 8 }}><ContadorEquipos registrados={equipos.length} cantidad={form.cantidad_equipos} /></div>
+          )}
         </div>
       </Seccion>
 
       {puedeEditar && !soloLectura && (
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
-          <button onClick={confirmar} disabled={saving} style={PRI}>{saving ? 'Guardando…' : '✓ En calibración →'}</button>
+          <button onClick={confirmar} disabled={saving || guardandoCodigos} style={PRI}>{saving || guardandoCodigos ? 'Guardando…' : '✓ En calibración →'}</button>
         </div>
       )}
     </div>
