@@ -102,7 +102,7 @@ export function mismosCodigos(a: string[], b: string[]): boolean {
 
 // Estilos de las tablas de equipos (aquí y no en el .tsx para no romper Fast Refresh).
 export const TH_EQUIPOS: React.CSSProperties = { textAlign: 'left', padding: '6px 8px', fontSize: 10.5, fontFamily: 'var(--mono)', textTransform: 'uppercase', letterSpacing: '.5px', color: 'var(--muted)', borderBottom: '1px solid var(--border)', fontWeight: 600 }
-export const TD_EQUIPOS: React.CSSProperties = { padding: '7px 8px', fontSize: 13, borderBottom: '1px solid var(--border)', verticalAlign: 'top' }
+export const TD_EQUIPOS: React.CSSProperties = { padding: '7px 8px', fontSize: 13, borderBottom: '1px solid var(--border)', verticalAlign: 'middle' }
 
 // Unión de los códigos de todos los equipos, para los campos de texto de la orden.
 export function unirCodigos(listas: string[][]): string {
