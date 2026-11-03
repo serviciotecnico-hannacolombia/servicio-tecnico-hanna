@@ -1,13 +1,14 @@
-// Modales de gestión de la Biblioteca (solo con biblioteca_gestionar):
-// carpeta, documento nuevo / editar, nueva revisión, aprobar e historial.
+// Modales de gestión de la Biblioteca (para quien gestiona): carpeta,
+// documento nuevo / editar, nueva revisión, aprobar, historial y, solo Admin,
+// los editores.
 import { useRef, useState } from 'react'
 import { toast } from 'sonner'
-import { Check, Download, Eye, FileUp, Trash2 } from 'lucide-react'
+import { Check, Download, Eye, FileUp, Trash2, UserPlus } from 'lucide-react'
 import { Modal } from '../../components/ui/Modal'
 import { useProfiles } from '../../hooks/useProfiles'
 import {
   crearCarpeta, renombrarCarpeta, crearDocumento, editarDocumento, subirRevision, aprobarRevision,
-  eliminarRevision, descargar, useInvalidateBiblioteca, type DatosRevision,
+  eliminarRevision, descargar, useInvalidateBiblioteca, useEditores, agregarEditor, quitarEditor, type DatosRevision,
 } from './hooks/useBiblioteca'
 import {
   INP, PRI, GHOST, ICON_BTN, TH, TD, B_VIGENTE, B_PENDIENTE, B_OBSOLETA, ESTADO_LABEL, MAX_PDF_MB,
@@ -351,6 +352,82 @@ export function ModalHistorial({ documento, onVer, onClose }: {
             ))}
           </tbody>
         </table>
+      </div>
+    </Modal>
+  )
+}
+
+// ── Editores (solo Admin) ───────────────────────────────────────────────────
+// Personas que, sin tener la capability por rol, pueden crear, editar,
+// aprobar y borrar carpetas y documentos de la biblioteca.
+
+export function ModalEditores({ onClose }: { onClose: () => void }) {
+  const invalidate = useInvalidateBiblioteca()
+  const { data: profiles = [] } = useProfiles()
+  const { data: editores = [] } = useEditores()
+  const [seleccion, setSeleccion] = useState('')
+  const [guardando, setGuardando] = useState(false)
+  const ids = new Set(editores.map(e => e.user_id))
+  const nombre = (id: string) => {
+    const p = profiles.find(x => x.id === id)
+    return p?.full_name || p?.email || 'Usuario'
+  }
+  const disponibles = profiles
+    .filter(p => p.activo && !ids.has(p.id))
+    .sort((a, b) => (a.full_name || a.email).localeCompare(b.full_name || b.email, 'es'))
+
+  async function agregar() {
+    if (!seleccion) { toast.error('Elige un usuario'); return }
+    setGuardando(true)
+    try {
+      await agregarEditor(seleccion)
+      toast.success(`${nombre(seleccion)} ahora puede gestionar la biblioteca`)
+      setSeleccion('')
+      invalidate()
+    } catch (e) {
+      toast.error('Error: ' + mensaje(e))
+    } finally {
+      setGuardando(false)
+    }
+  }
+
+  async function quitar(id: string) {
+    if (!confirm(`¿Quitar a ${nombre(id)} de los editores de la biblioteca?`)) return
+    try {
+      await quitarEditor(id)
+      toast.success('Editor quitado')
+      invalidate()
+    } catch (e) {
+      toast.error('Error: ' + mensaje(e))
+    }
+  }
+
+  return (
+    <Modal open onClose={onClose} title="Editores de la biblioteca" width={520}>
+      <p style={{ fontSize: 12.5, color: 'var(--muted)', marginBottom: 14 }}>
+        Pueden agregar, editar, aprobar y borrar carpetas y documentos. El rol Admin ya puede hacerlo siempre.
+      </p>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <select value={seleccion} onChange={e => setSeleccion(e.target.value)} style={{ ...INP, flex: 1 }}>
+          <option value="">Elige un usuario…</option>
+          {disponibles.map(p => <option key={p.id} value={p.id}>{p.full_name || p.email}{p.full_name ? ` — ${p.email}` : ''}</option>)}
+        </select>
+        <button onClick={agregar} disabled={guardando} style={PRI}><UserPlus size={15} /> Agregar</button>
+      </div>
+      <div style={{ marginTop: 16, border: '1px solid var(--border)', borderRadius: 8 }}>
+        {editores.length === 0 ? (
+          <p style={{ fontSize: 12.5, color: 'var(--muted)', padding: 14, textAlign: 'center' }}>Todavía no hay editores agregados.</p>
+        ) : editores.map((e, i) => (
+          <div key={e.user_id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '10px 12px', borderTop: i ? '1px solid var(--border)' : 'none' }}>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600 }}>{nombre(e.user_id)}</div>
+              <div style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--mono)' }}>
+                {profiles.find(p => p.id === e.user_id)?.email} · desde {fmtFecha(e.created_at)}
+              </div>
+            </div>
+            <button title="Quitar editor" onClick={() => quitar(e.user_id)} style={{ ...ICON_BTN, color: 'var(--red)' }}><Trash2 size={15} /></button>
+          </div>
+        ))}
       </div>
     </Modal>
   )

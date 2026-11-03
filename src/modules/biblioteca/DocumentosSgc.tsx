@@ -1,13 +1,13 @@
 // Pestaña "Documentos SGC": carpetas a la izquierda y, a la derecha, la tabla
 // de documentos (título, código, revisión vigente, fecha y estado). Clic en
 // una fila abre el visor. La gestión (carpetas, documentos, revisiones y
-// aprobación) solo aparece con biblioteca_gestionar.
+// aprobación) solo aparece para quien gestiona: biblioteca_gestionar por rol
+// o estar en la lista de editores que elige el Admin.
 import { lazy, Suspense, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { Check, Download, Eye, FileUp, Folder, FolderPlus, History, Pencil, Plus, Search, Trash2 } from 'lucide-react'
 import { Spinner } from '../../components/ui/Spinner'
-import { useUser } from '../../hooks/useUser'
-import { useCarpetas, useDocumentos, useInvalidateBiblioteca, eliminarCarpeta, eliminarDocumento, descargar } from './hooks/useBiblioteca'
+import { useCarpetas, useDocumentos, useInvalidateBiblioteca, usePuedeGestionar, eliminarCarpeta, eliminarDocumento, descargar } from './hooks/useBiblioteca'
 import {
   INP, PRI, ICON_BTN, TH, TD, B_VIGENTE, B_PENDIENTE, fmtFecha, norm, vigenteDe, pendienteDe, nombreDescarga,
 } from './estilos'
@@ -27,8 +27,7 @@ type ModalActivo =
 const CARD: React.CSSProperties = { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: 16 }
 
 export function DocumentosSgc() {
-  const { hasCapability } = useUser()
-  const gestiona = hasCapability('biblioteca_gestionar')
+  const gestiona = usePuedeGestionar()
   const { data: carpetas = [], isLoading: cargandoCarpetas } = useCarpetas()
   const { data: documentos = [], isLoading: cargandoDocs } = useDocumentos()
   const invalidate = useInvalidateBiblioteca()

@@ -41,11 +41,44 @@ export function useDocumentos() {
   })
 }
 
+// ── Editores (personas que gestionan, además de la capability por rol) ──────
+
+export function useEditores() {
+  const { user } = useUser()
+  return useQuery({
+    queryKey: ['biblioteca_editores'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('biblioteca_editores').select('user_id, created_at').order('created_at')
+      if (error) throw error
+      return data as { user_id: string, created_at: string }[]
+    },
+    enabled: !!user,
+  })
+}
+
+// Gestiona quien tiene biblioteca_gestionar (rol) o está en la lista de editores.
+export function usePuedeGestionar(): boolean {
+  const { user, hasCapability } = useUser()
+  const { data: editores = [] } = useEditores()
+  return hasCapability('biblioteca_gestionar') || (!!user && editores.some(e => e.user_id === user.id))
+}
+
+export async function agregarEditor(userId: string) {
+  const { error } = await supabase.from('biblioteca_editores').insert({ user_id: userId })
+  if (error) throw error
+}
+
+export async function quitarEditor(userId: string) {
+  const { error } = await supabase.from('biblioteca_editores').delete().eq('user_id', userId)
+  if (error) throw error
+}
+
 export function useInvalidateBiblioteca() {
   const qc = useQueryClient()
   return () => {
     qc.invalidateQueries({ queryKey: ['biblioteca_carpetas'] })
     qc.invalidateQueries({ queryKey: ['biblioteca_documentos'] })
+    qc.invalidateQueries({ queryKey: ['biblioteca_editores'] })
   }
 }
 

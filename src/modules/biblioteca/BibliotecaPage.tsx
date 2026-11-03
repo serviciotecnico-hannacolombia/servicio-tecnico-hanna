@@ -3,9 +3,12 @@
 // 2 se suma aquí el control de activos fijos con sus certificados de
 // calibración vigentes (conectado con Mantenimiento programado).
 import { useState } from 'react'
-import { FileText } from 'lucide-react'
+import { FileText, Users } from 'lucide-react'
 import { Header } from '../../components/layout/Header'
+import { useUser } from '../../hooks/useUser'
 import { DocumentosSgc } from './DocumentosSgc'
+import { ModalEditores } from './ModalesBiblioteca'
+import { GHOST } from './estilos'
 
 const TABS = [
   { key: 'documentos', label: 'Documentos SGC', icon: FileText },
@@ -15,10 +18,21 @@ type TabKey = typeof TABS[number]['key']
 
 export function BibliotecaPage() {
   const [tab, setTab] = useState<TabKey>('documentos')
+  const { isAdmin } = useUser()
+  const [editores, setEditores] = useState(false)
 
   return (
     <div>
-      <Header title="Biblioteca" subtitle="Documentos del SGC de Servicio Técnico" />
+      <Header
+        title="Biblioteca"
+        subtitle="Documentos del SGC de Servicio Técnico"
+        actions={isAdmin ? (
+          <button onClick={() => setEditores(true)} style={GHOST} title="Personas que pueden agregar y editar documentos">
+            <Users size={15} /> Editores
+          </button>
+        ) : undefined}
+      />
+      {editores && <ModalEditores onClose={() => setEditores(false)} />}
 
       <div style={{ display: 'flex', gap: 6, marginBottom: 18, flexWrap: 'wrap' }}>
         {TABS.map(({ key, label, icon: Icon }) => (
