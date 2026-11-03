@@ -62,7 +62,7 @@ function construirTextoSaci(f: SaciForm): string {
     : '¿Requiere fecha especial de entrega? No'
 
   const fraseEquipo = `${esPlural(f.referenciaEquipo) ? 'de los equipos' : 'del equipo'} ${f.referenciaEquipo || '[REFERENCIA DEL EQUIPO]'}`
-  const fraseRemision = `${esPlural(f.remisionFactura) ? 'a las' : 'a la'} ${f.remisionFactura || '[REMISIÓN / FACTURA]'}`
+  const fraseRemision = `${esPlural(f.remisionFactura) ? 'a las Remisiones / Facturas' : 'a la Remisión / Factura'} ${f.remisionFactura || '[NÚMERO]'}`
   const bloqueOtst = f.otst.trim() ? ` y ${esPlural(f.otst) ? 'a las OTST' : 'a la OTST'} ${f.otst.trim()}` : ''
 
   return `Título: SOLICITUD DE CALIBRACIÓN ONAC — ${f.cliente || '[NOMBRE DEL CLIENTE]'}
