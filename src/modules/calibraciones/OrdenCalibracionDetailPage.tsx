@@ -467,6 +467,14 @@ export function OrdenCalibracionDetailPage() {
       </div>
     )
   }
+  // Al abrir la orden por URL (recarga, enlace del correo) form arranca vacío y
+  // se sincroniza con la orden en un useEffect, después del render. Las vistas
+  // de etapa toman sus valores iniciales de form una sola vez (useState), así
+  // que no se montan hasta que form ya es esta orden — si no, quedaban vacías
+  // (ej. la fecha estimada en "Envío de certificados").
+  if (!esNueva && form.id !== orden?.id) {
+    return <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}><Spinner size={32} /></div>
+  }
   if (esNueva && !puedeEditar) {
     return (
       <div style={{ textAlign: 'center', padding: '80px 20px', color: 'var(--muted)' }}>
