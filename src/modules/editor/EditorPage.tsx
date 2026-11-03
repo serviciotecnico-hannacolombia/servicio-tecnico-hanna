@@ -701,7 +701,7 @@ export function EditorPage() {
 
       {/* ── Save dialog ── */}
       {showSave && (
-        <div onClick={() => setShowSave(false)} style={{ ...OVERLAY, zIndex: 999 }}>
+        <div style={{ ...OVERLAY, zIndex: 999 }}>{/* Formulario: no se cierra con clic fuera */}
           <div onClick={e => e.stopPropagation()} style={{ ...MODAL, maxWidth: 380 }}>
             <div style={{ padding: '24px 26px' }}>
               <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 18, display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -739,7 +739,7 @@ export function EditorPage() {
 
       {/* ── Table dialog ── */}
       {showTable && (
-        <div onClick={() => setShowTable(false)} style={{ ...OVERLAY, zIndex: 999 }}>
+        <div style={{ ...OVERLAY, zIndex: 999 }}>{/* Formulario: no se cierra con clic fuera */}
           <div onClick={e => e.stopPropagation()} style={{ ...MODAL, maxWidth: 300 }}>
             <div style={{ padding: '24px 28px' }}>
               <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 18, display: 'flex', alignItems: 'center', gap: 8 }}>
