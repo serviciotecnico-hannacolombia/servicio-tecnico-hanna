@@ -57,8 +57,21 @@ export function pendienteDe(doc: BibliotecaDocumento): BibliotecaRevision | unde
     .sort((a, b) => b.created_at.localeCompare(a.created_at))[0]
 }
 
-// Nombre del archivo al descargar: "PL.ST.01 Rev 2 - POLÍTICA ….pdf"
+const ESTADO_ARCHIVO: Record<BibliotecaRevision['estado'], string> = {
+  vigente: 'Vigente', pendiente_aprobacion: 'Pendiente', obsoleta: 'Obsoleta',
+}
+
+// Nombre del archivo al descargar: código, revisión, fecha y estado, p. ej.
+// "PL.ST.01_Rev0_10-10-2024_Vigente.pdf". Solo ASCII y sin espacios: Storage
+// codifica tildes y espacios en el nombre (salía "Pol%C3%ADtica…").
+// Sin código se usa el título abreviado.
 export function nombreDescarga(doc: Pick<BibliotecaDocumento, 'titulo' | 'codigo'>, rev: BibliotecaRevision): string {
-  const base = [doc.codigo?.trim(), `Rev ${rev.revision}`].filter(Boolean).join(' ')
-  return `${base} - ${doc.titulo}`.replace(/[\\/:*?"<>|]+/g, ' ').slice(0, 180) + '.pdf'
+  const fecha = rev.fecha_aprobacion ?? rev.fecha_revision
+  const partes = [
+    storageSafe(doc.codigo?.trim() || doc.titulo.slice(0, 40)),
+    `Rev${storageSafe(rev.revision)}`,
+    fecha ? fmtFecha(fecha).replace(/\//g, '-') : '',
+    ESTADO_ARCHIVO[rev.estado],
+  ]
+  return partes.filter(Boolean).join('_') + '.pdf'
 }

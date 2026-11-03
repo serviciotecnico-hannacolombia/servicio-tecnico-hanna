@@ -19,6 +19,7 @@ GlobalWorkerOptions.workerSrc = workerUrl
 const BADGE = { vigente: B_VIGENTE, pendiente_aprobacion: B_PENDIENTE, obsoleta: B_OBSOLETA }
 const ZOOM_MIN = 0.5
 const ZOOM_MAX = 3
+const ZOOM_INICIAL = 1.2
 const GAP = 16
 
 interface Tamano { ancho: number, alto: number }
@@ -87,7 +88,7 @@ export function VisorPdf({ documento, revision, onClose }: {
   const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null)
   const [tamanos, setTamanos] = useState<Tamano[]>([])
   const [error, setError] = useState<string | null>(null)
-  const [zoom, setZoom] = useState<number | 'ancho'>('ancho')
+  const [zoom, setZoom] = useState<number | 'ancho'>(ZOOM_INICIAL)
   const [anchoDisponible, setAnchoDisponible] = useState(0)
   const [paginaActual, setPaginaActual] = useState(1)
   const [paginaInput, setPaginaInput] = useState('1')
