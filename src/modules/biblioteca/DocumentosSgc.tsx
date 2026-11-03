@@ -2,7 +2,7 @@
 // de documentos (título, código, revisión vigente, fecha y estado). Clic en
 // una fila abre el visor. La gestión (carpetas, documentos, revisiones y
 // aprobación) solo aparece con biblioteca_gestionar.
-import { useMemo, useState } from 'react'
+import { lazy, Suspense, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { Check, Download, Eye, FileUp, Folder, FolderPlus, History, Pencil, Plus, Search, Trash2 } from 'lucide-react'
 import { Spinner } from '../../components/ui/Spinner'
@@ -12,7 +12,8 @@ import {
   INP, PRI, ICON_BTN, TH, TD, B_VIGENTE, B_PENDIENTE, fmtFecha, norm, vigenteDe, pendienteDe, nombreDescarga,
 } from './estilos'
 import { ModalCarpeta, ModalDocumento, ModalRevision, ModalAprobar, ModalHistorial } from './ModalesBiblioteca'
-import { VisorPdf } from './VisorPdf'
+// pdf.js pesa: el visor se carga solo cuando se abre un documento.
+const VisorPdf = lazy(() => import('./VisorPdf').then(m => ({ default: m.VisorPdf })))
 import type { BibliotecaCarpeta, BibliotecaDocumento, BibliotecaRevision } from '../../types'
 
 type ModalActivo =
@@ -216,7 +217,11 @@ export function DocumentosSgc() {
           onClose={() => setModal(null)}
         />
       )}
-      {modal?.tipo === 'ver' && <VisorPdf documento={modal.documento} revision={modal.revision} onClose={() => setModal(null)} />}
+      {modal?.tipo === 'ver' && (
+        <Suspense fallback={null}>
+          <VisorPdf documento={modal.documento} revision={modal.revision} onClose={() => setModal(null)} />
+        </Suspense>
+      )}
     </div>
   )
 }
