@@ -12,7 +12,7 @@ import {
 } from './hooks/useBiblioteca'
 import {
   INP, PRI, GHOST, ICON_BTN, TH, TD, B_VIGENTE, B_PENDIENTE, B_OBSOLETA, ESTADO_LABEL, MAX_PDF_MB,
-  fmtFecha, hoyISO, nombreDescarga,
+  fmtFecha, hoyISO, nombreDescarga, norm,
 } from './estilos'
 import type { BibliotecaCarpeta, BibliotecaDocumento, BibliotecaRevision } from '../../types'
 
@@ -365,24 +365,30 @@ export function ModalEditores({ onClose }: { onClose: () => void }) {
   const invalidate = useInvalidateBiblioteca()
   const { data: profiles = [] } = useProfiles()
   const { data: editores = [] } = useEditores()
-  const [seleccion, setSeleccion] = useState('')
+  const [busqueda, setBusqueda] = useState('')
+  const [activo, setActivo] = useState(0)
   const [guardando, setGuardando] = useState(false)
   const ids = new Set(editores.map(e => e.user_id))
   const nombre = (id: string) => {
     const p = profiles.find(x => x.id === id)
     return p?.full_name || p?.email || 'Usuario'
   }
-  const disponibles = profiles
-    .filter(p => p.activo && !ids.has(p.id))
-    .sort((a, b) => (a.full_name || a.email).localeCompare(b.full_name || b.email, 'es'))
+  // Sugerencias: usuarios activos que aún no son editores, por nombre o correo (sin tildes).
+  const q = norm(busqueda.trim())
+  const sugerencias = q
+    ? profiles
+      .filter(p => p.activo && !ids.has(p.id) && norm(`${p.full_name ?? ''} ${p.email}`).includes(q))
+      .sort((a, b) => (a.full_name || a.email).localeCompare(b.full_name || b.email, 'es'))
+      .slice(0, 8)
+    : []
 
-  async function agregar() {
-    if (!seleccion) { toast.error('Elige un usuario'); return }
+  async function agregar(id: string) {
     setGuardando(true)
     try {
-      await agregarEditor(seleccion)
-      toast.success(`${nombre(seleccion)} ahora puede gestionar la biblioteca`)
-      setSeleccion('')
+      await agregarEditor(id)
+      toast.success(`${nombre(id)} ahora puede gestionar la biblioteca`)
+      setBusqueda('')
+      setActivo(0)
       invalidate()
     } catch (e) {
       toast.error('Error: ' + mensaje(e))
@@ -407,12 +413,42 @@ export function ModalEditores({ onClose }: { onClose: () => void }) {
       <p style={{ fontSize: 12.5, color: 'var(--muted)', marginBottom: 14 }}>
         Pueden agregar, editar, aprobar y borrar carpetas y documentos. El rol Admin ya puede hacerlo siempre.
       </p>
-      <div style={{ display: 'flex', gap: 8 }}>
-        <select value={seleccion} onChange={e => setSeleccion(e.target.value)} style={{ ...INP, flex: 1 }}>
-          <option value="">Elige un usuario…</option>
-          {disponibles.map(p => <option key={p.id} value={p.id}>{p.full_name || p.email}{p.full_name ? ` — ${p.email}` : ''}</option>)}
-        </select>
-        <button onClick={agregar} disabled={guardando} style={PRI}><UserPlus size={15} /> Agregar</button>
+      <div style={{ position: 'relative' }}>
+        <UserPlus size={15} style={{ position: 'absolute', left: 12, top: 12, color: 'var(--muted)' }} />
+        <input
+          value={busqueda}
+          autoFocus
+          disabled={guardando}
+          onChange={e => { setBusqueda(e.target.value); setActivo(0) }}
+          onKeyDown={e => {
+            if (!sugerencias.length) return
+            if (e.key === 'ArrowDown') { e.preventDefault(); setActivo(i => Math.min(sugerencias.length - 1, i + 1)) }
+            if (e.key === 'ArrowUp') { e.preventDefault(); setActivo(i => Math.max(0, i - 1)) }
+            if (e.key === 'Enter') { e.preventDefault(); agregar(sugerencias[activo].id) }
+          }}
+          placeholder="Escribe el nombre o correo del usuario…"
+          style={{ ...INP, paddingLeft: 36 }}
+        />
+        {q && (
+          <div style={{ marginTop: 4, border: '1px solid var(--border)', borderRadius: 8, background: 'var(--surface)', overflow: 'hidden' }}>
+            {sugerencias.length === 0 ? (
+              <div style={{ padding: '10px 12px', fontSize: 12.5, color: 'var(--muted)' }}>Sin usuarios que coincidan (o ya son editores).</div>
+            ) : sugerencias.map((p, i) => (
+              <button key={p.id} type="button" onMouseEnter={() => setActivo(i)} onClick={() => agregar(p.id)}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, width: '100%', textAlign: 'left',
+                  padding: '9px 12px', border: 'none', borderTop: i ? '1px solid var(--border)' : 'none', cursor: 'pointer',
+                  fontFamily: 'var(--sans)', background: i === activo ? 'var(--accent-bg)' : 'transparent', color: 'var(--text)',
+                }}>
+                <span>
+                  <span style={{ fontSize: 13, fontWeight: 600 }}>{p.full_name || p.email}</span>
+                  {p.full_name && <span style={{ display: 'block', fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--mono)' }}>{p.email}</span>}
+                </span>
+                <span style={{ fontSize: 11.5, color: 'var(--accent)', fontWeight: 600, whiteSpace: 'nowrap' }}>+ Agregar</span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
       <div style={{ marginTop: 16, border: '1px solid var(--border)', borderRadius: 8 }}>
         {editores.length === 0 ? (
