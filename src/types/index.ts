@@ -20,7 +20,7 @@ export type ModuleKey =
   | 'llamadas' | 'bodega' | 'consumibles' | 'tarifas' | 'codigos'
   | 'editor' | 'indicadores' | 'reporte_st' | 'tareas'
   | 'gestion_mantenimientos' | 'mantenimiento_programado' | 'calibraciones' | 'void' | 'bodega_st' | 'tickets'
-  | 'equipos_sin_formato' | 'certificados_calidad' | 'garantias' | 'mant_in_situ' | 'mant_in_situ_regional' | 'admin'
+  | 'equipos_sin_formato' | 'certificados_calidad' | 'garantias' | 'mant_in_situ' | 'mant_in_situ_regional' | 'biblioteca' | 'admin'
 
 export type CapabilityKey =
   | 'mant_in_situ_personalizado'
@@ -29,6 +29,7 @@ export type CapabilityKey =
   | 'bodega_registrar_ingreso' | 'editar_codigos' | 'gestion_codigos' | 'bodega_eliminar' | 'bodega_ver_ubicacion' | 'bodega_gestionar_despacho'
   | 'calibraciones_editar' | 'calibraciones_ver_todas' | 'ver_precios_codigos' | 'tablas_mantenimiento_editar'
   | 'equipos_sin_formato_editar' | 'garantias_editar' | 'garantias_ver_todas' | 'mant_in_situ_editar' | 'mant_in_situ_regional_editar'
+  | 'biblioteca_gestionar'
 
 export interface Role {
   id: string
@@ -701,4 +702,41 @@ export interface MantInSituDestinoPeaje {
   peaje_id: string
   sentido: 'ida' | 'regreso'
   revision_requerida: boolean
+}
+
+// ── Biblioteca (documentos del SGC) ──────────────────────────────────────────
+
+export type EstadoRevisionBiblioteca = 'vigente' | 'pendiente_aprobacion' | 'obsoleta'
+
+export interface BibliotecaCarpeta {
+  id: string
+  nombre: string
+  descripcion: string | null
+  orden: number
+  created_at: string
+}
+
+export interface BibliotecaRevision {
+  id: string
+  documento_id: string
+  revision: string
+  fecha_revision: string | null
+  fecha_aprobacion: string | null
+  estado: EstadoRevisionBiblioteca
+  storage_path: string
+  nombre_archivo: string | null
+  tamano_bytes: number | null
+  notas: string | null
+  subido_por: string | null
+  created_at: string
+}
+
+export interface BibliotecaDocumento {
+  id: string
+  carpeta_id: string
+  titulo: string
+  codigo: string | null
+  created_at: string
+  updated_at: string
+  revisiones: BibliotecaRevision[]
 }

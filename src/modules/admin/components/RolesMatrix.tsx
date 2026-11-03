@@ -27,6 +27,7 @@ const MODULE_LABELS: Record<ModuleKey, string> = {
   equipos_sin_formato: 'Equipos Sin Formato',
   certificados_calidad: 'Certificados de Calidad',
   garantias: 'Garantías',
+  biblioteca: 'Biblioteca SGC',
   mant_in_situ: 'Mant. In Situ',
   mant_in_situ_regional: 'Mant. In Situ Regional',
   admin: 'Administración',
@@ -51,6 +52,7 @@ const CAPABILITY_LABELS: Record<CapabilityKey, string> = {
   equipos_sin_formato_editar: 'Crear/editar y avanzar estados (Equipos Sin Formato)',
   garantias_editar: 'Crear/editar, asignar responsables y avanzar estados (Garantías)',
   garantias_ver_todas: 'Ver todas las garantías, no solo las propias (Garantías)',
+  biblioteca_gestionar: 'Gestionar carpetas, documentos y aprobaciones (Biblioteca SGC)',
   mant_in_situ_editar: 'Configurar precios, tiempos, vehículo y peajes (Mant. In Situ)',
   mant_in_situ_regional_editar: 'Configurar precios, equipos, vehículo y peajes regionales',
 }
@@ -80,6 +82,7 @@ const CAPABILITY_MODULE: Record<CapabilityKey, ModuleKey> = {
   equipos_sin_formato_editar: 'equipos_sin_formato',
   garantias_editar: 'garantias',
   garantias_ver_todas: 'garantias',
+  biblioteca_gestionar: 'biblioteca',
   mant_in_situ_editar: 'mant_in_situ',
   mant_in_situ_regional_editar: 'mant_in_situ_regional',
 }
