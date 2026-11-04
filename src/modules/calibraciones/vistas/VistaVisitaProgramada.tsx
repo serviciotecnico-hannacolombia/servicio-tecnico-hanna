@@ -9,6 +9,7 @@ import { FG, Seccion, Grid2, INP, PRI, GHOST, fmtFecha } from '../ui'
 import { MODALIDAD_LABEL } from '../hooks/useCalibraciones'
 import { linkOtst, parseOtstCodes } from './CamposCompartidos'
 import type { OrdenCalibracion } from '../../../types'
+import { NovedadesSlot } from './NovedadesSlot'
 
 export function VistaVisitaProgramada({ form, puedeEditar, soloLectura, saving, onAvanzar }: {
   form: Partial<OrdenCalibracion>
@@ -119,6 +120,7 @@ export function VistaVisitaProgramada({ form, puedeEditar, soloLectura, saving, 
           </FG>
         </Grid2>
       </Seccion>
+      <NovedadesSlot />
 
       <Seccion titulo="Llegada del metrólogo(a)">
         <Grid2>

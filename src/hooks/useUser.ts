@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode, createElement } from 'react'
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode, createElement } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import type { Profile, ModuleKey, CapabilityKey } from '../types'
@@ -33,21 +33,40 @@ const UserContext = createContext<UserContextValue>({
   refreshProfile: async () => {},
 })
 
+// Fallos transitorios de red o del gateway de Supabase (el navegador los
+// reporta como CORS / ERR_FAILED) no deben dejar al usuario sin permisos:
+// se reintenta y, si sigue fallando, se lanza el error en vez de devolver
+// listas vacías.
+const REINTENTOS_MS = [500, 1500, 4000]
+
+async function conReintentos<T>(
+  consulta: () => PromiseLike<{ data: T | null; error: { code?: string; message: string } | null }>,
+): Promise<T | null> {
+  for (let intento = 0; ; intento++) {
+    const { data, error } = await consulta()
+    // PGRST116 = .single() sin filas: no es un fallo transitorio.
+    if (!error || error.code === 'PGRST116') return data
+    if (intento >= REINTENTOS_MS.length) throw new Error(error.message)
+    await new Promise(r => setTimeout(r, REINTENTOS_MS[intento]))
+  }
+}
+
 async function fetchProfileById(userId: string): Promise<Profile | null> {
-  const { data } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', userId)
-    .single()
-  return data ?? null
+  return conReintentos<Profile>(() =>
+    supabase.from('profiles').select('*').eq('id', userId).single()
+  )
 }
 
 async function fetchPermissions(roleId: string | null): Promise<{ modules: Set<ModuleKey>; capabilities: Set<CapabilityKey> }> {
   if (!roleId) return { modules: new Set(), capabilities: new Set() }
 
-  const [{ data: modules }, { data: capabilities }] = await Promise.all([
-    supabase.from('role_modules').select('module_key').eq('role_id', roleId),
-    supabase.from('role_capabilities').select('capability_key').eq('role_id', roleId),
+  const [modules, capabilities] = await Promise.all([
+    conReintentos<{ module_key: string }[]>(() =>
+      supabase.from('role_modules').select('module_key').eq('role_id', roleId)
+    ),
+    conReintentos<{ capability_key: string }[]>(() =>
+      supabase.from('role_capabilities').select('capability_key').eq('role_id', roleId)
+    ),
   ])
 
   return {
@@ -62,11 +81,17 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [modules, setModules] = useState<Set<ModuleKey>>(new Set())
   const [capabilities, setCapabilities] = useState<Set<CapabilityKey>>(new Set())
   const [loading, setLoading] = useState(true)
+  // Usuario cuyos permisos ya están cargados. Si entra otro (login), hay que
+  // volver a loading=true; si no, DefaultRedirect decide con los permisos
+  // vacíos y manda a /llamadas ("Sin acceso a este módulo").
+  const loadedUserId = useRef<string | null>(null)
 
   const loadProfileAndPermissions = async (userId: string) => {
+    // Si algo falla se lanza antes de tocar el estado: se conservan los
+    // permisos que ya hubiera en vez de quedar vacíos.
     const p = await fetchProfileById(userId)
-    setProfile(p)
     const { modules, capabilities } = await fetchPermissions(p?.role_id ?? null)
+    setProfile(p)
     setModules(modules)
     setCapabilities(capabilities)
   }
@@ -83,6 +108,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       setUser(u)
 
       if (!u) {
+        loadedUserId.current = null
         setProfile(null)
         setModules(new Set())
         setCapabilities(new Set())
@@ -93,9 +119,12 @@ export function UserProvider({ children }: { children: ReactNode }) {
       // Token refreshes don't change profile or permissions.
       if (event === 'TOKEN_REFRESHED') return
 
+      if (loadedUserId.current !== u.id) setLoading(true)
+
       setTimeout(async () => {
         try {
           await loadProfileAndPermissions(u.id)
+          loadedUserId.current = u.id
         } catch (err) {
           console.error('Error cargando perfil y permisos', err)
         } finally {

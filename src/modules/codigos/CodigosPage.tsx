@@ -1169,7 +1169,7 @@ function Modal({ title, onClose, children, width = 560 }: {
       position: 'fixed', inset: 0, zIndex: 1000,
       background: 'rgba(0,0,0,.45)', display: 'flex', alignItems: 'center', justifyContent: 'center',
       padding: 16,
-    }} onMouseDown={e => { if (e.target === e.currentTarget) onClose() }}>
+    }}>{/* Sin cierre al hacer clic fuera: se perdía lo escrito en el formulario. */}
       <div style={{
         background: 'var(--surface)', border: '1px solid var(--border)',
         borderRadius: 'var(--radius)', boxShadow: '0 24px 60px rgba(0,0,0,.3)',

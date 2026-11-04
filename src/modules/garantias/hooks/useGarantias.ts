@@ -4,7 +4,7 @@ import { useUser } from '../../../hooks/useUser'
 import { useProfiles } from '../../../hooks/useProfiles'
 import { nivelPorFecha, type NivelSemaforo } from '../../calibraciones/hooks/useCalibraciones'
 import { linkSaci } from '../../calibraciones/vistas/CamposCompartidos'
-import type { EstadoGarantia, Garantia, GarantiaHistorial, GarantiaNota, Profile } from '../../../types'
+import type { EstadoGarantia, Garantia, GarantiaHistorial, GarantiaNota, GarantiaRecordatorio, Profile } from '../../../types'
 
 export function useGarantias() {
   const { user } = useUser()
@@ -40,6 +40,21 @@ export function useHistorialGarantia(garantiaId: string | undefined) {
         .order('created_at', { ascending: false })
       if (error) throw error
       return data as GarantiaHistorial[]
+    },
+    enabled: !!garantiaId,
+  })
+}
+
+export function useRecordatoriosGarantia(garantiaId: string | undefined) {
+  return useQuery({
+    queryKey: ['garantias_recordatorios', garantiaId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('garantias_recordatorios').select('*')
+        .eq('garantia_id', garantiaId as string)
+        .order('fecha_hora', { ascending: true })
+      if (error) throw error
+      return data as GarantiaRecordatorio[]
     },
     enabled: !!garantiaId,
   })
@@ -85,6 +100,7 @@ export function useInvalidateGarantias() {
     invalidateDetalle: (garantiaId: string) => {
       qc.invalidateQueries({ queryKey: ['garantias_historial', garantiaId] })
       qc.invalidateQueries({ queryKey: ['garantias_notas', garantiaId] })
+      qc.invalidateQueries({ queryKey: ['garantias_recordatorios', garantiaId] })
     },
   }
 }
@@ -115,6 +131,9 @@ export const CAMPO_LABEL_GAR: Record<string, string> = {
   anulada: 'Anulación',
   motivo_anulacion: 'Motivo de anulación',
   nota: 'Nota de avance',
+  recordatorio: 'Recordatorio programado',
+  recordatorio_cancelado: 'Recordatorio cancelado',
+  recordatorio_enviado: 'Recordatorio enviado por correo',
 }
 
 // Pasos del stepper según la ruta: con stock se salta NV/Importación; sin
@@ -250,6 +269,43 @@ export async function anularGarantia(id: string, motivo: string) {
 
 export async function reactivarGarantia(id: string) {
   return actualizarGarantia(id, { anulada: false, motivo_anulacion: null })
+}
+
+// ── Recordatorios ────────────────────────────────────────────────────────────
+// La hora se toma como hora de Colombia (UTC-5 fijo, sin horario de verano);
+// fechaHoraLocal viene de un input datetime-local (YYYY-MM-DDTHH:mm).
+export function fechaHoraColombiaISO(fechaHoraLocal: string): string {
+  return new Date(`${fechaHoraLocal}:00-05:00`).toISOString()
+}
+
+// "Ahora" en Colombia con formato datetime-local, para el min del input.
+export function ahoraColombiaLocal(): string {
+  const p = Object.fromEntries(new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Bogota', year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+  }).formatToParts(new Date()).map(x => [x.type, x.value]))
+  return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}`
+}
+
+export function fmtFechaHora(iso: string): string {
+  return new Date(iso).toLocaleString('es-CO', {
+    timeZone: 'America/Bogota', day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', hour12: true,
+  })
+}
+
+// RLS valida que sea responsable de la garantía (o Admin) y que sea a futuro.
+export async function crearRecordatorioGarantia(garantiaId: string, fechaHoraLocal: string, nota: string, creadoPor: string) {
+  return supabase.from('garantias_recordatorios').insert({
+    garantia_id: garantiaId,
+    fecha_hora: fechaHoraColombiaISO(fechaHoraLocal),
+    nota: nota.trim() || null,
+    creado_por: creadoPor,
+  })
+}
+
+export async function cancelarRecordatorioGarantia(id: string) {
+  return supabase.rpc('cancelar_recordatorio_garantia', { _id: id })
 }
 
 // Solo Admin (gateado también en RLS).

@@ -23,6 +23,8 @@ export const MODULE_ROUTES: { key: ModuleKey; path: string }[] = [
   { key: 'mant_in_situ', path: '/mant-in-situ' },
   { key: 'gestion_mantenimientos', path: '/gestion-mantenimientos' },
   { key: 'mant_in_situ_regional', path: '/mant-in-situ-regional' },
+  // Al final: todos los roles la tienen y no debe ser su página de inicio.
+  { key: 'biblioteca',  path: '/biblioteca' },
   { key: 'admin',       path: '/admin' },
 ]
 

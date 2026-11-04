@@ -60,6 +60,11 @@ Deno.serve(async (req) => {
     const html = renderCorreo({
       ordenId, cliente, numeroOc, estadoAnterior, estadoNuevo, ordenUrl, usuario,
       titular: body.titular, detalles: body.detalles, proximoPaso: body.proximoPaso, resumen: body.resumen,
+      // Novedad: estadoNuevo llega como "Novedad", así el asunto queda
+      // "NUMERO · CLIENTE — Novedad" en apertura, avances y resolución.
+      tipo: body.tipo, etapa: body.etapa, detalleNovedad: body.detalleNovedad,
+      resuelta: body.resuelta, resolucion: body.resolucion,
+      equipos: body.equipos, historialNovedad: body.historialNovedad,
     })
 
     const resp = await fetch('https://api.resend.com/emails', {

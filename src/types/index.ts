@@ -20,15 +20,16 @@ export type ModuleKey =
   | 'llamadas' | 'bodega' | 'consumibles' | 'tarifas' | 'codigos'
   | 'editor' | 'indicadores' | 'reporte_st' | 'tareas'
   | 'gestion_mantenimientos' | 'mantenimiento_programado' | 'calibraciones' | 'void' | 'bodega_st' | 'tickets'
-  | 'equipos_sin_formato' | 'certificados_calidad' | 'garantias' | 'mant_in_situ' | 'mant_in_situ_regional' | 'admin'
+  | 'equipos_sin_formato' | 'certificados_calidad' | 'garantias' | 'mant_in_situ' | 'mant_in_situ_regional' | 'biblioteca' | 'admin'
 
 export type CapabilityKey =
   | 'mant_in_situ_personalizado'
   | 'mant_consultas_reportes'
   | 'importar_csv_tarifas' | 'importar_csv_codigos' | 'importar_csv_llamadas'
-  | 'bodega_registrar_ingreso' | 'editar_codigos' | 'gestion_codigos' | 'bodega_eliminar'
+  | 'bodega_registrar_ingreso' | 'editar_codigos' | 'gestion_codigos' | 'bodega_eliminar' | 'bodega_ver_ubicacion' | 'bodega_gestionar_despacho'
   | 'calibraciones_editar' | 'calibraciones_ver_todas' | 'ver_precios_codigos' | 'tablas_mantenimiento_editar'
   | 'equipos_sin_formato_editar' | 'garantias_editar' | 'garantias_ver_todas' | 'mant_in_situ_editar' | 'mant_in_situ_regional_editar'
+  | 'biblioteca_gestionar'
 
 export interface Role {
   id: string
@@ -423,6 +424,43 @@ export interface OrdenCalibracionParametro {
   rv_calibr_codigo: string
 }
 
+// Equipo de una orden de calibración — trazabilidad por serial y códigos
+// de referencia / certificado por equipo.
+export interface OrdenCalibracionEquipo {
+  id: string
+  orden_id: string
+  referencia: string
+  serial: string
+  id_equipo: string | null
+  codigos_referencia: string[]
+  codigos_certificado: string[]
+  posicion: number
+  created_at: string
+}
+
+export interface NovedadAvance {
+  id: string
+  novedad_id: string
+  mensaje: string
+  usuario_id: string | null
+  notificado: boolean
+  created_at: string
+}
+
+export interface OrdenCalibracionNovedad {
+  id: string
+  orden_id: string
+  etapa: EstadoCalibracion
+  detalle: string
+  equipos_ids: string[]
+  abierta_por: string | null
+  created_at: string
+  resuelta_at: string | null
+  resuelta_por: string | null
+  resolucion: string | null
+  avances: NovedadAvance[]
+}
+
 export interface OrdenCalibracionHistorial {
   id: string
   orden_id: string
@@ -563,6 +601,20 @@ export interface GarantiaNota {
   created_at: string
 }
 
+export interface GarantiaRecordatorio {
+  id: string
+  garantia_id: string
+  fecha_hora: string
+  nota: string | null
+  creado_por: string | null
+  created_at: string
+  enviado_at: string | null
+  cancelado_at: string | null
+  cancelado_por: string | null
+  intentos: number
+  error: string | null
+}
+
 export interface GarantiaHistorial {
   id: string
   garantia_id: string
@@ -650,4 +702,41 @@ export interface MantInSituDestinoPeaje {
   peaje_id: string
   sentido: 'ida' | 'regreso'
   revision_requerida: boolean
+}
+
+// ── Biblioteca (documentos del SGC) ──────────────────────────────────────────
+
+export type EstadoRevisionBiblioteca = 'vigente' | 'pendiente_aprobacion' | 'obsoleta'
+
+export interface BibliotecaCarpeta {
+  id: string
+  nombre: string
+  descripcion: string | null
+  orden: number
+  created_at: string
+}
+
+export interface BibliotecaRevision {
+  id: string
+  documento_id: string
+  revision: string
+  fecha_revision: string | null
+  fecha_aprobacion: string | null
+  estado: EstadoRevisionBiblioteca
+  storage_path: string
+  nombre_archivo: string | null
+  tamano_bytes: number | null
+  notas: string | null
+  subido_por: string | null
+  created_at: string
+}
+
+export interface BibliotecaDocumento {
+  id: string
+  carpeta_id: string
+  titulo: string
+  codigo: string | null
+  created_at: string
+  updated_at: string
+  revisiones: BibliotecaRevision[]
 }

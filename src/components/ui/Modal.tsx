@@ -19,9 +19,11 @@ export function Modal({ open, onClose, title, children, width = 440 }: ModalProp
 
   if (!open) return null
 
+  // Un clic en el fondo NO cierra: casi todos los modales son formularios y
+  // un clic fuera por error borraba lo escrito. Se cierra con la X, Cancelar o Esc.
   return (
     <div
-      onClick={onClose}
+      onClick={e => e.stopPropagation()}
       style={{
         position: 'fixed',
         inset: 0,

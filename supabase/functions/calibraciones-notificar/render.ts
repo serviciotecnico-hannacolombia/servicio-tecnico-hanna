@@ -17,6 +17,16 @@ export interface DatosCorreo {
   detalles?: unknown
   proximoPaso?: string | null
   resumen?: unknown
+  // Correo de novedad (tipo = 'novedad'): en vez de "anterior → nuevo" se
+  // muestra la etapa, el detalle, los equipos afectados y el historial de
+  // la novedad. El asunto lo arma index.ts igual que el de estado.
+  tipo?: string | null
+  etapa?: string | null
+  detalleNovedad?: string | null
+  resuelta?: boolean | null
+  resolucion?: string | null
+  equipos?: unknown
+  historialNovedad?: unknown
 }
 
 const MAX_FILAS = 30
@@ -72,6 +82,33 @@ function tabla(titulo: string, filas: FilaCorreo[]): string {
     <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse">${rows}</table>`
 }
 
+function franja(texto: string, fondo: string, borde: string, etiqueta = ''): string {
+  if (!texto) return ''
+  return `
+  <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;margin-top:14px;border-collapse:collapse">
+    <tr><td style="padding:12px 16px;background:${fondo};border-left:4px solid ${borde};font-size:13px">
+      ${etiqueta ? `<strong>${etiqueta}</strong> ` : ''}${texto.replace(/\n/g, '<br>')}
+    </td></tr>
+  </table>`
+}
+
+function renderNovedad(d: DatosCorreo): string {
+  const resuelta = !!d.resuelta
+  const etapa = txt(d.etapa)
+  const fondo = resuelta ? '#e8f7ee' : '#fff8e6'
+  const borde = resuelta ? '#16a34a' : '#f59e0b'
+  const color = resuelta ? '#15803d' : '#b45309'
+  const etiqueta = `${resuelta ? 'Novedad resuelta' : 'Novedad'}${etapa ? ` · ${etapa}` : ''}`
+  return `
+  <p style="margin:0">
+    <span style="display:inline-block;padding:3px 12px;border-radius:20px;background:${fondo};border:1px solid ${borde};color:${color};font-size:13px;font-weight:700">${etiqueta}</span>
+  </p>
+  ${franja(txt(d.detalleNovedad), '#fff8e6', '#f59e0b')}
+  ${resuelta ? franja(txt(d.resolucion), '#e8f7ee', '#16a34a', 'Solución:') : ''}
+  ${tabla('Equipos afectados', parseFilas(d.equipos))}
+  ${tabla('Historial de la novedad', parseFilas(d.historialNovedad))}`
+}
+
 export function renderCorreo(d: DatosCorreo): string {
   const detalles = parseFilas(d.detalles)
   const resumen = parseFilas(d.resumen)
@@ -90,10 +127,11 @@ export function renderCorreo(d: DatosCorreo): string {
   <p style="margin:4px 0 0;font-size:18px;font-weight:700">${numeroOc || txt(d.ordenId)}${cliente ? ` · ${cliente}` : ''}</p>
 
   <p style="margin:18px 0 8px;font-size:15px;font-weight:600">${titular}</p>
+  ${d.tipo === 'novedad' ? renderNovedad(d) : `
   <p style="margin:0">
     ${estadoAnterior ? `<span style="color:${GRIS};font-size:13px;text-decoration:line-through">${estadoAnterior}</span> <span style="color:${GRIS}">&rarr;</span> ` : ''}
     <span style="display:inline-block;padding:3px 12px;border-radius:20px;background:#e8f0fb;border:1px solid ${AZUL};color:${AZUL};font-size:13px;font-weight:700">${estadoNuevo}</span>
-  </p>
+  </p>`}
 
   ${tabla('Lo registrado en este paso', detalles)}
 

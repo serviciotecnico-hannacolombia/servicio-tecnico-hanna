@@ -9,6 +9,7 @@ import { FG, Seccion, Grid2, INP, PRI } from '../ui'
 import { linkOtst, parseOtstCodes } from './CamposCompartidos'
 import { semaforoOrden, descripcionSemaforo } from '../hooks/useCalibraciones'
 import type { Asesor, OrdenCalibracion } from '../../../types'
+import { NovedadesSlot } from './NovedadesSlot'
 
 export function VistaControlCalidad({ form, asesorSeleccionado, puedeEditar, soloLectura, saving, onAvanzar }: {
   form: Partial<OrdenCalibracion>
@@ -107,6 +108,7 @@ export function VistaControlCalidad({ form, asesorSeleccionado, puedeEditar, sol
           </FG>
         </Grid2>
       </Seccion>
+      <NovedadesSlot />
 
       <Seccion titulo="Control de calidad">
         <Grid2>

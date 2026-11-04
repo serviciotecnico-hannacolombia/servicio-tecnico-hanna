@@ -10,6 +10,7 @@ import { FileCheck2 } from 'lucide-react'
 import { FG, Seccion, Grid2, INP, PRI, GHOST, fmtFecha } from '../ui'
 import { generarMailtoCertificados } from '../correo'
 import type { OrdenCalibracion } from '../../../types'
+import { NovedadesSlot } from './NovedadesSlot'
 
 export function VistaEnvioCertificados({ form, puedeEditar, soloLectura, saving, onAvanzar }: {
   form: Partial<OrdenCalibracion>
@@ -121,6 +122,7 @@ export function VistaEnvioCertificados({ form, puedeEditar, soloLectura, saving,
           </Grid2>
         </div>
       </Seccion>
+      <NovedadesSlot />
 
       <Seccion titulo="Correo al cliente">
         <Grid2>

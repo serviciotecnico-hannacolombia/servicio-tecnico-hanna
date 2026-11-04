@@ -32,6 +32,7 @@ import { EquiposSinFormatoPage } from './modules/equipos-sin-formato/EquiposSinF
 import { EquipoSinFormatoDetailPage } from './modules/equipos-sin-formato/EquipoSinFormatoDetailPage'
 import { GarantiasPage } from './modules/garantias/GarantiasPage'
 import { GarantiaDetailPage } from './modules/garantias/GarantiaDetailPage'
+import { BibliotecaPage } from './modules/biblioteca/BibliotecaPage'
 import { MantInSituPage } from './modules/mant-in-situ/MantInSituPage'
 import { RegionalPage } from './modules/mant-in-situ-regional/RegionalPage'
 import { NotFoundPage } from './components/NotFoundPage'
@@ -80,6 +81,7 @@ export default function App() {
               <Route path="/mant-in-situ-regional" element={<ModuleGuard moduleKey="mant_in_situ_regional"><RegionalPage /></ModuleGuard>} />
               <Route path="/garantias" element={<ModuleGuard moduleKey="garantias"><GarantiasPage /></ModuleGuard>} />
               <Route path="/garantias/:id" element={<ModuleGuard moduleKey="garantias"><GarantiaDetailPage /></ModuleGuard>} />
+              <Route path="/biblioteca" element={<ModuleGuard moduleKey="biblioteca"><BibliotecaPage /></ModuleGuard>} />
               <Route
                 path="/admin"
                 element={

@@ -6,6 +6,7 @@ import { Download } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { Card } from '../../components/ui/Card'
 import { FG, Stat, INP, PRI, GHOST, fechaLocalISO } from './ui'
+import { CruceRmvCard } from './CruceRmvCard'
 import { efectividadPromedio, resumenMensual, evaluarEfectividad, ESTADO_LABEL, MODALIDAD_LABEL, hoyISO } from './hooks/useCalibraciones'
 import type { OrdenCalibracion } from '../../types'
 
@@ -188,6 +189,8 @@ export function AnalisisTab({ ordenes }: { ordenes: OrdenCalibracion[] }) {
           </div>
         </div>
       </Card>
+
+      <CruceRmvCard ordenes={ordenes} />
     </div>
   )
 }

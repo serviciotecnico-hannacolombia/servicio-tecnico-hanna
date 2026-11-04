@@ -10,6 +10,7 @@ import { FlaskConical } from 'lucide-react'
 import { FG, Seccion, Grid2, INP, PRI, GHOST, fmtFecha } from '../ui'
 import { hoyISO } from '../hooks/useCalibraciones'
 import type { OrdenCalibracion } from '../../../types'
+import { NovedadesSlot } from './NovedadesSlot'
 
 export function VistaEnCalibracion({ form, puedeEditar, soloLectura, saving, onAvanzar }: {
   form: Partial<OrdenCalibracion>
@@ -84,6 +85,7 @@ export function VistaEnCalibracion({ form, puedeEditar, soloLectura, saving, onA
           </FG>
         </div>
       </Seccion>
+      <NovedadesSlot />
 
       <Seccion titulo="Retorno">
         <Grid2>

@@ -12,6 +12,7 @@ import { useUser } from '../../hooks/useUser'
 import { useProfiles } from '../../hooks/useProfiles'
 import { exportToCSV, todayISO } from '../../lib/utils'
 import { INTRANET_URL } from '../../lib/constants'
+import { parseOtstCodes } from '../equipos-sin-formato/hooks/useEquiposSinFormato'
 import type { OtstBodega, OtstBodegaMovimiento, OtstBodegaZona, OtstBodegaConfig, EstadoOtstBodega, OtstBodegaPendiente } from '../../types'
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -215,7 +216,7 @@ export function OtstBodegaPage() {
       {tab === 'bodega'     && <TabBodega     bodega={bodega} umbral={umbral} columnas={columnas} pendientes={pendientes} />}
       {tab === 'rotacion'   && <TabRotacion   bodega={bodega} zonas={zonas} columnas={columnas} />}
       {tab === 'pendientes' && <TabPendientes bodega={bodega} pendientes={pendientes} umbral={umbral} columnas={columnas} />}
-      {tab === 'historial'  && <TabHistorial  bodega={bodega} movimientos={movimientos} />}
+      {tab === 'historial'  && <TabHistorial  bodega={bodega} movimientos={movimientos} pendientes={pendientes} />}
       {tab === 'config'     && <TabConfig     zonas={zonas} config={config} bodega={bodega} />}
     </div>
   )
@@ -1600,6 +1601,10 @@ function TabPendientes({ bodega, pendientes, umbral, columnas }: { bodega: OtstB
   const { displayName, hasCapability } = useUser()
   const canEliminar     = hasCapability('bodega_eliminar')
   const canRegistrarIngreso = hasCapability('bodega_registrar_ingreso')
+  // Ventas no ve la ubicación física en Despacho (permiso configurable en Admin).
+  const verUbicacion    = hasCapability('bodega_ver_ubicacion')
+  // Completar y marcar/resolver novedad; sin esto (Ventas) solo se puede cancelar.
+  const puedeGestionarDespacho = hasCapability('bodega_gestionar_despacho')
   const otstRef          = useRef<HTMLInputElement>(null)
   const notaRef          = useRef<HTMLInputElement>(null)
   const [otstInput, setOtstInput] = useState('')
@@ -1620,20 +1625,37 @@ function TabPendientes({ bodega, pendientes, umbral, columnas }: { bodega: OtstB
 
   const yaTienePendiente = new Set(pendientes.filter(p => p.estado === 'pendiente').map(p => p.otst.trim().toLowerCase()))
 
+  // Se pueden relacionar varias OTST separadas por coma; todas comparten el motivo.
+  const otstsInput = [...new Set(parseOtstCodes(otstInput))]
+
   async function agregar() {
-    const otst = otstInput.trim()
-    if (!otst) { toast.error('Ingresa el número de OTST'); return }
-    if (yaTienePendiente.has(otst.toLowerCase())) { toast.error(`Ya existe una solicitud pendiente para la OTST ${otst}`); return }
+    if (otstsInput.length === 0) { toast.error('Ingresa el número de OTST'); return }
+    const repetidas = otstsInput.filter(o => yaTienePendiente.has(o.toLowerCase()))
+    const nuevas = otstsInput.filter(o => !yaTienePendiente.has(o.toLowerCase()))
+    if (nuevas.length === 0) {
+      toast.error(repetidas.length === 1
+        ? `Ya existe una solicitud pendiente para la OTST ${repetidas[0]}`
+        : `Todas ya tienen solicitud pendiente: ${repetidas.join(', ')}`)
+      return
+    }
     const nota = notaInput.trim()
     if (!nota) { toast.error('Ingresa el motivo del despacho'); notaRef.current?.focus(); return }
     setSaving(true)
-    const match = bodega.find(b => b.otst.trim().toLowerCase() === otst.toLowerCase())
-    const { error } = await supabase.from('otst_bodega_pendientes').insert({
-      otst, otst_id: match?.id ?? null, nota, solicitado_por: displayName, estado: 'pendiente',
+    const filas = nuevas.map(otst => {
+      const match = bodega.find(b => b.otst.trim().toLowerCase() === otst.toLowerCase())
+      return { otst, otst_id: match?.id ?? null, nota, solicitado_por: displayName, estado: 'pendiente' }
     })
+    const { error } = await supabase.from('otst_bodega_pendientes').insert(filas)
     setSaving(false)
     if (error) { toast.error('Error: ' + error.message); return }
-    toast.success(match ? 'Agregada a pendientes de despacho' : 'Agregada a pendientes (aún no está registrada en bodega)')
+    const sinRegistrar = filas.filter(f => !f.otst_id).length
+    if (filas.length === 1) {
+      toast.success(sinRegistrar ? 'Agregada a pendientes (aún no está registrada en bodega)' : 'Agregada a pendientes de despacho')
+    } else {
+      toast.success(`${filas.length} OTST agregadas a pendientes de despacho`
+        + (sinRegistrar ? ` (${sinRegistrar} aún no están registradas en bodega)` : ''))
+    }
+    if (repetidas.length) toast.warning(`Ya tenían pendiente (no se agregaron): ${repetidas.join(', ')}`)
     qc.invalidateQueries({ queryKey: ['otst_bodega_pendientes'] })
     setOtstInput(''); setNotaInput('')
     otstRef.current?.focus()
@@ -1687,7 +1709,7 @@ function TabPendientes({ bodega, pendientes, umbral, columnas }: { bodega: OtstB
       || (p.cancelado_por || '').toLowerCase().includes(q)
       || (p.nota || '').toLowerCase().includes(q)
       || (p.motivo_cancelacion || '').toLowerCase().includes(q)
-      || (item ? codigoUbicacion(item.columna, item.fila, item.subcolumna).toLowerCase().includes(q) : false)
+      || (item && verUbicacion ? codigoUbicacion(item.columna, item.fila, item.subcolumna).toLowerCase().includes(q) : false)
   })
   const historialTotalPages = Math.max(1, Math.ceil(completadosFiltrados.length / HISTORIAL_PAGE_SIZE))
   const historialPageActual = Math.min(historialPage, historialTotalPages - 1)
@@ -1698,11 +1720,11 @@ function TabPendientes({ bodega, pendientes, umbral, columnas }: { bodega: OtstB
       <Card>
         <SecTitle>Agregar solicitud de despacho</SecTitle>
         <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap' }}>
-          <div style={{ flex: '0 0 160px' }}>
+          <div style={{ flex: '0 0 260px', maxWidth: '100%' }}>
             <FL>OTST</FL>
             <input
-              ref={otstRef} value={otstInput}
-              onChange={e => setOtstInput(e.target.value)}
+              ref={otstRef} value={otstInput} inputMode="numeric"
+              onChange={e => setOtstInput(e.target.value.replace(/[^0-9,]/g, ''))}
               onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); agregar() } }}
               placeholder="Número..." style={INP} autoFocus
             />
@@ -1717,6 +1739,11 @@ function TabPendientes({ bodega, pendientes, umbral, columnas }: { bodega: OtstB
           </div>
           <button onClick={agregar} disabled={saving} style={PRI}>{saving ? 'Guardando…' : '+ Agregar'}</button>
         </div>
+        <div style={{ marginTop: 6, fontSize: 11.5, color: 'var(--muted)' }}>
+          {otstInput.includes(',')
+            ? <>Se están enlistando las OTST: <strong style={{ fontFamily: 'var(--mono)', color: 'var(--text)' }}>{otstsInput.join(', ')}</strong></>
+            : 'Si quieres relacionar varias, sepáralas por coma (,)'}
+        </div>
       </Card>
 
       <div style={{ marginTop: 20 }}>
@@ -1729,7 +1756,7 @@ function TabPendientes({ bodega, pendientes, umbral, columnas }: { bodega: OtstB
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                 <thead>
                   <tr>
-                    {['OTST', 'Ubicación', 'Antigüedad', 'Solicitado por', 'Hace', 'Nota', 'Acciones'].map(h => (
+                    {['OTST', ...(verUbicacion ? ['Ubicación'] : []), 'Antigüedad', 'Solicitado por', 'Hace', 'Nota', 'Acciones'].map(h => (
                       <th key={h} style={TH}>{h}</th>
                     ))}
                   </tr>
@@ -1741,7 +1768,7 @@ function TabPendientes({ bodega, pendientes, umbral, columnas }: { bodega: OtstB
                     return (
                       <tr key={p.id} style={{ borderBottom: '1px solid rgba(221,227,237,.5)' }}>
                         <td style={{ padding: '10px 14px', fontWeight: 600 }}><OtstLink otst={p.otst} /></td>
-                        <td style={{ padding: '10px 14px' }}>
+                        {verUbicacion && <td style={{ padding: '10px 14px' }}>
                           {!item ? (
                             <span style={B_ABANDONADA}><AlertTriangle size={11} style={{ marginRight: 3, verticalAlign: -1 }} />No encontrada en bodega</span>
                           ) : item.estado === 'novedad' ? (
@@ -1752,7 +1779,7 @@ function TabPendientes({ bodega, pendientes, umbral, columnas }: { bodega: OtstB
                           ) : (
                             <span style={{ ...B_LOC, fontSize: 13, fontWeight: 700 }}>{codigoUbicacion(item.columna, item.fila, item.subcolumna)}</span>
                           )}
-                        </td>
+                        </td>}
                         <td style={{ padding: '10px 14px' }}>
                           {antig === null ? '—' : (
                             <span style={antig >= umbral ? B_ABANDONADA : B_OK}>{antig} mes{antig !== 1 ? 'es' : ''}</span>
@@ -1763,12 +1790,12 @@ function TabPendientes({ bodega, pendientes, umbral, columnas }: { bodega: OtstB
                         <td style={{ padding: '10px 14px', maxWidth: 220 }}>{p.nota || '—'}</td>
                         <td style={{ padding: '8px 14px', whiteSpace: 'nowrap' }}>
                           <div style={{ display: 'flex', gap: 6 }}>
-                            {item && (
+                            {item && puedeGestionarDespacho && (
                               <button onClick={() => setCompletando({ pendiente: p, item })} style={{ ...PRI, padding: '6px 12px', fontSize: 12 }}>
                                 ✓ Completar
                               </button>
                             )}
-                            {item && (
+                            {item && puedeGestionarDespacho && (
                               item.estado === 'novedad' ? (
                                 <IconBtn title="Resolver novedad" onClick={() => setResolviendoNovedad(item)}>
                                   <CheckCircle2 size={14} color="#7c3aed" />
@@ -1820,7 +1847,7 @@ function TabPendientes({ bodega, pendientes, umbral, columnas }: { bodega: OtstB
                 {completadosPagina.map(({ p, item }) => (
                   <div key={p.id} style={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 16px', fontSize: 12, opacity: .8, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
                     <div>
-                      <strong>OTST <OtstLink otst={p.otst} /></strong>{item ? ` (${codigoUbicacion(item.columna, item.fila, item.subcolumna)})` : ''}
+                      <strong>OTST <OtstLink otst={p.otst} /></strong>{item && verUbicacion ? ` (${codigoUbicacion(item.columna, item.fila, item.subcolumna)})` : ''}
                       {p.estado === 'cancelado'
                         ? <> — <span style={{ color: '#c0392b', fontWeight: 600 }}>✕ cancelado</span> por {p.cancelado_por || '—'} el {p.cancelado_at ? new Date(p.cancelado_at).toLocaleString() : '—'}</>
                         : <> — despachado por {p.completado_por || '—'} el {p.completado_at ? new Date(p.completado_at).toLocaleString() : '—'}</>}
@@ -1958,7 +1985,7 @@ function ModalCancelarPendiente({ pendiente, onClose }: { pendiente: OtstBodegaP
 
 // ── Tab Historial ──────────────────────────────────────────────────────────────
 
-function TabHistorial({ bodega, movimientos }: { bodega: OtstBodega[], movimientos: OtstBodegaMovimiento[] }) {
+function TabHistorial({ bodega, movimientos, pendientes }: { bodega: OtstBodega[], movimientos: OtstBodegaMovimiento[], pendientes: OtstBodegaPendiente[] }) {
   const [q, setQ] = useState('')
   const ql = q.toLowerCase()
   const results = ql.length >= 2 ? bodega.filter(r => r.otst.toLowerCase().includes(ql)) : []
@@ -1975,7 +2002,8 @@ function TabHistorial({ bodega, movimientos }: { bodega: OtstBodega[], movimient
       ) : (
         <div>
           {results.map(r => (
-            <TimelineCard key={r.id} item={r} movimientos={movimientos.filter(m => m.otst_id === r.id)} />
+            <TimelineCard key={r.id} item={r} movimientos={movimientos.filter(m => m.otst_id === r.id)}
+              pendientes={pendientes.filter(p => p.otst_id === r.id || p.otst.trim().toLowerCase() === r.otst.trim().toLowerCase())} />
           ))}
         </div>
       )}
@@ -1983,11 +2011,51 @@ function TabHistorial({ bodega, movimientos }: { bodega: OtstBodega[], movimient
   )
 }
 
-function TimelineCard({ item, movimientos }: { item: OtstBodega, movimientos: OtstBodegaMovimiento[] }) {
+// Evento de la línea de tiempo: un movimiento de bodega o una solicitud de
+// despacho (otst_bodega_pendientes), que vive en otra tabla pero también es
+// parte del historial de la OTST — quién la pidió y a dónde.
+interface EventoHistorial {
+  id: string
+  fecha: string
+  icono: string
+  titulo: string
+  usuario: string | null
+  ubicacion?: string
+  texto: string | null
+  pendiente?: boolean
+}
+
+const ICONOS_MOVIMIENTO: Record<string, string> = { ingreso: '📥', traslado: '🔄', contacto: '✉️', retiro: '✅', novedad: '⚠️', edicion: '✏️', reingreso: '📥' }
+
+function eventosHistorial(movimientos: OtstBodegaMovimiento[], pendientes: OtstBodegaPendiente[]): EventoHistorial[] {
+  const eventos: EventoHistorial[] = movimientos.map(m => ({
+    id: m.id, fecha: m.created_at, icono: ICONOS_MOVIMIENTO[m.tipo] || '•',
+    titulo: m.tipo.charAt(0).toUpperCase() + m.tipo.slice(1), usuario: m.usuario,
+    ubicacion: m.ubicacion_origen && m.ubicacion_destino && m.ubicacion_origen !== m.ubicacion_destino
+      ? `${m.ubicacion_origen} → ${m.ubicacion_destino}` : undefined,
+    texto: m.motivo,
+  }))
+  for (const p of pendientes) {
+    eventos.push({
+      id: `sol-${p.id}`, fecha: p.created_at, icono: '📋', titulo: 'Solicitud de despacho',
+      usuario: p.solicitado_por, texto: p.nota ? `A dónde / motivo: ${p.nota}` : null,
+      pendiente: p.estado === 'pendiente',
+    })
+    if (p.estado === 'cancelado' && p.cancelado_at) {
+      eventos.push({
+        id: `can-${p.id}`, fecha: p.cancelado_at, icono: '🚫', titulo: 'Solicitud de despacho cancelada',
+        usuario: p.cancelado_por, texto: p.motivo_cancelacion,
+      })
+    }
+  }
+  return eventos.sort((a, b) => b.fecha.localeCompare(a.fecha))
+}
+
+function TimelineCard({ item, movimientos, pendientes }: { item: OtstBodega, movimientos: OtstBodegaMovimiento[], pendientes: OtstBodegaPendiente[] }) {
   const { hasCapability } = useUser()
   const canEliminar = hasCapability('bodega_eliminar')
   const [eliminando, setEliminando] = useState(false)
-  const iconos: Record<string, string> = { ingreso: '📥', traslado: '🔄', contacto: '✉️', retiro: '✅', novedad: '⚠️', edicion: '✏️' }
+  const eventos = eventosHistorial(movimientos, pendientes)
   return (
     <div style={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 12, padding: 20, marginBottom: 12 }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 12 }}>
@@ -2002,21 +2070,28 @@ function TimelineCard({ item, movimientos }: { item: OtstBodega, movimientos: Ot
         )}
       </div>
       {eliminando && <ModalEliminar item={item} onClose={() => setEliminando(false)} />}
-      {movimientos.length === 0 ? (
+      {eventos.length === 0 ? (
         <p style={{ fontSize: 12, color: 'var(--muted)' }}>Sin movimientos registrados.</p>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {movimientos.map(m => (
-            <div key={m.id} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '8px 0', borderTop: '1px solid var(--border)' }}>
-              <span>{iconos[m.tipo] || '•'}</span>
+          {eventos.map(ev => (
+            <div key={ev.id} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '8px 0', borderTop: '1px solid var(--border)' }}>
+              <span>{ev.icono}</span>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 12, fontWeight: 600, textTransform: 'capitalize' }}>{m.tipo}</div>
-                <div style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--mono)' }}>
-                  {new Date(m.created_at).toLocaleString()} · {m.usuario || '—'}
-                  {m.ubicacion_origen && m.ubicacion_destino && m.ubicacion_origen !== m.ubicacion_destino
-                    ? ` · ${m.ubicacion_origen} → ${m.ubicacion_destino}` : ''}
+                <div style={{ fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {ev.titulo}
+                  {ev.pendiente && (
+                    <span style={{
+                      fontSize: 10, fontWeight: 700, fontFamily: 'var(--mono)', padding: '1px 7px', borderRadius: 20,
+                      background: 'var(--yellow-bg)', color: 'var(--yellow)', border: '1px solid var(--yellow-border)',
+                    }}>Pendiente</span>
+                  )}
                 </div>
-                {m.motivo && <div style={{ fontSize: 12, marginTop: 2 }}>{m.motivo}</div>}
+                <div style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--mono)' }}>
+                  {new Date(ev.fecha).toLocaleString()} · {ev.usuario || '—'}
+                  {ev.ubicacion ? ` · ${ev.ubicacion}` : ''}
+                </div>
+                {ev.texto && <div style={{ fontSize: 12, marginTop: 2 }}>{ev.texto}</div>}
               </div>
             </div>
           ))}
