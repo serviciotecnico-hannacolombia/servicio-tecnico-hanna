@@ -46,3 +46,15 @@ export async function actualizarSolicitud(s:SolicitudMantenimiento,estado:Estado
   if(error)errorGuardado(error)
   return data as SolicitudMantenimiento
 }
+
+export async function clasificarSolicitud(s:SolicitudMantenimiento,prueba:boolean,usuario:string,nombre:string) {
+ if(VISTA_PREVIA_LOCAL){
+  const filas=leerLocal(usuario),actual=filas.find(r=>r.id===s.id)
+  if(!actual||actual.revision!==s.revision)throw Error('La solicitud cambió. Recarga antes de continuar.')
+  const fecha=new Date().toISOString(),nueva={...actual,es_prueba:prueba,revision:actual.revision+1,updated_at:fecha,historial:[...actual.historial,{fecha,usuario:nombre,estado:actual.estado,cotizacion:actual.cotizacion,nota:prueba?'Clasificada como solicitud de prueba':'Clasificada como solicitud real'}]}
+  escribirLocal(usuario,filas.map(r=>r.id===s.id?nueva:r));return nueva
+ }
+ const {data,error}=await supabase.rpc('gestion_mantenimiento_clasificar',{p_id:s.id,p_revision:s.revision,p_prueba:prueba})
+ if(error)errorGuardado(error)
+ return data as SolicitudMantenimiento
+}

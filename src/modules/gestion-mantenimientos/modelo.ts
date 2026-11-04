@@ -27,6 +27,7 @@ export interface CalculoGuardado {
 export interface EventoSeguimiento {fecha:string,usuario:string,estado:EstadoMantenimiento,cotizacion:string|null,nota:string}
 export interface SolicitudMantenimiento {
   id:string
+  es_prueba?:boolean
   cliente:string
   origen:string
   destino:string

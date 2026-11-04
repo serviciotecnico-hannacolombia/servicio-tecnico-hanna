@@ -13,7 +13,7 @@ import {useGestionMantenimientos} from './useGestionMantenimientos'
 import {VISTA_PREVIA_LOCAL,AVISO_GESTION_LOCAL} from './almacenamiento'
 import type {CalculoGuardado} from './modelo'
 export function GuardarSolicitud({calculo}:{calculo:CalculoGuardado|null}) {
-  const {autorizado,guardar}=useGestionMantenimientos()
+  const {puedeCrear:autorizado,guardar}=useGestionMantenimientos()
   const [snapshot,setSnapshot]=useState<CalculoGuardado|null>(null)
   const [cliente,setCliente]=useState(''),[codigoOrigen,setCodigoOrigen]=useState(''),[codigoDestino,setCodigoDestino]=useState(''),[cotizacion,setCotizacion]=useState(''),[nota,setNota]=useState('')
   const [detalleOrigen,setDetalleOrigen]=useState(''),[detalleDestino,setDetalleDestino]=useState('')
@@ -35,7 +35,7 @@ export function GuardarSolicitud({calculo}:{calculo:CalculoGuardado|null}) {
   return <div className="gestion-save">
     <Button disabled={!calculo||saving} onClick={()=>{if(calculo)setSnapshot(structuredClone(calculo))}}><Save size={16}/> Guardar solicitud</Button>
     <Link to="/gestion-mantenimientos">Gestión de mantenimientos →</Link>
-    {guardada&&<p role="status">Solicitud guardada. <Link to={'/gestion-mantenimientos?solicitud='+guardada}>Ver seguimiento</Link></p>}
+    {guardada&&<p role="status">Solicitud guardada. <Link to={'/gestion-mantenimientos/solicitudes?solicitud='+guardada}>Ver seguimiento</Link></p>}
     <Modal open={!!snapshot} onClose={()=>{if(!saving)setSnapshot(null)}} title="Guardar solicitud de mantenimiento" width={620}>
       <form onSubmit={enviar} className="gestion-form">
         {VISTA_PREVIA_LOCAL&&<p className="gestion-preview">{AVISO_GESTION_LOCAL}</p>}
@@ -43,6 +43,7 @@ export function GuardarSolicitud({calculo}:{calculo:CalculoGuardado|null}) {
         <label>Cliente <span className="regional-required">*</span><input style={INP} required maxLength={200} value={cliente} onChange={e=>setCliente(e.target.value)}/></label>
         {catalogo.isFetching&&<p role="status" className="regional-note">Actualizando el catálogo de ciudades guardadas…</p>}
         {catalogo.data?.aviso&&<p role="status" className="regional-note">{catalogo.data.aviso}</p>}
+        <p className="regional-note">Cobertura nacional: selecciona el origen y destino entre los municipios del catálogo guardado.</p>
         <SelectorCiudad titulo="Origen del viaje" ciudades={ciudades} codigo={codigoOrigen} onChange={setCodigoOrigen} detalle={detalleOrigen} onDetalle={setDetalleOrigen}/>
         <SelectorCiudad titulo="Destino final" ciudades={ciudades} codigo={codigoDestino} onChange={setCodigoDestino} detalle={detalleDestino} onDetalle={setDetalleDestino}/>
         <label>Número de cotización (opcional al crear)<input style={INP} maxLength={100} value={cotizacion} onChange={e=>setCotizacion(e.target.value)}/></label>

@@ -35,3 +35,5 @@ supabase/.temp
 
 # PostgreSQL embebido para validar Gestión de mantenimientos
 .cache/gestion-sql-check/
+.cache/reporte-in-situ-preview/
+src/modules/gestion-mantenimientos/enlacesInformes2025.json

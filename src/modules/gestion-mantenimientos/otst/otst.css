@@ -1,0 +1,12 @@
+.gm-workspace .otst-centro { display:grid; gap:18px; }
+.gm-workspace .otst-centro label { display:grid; gap:6px; color:var(--muted); font-size:12px; margin:8px 0; }
+.gm-workspace .otst-centro input:not([type=checkbox]),.gm-workspace .otst-centro select { padding:10px; border:1px solid var(--border2); border-radius:7px; background:var(--surface2); color:var(--text); width:100%; box-sizing:border-box; }
+.gm-workspace .otst-filtros { display:grid; grid-template-columns:200px 1fr 1fr; gap:12px; }
+.gm-workspace .otst-acciones { display:flex; gap:16px; align-items:center; flex-wrap:wrap; }
+.gm-workspace .otst-centro a { color:var(--gm-link); }
+.gm-workspace .otst-centro summary { padding:10px 0; cursor:pointer; color:var(--gm-link); }
+.gm-workspace .otst-aviso { padding:12px; border:1px solid var(--border); border-radius:8px; font-size:12px; color:var(--muted); }
+.gm-workspace .otst-datos { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
+.gm-workspace .otst-datos dt { font-size:12px; color:var(--muted); }.gm-workspace .otst-datos dd { margin:5px 0; }
+.gm-workspace .otst-centro .otst-check { display:inline-flex; align-items:center; gap:8px; margin-right:20px; }
+@media(max-width:700px) { .gm-workspace .otst-filtros,.gm-workspace .otst-datos { grid-template-columns:1fr; } }

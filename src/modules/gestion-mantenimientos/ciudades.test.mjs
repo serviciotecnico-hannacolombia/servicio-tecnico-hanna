@@ -25,3 +25,9 @@ test('ciudades nuevas de la BD se incorporan sin duplicar las del respaldo',()=>
  assert.equal(textoUbicacion(nuevos[0],' Planta norte '),'Municipio nuevo, Departamento nuevo · Planta norte')
  assert.equal(textoUbicacion(nuevos[0],''),'Municipio nuevo, Departamento nuevo')
 })
+
+test('Personalizado conserva el catálogo nacional original, incluidos Arauca y departamentos alejados de las oficinas',()=>{
+ assert.ok(catalogo.length>=1122)
+ for(const codigo of ['81001','81065','91001','94001','97001','99001','88001'])assert.ok(catalogo.some(c=>c.codigo===codigo),codigo)
+ assert.equal(filtrarCiudades(catalogo,'ARAUCA','arauca')[0].codigo,'81001')
+})

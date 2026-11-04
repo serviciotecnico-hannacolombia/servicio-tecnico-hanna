@@ -1,3 +1,4 @@
+import {usePermisosInSitu} from '../../modules/gestion-mantenimientos/usePermisosInSitu'
 import {useAccesoConsultas} from '../../modules/gestion-mantenimientos/useAccesoConsultas'
 import { useAccesoPersonalizado } from '../../modules/mant-in-situ-regional/useAccesoPersonalizado'
 import { useState } from 'react'
@@ -141,8 +142,9 @@ export function Sidebar() {
   const { collapsed, toggle } = useSidebar()
   const tecnicoGestion = useAccesoPersonalizado()
   const accesoRegistroConsultas=useAccesoConsultas()
+  const accesoVisitas=usePermisosInSitu()
   const { user, displayName, profile, isAdmin, hasModule, signOut, updateDisplayName, updateAvatar, updateFavoritos } = useUser()
-  const puedeVerModulo = (key: ModuleKey) => key === 'gestion_mantenimientos' ? (tecnicoGestion && (import.meta.env.DEV || hasModule(key)) || accesoRegistroConsultas) : hasModule(key)
+  const puedeVerModulo = (key: ModuleKey) => key === 'gestion_mantenimientos' ? (accesoVisitas.permisos.configurado?(accesoVisitas.permisos.ver||accesoVisitas.permisos.solicitudes_ver||accesoVisitas.permisos.consultas_ver||accesoVisitas.permisos.gestionar_accesos):(tecnicoGestion && (import.meta.env.DEV || hasModule(key)) || accesoRegistroConsultas || accesoVisitas.permisos.ver)) : hasModule(key)
   const navigate = useNavigate()
   const location = useLocation()
   const tareasBadge = useTareasBadgeCount()
@@ -472,7 +474,7 @@ export function Sidebar() {
               // El grupo que contiene la ruta activa siempre se ve, aunque el
               // usuario lo haya colapsado antes — para no "perder" de vista
               // dónde está parado al navegar.
-              const tieneActiva = items.some(item => item.to === location.pathname)
+              const tieneActiva = items.some(item => item.to === location.pathname || (item.to==='/gestion-mantenimientos'&&location.pathname.startsWith(item.to+'/')))
               const abierto = tieneActiva || !gruposColapsados.has(group.key)
               return (
                 <div key={group.key}>

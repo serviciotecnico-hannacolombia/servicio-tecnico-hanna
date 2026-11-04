@@ -1,5 +1,6 @@
+import {retornoGestion} from '../../modules/gestion-mantenimientos/rutasGestion'
 import { useState } from 'react'
-import { Navigate, useNavigate } from 'react-router-dom'
+import { Navigate, useNavigate, useLocation } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Mail, Lock, User } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
@@ -18,6 +19,7 @@ const ALLOWED_DOMAIN = 'hannacolombia.com'
 export function LoginPage() {
   const { user, loading, hasModule } = useUser()
   const navigate = useNavigate()
+  const location=useLocation(),retorno=retornoGestion(location.state?.returnTo)
   const [mode, setMode] = useState<'login' | 'signup'>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -33,7 +35,7 @@ export function LoginPage() {
     )
   }
 
-  if (user) return <Navigate to={getDefaultRoute(hasModule)} replace />
+  if (user) return <Navigate to={retorno??getDefaultRoute(hasModule)} replace />
 
   const switchMode = (next: 'login' | 'signup') => {
     setMode(next)
@@ -51,7 +53,7 @@ export function LoginPage() {
         ? 'Correo o contraseña incorrectos'
         : error.message)
     } else {
-      navigate('/')
+      navigate(retorno??'/',{replace:true})
     }
   }
 
@@ -75,7 +77,7 @@ export function LoginPage() {
 
       const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
       if (signInError) throw signInError
-      navigate('/')
+      navigate(retorno??'/',{replace:true})
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Error al crear la cuenta')
     } finally {
