@@ -1,10 +1,11 @@
-import { Navigate } from 'react-router-dom'
+import { Navigate, useLocation } from 'react-router-dom'
 import { useUser } from '../../hooks/useUser'
 import { Spinner } from '../ui/Spinner'
 import type { ReactNode } from 'react'
 
 export function AuthGuard({ children }: { children: ReactNode }) {
   const { user, profile, loading } = useUser()
+  const location=useLocation()
 
   if (loading) {
     return (
@@ -20,7 +21,7 @@ export function AuthGuard({ children }: { children: ReactNode }) {
     )
   }
 
-  if (!user) return <Navigate to="/login" replace />
+  if (!user) return <Navigate to="/login" replace state={{returnTo:location.pathname+location.search+location.hash}} />
 
   if (profile && !profile.activo) {
     return (

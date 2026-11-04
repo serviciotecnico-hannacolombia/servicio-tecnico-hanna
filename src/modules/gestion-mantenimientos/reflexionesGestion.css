@@ -1,0 +1,28 @@
+.gm-workspace .gm-reflexiones {
+  margin-top: 24px;
+  padding: clamp(16px, 3vw, 40px) 0;
+  border-top: 1px solid var(--border);
+}
+.gm-reflexiones-escena { min-width: 0; display: grid; }
+.gm-reflexiones-escena figure {
+  grid-area: 1 / 1;
+  display: grid;
+  grid-template-columns: minmax(0, 32%) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(16px, 3vw, 48px);
+  margin: 0;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 500ms ease, visibility 0s linear 500ms;
+}
+.gm-reflexiones-escena figure[data-visible="true"] { opacity: 1; visibility: visible; transition-delay: 0s; }
+.gm-reflexiones-escena .gm-reflexion-lamina { display: block; width: 100%; max-width: 330px; justify-self: center; height: auto; color: var(--gm-link); }
+.gm-reflexiones-escena blockquote { margin: 0; max-width: 38ch; color: var(--text); font: italic clamp(1.35rem, 2.2vw, 2rem)/1.32 Georgia, serif; text-wrap: pretty; }
+.gm-reflexiones-escena figcaption { margin-top: 12px; font-size: 13px; }
+.gm-reflexiones-escena figcaption a { color: var(--muted); text-underline-offset: 3px; }
+@container (max-width: 480px) {
+  .gm-reflexiones-escena figure { grid-template-columns: 1fr; align-content: center; gap: 8px; text-align: center; }
+  .gm-reflexiones-escena .gm-reflexion-lamina { max-width: 180px; }
+  .gm-reflexiones-escena blockquote { margin-inline: auto; }
+}
+@media (prefers-reduced-motion: reduce) { .gm-reflexiones-escena figure { transition: none; } }

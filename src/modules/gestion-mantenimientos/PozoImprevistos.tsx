@@ -1,0 +1,25 @@
+import {useState} from 'react'
+import {useGestionMantenimientos} from './useGestionMantenimientos'
+import {notaImprevisto,resumirPozo} from './modeloPozo'
+import type {SolicitudMantenimiento} from './modelo'
+import {Card,Button} from './uiGestion'
+import {toast} from './toastGestion'
+import {fmtCOP} from '../mant-in-situ/hooks/useMantInSitu'
+import {INP} from '../mant-in-situ/ui'
+export function PozoImprevistos({registros,abrir}:{registros:SolicitudMantenimiento[];abrir:(id:string)=>void}) {
+ const gestion=useGestionMantenimientos()
+ const [ano,setAno]=useState(new Date().toLocaleDateString('en-CA',{timeZone:'America/Bogota'}).slice(0,4))
+ const [formulario,setFormulario]=useState(false),[id,setId]=useState(''),[valor,setValor]=useState(''),[motivo,setMotivo]=useState(''),[fecha,setFecha]=useState(new Date().toLocaleDateString('en-CA',{timeZone:'America/Bogota'})),[guardando,setGuardando]=useState(false)
+ let pozo:ReturnType<typeof resumirPozo>
+ try{pozo=resumirPozo(registros,ano)}catch(e){return <Card><p role="alert">{(e as Error).message}</p></Card>}
+ const anos=[...new Set([ano,...registros.map(r=>r.created_at.slice(0,4)),...resumirPozo(registros).movimientos.map(m=>m.fecha.slice(0,4))])].sort().reverse()
+ const disponibles=registros.filter(r=>!r.es_prueba)
+ return <Card><h3>Pozo de imprevistos · 5 %</h3><p className="reporte-ayuda">Libro anual: aportes según el año de creación de la solicitud e imprevistos según la fecha del gasto. Aportes presupuestados de solicitudes aprobadas, programadas y realizadas; no representa dinero recaudado. Las pruebas se excluyen. Los gastos registrados se conservan aunque cambie el estado de la solicitud.</p>
+ <label>Libro del pozo<select style={INP} value={ano} onChange={e=>setAno(e.target.value)}>{anos.map(a=><option key={a}>{a}</option>)}</select></label><dl className="reporte-metricas"><div><dt>Aportes del 5 %</dt><dd>{fmtCOP(pozo.aportes)}</dd><small>{pozo.aportantes.length} solicitudes</small></div><div><dt>Imprevistos registrados</dt><dd>{fmtCOP(pozo.gastos)}</dd></div><div><dt>Saldo disponible presupuestado</dt><dd style={{color:pozo.saldo<0?'var(--red)':'var(--green)'}}>{fmtCOP(pozo.saldo)}</dd><small>{pozo.saldo<0?'Déficit: los gastos superan los aportes':'Aportes menos imprevistos'}</small></div><div><dt>Sobrante disponible para cierre anual</dt><dd>{fmtCOP(Math.max(0,pozo.saldo))}</dd><small>Pasará a recaudado al confirmar el cierre. Aún no transferido.</small></div></dl>
+ {pozo.saldo<0&&<p role="status">El pozo está en negativo por {fmtCOP(-pozo.saldo)}.</p>}
+ {gestion.puedeEditar&&<Button variant="ghost" disabled={gestion.isLoading||!!gestion.error} onClick={()=>setFormulario(!formulario)}>{formulario?'Cerrar formulario':'Registrar imprevisto'}</Button>}
+ {formulario&&<form className="gestion-form" onSubmit={async e=>{e.preventDefault();if(guardando)return;const solicitud=registros.find(r=>r.id===id&&!r.es_prueba);if(!solicitud){toast.error('Selecciona una solicitud real');return}setGuardando(true);try{await gestion.actualizar(solicitud,solicitud.estado,solicitud.cotizacion??'',notaImprevisto(Number(valor),fecha,motivo));setAno(fecha.slice(0,4));setFormulario(false);setValor('');setMotivo('');toast.success('Imprevisto registrado en el pozo')}catch(err){toast.error((err as Error).message)}finally{setGuardando(false)}}}>
+ <label>Solicitud asociada<select style={INP} required value={id} disabled={guardando} onChange={e=>setId(e.target.value)}><option value="">Selecciona una solicitud</option>{disponibles.map(r=><option key={r.id} value={r.id}>{r.cliente} · Cot. {r.cotizacion||'sin asociar'} · {r.created_at.slice(0,10)} · {r.destino}</option>)}</select></label>
+ <label>Fecha del imprevisto<input style={INP} type="date" required value={fecha} disabled={guardando} onChange={e=>setFecha(e.target.value)}/></label><label>Valor del gasto (COP)<input style={INP} type="number" min="1" step="1" required value={valor} disabled={guardando} onChange={e=>setValor(e.target.value)}/></label><label>Motivo<textarea style={INP} maxLength={500} required value={motivo} disabled={guardando} onChange={e=>setMotivo(e.target.value)}/></label><Button type="submit" disabled={guardando}>{guardando?'Guardando…':'Guardar imprevisto'}</Button></form>}
+ <details><summary>Ver aportes y movimientos</summary><h4>Aportes por solicitud</h4>{pozo.aportantes.map(r=><p key={r.id}><Button variant="link" onClick={()=>abrir(r.id)}>{r.cliente} · {r.cotizacion||'Sin cotización'}</Button> {fmtCOP(r.calculo.margen)}</p>)}<h4>Imprevistos</h4>{!pozo.movimientos.length?<p>No hay imprevistos registrados.</p>:<div className="gestion-table-scroll"><table className="gestion-table"><thead><tr><th>Fecha</th><th>Solicitud</th><th>Motivo</th><th>Valor descontado</th><th>Registrado por</th></tr></thead><tbody>{pozo.movimientos.map(m=><tr key={m.id}><td>{m.fecha}</td><td><Button variant="link" onClick={()=>abrir(m.solicitud)}>{m.cliente} · {m.cotizacion||'Sin cotización'}</Button></td><td>{m.motivo}</td><td>{fmtCOP(-m.valor)}</td><td>{m.usuario}</td></tr>)}</tbody></table></div>}</details></Card>
+}
