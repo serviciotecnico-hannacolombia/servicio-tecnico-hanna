@@ -1,4 +1,8 @@
-# Personalizado: acceso por rol
+# Personalizado regional por perfil y rol
+
+Con el SQL 14-personalizado-por-perfil.sql instalado después del 12, Gestión de mantenimientos → Perfiles y accesos permite activar o desactivar el cotizador para cada perfil. Hasta que se guarde una configuración individual, hereda la capacidad del rol. La cuenta propietaria conserva el acceso completo de Gestión. Se requiere perfil activo, el módulo regional para entrar y el catálogo Bogotá para consultar equipos. Aplicar SQL 14 antes de desplegar el frontend.
+
+## Configuración inicial del rol
 
 Aplicar docs/sql/habilitar-personalizado-servicio-tecnico.sql antes de publicar el frontend. El script es repetible y no se ha ejecutado en la base compartida. Su consulta final debe mostrar personalizado, acceso_regional y catalogo_bogota en true para Servicio Técnico. Si no devuelve filas, comprobar el nombre real del rol antes de continuar.
 
