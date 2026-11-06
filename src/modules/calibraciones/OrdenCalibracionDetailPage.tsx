@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, Fragment } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { ArrowLeft, Trash2, Ban, RotateCcw, AlertTriangle, Clock, UserCog } from 'lucide-react'
+import { ArrowLeft, Trash2, Ban, RotateCcw, AlertTriangle, Clock, UserCog, Hash } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { Spinner } from '../../components/ui/Spinner'
 import { Modal } from '../../components/ui/Modal'
@@ -123,6 +123,9 @@ export function OrdenCalibracionDetailPage() {
   const [cambiandoAsesor, setCambiandoAsesor] = useState(false)
   const [correoAsesorInput, setCorreoAsesorInput] = useState('')
   const [guardandoAsesor, setGuardandoAsesor] = useState(false)
+  const [cambiandoCantidad, setCambiandoCantidad] = useState(false)
+  const [cantidadInput, setCantidadInput] = useState('')
+  const [guardandoCantidad, setGuardandoCantidad] = useState(false)
 
   useEffect(() => { if (orden) setForm(orden) }, [orden])
   useEffect(() => { if (parametrosActuales) setCodigosSel(new Set(parametrosActuales.map(p => p.rv_calibr_codigo))) }, [parametrosActuales])
@@ -440,6 +443,28 @@ export function OrdenCalibracionDetailPage() {
     invalidate.historial(orden.id)
   }
 
+  // Solo Admin, en cualquier etapa: corrige la cantidad de equipos de la orden
+  // (p. ej. se registró 11 en vez de 1). El trigger deja el cambio en el historial.
+  async function guardarCantidadEquipos() {
+    if (!orden) return
+    const cantidad = Number(cantidadInput)
+    if (!Number.isInteger(cantidad) || cantidad < 1) { toast.error('Ingresa un número entero mayor o igual a 1'); return }
+    if (cantidad < equiposOrden.length) {
+      toast.error(`La orden tiene ${equiposOrden.length} equipos registrados. Elimina los sobrantes antes de bajar la cantidad.`)
+      return
+    }
+    setGuardandoCantidad(true)
+    const { error } = await supabase.from('ordenes_calibracion')
+      .update({ cantidad_equipos: cantidad, updated_at: new Date().toISOString() }).eq('id', orden.id)
+    setGuardandoCantidad(false)
+    if (error) { toast.error('Error: ' + error.message); return }
+    setForm(f => ({ ...f, cantidad_equipos: cantidad }))
+    toast.success('Cantidad de equipos actualizada')
+    setCambiandoCantidad(false)
+    invalidate.ordenes()
+    invalidate.historial(orden.id)
+  }
+
   async function confirmarReactivar() {
     if (!orden) return
     if (!confirm('¿Reactivar esta orden? Vuelve a las vistas activas y al semáforo de vencimiento.')) return
@@ -664,6 +689,13 @@ export function OrdenCalibracionDetailPage() {
               borderRadius: 9, border: '1px solid var(--border)', background: 'var(--surface)',
               color: 'var(--accent)', cursor: 'pointer', flexShrink: 0,
             }}><UserCog size={16} /></button>
+          )}
+          {isAdmin && orden && (
+            <button onClick={() => { setCantidadInput(form.cantidad_equipos != null ? String(form.cantidad_equipos) : ''); setCambiandoCantidad(true) }} title="Editar cantidad de equipos (solo Admin)" style={{
+              width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              borderRadius: 9, border: '1px solid var(--border)', background: 'var(--surface)',
+              color: 'var(--accent)', cursor: 'pointer', flexShrink: 0,
+            }}><Hash size={16} /></button>
           )}
           {isAdmin && orden && (
             <button onClick={() => setEliminando(true)} title="Eliminar orden permanentemente (solo Admin)" style={{
@@ -1062,6 +1094,26 @@ export function OrdenCalibracionDetailPage() {
           </Modal>
         )
       })()}
+
+      {cambiandoCantidad && orden && (
+        <Modal open onClose={() => setCambiandoCantidad(false)} title="Editar cantidad de equipos">
+          <p style={{ fontSize: 12.5, color: 'var(--muted)', marginBottom: 12 }}>
+            Actual: <strong style={{ color: 'var(--text)' }}>{form.cantidad_equipos ?? '—'}</strong>. Equipos registrados en la orden: <strong style={{ color: 'var(--text)' }}>{equiposOrden.length}</strong>.
+          </p>
+          <FG label="Nueva cantidad de equipos" required>
+            <input
+              type="number" min={Math.max(1, equiposOrden.length)} step={1}
+              value={cantidadInput} onChange={e => setCantidadInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); guardarCantidadEquipos() } }}
+              style={INP} autoFocus
+            />
+          </FG>
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 20 }}>
+            <button onClick={() => setCambiandoCantidad(false)} style={GHOST}>Cancelar</button>
+            <button onClick={guardarCantidadEquipos} disabled={guardandoCantidad} style={PRI}>{guardandoCantidad ? 'Guardando…' : 'Guardar'}</button>
+          </div>
+        </Modal>
+      )}
 
       {eliminando && orden && (
         <Modal open onClose={() => setEliminando(false)} title="Eliminar orden permanentemente">
